@@ -1,5 +1,9 @@
 # Idea Foundry
 
+<img width="1536" height="1024" alt="" src="https://github.com/user-attachments/assets/c1e2fc48-6a87-478c-b362-8288eefc6e9c" />
+<img width="1536" height="1024" alt="" src="https://github.com/user-attachments/assets/c1e2fc48-6a87-478c-b362-8288eefc6e9c" />
+
+
 A personal idea management system for entrepreneurs. Capture rough ideas, evolve them through a structured lifecycle, score and rank them, organize with kanban boards and hierarchical topologies, and visualize relationships in an interactive 3D graph.
 
 ## Features
