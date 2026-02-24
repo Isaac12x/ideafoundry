@@ -40,8 +40,9 @@ class TopologiesController < ApplicationController
 
   def update
     if @topology.update(topology_params)
-      if params[:topology_overrides].present?
-        overrides = params[:topology_overrides].permit(*User::ALLOWED_TOPOLOGY_OVERRIDE_KEYS).to_h
+      raw_overrides = params[:topology_overrides].presence || params.dig(:topology, :topology_overrides)
+      if raw_overrides.present?
+        overrides = raw_overrides.permit(*User::ALLOWED_TOPOLOGY_OVERRIDE_KEYS).to_h
         overrides.reject! { |_, v| v.blank? }
         overrides.transform_values! do |v|
           case v
