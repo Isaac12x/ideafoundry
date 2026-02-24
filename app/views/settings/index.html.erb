@@ -1,0 +1,51 @@
+<div class="settings-container">
+  <div class="page-header">
+    <h2>Settings</h2>
+    <%= link_to ideas_path, class: "btn btn-sm" do %>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      Back to Ideas
+    <% end %>
+  </div>
+
+  <div class="settings-list">
+    <%= link_to settings_scoring_path, class: "settings-row" do %>
+      <div class="settings-row-info">
+        <h3>Scoring System</h3>
+        <p>Configure how ideas are scored and weighted</p>
+      </div>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+    <% end %>
+
+    <%= link_to settings_topologies_path, class: "settings-row" do %>
+      <div class="settings-row-info">
+        <h3>Topologies & Graph</h3>
+        <p>Configure graph visuals, behavior, and topology defaults</p>
+      </div>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+    <% end %>
+
+    <%= link_to settings_email_path, class: "settings-row" do %>
+      <div class="settings-row-info">
+        <h3>Email Integration</h3>
+        <p>Configure recipients and sender settings for sharing ideas via email</p>
+      </div>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+    <% end %>
+
+    <%= link_to settings_templates_path, class: "settings-row" do %>
+      <div class="settings-row-info">
+        <h3>Templates</h3>
+        <p>Manage idea templates and custom fields</p>
+      </div>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+    <% end %>
+
+    <%= link_to settings_exports_path, class: "settings-row" do %>
+      <div class="settings-row-info">
+        <h3>Export & Backup</h3>
+        <p>Export your workspace and manage backups</p>
+      </div>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+    <% end %>
+  </div>
+</div>

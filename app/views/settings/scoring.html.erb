@@ -1,0 +1,217 @@
+<div class="settings-container">
+  <div class="page-header">
+    <h2>Scoring Configuration</h2>
+    <div class="header-actions">
+      <%= link_to "← Back to Settings", settings_path, class: "btn btn-secondary" %>
+    </div>
+  </div>
+
+  <div class="scoring-config-layout">
+    <div class="scoring-config-main">
+      <%= form_with url: settings_scoring_path, method: :patch, local: true, 
+                    data: { controller: "score" } do |form| %>
+        
+        <div class="config-section">
+          <h3>Scoring Weights</h3>
+          <p class="config-description">
+            Adjust how each factor contributes to the overall idea score. 
+            Positive weights increase the score, negative weights decrease it.
+          </p>
+
+          <div class="weight-grid">
+            <div class="weight-item weight-item--trl">
+              <label class="weight-label">
+                Technology Readiness Level (TRL)
+                <span class="weight-description">How mature is the technology?</span>
+              </label>
+              <div class="weight-input-group">
+                <%= form.number_field "scoring_weights[trl]", 
+                    value: @user.scoring_weights['trl'],
+                    step: 0.1, min: -1, max: 1,
+                    class: "weight-input",
+                    data: { 
+                      score_target: "trlSlider",
+                      action: "input->score#updateTrl"
+                    } %>
+                <span class="weight-range">(-1.0 to 1.0)</span>
+              </div>
+            </div>
+
+            <div class="weight-item weight-item--difficulty">
+              <label class="weight-label">
+                Difficulty
+                <span class="weight-description">How hard is this to execute?</span>
+              </label>
+              <div class="weight-input-group">
+                <%= form.number_field "scoring_weights[difficulty]", 
+                    value: @user.scoring_weights['difficulty'],
+                    step: 0.1, min: -1, max: 1,
+                    class: "weight-input",
+                    data: { 
+                      score_target: "difficultySlider",
+                      action: "input->score#updateDifficulty"
+                    } %>
+                <span class="weight-range">(-1.0 to 1.0)</span>
+              </div>
+            </div>
+
+            <div class="weight-item weight-item--opportunity">
+              <label class="weight-label">
+                Opportunity
+                <span class="weight-description">How big is the market opportunity?</span>
+              </label>
+              <div class="weight-input-group">
+                <%= form.number_field "scoring_weights[opportunity]", 
+                    value: @user.scoring_weights['opportunity'],
+                    step: 0.1, min: -1, max: 1,
+                    class: "weight-input",
+                    data: { 
+                      score_target: "opportunitySlider",
+                      action: "input->score#updateOpportunity"
+                    } %>
+                <span class="weight-range">(-1.0 to 1.0)</span>
+              </div>
+            </div>
+
+            <div class="weight-item weight-item--timing">
+              <label class="weight-label">
+                Timing
+                <span class="weight-description">How good is the timing for this idea?</span>
+              </label>
+              <div class="weight-input-group">
+                <%= form.number_field "scoring_weights[timing]", 
+                    value: @user.scoring_weights['timing'],
+                    step: 0.1, min: -1, max: 1,
+                    class: "weight-input",
+                    data: { 
+                      score_target: "timingSlider",
+                      action: "input->score#updateTiming"
+                    } %>
+                <span class="weight-range">(-1.0 to 1.0)</span>
+              </div>
+            </div>
+          </div>
+
+          <details open class="metric-legend">
+            <summary class="metric-legend-title">Metric Scale Reference</summary>
+            <div class="metric-legend-content">
+
+              <div class="legend-scale legend-scale--trl">
+                <h5 class="legend-scale-name">Technology Readiness Level</h5>
+                <div class="legend-track">
+                  <div class="legend-track-line"></div>
+                  <span class="legend-marker legend-marker--hover" style="left:0%"   data-label="0"  data-desc="Basic concept"></span>
+                  <span class="legend-marker legend-marker--hover" style="left:10%"  data-label="1"  data-desc="Research started"></span>
+                  <span class="legend-marker legend-marker--hover" style="left:20%"  data-label="2"  data-desc="Concept formulated"></span>
+                  <span class="legend-marker legend-marker--hover" style="left:30%"  data-label="3"  data-desc="Proof of concept"></span>
+                  <span class="legend-marker legend-marker--hover" style="left:40%"  data-label="4"  data-desc="Lab validation"></span>
+                  <span class="legend-marker legend-marker--hover" style="left:50%"  data-label="5"  data-desc="Env. tested"></span>
+                  <span class="legend-marker legend-marker--hover" style="left:60%"  data-label="6"  data-desc="Demo in env."></span>
+                  <span class="legend-marker legend-marker--hover" style="left:70%"  data-label="7"  data-desc="System prototype"></span>
+                  <span class="legend-marker legend-marker--hover" style="left:80%"  data-label="8"  data-desc="System qualified"></span>
+                  <span class="legend-marker legend-marker--hover" style="left:90%"  data-label="9"  data-desc="Production proven"></span>
+                  <span class="legend-marker legend-marker--hover" style="left:100%" data-label="10" data-desc="Mature technology"></span>
+                </div>
+              </div>
+
+              <div class="legend-scale legend-scale--difficulty">
+                <h5 class="legend-scale-name">Difficulty</h5>
+                <div class="legend-track">
+                  <div class="legend-track-line"></div>
+                  <span class="legend-marker" style="left:0%"   data-label="0"  data-desc="Trivial"></span>
+                  <span class="legend-marker" style="left:50%"  data-label="5"  data-desc="Moderate"></span>
+                  <span class="legend-marker" style="left:100%" data-label="10" data-desc="Extremely hard"></span>
+                </div>
+              </div>
+
+              <div class="legend-scale legend-scale--opportunity">
+                <h5 class="legend-scale-name">Opportunity</h5>
+                <div class="legend-track">
+                  <div class="legend-track-line"></div>
+                  <span class="legend-marker" style="left:0%"   data-label="0"  data-desc="Tiny niche"></span>
+                  <span class="legend-marker" style="left:50%"  data-label="5"  data-desc="Solid market"></span>
+                  <span class="legend-marker" style="left:100%" data-label="10" data-desc="Massive market"></span>
+                </div>
+              </div>
+
+              <div class="legend-scale legend-scale--timing">
+                <h5 class="legend-scale-name">Timing</h5>
+                <div class="legend-track">
+                  <div class="legend-track-line"></div>
+                  <span class="legend-marker" style="left:0%"   data-label="0"  data-desc="Way too early/late"></span>
+                  <span class="legend-marker" style="left:50%"  data-label="5"  data-desc="Decent window"></span>
+                  <span class="legend-marker" style="left:100%" data-label="10" data-desc="Perfect moment"></span>
+                </div>
+              </div>
+
+            </div>
+          </details>
+
+          <div class="formula-preview">
+            <h4>Current Formula</h4>
+            <div class="formula-display" data-score-target="scoreFormula">
+              <%= @user.scoring_formula_display %>
+            </div>
+          </div>
+
+          <div class="config-actions">
+            <%= form.submit "Update Scoring Weights", class: "btn btn-primary" %>
+            <%= link_to "Reset to Defaults", settings_scoring_path, 
+                method: :patch, 
+                params: { 
+                  scoring_weights: { 
+                    trl: 0.3, difficulty: -0.1, opportunity: 0.4, timing: 0.2 
+                  } 
+                },
+                class: "btn btn-secondary",
+                data: { turbo_confirm: "Reset to default weights?" } %>
+          </div>
+        </div>
+      <% end %>
+    </div>
+
+    <div class="scoring-config-sidebar">
+      <div class="config-info-card">
+        <h4>💡 Scoring Tips</h4>
+        <ul>
+          <li><strong>Positive weights</strong> increase the score when the factor is high</li>
+          <li><strong>Negative weights</strong> decrease the score when the factor is high</li>
+          <li><strong>Difficulty</strong> typically has a negative weight since higher difficulty should lower the score</li>
+          <li><strong>Sum of weights</strong> doesn't need to equal 1.0</li>
+        </ul>
+      </div>
+
+      <div class="config-info-card">
+        <h4>📈 Score Range</h4>
+        <p>With current weights, scores will range from:</p>
+        <div class="score-range-display">
+          <div class="range-item">
+            <span class="range-label">Minimum:</span>
+            <span class="range-value negative">
+              <%= number_with_precision(
+                10 * [@user.scoring_weights['trl'], @user.scoring_weights['difficulty'], @user.scoring_weights['opportunity'], @user.scoring_weights['timing']].select(&:negative?).sum +
+                0 * [@user.scoring_weights['trl'], @user.scoring_weights['difficulty'], @user.scoring_weights['opportunity'], @user.scoring_weights['timing']].select(&:positive?).sum,
+                precision: 1
+              ) %>
+            </span>
+          </div>
+          <div class="range-item">
+            <span class="range-label">Maximum:</span>
+            <span class="range-value positive">
+              <%= number_with_precision(
+                10 * [@user.scoring_weights['trl'], @user.scoring_weights['difficulty'], @user.scoring_weights['opportunity'], @user.scoring_weights['timing']].select(&:positive?).sum +
+                0 * [@user.scoring_weights['trl'], @user.scoring_weights['difficulty'], @user.scoring_weights['opportunity'], @user.scoring_weights['timing']].select(&:negative?).sum,
+                precision: 1
+              ) %>
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div class="config-info-card">
+        <h4>⚠️ Important</h4>
+        <p>Changing weights will recalculate scores for <strong>all existing ideas</strong>. This action cannot be undone, but version history will preserve the old scores.</p>
+      </div>
+    </div>
+  </div>
+</div>

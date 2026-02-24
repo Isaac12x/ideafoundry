@@ -1,0 +1,131 @@
+<div class="version-detail-container">
+  <div class="version-detail-header">
+    <h1>Version Details</h1>
+    <%= link_to "← Back to Timeline", idea_versions_path(@idea), class: "btn btn-secondary" %>
+  </div>
+
+  <div class="version-info-card">
+    <h2><%= @version.commit_message %></h2>
+    <p class="version-meta">
+      Created <%= time_ago_in_words(@version.created_at) %> ago
+      (<%= @version.created_at.strftime("%B %d, %Y at %I:%M %p") %>)
+    </p>
+
+    <%# Ancestry Breadcrumb %>
+    <% path = @version.ancestry_path %>
+    <% if path.length > 1 %>
+      <div class="ancestry-breadcrumb">
+        <% path.each_with_index do |v, i| %>
+          <% if v == @version %>
+            <span class="ancestry-current"><%= v.commit_message.truncate(30) %></span>
+          <% else %>
+            <%= link_to v.commit_message.truncate(30), idea_version_path(@idea, v) %>
+          <% end %>
+          <% if i < path.length - 1 %>
+            <span class="ancestry-sep">▸</span>
+          <% end %>
+        <% end %>
+      </div>
+    <% end %>
+
+    <% if @parent_version %>
+      <p class="parent-info">
+        Parent: <%= link_to @parent_version.commit_message, idea_version_path(@idea, @parent_version) %>
+      </p>
+    <% else %>
+      <p class="root-info">
+        <span class="badge">Root Version</span>
+      </p>
+    <% end %>
+
+    <% if @child_versions.any? %>
+      <div class="children-info">
+        <strong>Child Versions:</strong>
+        <ul>
+          <% @child_versions.each do |child| %>
+            <li><%= link_to child.commit_message, idea_version_path(@idea, child) %></li>
+          <% end %>
+        </ul>
+      </div>
+    <% end %>
+  </div>
+
+  <%# Scoring Detail Cards %>
+  <% scoring_fields = %w[trl difficulty opportunity timing] %>
+  <% sc = @version.scoring_changes %>
+  <div class="score-detail-grid">
+    <% scoring_fields.each do |field| %>
+      <div class="score-detail-card <%= field %>">
+        <div class="card-label"><%= field.humanize %></div>
+        <div class="card-value"><%= @version.snapshot_data[field] || 0 %></div>
+        <% if sc[field] %>
+          <div class="card-delta">
+            <% delta = sc[field][:change] %>
+            <span class="score-delta <%= delta > 0 ? 'positive' : delta < 0 ? 'negative' : 'neutral' %>">
+              <%= delta > 0 ? '+' : '' %><%= number_with_precision(delta, precision: 1) %>
+            </span>
+          </div>
+        <% end %>
+      </div>
+    <% end %>
+  </div>
+
+  <div class="snapshot-data">
+    <h3>Snapshot Data</h3>
+    <table class="snapshot-table">
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Value</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @version.snapshot_data.each do |key, value| %>
+          <% next if scoring_fields.include?(key) %>
+          <tr>
+            <td class="field-name"><%= key.humanize %></td>
+            <td class="field-value"><%= value %></td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+
+  <% if @diff.present? %>
+    <div class="diff-display">
+      <h3>Changes from Parent Version</h3>
+      <table class="diff-table">
+        <thead>
+          <tr>
+            <th>Field</th>
+            <th>Previous Value</th>
+            <th>New Value</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @diff.each do |field, changes| %>
+            <tr class="<%= scoring_fields.include?(field) || field == 'computed_score' ? "diff-row-#{field}" : '' %>">
+              <td class="field-name"><%= field.humanize %></td>
+              <td class="old-value"><%= changes[:from] %></td>
+              <td class="new-value"><%= changes[:to] %></td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  <% end %>
+
+  <div class="version-actions">
+    <%= button_to "Restore This Version",
+        restore_idea_version_path(@idea, @version),
+        method: :post,
+        class: "btn btn-primary",
+        form: { data: { turbo_confirm: "Are you sure you want to restore this version? This will create a new version based on this snapshot and update the idea." } } %>
+
+    <% if @parent_version %>
+      <%= link_to "Compare with Parent",
+          compare_idea_versions_path(@idea, from: @parent_version.id, to: @version.id),
+          class: "btn btn-secondary" %>
+    <% end %>
+  </div>
+</div>

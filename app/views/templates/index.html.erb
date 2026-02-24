@@ -1,0 +1,227 @@
+<div class="templates-container">
+  <div class="page-header">
+    <h2>Templates</h2>
+    <div class="header-actions">
+      <%= link_to new_template_path, class: "btn btn-primary" do %>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+        New Template
+      <% end %>
+    </div>
+  </div>
+
+  <% if @templates.any? %>
+    <div class="templates-grid">
+      <% @templates.each do |template| %>
+        <div class="template-card<%= ' template-card--default' if template.is_default? %>">
+          <% if template.is_default? %>
+            <div class="template-card__default-ribbon">Default</div>
+          <% end %>
+
+          <%= link_to template, class: "template-card__link" do %>
+            <div class="template-card__header">
+              <h3 class="template-card__name"><%= template.name %></h3>
+              <span class="template-card__meta">
+                <%= pluralize(template.field_definitions.length, 'field') %> &middot;
+                <%= pluralize(template.section_order.length, 'section') %>
+              </span>
+            </div>
+
+            <% if template.field_definitions.any? %>
+              <div class="template-card__fields">
+                <% template.field_definitions.first(4).each do |field| %>
+                  <span class="template-card__field-tag template-card__field-tag--<%= field['type'] %>">
+                    <%= field['label'] || field['name'].humanize %>
+                  </span>
+                <% end %>
+                <% if template.field_definitions.length > 4 %>
+                  <span class="template-card__field-tag template-card__field-tag--more">+<%= template.field_definitions.length - 4 %></span>
+                <% end %>
+              </div>
+            <% end %>
+
+            <div class="template-card__sections">
+              <% template.section_order.each do |section| %>
+                <span class="template-card__section"><%= section %></span>
+              <% end %>
+            </div>
+          <% end %>
+
+          <div class="template-card__actions">
+            <%= link_to "Edit", edit_template_path(template), class: "btn btn-sm" %>
+            <% unless template.is_default? %>
+              <%= link_to "Delete", template, method: :delete,
+                  data: { turbo_method: :delete, turbo_confirm: "Are you sure?" }, class: "btn btn-danger btn-sm" %>
+            <% end %>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  <% else %>
+    <div class="empty-state">
+      <h3>No templates yet</h3>
+      <p>Templates let you customize how ideas are structured and scored.</p>
+      <%= link_to "Create your first template", new_template_path, class: "btn btn-primary" %>
+    </div>
+  <% end %>
+</div>
+
+<style>
+  .templates-container {
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  .templates-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 16px;
+  }
+
+  /* Card */
+  .template-card {
+    position: relative;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    animation: fadeInUp 0.4s ease both;
+  }
+
+  .template-card:nth-child(1) { animation-delay: 0ms; }
+  .template-card:nth-child(2) { animation-delay: 40ms; }
+  .template-card:nth-child(3) { animation-delay: 40ms; }
+  .template-card:nth-child(4) { animation-delay: 80ms; }
+  .template-card:nth-child(5) { animation-delay: 120ms; }
+  .template-card:nth-child(6) { animation-delay: 160ms; }
+
+  .template-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--accent), transparent);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+
+  .template-card:hover {
+    border-color: var(--border-emphasis);
+    box-shadow: var(--shadow-md), var(--shadow-glow);
+    transform: translateY(-2px);
+  }
+
+  .template-card:hover::before { opacity: 1; }
+
+  /* Default variant */
+  .template-card--default {
+    border-color: rgba(212, 149, 58, 0.25);
+  }
+
+  .template-card--default::before {
+    opacity: 0.6;
+  }
+
+  .template-card__default-ribbon {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    font-size: 0.65rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 2px 8px;
+    border-radius: var(--radius-xl);
+    background: var(--accent-muted);
+    color: var(--accent);
+    border: 1px solid var(--accent-emphasis);
+    z-index: 2;
+  }
+
+  .template-card__link {
+    display: block;
+    padding: 1.25rem;
+    text-decoration: none;
+    color: inherit;
+  }
+
+  .template-card__header {
+    margin-bottom: 0.75rem;
+  }
+
+  .template-card__name {
+    margin: 0 0 4px 0;
+    font-family: var(--font-display);
+    font-style: italic;
+    font-size: 1.2rem;
+    font-weight: 400;
+    color: var(--text-primary);
+  }
+
+  .template-card__meta {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+  }
+
+  /* Field tags */
+  .template-card__fields {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 0.75rem;
+  }
+
+  .template-card__field-tag {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    padding: 2px 8px;
+    border-radius: var(--radius-xl);
+    background: var(--info-bg);
+    color: var(--info);
+    border: 1px solid rgba(96, 165, 250, 0.15);
+  }
+
+  .template-card__field-tag--number { background: var(--warning-bg); color: var(--warning); border-color: rgba(251, 191, 36, 0.15); }
+  .template-card__field-tag--select { background: var(--accent-muted); color: var(--accent); border-color: var(--accent-emphasis); }
+  .template-card__field-tag--boolean { background: var(--success-bg); color: var(--success); border-color: rgba(52, 211, 153, 0.15); }
+  .template-card__field-tag--date { background: rgba(167, 139, 250, 0.10); color: #a78bfa; border-color: rgba(167, 139, 250, 0.15); }
+  .template-card__field-tag--textarea { background: rgba(244, 114, 182, 0.10); color: #f472b6; border-color: rgba(244, 114, 182, 0.15); }
+  .template-card__field-tag--more { background: var(--bg-elevated); color: var(--text-muted); border-color: var(--border-default); }
+
+  /* Section order pills */
+  .template-card__sections {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  .template-card__section {
+    font-size: 0.65rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 2px 6px;
+    border-radius: var(--radius-sm);
+    background: var(--bg-elevated);
+    color: var(--text-muted);
+    border: 1px solid var(--border-subtle);
+  }
+
+  /* Actions footer */
+  .template-card__actions {
+    display: flex;
+    gap: 6px;
+    padding: 0.75rem 1.25rem;
+    border-top: 1px solid var(--border-subtle);
+  }
+
+  @media (max-width: 768px) {
+    .templates-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

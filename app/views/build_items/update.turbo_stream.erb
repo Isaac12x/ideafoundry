@@ -1,0 +1,3 @@
+<%= turbo_stream.replace "build_item_#{@build_item.id}" do %>
+  <%= render "build_item", build_item: @build_item, index: 0 %>
+<% end %>

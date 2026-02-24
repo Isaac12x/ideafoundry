@@ -1,0 +1,32 @@
+<%= @event_type.humanize %>
+<%= "=" * @event_type.humanize.length %>
+
+<%= @idea.title %>
+State: <%= @idea.state.humanize %>
+<% if @idea.computed_score.present? && @content_prefs['include_scores'] %>Score: <%= number_with_precision(@idea.computed_score, precision: 2) %><% end %>
+
+<% case @event_type.to_s %>
+<% when "state_changed" %>State changed: <%= @metadata['old_state']&.humanize %> → <%= @metadata['new_state']&.humanize %>
+<% when "score_changed" %>Score changed: <%= @metadata['old_score'] %> → <%= @metadata['new_score'] %>
+<% when "added_to_list" %>Added to list: <%= @metadata['list_name'] %>
+<% when "created" %>New idea created
+<% end %>
+
+<% if @metadata['content'].present? && @content_prefs['include_external_content'] %>
+--- External Content ---
+<%= @metadata['content'] %>
+<% end %>
+
+<% if @idea.description.present? && @content_prefs['include_description'] %>
+<%= @idea.description.to_plain_text %>
+<% end %>
+
+<% if @content_prefs['include_scores'] %>
+Metrics:
+  TRL: <%= @idea.trl || 0 %>
+  Opportunity: <%= @idea.opportunity || 0 %>
+  Timing: <%= @idea.timing || 0 %>
+  Difficulty: <%= @idea.difficulty || 0 %>
+<% end %>
+
+<%= Time.current.strftime("%B %d, %Y at %I:%M %p") %>

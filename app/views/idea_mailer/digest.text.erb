@@ -1,0 +1,18 @@
+Your <%= @period %> digest
+<%= "=" * "Your #{@period} digest".length %>
+
+<%= @ideas.size %> idea<%= 's' if @ideas.size != 1 %> updated — <%= Time.current.strftime("%B %d, %Y") %>
+
+<% @ideas.each do |idea| %>
+---
+<%= idea.title %>
+State: <%= idea.state.humanize %>
+<% if idea.computed_score.present? && @content_prefs['include_scores'] %>Score: <%= number_with_precision(idea.computed_score, precision: 2) %><% end %>
+<% if idea.topologies.any? %>Topologies: <%= idea.topologies.map(&:name).join(", ") %><% end %>
+<% if idea.description.present? && @content_prefs['include_description'] %>
+<%= truncate(idea.description.to_plain_text, length: 200) %>
+<% end %>
+
+<% end %>
+---
+You're receiving this because you opted into <%= @period %> digests.

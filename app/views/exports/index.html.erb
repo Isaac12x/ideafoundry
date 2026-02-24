@@ -1,0 +1,113 @@
+<div class="settings-container">
+  <div class="page-header">
+    <h2>Export & Backup</h2>
+    <%= link_to settings_path, class: "btn btn-sm" do %>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      Back to Settings
+    <% end %>
+  </div>
+
+  <div class="scoring-config-layout">
+    <div class="scoring-config-main">
+      <div class="config-section">
+        <h3>Create Export</h3>
+        <p class="config-description">
+          Export all your ideas, lists, topologies, and settings as a compressed archive.
+          Optionally protect the export with a password.
+        </p>
+
+        <% if @active_export %>
+          <div class="export-status-banner processing">
+            <strong>Export in progress...</strong>
+            <span><%= @active_export.progress %>%</span>
+            <div class="export-progress-bar">
+              <div class="export-progress-fill" style="width: <%= @active_export.progress %>%"></div>
+            </div>
+          </div>
+        <% else %>
+          <%= form_with url: exports_path, method: :post, local: true do |f| %>
+            <div class="weight-grid">
+              <div class="weight-item" style="grid-column: 1 / -1;">
+                <label class="weight-label">Password Protection (optional)</label>
+                <span class="weight-description">If set, the export will be a password-protected ZIP. Minimum 8 characters.</span>
+                <div class="weight-input-group">
+                  <input type="password"
+                         name="password"
+                         class="weight-input"
+                         style="text-align: left;"
+                         placeholder="Leave blank for unprotected .tar.gz"
+                         minlength="8">
+                </div>
+              </div>
+            </div>
+
+            <div class="config-actions">
+              <%= f.submit "Start Export", class: "btn btn-primary" %>
+            </div>
+          <% end %>
+        <% end %>
+      </div>
+
+      <% if @export_jobs.any? %>
+        <div class="config-section" style="margin-top: 2rem;">
+          <h3>Export History</h3>
+          <p class="config-description">Recent exports. Downloads are available for 7 days.</p>
+
+          <div class="export-history">
+            <% @export_jobs.each do |job| %>
+              <div class="export-row">
+                <div class="export-row-info">
+                  <span class="export-date"><%= job.created_at.strftime("%b %d, %Y at %l:%M %p") %></span>
+                  <span class="export-badge <%= job.status %>"><%= job.status.capitalize %></span>
+                  <% if job.password_protected? %>
+                    <span class="export-badge protected">Protected</span>
+                  <% end %>
+                  <% if job.completed? && job.file_exists? %>
+                    <span class="export-meta"><%= job.file_size_human %></span>
+                  <% end %>
+                  <% if job.duration_human %>
+                    <span class="export-meta"><%= job.duration_human %></span>
+                  <% end %>
+                  <% if job.error_message.present? %>
+                    <span class="export-error"><%= job.error_message %></span>
+                  <% end %>
+                </div>
+                <div class="export-row-actions">
+                  <% if job.completed? && job.file_exists? %>
+                    <%= link_to "Download", download_export_path(job), class: "btn btn-sm btn-primary" %>
+                  <% end %>
+                  <%= button_to "Delete", export_path(job), method: :delete, class: "btn btn-sm btn-danger", data: { turbo_confirm: "Delete this export?" } %>
+                </div>
+              </div>
+            <% end %>
+          </div>
+
+          <% if @export_jobs.size >= 3 %>
+            <div class="config-actions" style="margin-top: 1rem;">
+              <%= button_to "Clean Up Old Exports", cleanup_old_exports_path, method: :post, class: "btn btn-secondary btn-sm" %>
+            </div>
+          <% end %>
+        </div>
+      <% end %>
+    </div>
+
+    <div class="scoring-config-sidebar">
+      <div class="config-info-card">
+        <h4>What's Included</h4>
+        <ul>
+          <li>All ideas with scores, metrics, and descriptions</li>
+          <li>Lists and idea ordering</li>
+          <li>Topologies and hierarchies</li>
+          <li>Templates and custom fields</li>
+          <li>Scoring weights and settings</li>
+        </ul>
+      </div>
+
+      <div class="config-info-card">
+        <h4>Export Format</h4>
+        <p>Without a password, exports are <code>.tar.gz</code> archives. With a password, exports are encrypted <code>.zip</code> files.</p>
+        <p>Exports older than 7 days are automatically eligible for cleanup.</p>
+      </div>
+    </div>
+  </div>
+</div>

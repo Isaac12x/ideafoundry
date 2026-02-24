@@ -1,0 +1,29 @@
+<div class="backlog-item backlog-item--editing" id="build_item_<%= build_item.id %>">
+  <%= form_with(model: build_item, class: "backlog-edit-form") do |f| %>
+    <div class="backlog-edit-fields">
+      <%= f.text_field :title, class: "backlog-form-input", autofocus: true %>
+      <%= f.text_area :description, class: "backlog-form-textarea", rows: 2, placeholder: "Notes or details..." %>
+
+      <div class="backlog-form-links" data-controller="backlog-links">
+        <input type="hidden" name="build_item[links_json]" value="<%= build_item.links.to_json %>" data-backlog-links-target="hidden">
+        <div class="backlog-form-links-header">
+          <span class="backlog-form-links-label">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+            Links & References
+          </span>
+        </div>
+        <div data-backlog-links-target="container" class="backlog-link-chips"></div>
+        <div class="backlog-link-add-row">
+          <input type="text" placeholder="URL" class="backlog-link-input" data-backlog-links-target="urlInput" data-action="keydown.enter->backlog-links#add">
+          <input type="text" placeholder="Label (optional)" class="backlog-link-label-input" data-backlog-links-target="labelInput" data-action="keydown.enter->backlog-links#add">
+          <button type="button" class="btn btn-sm" data-action="click->backlog-links#add">+</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="backlog-edit-actions">
+      <%= f.submit "Save", class: "btn btn-primary btn-sm" %>
+      <button type="button" class="btn btn-sm" data-controller="inline-edit" data-action="click->inline-edit#cancel">Cancel</button>
+    </div>
+  <% end %>
+</div>

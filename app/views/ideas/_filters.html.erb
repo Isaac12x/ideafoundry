@@ -1,0 +1,87 @@
+<div class="filters-panel">
+  <%= form_with url: ideas_path, method: :get, data: { turbo_frame: "ideas_list" } do |form| %>
+    <div class="filters-grid">
+      <div class="filter-group">
+        <%= form.label :state, "State" %>
+        <%= form.select :state,
+            options_for_select(
+              [['All States', 'all']] + Idea.states.keys.map { |k| [k.humanize, k] },
+              params[:state]
+            ),
+            {},
+            class: "form-control" %>
+      </div>
+
+      <div class="filter-group">
+        <%= form.label :topology_id, "Topology" %>
+        <%= form.select :topology_id,
+            options_for_select(
+              [['All Topologies', 'all']] + @user.topologies.ordered.map { |t| [t.full_path, t.id] },
+              params[:topology_id]
+            ),
+            {},
+            class: "form-control" %>
+      </div>
+
+      <div class="filter-group">
+        <%= form.label :list_id, "List" %>
+        <%= form.select :list_id,
+            options_for_select(
+              [['All Lists', 'all']] + @user.lists.pluck(:name, :id),
+              params[:list_id]
+            ),
+            {},
+            class: "form-control" %>
+      </div>
+
+      <div class="filter-group">
+        <%= form.label :trl_min, "TRL Min" %>
+        <%= form.number_field :trl_min, value: params[:trl_min], min: 0, max: 10, class: "form-control", placeholder: "0" %>
+      </div>
+
+      <div class="filter-group">
+        <%= form.label :trl_max, "TRL Max" %>
+        <%= form.number_field :trl_max, value: params[:trl_max], min: 0, max: 10, class: "form-control", placeholder: "10" %>
+      </div>
+
+      <div class="filter-group">
+        <%= form.label :score_min, "Score Min" %>
+        <%= form.number_field :score_min, value: params[:score_min], step: 0.1, class: "form-control", placeholder: "0" %>
+      </div>
+
+      <div class="filter-group">
+        <%= form.label :sort_by, "Sort" %>
+        <%= form.select :sort_by,
+            options_for_select(
+              [
+                ['Created', 'created_at'],
+                ['Updated', 'updated_at'],
+                ['Title', 'title'],
+                ['State', 'state'],
+                ['Score', 'score'],
+                ['TRL', 'trl']
+              ],
+              params[:sort_by] || 'created_at'
+            ),
+            {},
+            class: "form-control" %>
+      </div>
+
+      <div class="filter-group">
+        <%= form.label :sort_order, "Order" %>
+        <%= form.select :sort_order,
+            options_for_select(
+              [['Desc', 'desc'], ['Asc', 'asc']],
+              params[:sort_order] || 'desc'
+            ),
+            {},
+            class: "form-control" %>
+      </div>
+    </div>
+
+    <div class="filter-actions">
+      <%= link_to "Clear", ideas_path, class: "btn btn-sm" %>
+      <%= form.submit "Apply", class: "btn btn-sm btn-primary" %>
+    </div>
+  <% end %>
+</div>

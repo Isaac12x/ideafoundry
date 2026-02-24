@@ -1,0 +1,59 @@
+# Ignore bundled gems
+/vendor/bundle
+
+# Ignore node modules
+/node_modules
+
+# Ignore precompiled and bundled assets
+/public/assets
+
+# Ignore SQLite databases
+/db/*.sqlite3
+/db/*.sqlite3-*
+
+# Ignore Active Storage files
+/storage/*
+!/storage/.keep
+
+# Ignore exported backups
+/exports/*
+!/exports/.keep
+
+# Ignore .plist files
+*.plist
+
+# Ignore database backups
+/backups/
+
+# Ignore log files
+/log/*
+!/log/.keep
+
+# Ignore tmp files
+/tmp/*
+!/tmp/.keep
+!/tmp/pids
+/tmp/pids/*
+!/tmp/pids/.keep
+
+# Ignore master key and credentials
+/config/master.key
+/config/credentials/*.key
+
+# Ignore lockbox master key
+/config/lockbox.key
+
+# Ignore environment files
+.env
+.env.*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor/IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~

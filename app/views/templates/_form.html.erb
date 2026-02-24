@@ -1,0 +1,570 @@
+<%= form_with(model: template, local: true, data: { controller: "template-form" }) do |form| %>
+  <% if template.errors.any? %>
+    <div class="alert alert-error">
+      <strong><%= pluralize(template.errors.count, "error") %> prohibited this template from being saved:</strong>
+      <ul style="margin: 0.5rem 0 0 0; padding-left: 1.25rem;">
+        <% template.errors.full_messages.each do |message| %>
+          <li><%= message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div class="form-layout">
+    <%# ═══ MAIN COLUMN ═══ %>
+    <div class="form-main">
+
+      <div class="tpl-form__section" style="margin-top:0; padding-top:0; border-top:none;">
+        <h3>Basic Information</h3>
+        <div class="form-group">
+          <label for="template_name">Name</label>
+          <%= form.text_field :name, class: "form-control", placeholder: "Enter template name", id: "template_name" %>
+        </div>
+        <div class="tpl-form__check-row">
+          <%= form.check_box :is_default, id: "template_is_default" %>
+          <label for="template_is_default">Set as default template</label>
+        </div>
+        <span class="form-text">New ideas will automatically use this template</span>
+      </div>
+
+      <div class="tpl-form__section">
+        <h3>Section Order</h3>
+        <span class="form-text" style="display: block; margin-top: -0.75rem; margin-bottom: 1rem;">Drag sections from the pool below to activate them and set their order</span>
+        <div class="tpl-form__sections-sortable"
+             data-template-form-target="sectionOrder"
+             data-action="dragover->template-form#zoneDragOver dragleave->template-form#zoneDragLeave drop->template-form#sectionDrop">
+          <% (template.section_order || []).each_with_index do |section, index| %>
+            <% is_field = section.start_with?('field:') %>
+            <% if is_field
+                 iid = section.delete_prefix('field:')
+                 fd = template.field_by_instance_id(iid)
+                 section_label = fd ? (fd['label'].presence || fd['name']) : iid
+                 section_type = fd&.dig('type')
+               else
+                 section_label = section.humanize
+               end %>
+            <div class="tpl-form__section-item<%= ' tpl-form__section-item--field' if is_field %>" draggable="true" data-section="<%= section %>"
+                 data-action="dragstart->template-form#sectionDragStart dragend->template-form#sectionDragEnd">
+              <span class="tpl-form__drag-handle">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="5" r="2"/><circle cx="15" cy="5" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="15" cy="12" r="2"/><circle cx="9" cy="19" r="2"/><circle cx="15" cy="19" r="2"/></svg>
+              </span>
+              <span class="tpl-form__section-name"><%= section_label %></span>
+              <% if section_type %>
+                <span class="tpl-field-chip__type tpl-field-chip__type--<%= section_type %>" style="font-size:0.6rem;"><%= section_type %></span>
+              <% end %>
+              <button type="button" class="tpl-form__section-remove" data-action="click->template-form#removeSectionItem">&times;</button>
+              <%= form.hidden_field "section_order][#{index}", value: section %>
+            </div>
+          <% end %>
+          <span class="tpl-form__sections-empty">Drag sections here to activate them</span>
+        </div>
+      </div>
+
+      <div class="tpl-form__section">
+        <h3>Available Sections</h3>
+        <span class="form-text" style="display: block; margin-top: -0.75rem; margin-bottom: 1rem;">Drag sections into the order above to include them. Items stay in the pool and can be added multiple times.</span>
+        <% all_sections = %w[header stats description media metadata timeline] %>
+        <div class="tpl-drop-zone tpl-drop-zone--sections"
+             data-template-form-target="availableSections"
+             data-action="dragover->template-form#zoneDragOver dragleave->template-form#zoneDragLeave drop->template-form#sectionDrop">
+          <% all_sections.each do |section| %>
+            <div class="tpl-form__section-item" draggable="true" data-section="<%= section %>" data-persist="true"
+                 data-action="dragstart->template-form#sectionDragStart dragend->template-form#sectionDragEnd">
+              <span class="tpl-form__drag-handle">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="5" r="2"/><circle cx="15" cy="5" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="15" cy="12" r="2"/><circle cx="9" cy="19" r="2"/><circle cx="15" cy="19" r="2"/></svg>
+              </span>
+              <span class="tpl-form__section-name"><%= section.humanize %></span>
+            </div>
+          <% end %>
+          <%# Custom field sections — persist in pool (clone on drag) %>
+          <% (template.field_definitions || []).each do |field| %>
+            <% next unless field['instance_id'].present? %>
+            <div class="tpl-form__section-item tpl-form__section-item--field" draggable="true"
+                 data-section="field:<%= field['instance_id'] %>" data-persist="true"
+                 data-action="dragstart->template-form#sectionDragStart dragend->template-form#sectionDragEnd">
+              <span class="tpl-form__drag-handle">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="5" r="2"/><circle cx="15" cy="5" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="15" cy="12" r="2"/><circle cx="9" cy="19" r="2"/><circle cx="15" cy="19" r="2"/></svg>
+              </span>
+              <span class="tpl-form__section-name"><%= field['label'].presence || field['name'] %></span>
+              <span class="tpl-field-chip__type tpl-field-chip__type--<%= field['type'] %>" style="font-size:0.6rem;"><%= field['type'] %></span>
+            </div>
+          <% end %>
+          <span class="tpl-drop-zone__empty">No available sections</span>
+        </div>
+      </div>
+
+      <%# ─── Unassigned Fields Pool ─── %>
+      <div class="tpl-form__section">
+        <h3>Unassigned Fields</h3>
+        <span class="form-text" style="display: block; margin-top: -0.75rem; margin-bottom: 1rem;">Drag fields into tab zones below to assign them</span>
+        <div class="tpl-drop-zone tpl-drop-zone--unassigned"
+             data-template-form-target="unassignedPool"
+             data-tab=""
+             data-action="dragover->template-form#zoneDragOver dragleave->template-form#zoneDragLeave drop->template-form#zoneDrop">
+          <% fields = template.field_definitions || [] %>
+          <% fields.select { |f| f['tab'].blank? }.each_with_index do |field, _i| %>
+            <%= render 'field_definition', field: field, form: form %>
+          <% end %>
+          <span class="tpl-drop-zone__empty">No unassigned fields</span>
+        </div>
+      </div>
+
+      <%# ─── Tab Drop Zones ─── %>
+      <div class="tpl-form__section">
+        <h3>Tab Layouts</h3>
+        <span class="form-text" style="display: block; margin-top: -0.75rem; margin-bottom: 1rem;">Each tab is a drop zone — drag fields in to assign them</span>
+        <div data-template-form-target="tabZones">
+          <% template.effective_tab_definitions.each do |tab| %>
+            <div class="tpl-drop-zone tpl-drop-zone--tab" data-tab="<%= tab['name'] %>"
+                 data-action="dragover->template-form#zoneDragOver dragleave->template-form#zoneDragLeave drop->template-form#zoneDrop">
+              <div class="tpl-drop-zone__header"><%= tab['label'].presence || tab['name'].humanize %></div>
+              <% fields.select { |f| f['tab'] == tab['name'] }.sort_by { |f| f['position'].to_i }.each do |field| %>
+                <%= render 'field_definition', field: field, form: form %>
+              <% end %>
+              <span class="tpl-drop-zone__empty">Drop fields here</span>
+            </div>
+          <% end %>
+        </div>
+      </div>
+
+      <%# Hidden tab definition inputs (managed by JS) %>
+      <div data-template-form-target="tabHiddenInputs">
+        <% template.effective_tab_definitions.each_with_index do |tab, index| %>
+          <input type="hidden" name="template[tab_definitions][<%= index %>][name]" value="<%= tab['name'] %>">
+          <input type="hidden" name="template[tab_definitions][<%= index %>][label]" value="<%= tab['label'] %>">
+          <input type="hidden" name="template[tab_definitions][<%= index %>][position]" value="<%= index %>">
+        <% end %>
+      </div>
+
+      <div class="form-actions">
+        <%= form.submit class: "btn btn-primary" %>
+        <%= link_to "Cancel", template.new_record? ? settings_templates_path : templates_path, class: "btn" %>
+      </div>
+    </div>
+
+    <%# ═══ SIDEBAR ═══ %>
+    <div class="form-sidebar">
+
+      <%# ─── Tab Creator ─── %>
+      <div class="tpl-sidebar__card">
+        <h4 class="tpl-sidebar__title">Tabs</h4>
+        <div class="tpl-sidebar__tab-list" data-template-form-target="tabList">
+          <% template.effective_tab_definitions.each do |tab| %>
+            <div class="tpl-sidebar__tab-item" data-tab-name="<%= tab['name'] %>">
+              <span class="tpl-sidebar__tab-label"><%= tab['label'].presence || tab['name'].humanize %></span>
+              <button type="button" class="tpl-sidebar__tab-remove" data-action="click->template-form#removeTab" data-tab-name="<%= tab['name'] %>">&times;</button>
+            </div>
+          <% end %>
+        </div>
+        <div class="tpl-sidebar__tab-form">
+          <input type="text" class="form-control form-control--sm" placeholder="name (slug)" data-template-form-target="newTabName">
+          <input type="text" class="form-control form-control--sm" placeholder="Display Label" data-template-form-target="newTabLabel">
+          <button type="button" class="btn btn-secondary btn-sm" data-action="click->template-form#addTab">+ Add Tab</button>
+        </div>
+      </div>
+
+      <%# ─── Field Creator/Editor ─── %>
+      <div class="tpl-sidebar__card">
+        <h4 class="tpl-sidebar__title" data-template-form-target="fieldFormTitle">Add Field</h4>
+
+        <div class="form-group">
+          <label>Name</label>
+          <input type="text" class="form-control" placeholder="e.g. priority" data-template-form-target="fieldName">
+        </div>
+        <div class="form-group">
+          <label>Label</label>
+          <input type="text" class="form-control" placeholder="e.g. Priority" data-template-form-target="fieldLabel">
+        </div>
+        <div class="form-group">
+          <label>Type</label>
+          <select class="form-control" data-template-form-target="fieldType" data-action="change->template-form#fieldTypeChanged">
+            <option value="text">Text</option>
+            <option value="textarea">Textarea</option>
+            <option value="number">Number</option>
+            <option value="select">Select</option>
+            <option value="boolean">Boolean</option>
+            <option value="date">Date</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Default Value</label>
+          <input type="text" class="form-control" placeholder="Optional" data-template-form-target="fieldDefault">
+        </div>
+        <div class="form-group">
+          <label>Placeholder</label>
+          <input type="text" class="form-control" placeholder="Optional hint text" data-template-form-target="fieldPlaceholder">
+        </div>
+        <div class="form-group" data-template-form-target="fieldOptionsGroup" style="display:none;">
+          <label>Options <span style="font-weight:400; color:var(--text-muted);">(comma-separated)</span></label>
+          <input type="text" class="form-control" placeholder="Option 1, Option 2, Option 3" data-template-form-target="fieldOptions">
+        </div>
+        <div class="tpl-form__check-row" style="margin-bottom: 0.75rem;">
+          <input type="checkbox" data-template-form-target="fieldRequired">
+          <label>Required field</label>
+        </div>
+
+        <div class="tpl-sidebar__field-actions">
+          <button type="button" class="btn btn-primary btn-sm" data-action="click->template-form#addOrUpdateField" data-template-form-target="fieldSubmitBtn">Add Field</button>
+          <button type="button" class="btn btn-sm" data-action="click->template-form#cancelEditField" data-template-form-target="fieldCancelBtn" style="display:none;">Cancel</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+<% end %>
+
+<style>
+  .tpl-form__section {
+    margin-top: 2rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--border-subtle);
+  }
+
+  .tpl-form__section h3 {
+    margin: 0 0 1.25rem 0;
+    font-family: var(--font-display);
+    font-style: italic;
+    font-size: 1.3rem;
+    font-weight: 400;
+    color: var(--text-primary);
+  }
+
+  .tpl-form__check-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    background: var(--bg-input);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    transition: all 0.2s;
+    cursor: pointer;
+    width: fit-content;
+  }
+
+  .tpl-form__check-row:hover {
+    border-color: var(--border-default);
+    background: var(--bg-elevated);
+  }
+
+  .tpl-form__check-row input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    accent-color: var(--accent);
+  }
+
+  .tpl-form__check-row label {
+    cursor: pointer;
+    margin: 0;
+    font-weight: 400;
+    font-size: 0.9rem;
+    color: var(--text-primary);
+  }
+
+  /* Section order sortable */
+  .tpl-form__sections-sortable {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-height: 60px;
+    padding: 0.75rem;
+    border: 2px dashed var(--border-subtle);
+    border-radius: var(--radius-md);
+    background: var(--bg-surface);
+    transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+  }
+
+  .tpl-form__sections-sortable.drag-over {
+    border-color: var(--accent);
+    background: var(--accent-muted);
+    box-shadow: 0 0 0 3px var(--accent-muted);
+  }
+
+  .tpl-form__sections-empty {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    font-style: italic;
+    padding: 0.5rem;
+    width: 100%;
+    text-align: center;
+  }
+
+  .tpl-form__sections-sortable .tpl-form__section-item ~ .tpl-form__sections-empty {
+    display: none;
+  }
+
+  .tpl-drop-zone--sections {
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .tpl-drop-zone--sections .tpl-form__section-item ~ .tpl-drop-zone__empty {
+    display: none;
+  }
+
+  .tpl-form__section-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 10px 14px;
+    background: var(--bg-input);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    cursor: grab;
+    transition: all 0.2s;
+  }
+
+  .tpl-form__section-item:hover {
+    border-color: var(--border-default);
+    background: var(--bg-elevated);
+  }
+
+  .tpl-form__section-item:active {
+    cursor: grabbing;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-muted);
+  }
+
+  .tpl-form__section-item.dragging {
+    opacity: 0.4;
+  }
+
+  .tpl-form__drag-handle {
+    color: var(--text-muted);
+    cursor: grab;
+    display: flex;
+    align-items: center;
+  }
+
+  .tpl-form__section-name {
+    font-weight: 500;
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    text-transform: capitalize;
+    flex: 1;
+  }
+
+  .tpl-form__section-item--field {
+    border-left: 3px solid var(--accent);
+  }
+
+  .tpl-form__section-remove {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 0 2px;
+    font-size: 1rem;
+    line-height: 1;
+    transition: color 0.15s;
+    margin-left: auto;
+  }
+
+  .tpl-form__section-remove:hover {
+    color: var(--danger);
+  }
+
+  /* ═══ DROP ZONES ═══ */
+  .tpl-drop-zone {
+    min-height: 60px;
+    padding: 0.75rem;
+    border: 2px dashed var(--border-subtle);
+    border-radius: var(--radius-md);
+    background: var(--bg-surface);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: flex-start;
+    align-content: flex-start;
+    transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+    position: relative;
+  }
+
+  .tpl-drop-zone--tab {
+    margin-bottom: 1rem;
+  }
+
+  .tpl-drop-zone__header {
+    width: 100%;
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: 0.95rem;
+    color: var(--text-primary);
+    padding-bottom: 0.5rem;
+    margin-bottom: 0.25rem;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .tpl-drop-zone__empty {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    font-style: italic;
+    padding: 0.5rem;
+    width: 100%;
+    text-align: center;
+  }
+
+  /* Hide empty message when zone has chips */
+  .tpl-drop-zone .tpl-field-chip ~ .tpl-drop-zone__empty {
+    display: none;
+  }
+
+  .tpl-drop-zone.drag-over {
+    border-color: var(--accent);
+    background: var(--accent-muted);
+    box-shadow: 0 0 0 3px var(--accent-muted);
+  }
+
+  /* ═══ FIELD CHIPS ═══ */
+  .tpl-field-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 6px 10px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-sm);
+    cursor: grab;
+    transition: border-color 0.2s, box-shadow 0.2s, opacity 0.2s;
+    font-size: 0.85rem;
+    user-select: none;
+  }
+
+  .tpl-field-chip:hover {
+    border-color: var(--border-emphasis);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .tpl-field-chip.selected {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px var(--accent-muted);
+  }
+
+  .tpl-field-chip.dragging {
+    opacity: 0.4;
+  }
+
+  .tpl-field-chip__label {
+    font-weight: 500;
+    color: var(--text-primary);
+  }
+
+  .tpl-field-chip__type {
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    padding: 1px 6px;
+    border-radius: var(--radius-xl);
+    background: var(--info-bg);
+    color: var(--info);
+    border: 1px solid rgba(96, 165, 250, 0.15);
+  }
+
+  .tpl-field-chip__type--number { background: var(--warning-bg); color: var(--warning); border-color: rgba(251, 191, 36, 0.15); }
+  .tpl-field-chip__type--select { background: var(--accent-muted); color: var(--accent); border-color: var(--accent-emphasis); }
+  .tpl-field-chip__type--boolean { background: var(--success-bg); color: var(--success); border-color: rgba(52, 211, 153, 0.15); }
+  .tpl-field-chip__type--date { background: rgba(167, 139, 250, 0.10); color: #a78bfa; border-color: rgba(167, 139, 250, 0.15); }
+  .tpl-field-chip__type--textarea { background: rgba(244, 114, 182, 0.10); color: #f472b6; border-color: rgba(244, 114, 182, 0.15); }
+
+  .tpl-field-chip__required {
+    font-size: 0.6rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 1px 5px;
+    border-radius: var(--radius-xl);
+    background: var(--danger-bg);
+    color: var(--danger);
+    border: 1px solid rgba(248, 113, 113, 0.2);
+  }
+
+  .tpl-field-chip__remove {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 0 2px;
+    font-size: 1rem;
+    line-height: 1;
+    transition: color 0.15s;
+  }
+
+  .tpl-field-chip__remove:hover {
+    color: var(--danger);
+  }
+
+  /* ═══ SIDEBAR ═══ */
+  .tpl-sidebar__card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 1.25rem;
+  }
+
+  .tpl-sidebar__title {
+    margin: 0 0 1rem 0;
+    font-family: var(--font-display);
+    font-style: italic;
+    font-size: 1.1rem;
+    font-weight: 400;
+    color: var(--text-primary);
+  }
+
+  .tpl-sidebar__tab-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 0.75rem;
+  }
+
+  .tpl-sidebar__tab-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 10px;
+    background: var(--bg-input);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    font-size: 0.85rem;
+  }
+
+  .tpl-sidebar__tab-label {
+    font-weight: 500;
+    color: var(--text-primary);
+  }
+
+  .tpl-sidebar__tab-remove {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 1rem;
+    line-height: 1;
+    padding: 0 4px;
+    transition: color 0.15s;
+  }
+
+  .tpl-sidebar__tab-remove:hover {
+    color: var(--danger);
+  }
+
+  .tpl-sidebar__tab-form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .tpl-sidebar__field-actions {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  @media (max-width: 768px) {
+    .tpl-form__check-row {
+      width: 100%;
+    }
+  }
+</style>

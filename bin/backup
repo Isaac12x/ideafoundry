@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+
+# Online backup for SQLite databases using VACUUM INTO.
+# Safe to run while the app is serving requests (uses WAL snapshot).
+# Usage: bin/backup [destination_dir]
+
+set -e
+
+APP_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+BACKUP_DIR="${1:-${APP_DIR}/backups}"
+TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+
+mkdir -p "$BACKUP_DIR"
+
+for db in storage/production.sqlite3 storage/queue.sqlite3; do
+  src="${APP_DIR}/${db}"
+  [ -f "$src" ] || continue
+
+  name=$(basename "$db" .sqlite3)
+  dest="${BACKUP_DIR}/${name}_${TIMESTAMP}.sqlite3"
+
+  sqlite3 "$src" "VACUUM INTO '${dest}';"
+  echo "Backed up ${db} → ${dest}"
+done
+
+# Prune backups older than 7 days
+find "$BACKUP_DIR" -name "*.sqlite3" -mtime +7 -delete 2>/dev/null || true
+echo "Backup complete. Pruned files older than 7 days."

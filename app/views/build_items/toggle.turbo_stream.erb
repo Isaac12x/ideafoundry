@@ -1,0 +1,15 @@
+<% if @build_item.completed? %>
+  <%= turbo_stream.remove "build_item_#{@build_item.id}" %>
+  <%= turbo_stream.replace "completed_build_items" do %>
+    <div class="completed-items completed-items--visible" data-completed-toggle-target="list" id="completed_build_items">
+      <% @user.build_items.done.each_with_index do |item, i| %>
+        <%= render "build_item", build_item: item, index: i %>
+      <% end %>
+    </div>
+  <% end %>
+<% else %>
+  <%= turbo_stream.remove "build_item_#{@build_item.id}" %>
+  <%= turbo_stream.append "build_items_list" do %>
+    <%= render "build_item", build_item: @build_item, index: 0 %>
+  <% end %>
+<% end %>

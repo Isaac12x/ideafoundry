@@ -1,0 +1,14 @@
+<%= @list.name %>
+<%= "=" * @list.name.length %>
+
+Shared by <%= @sender_name %>
+<%= @ideas.size %> idea<%= @ideas.size == 1 ? "" : "s" %>
+
+<% @ideas.each_with_index do |idea, idx| %>
+<%= idx + 1 %>. <%= idea.title %><% if idea.computed_score.present? %> (Score: <%= number_with_precision(idea.computed_score, precision: 2) %>)<% end %>
+   State: <%= idea.state.humanize %><% if idea.topologies.any? %> | <%= idea.topologies.map(&:name).join(", ") %><% end %>
+<% if idea.description.present? %>   <%= truncate(idea.description.to_plain_text, length: 200) %>
+<% end %>
+<% end %>
+---
+Sent from Idea Foundry

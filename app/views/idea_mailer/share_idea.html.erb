@@ -1,0 +1,55 @@
+<div style="max-width: 600px; margin: 0 auto; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: <%= @theme[:text] %>; background: <%= @theme[:bg] %>; padding: 2rem; border-radius: 10px;">
+  <div style="border-bottom: 1px solid <%= @theme[:border] %>; padding-bottom: 1rem; margin-bottom: 1.5rem;">
+    <h1 style="margin: 0; font-size: 1.5rem; font-weight: 400; font-style: italic; color: <%= @theme[:accent] %>;">
+      <%= @idea.title %>
+    </h1>
+    <p style="margin: 6px 0 0; font-size: 0.85rem; color: <%= @theme[:muted] %>;">
+      Shared by <%= @sender_name %> &middot; <%= @idea.state.humanize %>
+    </p>
+  </div>
+
+  <% if @idea.computed_score.present? %>
+    <div style="display: inline-block; background: <%= @theme[:card_bg] %>; border: 1px solid <%= @theme[:border] %>; border-radius: 6px; padding: 8px 16px; margin-bottom: 1.5rem;">
+      <span style="font-size: 0.8rem; color: <%= @theme[:muted] %>;">Score</span>
+      <span style="font-size: 1.2rem; font-weight: 600; color: <%= @theme[:accent] %>; margin-left: 8px;">
+        <%= number_with_precision(@idea.computed_score, precision: 2) %>
+      </span>
+    </div>
+  <% end %>
+
+  <% if @idea.topologies.any? %>
+    <div style="margin-bottom: 1rem;">
+      <% @idea.topologies.each do |topology| %>
+        <span style="display: inline-block; background: <%= @theme[:card_bg] %>; border: 1px solid <%= @theme[:border] %>; border-radius: 4px; padding: 2px 8px; font-size: 0.8rem; color: <%= @theme[:muted] %>; margin-right: 4px;">
+          <%= topology.name %>
+        </span>
+      <% end %>
+    </div>
+  <% end %>
+
+  <% if @idea.description.present? %>
+    <div style="background: <%= @theme[:card_bg] %>; border: 1px solid <%= @theme[:border] %>; border-radius: 6px; padding: 1.25rem; margin-bottom: 1.5rem; color: <%= @theme[:text] %>; line-height: 1.6; font-size: 0.95rem;">
+      <%= @idea.description %>
+    </div>
+  <% end %>
+
+  <table style="width: 100%; border-collapse: collapse; margin-bottom: 1.5rem;">
+    <tr>
+      <td style="padding: 8px 12px; border: 1px solid <%= @theme[:border] %>; background: <%= @theme[:card_bg] %>; color: <%= @theme[:muted] %>; font-size: 0.85rem;">TRL</td>
+      <td style="padding: 8px 12px; border: 1px solid <%= @theme[:border] %>; background: <%= @theme[:card_bg] %>; color: <%= @theme[:text] %>; font-weight: 600;"><%= @idea.trl || 0 %></td>
+      <td style="padding: 8px 12px; border: 1px solid <%= @theme[:border] %>; background: <%= @theme[:card_bg] %>; color: <%= @theme[:muted] %>; font-size: 0.85rem;">Opportunity</td>
+      <td style="padding: 8px 12px; border: 1px solid <%= @theme[:border] %>; background: <%= @theme[:card_bg] %>; color: <%= @theme[:text] %>; font-weight: 600;"><%= @idea.opportunity || 0 %></td>
+    </tr>
+    <tr>
+      <td style="padding: 8px 12px; border: 1px solid <%= @theme[:border] %>; background: <%= @theme[:card_bg] %>; color: <%= @theme[:muted] %>; font-size: 0.85rem;">Timing</td>
+      <td style="padding: 8px 12px; border: 1px solid <%= @theme[:border] %>; background: <%= @theme[:card_bg] %>; color: <%= @theme[:text] %>; font-weight: 600;"><%= @idea.timing || 0 %></td>
+      <td style="padding: 8px 12px; border: 1px solid <%= @theme[:border] %>; background: <%= @theme[:card_bg] %>; color: <%= @theme[:muted] %>; font-size: 0.85rem;">Difficulty</td>
+      <td style="padding: 8px 12px; border: 1px solid <%= @theme[:border] %>; background: <%= @theme[:card_bg] %>; color: <%= @theme[:text] %>; font-weight: 600;"><%= @idea.difficulty || 0 %></td>
+    </tr>
+  </table>
+
+  <div style="border-top: 1px solid <%= @theme[:border] %>; padding-top: 1rem; font-size: 0.8rem; color: <%= @theme[:muted] %>;">
+    Created <%= @idea.created_at.strftime("%B %d, %Y") %> &middot;
+    Attempt #<%= @idea.attempt_count %>
+  </div>
+</div>

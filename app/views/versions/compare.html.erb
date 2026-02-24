@@ -1,0 +1,104 @@
+<div class="version-compare-container">
+  <div class="compare-header">
+    <h1>Compare Versions</h1>
+    <%= link_to "← Back to Timeline", idea_versions_path(@idea), class: "btn btn-secondary" %>
+  </div>
+
+  <div class="compare-info">
+    <div class="version-info from-version">
+      <h3>From Version</h3>
+      <p class="commit-message"><%= @from_version.commit_message %></p>
+      <p class="version-date"><%= @from_version.created_at.strftime("%B %d, %Y at %I:%M %p") %></p>
+    </div>
+
+    <div class="compare-arrow">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M5 12h14M12 5l7 7-7 7"/>
+      </svg>
+    </div>
+
+    <div class="version-info to-version">
+      <h3>To Version</h3>
+      <p class="commit-message"><%= @to_version.commit_message %></p>
+      <p class="version-date"><%= @to_version.created_at.strftime("%B %d, %Y at %I:%M %p") %></p>
+    </div>
+  </div>
+
+  <% if @diff.empty? %>
+    <div class="no-changes">
+      <p>No differences found between these versions.</p>
+    </div>
+  <% else %>
+    <%# Scoring Delta Summary %>
+    <% scoring_fields = %w[trl difficulty opportunity timing computed_score] %>
+    <% scoring_diffs = @diff.select { |k, _| scoring_fields.include?(k) } %>
+    <% if scoring_diffs.any? %>
+      <div class="scoring-delta-summary">
+        <% scoring_diffs.each do |field, changes| %>
+          <% delta = (changes[:to].to_f - changes[:from].to_f) %>
+          <% bar_pct = [(delta.abs / 10.0 * 100), 100].min %>
+          <div class="scoring-delta-item <%= field %>">
+            <span class="scoring-delta-label"><%= field.humanize %></span>
+            <div class="scoring-delta-bar">
+              <div class="bar-fill" style="width: <%= bar_pct %>%"></div>
+            </div>
+            <span class="score-delta <%= delta > 0 ? 'positive' : delta < 0 ? 'negative' : 'neutral' %>">
+              <%= delta > 0 ? '+' : '' %><%= number_with_precision(delta, precision: 1) %>
+            </span>
+          </div>
+        <% end %>
+      </div>
+    <% end %>
+
+    <div class="side-by-side-diff">
+      <h3>Changes (<%= @diff.keys.length %> field<%= 's' if @diff.keys.length != 1 %> modified)</h3>
+
+      <% @diff.each do |field, changes| %>
+        <div class="diff-item diff-field-<%= field %>">
+          <h4 class="field-name"><%= field.humanize %></h4>
+
+          <div class="diff-comparison">
+            <div class="diff-side from-side">
+              <div class="diff-label">Previous Value</div>
+              <div class="diff-content old-value">
+                <% if changes[:from].to_s.length > 100 %>
+                  <pre><%= changes[:from] %></pre>
+                <% else %>
+                  <%= changes[:from] %>
+                <% end %>
+              </div>
+            </div>
+
+            <div class="diff-divider"></div>
+
+            <div class="diff-side to-side">
+              <div class="diff-label">New Value</div>
+              <div class="diff-content new-value">
+                <% if changes[:to].to_s.length > 100 %>
+                  <pre><%= changes[:to] %></pre>
+                <% else %>
+                  <%= changes[:to] %>
+                <% end %>
+              </div>
+            </div>
+          </div>
+        </div>
+      <% end %>
+    </div>
+
+    <div class="compare-actions">
+      <%= link_to "View From Version", idea_version_path(@idea, @from_version), class: "btn btn-secondary" %>
+      <%= link_to "View To Version", idea_version_path(@idea, @to_version), class: "btn btn-secondary" %>
+      <%= button_to "Restore From Version",
+          restore_idea_version_path(@idea, @from_version),
+          method: :post,
+          class: "btn btn-warning",
+          form: { data: { turbo_confirm: "Restore the 'From' version? This will create a new version based on that snapshot." } } %>
+      <%= button_to "Restore To Version",
+          restore_idea_version_path(@idea, @to_version),
+          method: :post,
+          class: "btn btn-warning",
+          form: { data: { turbo_confirm: "Restore the 'To' version? This will create a new version based on that snapshot." } } %>
+    </div>
+  <% end %>
+</div>

@@ -1,0 +1,12 @@
+<div class="form-container">
+  <div class="form-container-header">
+    <div class="breadcrumb" style="margin-bottom: 0.5rem;">
+      <%= link_to "Settings", settings_path %> &rsaquo;
+      <%= link_to "Templates", settings_templates_path %>
+    </div>
+    <h2>New Template</h2>
+    <p class="form-container-subtitle">Define how ideas are structured and scored</p>
+  </div>
+
+  <%= render 'form', template: @template %>
+</div>

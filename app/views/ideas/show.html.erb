@@ -1,0 +1,531 @@
+<div class="idea-detail-container">
+  <!-- Header Section -->
+  <div class="idea-header">
+    <div class="idea-header-top">
+      <%= link_to ideas_path, class: "btn btn-sm" do %>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        Back
+      <% end %>
+      <div class="header-actions">
+        <%= link_to edit_idea_path(@idea), class: "btn btn-sm btn-primary" do %>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          Edit
+        <% end %>
+        <%= button_to send_email_idea_path(@idea), method: :post, class: "btn btn-sm", form: { style: "display: inline" }, data: { turbo_confirm: "Send this idea to your default recipients?" } do %>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          Email
+        <% end %>
+        <%= link_to idea_path(@idea), method: :delete,
+                    data: { turbo_method: :delete, turbo_confirm: "Are you sure?" },
+                    class: "btn btn-sm btn-danger" do %>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+          Delete
+        <% end %>
+      </div>
+    </div>
+
+    <div class="idea-header-content">
+      <h1 class="idea-detail-title"><%= @idea.title %></h1>
+      <div class="idea-header-meta">
+        <span class="idea-state <%= @idea.state %>"><%= @idea.state.humanize %></span>
+        <% @idea.topologies.each do |topology| %>
+          <%= link_to ideas_path(topology_id: topology.id), class: "topology-badge", style: "--badge-color: #{topology.color || 'var(--accent)'}" do %>
+            <span class="topology-color-dot" style="background-color: <%= topology.color || 'var(--accent)' %>"></span>
+            <%= topology.name %>
+          <% end %>
+        <% end %>
+        <span class="idea-timestamp">
+          Created <%= time_ago_in_words(@idea.created_at) %> ago
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cool-off Alert -->
+  <% if @idea.in_cool_off? %>
+    <div class="alert alert-warning">
+      <strong>Cool-off Period Active</strong>
+      <p>This idea is in cool-off until <%= @idea.cool_off_until.strftime("%B %d, %Y at %I:%M %p") %>. Remaining: <%= distance_of_time_in_words(Time.current, @idea.cool_off_until) %></p>
+    </div>
+  <% end %>
+
+  <!-- Pending Emails for Review -->
+  <% pending_emails = @idea.metadata&.dig("pending_emails") || [] %>
+  <% if pending_emails.any? %>
+    <div class="alert alert-warning" style="margin-bottom: 1.5rem;">
+      <strong>Pending Emails (<%= pending_emails.size %>)</strong>
+      <p style="margin: 0.5rem 0 0; font-size: 0.85rem;">These emails partially matched this idea's title and need your review.</p>
+    </div>
+    <div class="pending-emails-panel" style="margin-bottom: 2rem;">
+      <% pending_emails.each_with_index do |email_data, idx| %>
+        <div class="config-info-card" style="margin-bottom: 1rem; padding: 1rem;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem;">
+            <div style="flex: 1; min-width: 0;">
+              <h4 style="margin: 0 0 0.25rem;"><%= email_data['subject'] %></h4>
+              <p style="font-size: 0.8rem; color: var(--text-muted); margin: 0 0 0.5rem;">
+                From: <%= email_data['from'] %> &middot; <%= time_ago_in_words(Time.parse(email_data['received_at'])) %> ago
+              </p>
+              <div style="font-size: 0.85rem; max-height: 6rem; overflow: hidden; color: var(--text-secondary);">
+                <%= truncate(strip_tags(email_data['body']), length: 300) %>
+              </div>
+            </div>
+            <div style="display: flex; gap: 0.5rem; flex-shrink: 0;">
+              <%= button_to "Approve", approve_pending_email_idea_path(@idea, email_index: idx), method: :post, class: "btn btn-sm btn-primary", data: { turbo_confirm: "Merge this email's content into the idea description?" } %>
+              <%= button_to "Discard", discard_pending_email_idea_path(@idea, email_index: idx), method: :delete, class: "btn btn-sm btn-danger", data: { turbo_confirm: "Discard this pending email?" } %>
+            </div>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  <% end %>
+
+  <!-- Hero Image + Scores At-a-Glance -->
+  <% if @idea.hero_image.attached? %>
+    <div class="hero-scores-row">
+      <div class="hero-image-container">
+        <%= image_tag @idea.hero_image, class: "detail-hero-image", alt: @idea.title %>
+      </div>
+      <div class="hero-scores-panel">
+        <div class="hero-score-main">
+          <span class="metric-card-label">Score</span>
+          <span class="hero-score-value <%= (@idea.computed_score || 0) >= 0 ? 'positive' : 'negative' %>">
+            <%= number_with_precision(@idea.computed_score || 0, precision: 1) %>
+          </span>
+        </div>
+        <div class="hero-scores-grid">
+          <div class="hero-score-item trl">
+            <span class="hero-score-label">TRL</span>
+            <span class="hero-score-num"><%= @idea.trl || 0 %></span>
+          </div>
+          <div class="hero-score-item opportunity">
+            <span class="hero-score-label">Opp</span>
+            <span class="hero-score-num"><%= @idea.opportunity || 0 %></span>
+          </div>
+          <div class="hero-score-item timing">
+            <span class="hero-score-label">Time</span>
+            <span class="hero-score-num"><%= @idea.timing || 0 %></span>
+          </div>
+          <div class="hero-score-item difficulty">
+            <span class="hero-score-label">Diff</span>
+            <span class="hero-score-num"><%= @idea.difficulty || 0 %></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  <% end %>
+
+  <!-- Section Order: Custom Field Panels -->
+  <% if @idea.template %>
+    <% field_sections = (@idea.template.section_order || []).select { |s| s.start_with?('field:') } %>
+    <% if field_sections.any? %>
+      <div class="idea-field-sections">
+        <% field_sections.each do |section_entry| %>
+          <% iid = section_entry.delete_prefix('field:') %>
+          <% fd = @idea.template.field_by_instance_id(iid) %>
+          <% next unless fd %>
+          <% value = @idea.metadata&.dig(iid) %>
+          <div class="idea-field-section-panel">
+            <div class="idea-field-section-header">
+              <span class="idea-field-section-label"><%= fd['label'] || fd['name'].humanize %></span>
+              <span class="tpl-field-chip__type tpl-field-chip__type--<%= fd['type'] %>" style="font-size:0.6rem;"><%= fd['type'] %></span>
+            </div>
+            <div class="idea-field-section-value">
+              <%= format_custom_field_value(value, fd['type']) %>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    <% end %>
+  <% end %>
+
+  <!-- Main Content — Tabbed -->
+  <div class="idea-main-content">
+    <div data-controller="tabs" data-tabs-default-tab-value="description">
+      <div class="tabs-nav">
+        <button data-tabs-target="tab" data-tab-name="description" data-action="click->tabs#switch" class="tab-button active">
+          Description
+        </button>
+        <button data-tabs-target="tab" data-tab-name="scores" data-action="click->tabs#switch" class="tab-button">
+          Scores
+        </button>
+        <button data-tabs-target="tab" data-tab-name="media" data-action="click->tabs#switch" class="tab-button">
+          Media
+        </button>
+        <button data-tabs-target="tab" data-tab-name="metadata" data-action="click->tabs#switch" class="tab-button">
+          Metadata
+        </button>
+        <% if @idea.template && @idea.template.field_definitions.present? %>
+          <% @idea.template.effective_tab_definitions.sort_by { |t| t['position'].to_i }.each do |tab| %>
+            <% tab_fields = @idea.template.fields_by_tab[tab['name']] || [] %>
+            <% next if tab_fields.empty? %>
+            <button data-tabs-target="tab" data-tab-name="custom-<%= tab['name'] %>" data-action="click->tabs#switch" class="tab-button">
+              <%= tab['label'] || tab['name'].humanize %>
+            </button>
+          <% end %>
+        <% end %>
+        <button data-tabs-target="tab" data-tab-name="history" data-action="click->tabs#switch" class="tab-button">
+          History<% if @idea.versions.any? %> (<%= @idea.versions.count %>)<% end %>
+        </button>
+      </div>
+
+      <div class="tabs-content">
+        <!-- Description Tab -->
+        <div data-tabs-target="panel" data-tab-panel="description" class="tab-panel">
+          <% if @idea.description.present? %>
+            <div class="rich-text-content">
+              <%= @idea.description %>
+            </div>
+          <% else %>
+            <div class="empty-state-small">
+              <p>No description yet.</p>
+              <%= link_to "Add Description", edit_idea_path(@idea), class: "btn btn-primary btn-sm" %>
+            </div>
+          <% end %>
+        </div>
+
+        <!-- Scores Tab -->
+        <div data-tabs-target="panel" data-tab-panel="scores" class="tab-panel hidden">
+          <div class="idea-metrics-row">
+            <div class="metric-card metric-card-score">
+              <span class="metric-card-label">Computed Score</span>
+              <span class="metric-card-value <%= (@idea.computed_score || 0) >= 0 ? 'positive' : 'negative' %>">
+                <%= number_with_precision(@idea.computed_score || 0, precision: 2) %>
+              </span>
+            </div>
+            <div class="metric-card">
+              <span class="metric-card-label">TRL</span>
+              <span class="metric-card-value trl-color"><%= @idea.trl || 0 %></span>
+              <div class="metric-card-bar">
+                <div class="metric-card-bar-fill trl" style="width: <%= (@idea.trl || 0) * 10 %>%"></div>
+              </div>
+            </div>
+            <div class="metric-card">
+              <span class="metric-card-label">Opportunity</span>
+              <span class="metric-card-value opportunity-color"><%= @idea.opportunity || 0 %></span>
+              <div class="metric-card-bar">
+                <div class="metric-card-bar-fill opportunity" style="width: <%= (@idea.opportunity || 0) * 10 %>%"></div>
+              </div>
+              <% if @idea.opportunity_explanation.present? %>
+                <p class="score-explanation-display"><%= @idea.opportunity_explanation %></p>
+              <% end %>
+            </div>
+            <div class="metric-card">
+              <span class="metric-card-label">Timing</span>
+              <span class="metric-card-value timing-color"><%= @idea.timing || 0 %></span>
+              <div class="metric-card-bar">
+                <div class="metric-card-bar-fill timing" style="width: <%= (@idea.timing || 0) * 10 %>%"></div>
+              </div>
+              <% if @idea.timing_explanation.present? %>
+                <p class="score-explanation-display"><%= @idea.timing_explanation %></p>
+              <% end %>
+            </div>
+            <div class="metric-card">
+              <span class="metric-card-label">Difficulty</span>
+              <span class="metric-card-value difficulty-color"><%= @idea.difficulty || 0 %></span>
+              <div class="metric-card-bar">
+                <div class="metric-card-bar-fill difficulty" style="width: <%= (@idea.difficulty || 0) * 10 %>%"></div>
+              </div>
+              <% if @idea.difficulty_explanation.present? %>
+                <p class="score-explanation-display"><%= @idea.difficulty_explanation %></p>
+              <% end %>
+            </div>
+          </div>
+        </div>
+
+        <!-- Media Tab -->
+        <div data-tabs-target="panel" data-tab-panel="media" class="tab-panel hidden">
+          <div class="media-section">
+            <h3>Attachments</h3>
+            <% if @idea.attachments.attached? %>
+              <div class="attachments-grid">
+                <% @idea.attachments.each do |attachment| %>
+                  <div class="attachment-item">
+                    <% if attachment.image? %>
+                      <%= image_tag attachment, class: "attachment-thumbnail" %>
+                    <% else %>
+                      <div class="attachment-file">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                      </div>
+                    <% end %>
+                    <div class="attachment-info">
+                      <p class="attachment-name"><%= attachment.filename %></p>
+                      <p class="attachment-size"><%= number_to_human_size(attachment.byte_size) %></p>
+                      <%= link_to "Download", rails_blob_path(attachment, disposition: "attachment"), class: "btn btn-sm" %>
+                    </div>
+                  </div>
+                <% end %>
+              </div>
+            <% else %>
+              <div class="empty-state-small">
+                <p>No attachments yet.</p>
+                <%= link_to "Add Attachments", edit_idea_path(@idea), class: "btn btn-primary btn-sm" %>
+              </div>
+            <% end %>
+          </div>
+        </div>
+
+        <!-- Metadata Tab -->
+        <div data-tabs-target="panel" data-tab-panel="metadata" class="tab-panel hidden">
+          <div class="metadata-grid">
+            <div class="metadata-group">
+              <h3>Lifecycle</h3>
+              <div class="metadata-item-detail">
+                <label>Current State</label>
+                <span class="idea-state <%= @idea.state %>"><%= @idea.state.humanize %></span>
+              </div>
+              <div class="metadata-item-detail">
+                <label>Attempt Count</label>
+                <span><%= @idea.attempt_count %></span>
+              </div>
+              <% if @idea.cool_off_until.present? %>
+                <div class="metadata-item-detail">
+                  <label>Cool-off Until</label>
+                  <span><%= @idea.cool_off_until.strftime("%B %d, %Y at %I:%M %p") %></span>
+                </div>
+              <% end %>
+            </div>
+
+            <div class="metadata-group">
+              <h3>Organization</h3>
+              <% if @idea.topologies.any? %>
+                <div class="metadata-item-detail">
+                  <label>Topologies</label>
+                  <div class="topology-tags">
+                    <% @idea.topologies.each do |topology| %>
+                      <%= link_to ideas_path(topology_id: topology.id), class: "topology-badge", style: "--badge-color: #{topology.color || 'var(--accent)'}" do %>
+                        <span class="topology-color-dot" style="background-color: <%= topology.color || 'var(--accent)' %>"></span>
+                        <%= topology.full_path %>
+                      <% end %>
+                    <% end %>
+                  </div>
+                </div>
+              <% end %>
+              <div class="metadata-item-detail">
+                <label>Lists</label>
+                <% if @idea.lists.any? %>
+                  <div class="lists-tags-small">
+                    <% @idea.lists.each do |list| %>
+                      <%= link_to list.name, list_path(list), class: "list-tag-small" %>
+                    <% end %>
+                  </div>
+                <% else %>
+                  <span class="text-muted">Not in any lists</span>
+                <% end %>
+              </div>
+            </div>
+
+            <div class="metadata-group">
+              <h3>Timestamps</h3>
+              <div class="metadata-item-detail">
+                <label>Created</label>
+                <span><%= @idea.created_at.strftime("%B %d, %Y at %I:%M %p") %></span>
+              </div>
+              <div class="metadata-item-detail">
+                <label>Last Updated</label>
+                <span><%= @idea.updated_at.strftime("%B %d, %Y at %I:%M %p") %></span>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Custom Field Tabs -->
+        <% if @idea.template && @idea.template.field_definitions.present? %>
+          <% @idea.template.effective_tab_definitions.sort_by { |t| t['position'].to_i }.each do |tab| %>
+            <% tab_fields = @idea.template.fields_by_tab[tab['name']] || [] %>
+            <% next if tab_fields.empty? %>
+            <div data-tabs-target="panel" data-tab-panel="custom-<%= tab['name'] %>" class="tab-panel hidden">
+              <div class="metadata-grid">
+                <div class="metadata-group">
+                  <h3><%= tab['label'] || tab['name'].humanize %></h3>
+                  <% tab_fields.each do |field| %>
+                    <% meta_key = field['instance_id'] || field['name'] %>
+                    <% value = @idea.metadata&.dig(meta_key) %>
+                    <div class="metadata-item-detail">
+                      <label><%= field['label'] || field['name'].humanize %></label>
+                      <span><%= format_custom_field_value(value, field['type']) %></span>
+                    </div>
+                  <% end %>
+                </div>
+              </div>
+            </div>
+          <% end %>
+        <% end %>
+
+        <!-- History Tab -->
+        <div data-tabs-target="panel" data-tab-panel="history" class="tab-panel hidden">
+          <% all_versions = @idea.versions.includes(:parent_version, :child_versions).order(created_at: :desc) %>
+          <% if all_versions.empty? %>
+            <%# ---- Empty State ---- %>
+            <div class="vh-empty">
+              <svg class="vh-empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+              </svg>
+              <p>No versions forged yet</p>
+              <%= link_to "Edit this idea to create the first version", edit_idea_path(@idea), class: "btn btn-primary btn-sm" %>
+            </div>
+          <% else %>
+            <div data-controller="version-history">
+              <%# ---- Sparkline ---- %>
+              <% scored = all_versions.select { |v| v.snapshot_data && v.snapshot_data['computed_score'] }.reverse %>
+              <% if scored.length >= 2 %>
+                <% scores = scored.map { |v| v.snapshot_data['computed_score'].to_f } %>
+                <% mn = scores.min - 0.5; mx = scores.max + 0.5; rng = mx - mn; rng = 1.0 if rng == 0 %>
+                <% w = 600; h = 64; pad = 20 %>
+                <% pts = scored.each_with_index.map { |v, i|
+                     x = pad + (i.to_f / (scored.length - 1)) * (w - pad * 2)
+                     y = 6 + (1.0 - (scores[i] - mn) / rng) * (h - 12)
+                     [x.round(1), y.round(1)]
+                   } %>
+                <% poly = pts.map { |p| p.join(',') }.join(' ') %>
+                <div class="vh-sparkline" data-version-history-target="sparkline">
+                  <div class="vh-sparkline-header">
+                    <span class="vh-sparkline-title">Score Trend</span>
+                    <span class="vh-sparkline-score"><%= number_with_precision(scores.last, precision: 2) %></span>
+                  </div>
+                  <svg viewBox="0 0 <%= w %> <%= h + 14 %>" preserveAspectRatio="none">
+                    <defs>
+                      <linearGradient id="spark-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%"   stop-color="var(--accent)" stop-opacity="0.5"/>
+                        <stop offset="100%" stop-color="var(--accent)" stop-opacity="1"/>
+                      </linearGradient>
+                      <linearGradient id="spark-area-gradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%"   stop-color="var(--accent)" stop-opacity="0.12"/>
+                        <stop offset="100%" stop-color="var(--accent)" stop-opacity="0"/>
+                      </linearGradient>
+                      <filter id="spark-glow">
+                        <feGaussianBlur stdDeviation="3" result="glow"/>
+                        <feMerge><feMergeNode in="glow"/><feMergeNode in="SourceGraphic"/></feMerge>
+                      </filter>
+                    </defs>
+                    <polygon class="vh-spark-area" points="<%= pad %>,<%= h %> <%= poly %> <%= w - pad %>,<%= h %>"/>
+                    <polyline class="vh-spark-line" points="<%= poly %>"/>
+                    <% pts.each_with_index do |pt, i| %>
+                      <% if i == pts.length - 1 %>
+                        <circle class="vh-spark-dot-last" cx="<%= pt[0] %>" cy="<%= pt[1] %>" r="4"/>
+                      <% else %>
+                        <circle class="vh-spark-dot" cx="<%= pt[0] %>" cy="<%= pt[1] %>" r="3"/>
+                      <% end %>
+                    <% end %>
+                    <% [0, pts.length / 2, pts.length - 1].uniq.each do |i| %>
+                      <text class="vh-spark-label" x="<%= pts[i][0] %>" y="<%= h + 12 %>" text-anchor="middle"><%= number_with_precision(scores[i], precision: 1) %></text>
+                    <% end %>
+                  </svg>
+                </div>
+              <% end %>
+
+              <%# ---- Timeline ---- %>
+              <div class="vh-timeline">
+                <% scoring_fields = %w[trl difficulty opportunity timing] %>
+                <% all_versions.each do |version| %>
+                  <% sc = version.scoring_changes %>
+                  <% diff = version.parent_version ? version.diff_with(version.parent_version) : {} %>
+                  <% is_root = version.parent_version_id.nil? %>
+                  <% has_branches = version.child_versions.any? %>
+                  <div class="vh-entry <%= 'is-root' if is_root %> <%= 'has-branches' if has_branches %>"
+                       data-version-history-target="entry">
+
+                    <div class="vh-node">
+                      <div class="vh-dot"></div>
+                    </div>
+
+                    <div class="vh-card" data-action="click->version-history#toggle">
+                      <div class="vh-card-header">
+                        <div class="vh-card-body">
+                          <div class="vh-card-top">
+                            <span class="vh-commit"><%= version.commit_message %></span>
+                            <span class="vh-time"><%= time_ago_in_words(version.created_at) %> ago</span>
+                          </div>
+                          <div class="vh-card-meta">
+                            <% if sc['computed_score'] %>
+                              <% d = sc['computed_score'][:change] %>
+                              <span class="vh-delta <%= d > 0 ? 'up' : d < 0 ? 'down' : 'flat' %>">
+                                <%= d > 0 ? '+' : '' %><%= number_with_precision(d, precision: 2) %>
+                              </span>
+                            <% end %>
+                            <% if sc.except('computed_score').any? %>
+                              <div class="vh-pills">
+                                <% scoring_fields.each do |f| %>
+                                  <% if sc[f] %>
+                                    <span class="vh-pill <%= f %>">
+                                      <span class="vh-pill-name"><%= f %></span>
+                                      <%= sc[f][:from] %>&rarr;<%= sc[f][:to] %>
+                                    </span>
+                                  <% end %>
+                                <% end %>
+                              </div>
+                            <% end %>
+                            <% if has_branches %>
+                              <span class="vh-branch-badge">branched</span>
+                            <% end %>
+                          </div>
+                        </div>
+                        <svg class="vh-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                      </div>
+
+                      <%# ---- Expanded Detail ---- %>
+                      <div class="vh-detail" data-version-history-target="detail">
+                        <div class="vh-detail-inner">
+                          <%# Scoring cards %>
+                          <% if version.snapshot_data %>
+                            <div class="vh-scores">
+                              <% scoring_fields.each do |f| %>
+                                <div class="vh-score-card <%= f %>">
+                                  <div class="vh-score-label"><%= f.humanize %></div>
+                                  <div class="vh-score-val"><%= version.snapshot_data[f] || 0 %></div>
+                                  <% if sc[f] %>
+                                    <% fd = sc[f][:change] %>
+                                    <span class="vh-delta <%= fd > 0 ? 'up' : fd < 0 ? 'down' : 'flat' %>">
+                                      <%= fd > 0 ? '+' : '' %><%= number_with_precision(fd, precision: 1) %>
+                                    </span>
+                                  <% end %>
+                                </div>
+                              <% end %>
+                            </div>
+                          <% end %>
+
+                          <%# Diff from parent %>
+                          <% if diff.any? %>
+                            <div class="vh-diff">
+                              <div class="vh-diff-title">Changes from parent</div>
+                              <% diff.each do |field, changes| %>
+                                <div class="vh-diff-row">
+                                  <span class="vh-diff-field <%= scoring_fields.include?(field) ? field : '' %>"><%= field.humanize %></span>
+                                  <span class="vh-diff-from" title="<%= changes[:from] %>"><%= changes[:from].to_s.truncate(60) %></span>
+                                  <span class="vh-diff-to" title="<%= changes[:to] %>"><%= changes[:to].to_s.truncate(60) %></span>
+                                </div>
+                              <% end %>
+                            </div>
+                          <% end %>
+
+                          <%# Actions %>
+                          <div class="vh-actions">
+                            <%= button_to "Restore",
+                                restore_idea_version_path(@idea, version),
+                                method: :post,
+                                class: "btn btn-sm btn-warning",
+                                form: { data: { turbo_confirm: "Restore this version? A new version will be created from this snapshot." } } %>
+                            <% if version.parent_version %>
+                              <%= link_to "Compare with parent",
+                                  compare_idea_versions_path(@idea, from: version.parent_version_id, to: version.id),
+                                  class: "btn btn-sm" %>
+                            <% end %>
+                            <%= link_to "Full details",
+                                idea_version_path(@idea, version),
+                                class: "btn btn-sm" %>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                <% end %>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

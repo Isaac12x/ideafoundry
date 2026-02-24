@@ -1,0 +1,11 @@
+<%= turbo_stream.append "build_items_list" do %>
+  <%= render "build_item", build_item: @build_item, index: 0 %>
+<% end %>
+
+<%= turbo_stream.remove "build_items_empty" %>
+
+<%= turbo_stream.replace "build_item_form" do %>
+  <div id="build_item_form" class="backlog-add-section">
+    <%= render "form", build_item: @user.build_items.build %>
+  </div>
+<% end %>

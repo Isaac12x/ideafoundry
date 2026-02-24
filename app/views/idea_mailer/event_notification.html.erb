@@ -1,0 +1,78 @@
+<div style="max-width: 600px; margin: 0 auto; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: <%= @theme[:text] %>; background: <%= @theme[:bg] %>; padding: 2rem; border-radius: 10px;">
+  <div style="border-bottom: 1px solid <%= @theme[:border] %>; padding-bottom: 1rem; margin-bottom: 1.5rem;">
+    <p style="margin: 0 0 4px; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: <%= @theme[:muted] %>;">
+      <%= @event_type.humanize %>
+    </p>
+    <h1 style="margin: 0; font-size: 1.5rem; font-weight: 400; font-style: italic; color: <%= @theme[:accent] %>;">
+      <%= @idea.title %>
+    </h1>
+    <p style="margin: 6px 0 0; font-size: 0.85rem; color: <%= @theme[:muted] %>;">
+      <%= @idea.state.humanize %>
+      <% if @idea.computed_score.present? && @content_prefs['include_scores'] %>
+        &middot; Score: <%= number_with_precision(@idea.computed_score, precision: 2) %>
+      <% end %>
+    </p>
+  </div>
+
+  <% case @event_type.to_s %>
+  <% when "state_changed" %>
+    <div style="background: <%= @theme[:card_bg] %>; border: 1px solid <%= @theme[:border] %>; border-radius: 6px; padding: 1rem; margin-bottom: 1.5rem;">
+      <span style="color: <%= @theme[:muted] %>; font-size: 0.85rem;">State changed:</span>
+      <span style="color: <%= @theme[:text] %>; font-weight: 600; margin-left: 4px;">
+        <%= @metadata['old_state']&.humanize %> &rarr; <%= @metadata['new_state']&.humanize %>
+      </span>
+    </div>
+  <% when "score_changed" %>
+    <div style="background: <%= @theme[:card_bg] %>; border: 1px solid <%= @theme[:border] %>; border-radius: 6px; padding: 1rem; margin-bottom: 1.5rem;">
+      <span style="color: <%= @theme[:muted] %>; font-size: 0.85rem;">Score changed:</span>
+      <span style="color: <%= @theme[:text] %>; font-weight: 600; margin-left: 4px;">
+        <%= @metadata['old_score'] %> &rarr; <%= @metadata['new_score'] %>
+      </span>
+    </div>
+  <% when "added_to_list" %>
+    <div style="background: <%= @theme[:card_bg] %>; border: 1px solid <%= @theme[:border] %>; border-radius: 6px; padding: 1rem; margin-bottom: 1.5rem;">
+      <span style="color: <%= @theme[:muted] %>; font-size: 0.85rem;">Added to list:</span>
+      <span style="color: <%= @theme[:text] %>; font-weight: 600; margin-left: 4px;">
+        <%= @metadata['list_name'] %>
+      </span>
+    </div>
+  <% when "created" %>
+    <div style="background: <%= @theme[:card_bg] %>; border: 1px solid <%= @theme[:border] %>; border-radius: 6px; padding: 1rem; margin-bottom: 1.5rem;">
+      <span style="color: <%= @theme[:accent] %>; font-size: 0.85rem;">New idea created</span>
+    </div>
+  <% end %>
+
+  <% if @metadata['content'].present? && @content_prefs['include_external_content'] %>
+    <div style="background: <%= @theme[:card_bg] %>; border-left: 3px solid <%= @theme[:accent] %>; border-radius: 0 6px 6px 0; padding: 1rem; margin-bottom: 1.5rem; color: <%= @theme[:text] %>; font-size: 0.9rem; line-height: 1.6;">
+      <p style="margin: 0 0 4px; font-size: 0.75rem; color: <%= @theme[:muted] %>; text-transform: uppercase;">External Content</p>
+      <%= simple_format(@metadata['content']) %>
+    </div>
+  <% end %>
+
+  <% if @idea.description.present? && @content_prefs['include_description'] %>
+    <div style="background: <%= @theme[:card_bg] %>; border: 1px solid <%= @theme[:border] %>; border-radius: 6px; padding: 1.25rem; margin-bottom: 1.5rem; color: <%= @theme[:text] %>; line-height: 1.6; font-size: 0.95rem;">
+      <%= @idea.description %>
+    </div>
+  <% end %>
+
+  <% if @content_prefs['include_scores'] %>
+    <table style="width: 100%; border-collapse: collapse; margin-bottom: 1.5rem;">
+      <tr>
+        <td style="padding: 8px 12px; border: 1px solid <%= @theme[:border] %>; background: <%= @theme[:card_bg] %>; color: <%= @theme[:muted] %>; font-size: 0.85rem;">TRL</td>
+        <td style="padding: 8px 12px; border: 1px solid <%= @theme[:border] %>; background: <%= @theme[:card_bg] %>; color: <%= @theme[:text] %>; font-weight: 600;"><%= @idea.trl || 0 %></td>
+        <td style="padding: 8px 12px; border: 1px solid <%= @theme[:border] %>; background: <%= @theme[:card_bg] %>; color: <%= @theme[:muted] %>; font-size: 0.85rem;">Opportunity</td>
+        <td style="padding: 8px 12px; border: 1px solid <%= @theme[:border] %>; background: <%= @theme[:card_bg] %>; color: <%= @theme[:text] %>; font-weight: 600;"><%= @idea.opportunity || 0 %></td>
+      </tr>
+      <tr>
+        <td style="padding: 8px 12px; border: 1px solid <%= @theme[:border] %>; background: <%= @theme[:card_bg] %>; color: <%= @theme[:muted] %>; font-size: 0.85rem;">Timing</td>
+        <td style="padding: 8px 12px; border: 1px solid <%= @theme[:border] %>; background: <%= @theme[:card_bg] %>; color: <%= @theme[:text] %>; font-weight: 600;"><%= @idea.timing || 0 %></td>
+        <td style="padding: 8px 12px; border: 1px solid <%= @theme[:border] %>; background: <%= @theme[:card_bg] %>; color: <%= @theme[:muted] %>; font-size: 0.85rem;">Difficulty</td>
+        <td style="padding: 8px 12px; border: 1px solid <%= @theme[:border] %>; background: <%= @theme[:card_bg] %>; color: <%= @theme[:text] %>; font-weight: 600;"><%= @idea.difficulty || 0 %></td>
+      </tr>
+    </table>
+  <% end %>
+
+  <div style="border-top: 1px solid <%= @theme[:border] %>; padding-top: 1rem; font-size: 0.8rem; color: <%= @theme[:muted] %>;">
+    <%= Time.current.strftime("%B %d, %Y at %I:%M %p") %>
+  </div>
+</div>

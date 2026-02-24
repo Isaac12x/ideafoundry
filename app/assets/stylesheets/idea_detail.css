@@ -1,0 +1,580 @@
+/* ============================================
+   Idea Detail Page — "Dark Forge" Theme
+   ============================================ */
+
+/* Header */
+.idea-header {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  padding: 2rem;
+  margin-bottom: 1.5rem;
+  position: relative;
+  overflow: hidden;
+  animation: fadeInUp 0.4s ease;
+}
+
+/* Subtle gradient glow behind header */
+.idea-header::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -20%;
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, var(--accent-muted) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.idea-header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  position: relative;
+}
+
+.idea-header-content {
+  position: relative;
+}
+
+.idea-detail-title {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 2.5rem;
+  font-weight: 400;
+  color: var(--text-primary);
+  margin: 0 0 1rem 0;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+
+.idea-header-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.idea-timestamp {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+/* ---- Metrics Dashboard Row ---- */
+.idea-metrics-row {
+  display: grid;
+  grid-template-columns: 1fr repeat(4, 140px);
+  gap: 12px;
+  margin-bottom: 1.5rem;
+}
+
+/* Inside a tab panel, remove bottom margin */
+.tab-panel .idea-metrics-row {
+  animation: none;
+}
+
+.metric-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: all 0.25s;
+  position: relative;
+  overflow: hidden;
+}
+
+.metric-card:hover {
+  border-color: var(--border-emphasis);
+  box-shadow: var(--shadow-md);
+}
+
+.metric-card-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+}
+
+.metric-card-value {
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1;
+  font-family: var(--font-body);
+}
+
+.metric-card-value.trl-color { color: var(--trl); }
+.metric-card-value.difficulty-color { color: var(--difficulty); }
+.metric-card-value.opportunity-color { color: var(--opportunity); }
+.metric-card-value.timing-color { color: var(--timing); }
+
+.metric-card-bar {
+  height: 4px;
+  background: var(--bg-overlay);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.metric-card-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.metric-card-bar-fill.trl { background: var(--trl); }
+.metric-card-bar-fill.difficulty { background: var(--difficulty); }
+.metric-card-bar-fill.opportunity { background: var(--opportunity); }
+.metric-card-bar-fill.timing { background: var(--timing); }
+
+/* Score card — primary metric */
+.metric-card-score {
+  background: linear-gradient(135deg, var(--bg-surface) 0%, rgba(212, 149, 58, 0.05) 100%);
+  border-color: rgba(212, 149, 58, 0.2);
+  text-align: center;
+  justify-content: center;
+  align-items: center;
+}
+
+.metric-card-score .metric-card-value {
+  font-size: 2.8rem;
+  font-weight: 800;
+}
+
+.metric-card-score .metric-card-value.positive { color: var(--success); }
+.metric-card-score .metric-card-value.negative { color: var(--danger); }
+
+.score-formula-mini {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  margin-top: 4px;
+  word-break: break-all;
+}
+
+/* ---- Slider-enabled metric card ---- */
+.metric-card .score-slider {
+  margin-top: 4px;
+}
+
+.metric-card .stat-value {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-align: right;
+}
+
+/* ---- Content Layout ---- */
+.idea-content-layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+}
+
+/* ---- Hero Image Section ---- */
+.idea-hero-section {
+  display: none; /* We integrate into the new layout differently */
+}
+
+/* ---- Main Content ---- */
+.idea-main-content {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  animation: fadeInUp 0.4s ease 0.2s both;
+}
+
+/* ---- Tabs ---- */
+.tabs-nav {
+  display: flex;
+  border-bottom: 1px solid var(--border-default);
+  background: var(--bg-elevated);
+  padding: 0 4px;
+}
+
+.tab-button {
+  position: relative;
+  flex: none;
+  padding: 14px 20px;
+  background: transparent;
+  border: none;
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.tab-button:hover {
+  color: var(--text-secondary);
+}
+
+.tab-button.active {
+  color: var(--accent);
+}
+
+.tab-button.active::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 12px;
+  right: 12px;
+  height: 2px;
+  background: var(--accent);
+  border-radius: 2px 2px 0 0;
+}
+
+/* Tab content */
+.tabs-content {
+  padding: 2rem;
+}
+
+.tab-panel {
+  animation: fadeIn 0.3s ease;
+}
+
+.tab-panel.hidden { display: none; }
+
+/* ---- Empty State Small ---- */
+.empty-state-small {
+  text-align: center;
+  padding: 3rem 2rem;
+  color: var(--text-muted);
+}
+
+.empty-state-small p {
+  margin-bottom: 1rem;
+  font-size: 0.95rem;
+}
+
+/* ---- Media Section ---- */
+.media-section h3 {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 1.2rem;
+  font-weight: 400;
+  color: var(--text-primary);
+  margin: 0 0 1.5rem 0;
+}
+
+.attachments-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.attachment-item {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  transition: all 0.25s;
+}
+
+.attachment-item:hover {
+  border-color: var(--border-emphasis);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.attachment-thumbnail {
+  width: 100%;
+  height: 140px;
+  object-fit: cover;
+  display: block;
+}
+
+.attachment-file {
+  width: 100%;
+  height: 140px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-overlay);
+  color: var(--text-muted);
+}
+
+.attachment-file svg { width: 2.5rem; height: 2.5rem; }
+
+.attachment-info { padding: 12px; }
+
+.attachment-name {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  margin: 0 0 4px 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.attachment-size {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  margin: 0 0 8px 0;
+}
+
+/* ---- Metadata Grid ---- */
+.metadata-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 2rem;
+}
+
+.metadata-group h3 {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 1.1rem;
+  font-weight: 400;
+  color: var(--text-primary);
+  margin: 0 0 1rem 0;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.metadata-item-detail {
+  margin-bottom: 14px;
+}
+
+.metadata-item-detail label {
+  display: block;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+.metadata-item-detail span {
+  display: block;
+  font-size: 0.95rem;
+  color: var(--text-primary);
+}
+
+/* ---- Timeline Section ---- */
+.idea-timeline-section {
+  margin-top: 0;
+  padding: 1.5rem 2rem;
+  border-top: 1px solid var(--border-default);
+}
+
+.idea-timeline-section h3 {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 1.2rem;
+  font-weight: 400;
+  color: var(--text-primary);
+  margin: 0 0 1rem 0;
+}
+
+.version-summary {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.version-summary p { margin: 0; }
+
+.latest-version-info {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.timeline-placeholder {
+  padding: 1.5rem;
+  background: var(--bg-elevated);
+  border: 1px dashed var(--border-default);
+  border-radius: var(--radius-sm);
+  text-align: center;
+}
+
+/* ---- Hero Image + Scores At-a-Glance Row ---- */
+.hero-scores-row {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  animation: fadeInUp 0.4s ease 0.15s both;
+  align-items: stretch;
+}
+
+.hero-image-container {
+  flex: 0 0 480px;
+  max-height: 320px;
+  overflow: hidden;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-default);
+}
+
+.detail-hero-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  border-radius: 0;
+  border: none;
+}
+
+.hero-scores-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  padding: 1.25rem;
+  justify-content: center;
+}
+
+.hero-score-main {
+  text-align: center;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.hero-score-main .metric-card-label {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.hero-score-value {
+  font-size: 3rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.hero-score-value.positive { color: var(--success); }
+.hero-score-value.negative { color: var(--danger); }
+
+.hero-scores-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.hero-score-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 10px;
+  background: var(--bg-elevated);
+  border-radius: var(--radius-sm);
+  border-left: 3px solid var(--border-default);
+}
+
+.hero-score-item.trl { border-left-color: var(--trl); }
+.hero-score-item.opportunity { border-left-color: var(--opportunity); }
+.hero-score-item.timing { border-left-color: var(--timing); }
+.hero-score-item.difficulty { border-left-color: var(--difficulty); }
+
+.hero-score-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+}
+
+.hero-score-num {
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.hero-score-item.trl .hero-score-num { color: var(--trl); }
+.hero-score-item.opportunity .hero-score-num { color: var(--opportunity); }
+.hero-score-item.timing .hero-score-num { color: var(--timing); }
+.hero-score-item.difficulty .hero-score-num { color: var(--difficulty); }
+
+/* ---- Responsive ---- */
+@media (max-width: 1024px) {
+  .idea-metrics-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .hero-scores-row {
+    flex-direction: column;
+  }
+
+  .hero-image-container {
+    flex: none;
+    max-height: 280px;
+  }
+}
+
+@media (max-width: 768px) {
+  .idea-header { padding: 1.25rem; }
+
+  .idea-detail-title { font-size: 1.75rem; }
+
+  .idea-metrics-row {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .tabs-content { padding: 1.25rem; }
+
+  .metadata-grid { grid-template-columns: 1fr; }
+
+  .attachments-grid { grid-template-columns: 1fr; }
+
+  .hero-image-container {
+    max-height: 220px;
+  }
+
+  .hero-score-value {
+    font-size: 2.2rem;
+  }
+
+  .tab-button {
+    padding: 10px 14px;
+    font-size: 0.8rem;
+  }
+}
+
+/* ── Custom Field Section Panels (from section_order) ── */
+.idea-field-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.idea-field-section-panel {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius-md);
+  padding: 1.25rem 1.5rem;
+}
+
+.idea-field-section-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.idea-field-section-label {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 0.95rem;
+  color: var(--text-primary);
+}
+
+.idea-field-section-value {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.idea-field-section-value:empty::after {
+  content: "—";
+  color: var(--text-muted);
+}

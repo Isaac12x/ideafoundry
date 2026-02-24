@@ -1,0 +1,585 @@
+/* ============================================
+   Settings Page — "Dark Forge" Theme
+   ============================================ */
+
+.settings-container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.settings-list {
+  margin-top: 2rem;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+  text-decoration: none;
+  transition: background 0.15s;
+}
+
+.settings-row:last-child {
+  border-bottom: none;
+}
+
+.settings-row:hover {
+  background: var(--bg-elevated);
+}
+
+.settings-row svg {
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.settings-row-info h3 {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 1.05rem;
+  font-weight: 400;
+  color: var(--text-primary);
+  margin: 0 0 2px 0;
+}
+
+.settings-row-info p {
+  color: var(--text-muted);
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
+/* Scoring Configuration */
+.scoring-config-layout {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 1.5rem;
+  margin-top: 2rem;
+}
+
+@media (max-width: 1024px) {
+  .scoring-config-layout { grid-template-columns: 1fr; }
+}
+
+.scoring-config-main {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  padding: 2rem;
+}
+
+.config-section h3 {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 1.5rem;
+  font-weight: 400;
+  color: var(--text-primary);
+  margin: 0 0 6px 0;
+}
+
+.config-description {
+  color: var(--text-muted);
+  margin: 0 0 2rem 0;
+  line-height: 1.6;
+  font-size: 0.9rem;
+}
+
+.weight-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 12px;
+  margin-bottom: 2rem;
+}
+
+.weight-item {
+  background: var(--bg-elevated);
+  border-radius: var(--radius-sm);
+  padding: 1.5rem;
+  border: 1px solid var(--border-subtle);
+  border-left: 3px solid var(--border-subtle);
+  transition: box-shadow 0.2s, border-color 0.2s;
+}
+
+.weight-item--trl    { border-left-color: var(--trl); }
+.weight-item--difficulty { border-left-color: var(--difficulty); }
+.weight-item--opportunity { border-left-color: var(--opportunity); }
+.weight-item--timing { border-left-color: var(--timing); }
+
+.weight-item--trl:hover    { box-shadow: 0 0 12px color-mix(in srgb, var(--trl) 25%, transparent); }
+.weight-item--difficulty:hover { box-shadow: 0 0 12px color-mix(in srgb, var(--difficulty) 25%, transparent); }
+.weight-item--opportunity:hover { box-shadow: 0 0 12px color-mix(in srgb, var(--opportunity) 25%, transparent); }
+.weight-item--timing:hover { box-shadow: 0 0 12px color-mix(in srgb, var(--timing) 25%, transparent); }
+
+.weight-item--trl .weight-input:focus    { border-color: var(--trl); box-shadow: 0 0 0 3px color-mix(in srgb, var(--trl) 20%, transparent); }
+.weight-item--difficulty .weight-input:focus { border-color: var(--difficulty); box-shadow: 0 0 0 3px color-mix(in srgb, var(--difficulty) 20%, transparent); }
+.weight-item--opportunity .weight-input:focus { border-color: var(--opportunity); box-shadow: 0 0 0 3px color-mix(in srgb, var(--opportunity) 20%, transparent); }
+.weight-item--timing .weight-input:focus { border-color: var(--timing); box-shadow: 0 0 0 3px color-mix(in srgb, var(--timing) 20%, transparent); }
+
+.weight-label {
+  display: block;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+  padding-left: 1rem;
+  position: relative;
+}
+
+.weight-label::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.35em;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--border-subtle);
+}
+
+.weight-item--trl .weight-label::before { background: var(--trl); }
+.weight-item--difficulty .weight-label::before { background: var(--difficulty); }
+.weight-item--opportunity .weight-label::before { background: var(--opportunity); }
+.weight-item--timing .weight-label::before { background: var(--timing); }
+
+.weight-description {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 400;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.weight-input-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.weight-input {
+  flex: 1;
+  padding: 10px;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  background: var(--bg-input);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 1rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+.weight-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-muted);
+}
+
+.weight-range {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.formula-preview {
+  background: var(--bg-elevated);
+  border-radius: var(--radius-sm);
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+  border: 1px solid var(--border-subtle);
+}
+
+.formula-preview h4 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin: 0 0 12px 0;
+}
+
+.formula-display {
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  color: var(--accent);
+  background: var(--bg-surface);
+  padding: 12px 16px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-default);
+}
+
+.config-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-start;
+}
+
+/* Sidebar */
+.scoring-config-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.config-info-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  padding: 1.5rem;
+}
+
+.config-info-card h4 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 12px 0;
+}
+
+.config-info-card ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.config-info-card li {
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border-subtle);
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.config-info-card li:last-child { border-bottom: none; }
+
+.config-info-card p {
+  color: var(--text-muted);
+  margin: 0 0 12px 0;
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.score-range-display {
+  background: var(--bg-elevated);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  border: 1px solid var(--border-subtle);
+}
+
+.range-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.range-item:last-child { margin-bottom: 0; }
+
+.range-label {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.range-value {
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.range-value.positive { color: var(--success); }
+.range-value.negative { color: var(--danger); }
+
+/* Export & Backup */
+.export-status-banner {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.export-status-banner strong {
+  color: var(--text-primary);
+}
+
+.export-progress-bar {
+  width: 100%;
+  height: 6px;
+  background: var(--bg-surface);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-top: 4px;
+}
+
+.export-progress-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 3px;
+  transition: width 0.3s;
+}
+
+.export-history {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  background: var(--border-subtle);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.export-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  background: var(--bg-elevated);
+  gap: 12px;
+}
+
+.export-row-info {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 0.85rem;
+}
+
+.export-date {
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.export-badge {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  background: var(--bg-surface);
+  color: var(--text-muted);
+}
+
+.export-badge.completed { color: var(--success); }
+.export-badge.processing { color: var(--accent); }
+.export-badge.failed { color: var(--danger); }
+.export-badge.protected { color: var(--text-secondary); }
+
+.export-meta {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
+.export-error {
+  color: var(--danger);
+  font-size: 0.8rem;
+}
+
+.export-row-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+/* Metric Legend */
+.metric-legend {
+  margin-bottom: 2rem;
+}
+
+.metric-legend-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 0.75rem 0;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.metric-legend-title::-webkit-details-marker { display: none; }
+
+.metric-legend-title::before {
+  content: '▸';
+  font-size: 0.75rem;
+  transition: transform 0.2s;
+}
+
+.metric-legend[open] > .metric-legend-title::before {
+  transform: rotate(90deg);
+}
+
+.metric-legend-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 1.5rem 1.5rem 2rem;
+}
+
+.legend-scale-name {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin: 0 0 1rem 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.legend-scale--trl .legend-scale-name { color: var(--trl); }
+.legend-scale--difficulty .legend-scale-name { color: var(--difficulty); }
+.legend-scale--opportunity .legend-scale-name { color: var(--opportunity); }
+.legend-scale--timing .legend-scale-name { color: var(--timing); }
+
+.legend-track {
+  position: relative;
+  height: 3rem;
+  margin: 0 0.75rem;
+}
+
+.legend-track-line {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 3px;
+  border-radius: 2px;
+  transform: translateY(-50%);
+}
+
+.legend-scale--trl .legend-track-line { background: linear-gradient(to right, color-mix(in srgb, var(--trl) 20%, transparent), var(--trl)); }
+.legend-scale--difficulty .legend-track-line { background: linear-gradient(to right, color-mix(in srgb, var(--difficulty) 20%, transparent), var(--difficulty)); }
+.legend-scale--opportunity .legend-track-line { background: linear-gradient(to right, color-mix(in srgb, var(--opportunity) 20%, transparent), var(--opportunity)); }
+.legend-scale--timing .legend-track-line { background: linear-gradient(to right, color-mix(in srgb, var(--timing) 20%, transparent), var(--timing)); }
+
+/* Markers */
+.legend-marker {
+  position: absolute;
+  top: 50%;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--bg-surface);
+  border: 2px solid var(--border-default);
+  z-index: 1;
+  cursor: default;
+}
+
+.legend-scale--trl .legend-marker { border-color: var(--trl); }
+.legend-scale--difficulty .legend-marker { border-color: var(--difficulty); }
+.legend-scale--opportunity .legend-marker { border-color: var(--opportunity); }
+.legend-scale--timing .legend-marker { border-color: var(--timing); }
+
+/* Number label above */
+.legend-marker::before {
+  content: attr(data-label);
+  position: absolute;
+  bottom: calc(100% + 4px);
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+/* Description below — always visible for 3-marker scales */
+.legend-marker::after {
+  content: attr(data-desc);
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+/* TRL hover descriptions: hide by default, show on hover */
+.legend-marker--hover::after {
+  opacity: 0;
+  transition: opacity 0.15s;
+  pointer-events: none;
+}
+
+.legend-marker--hover:hover::after {
+  opacity: 1;
+}
+
+.legend-marker--hover:hover {
+  background: var(--trl);
+  transform: translate(-50%, -50%) scale(1.3);
+  transition: transform 0.15s, background 0.15s;
+}
+
+/* High-end glow on last marker */
+.legend-marker:last-child {
+  animation: legend-glow 2.5s ease-in-out infinite;
+}
+
+.legend-scale--trl .legend-marker:last-child { box-shadow: 0 0 6px color-mix(in srgb, var(--trl) 40%, transparent); }
+.legend-scale--difficulty .legend-marker:last-child { box-shadow: 0 0 6px color-mix(in srgb, var(--difficulty) 40%, transparent); }
+.legend-scale--opportunity .legend-marker:last-child { box-shadow: 0 0 6px color-mix(in srgb, var(--opportunity) 40%, transparent); }
+.legend-scale--timing .legend-marker:last-child { box-shadow: 0 0 6px color-mix(in srgb, var(--timing) 40%, transparent); }
+
+@keyframes legend-glow {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+/* Align first/last marker labels */
+.legend-marker[style*="left:0%"]::before,
+.legend-marker[style*="left:0%"]::after {
+  left: 0;
+  transform: translateX(0);
+}
+
+.legend-marker[style*="left:100%"]::before,
+.legend-marker[style*="left:100%"]::after {
+  left: auto;
+  right: 0;
+  transform: translateX(0);
+}
+
+/* Theme Preview Popup */
+.theme-preview-popup {
+  position: fixed;
+  z-index: 1000;
+  transform: translate(-50%, -100%);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  border-radius: 6px;
+}
+
+.theme-preview-popup--visible {
+  opacity: 1;
+}
+
+@media (max-width: 768px) {
+  .weight-grid { grid-template-columns: 1fr; }
+  .config-actions { flex-direction: column; }
+  .weight-input-group { flex-direction: column; align-items: stretch; gap: 6px; }
+  .weight-range { text-align: center; }
+  .export-row { flex-direction: column; align-items: flex-start; }
+
+  .metric-legend-content { padding: 1rem 1rem 1.5rem; gap: 1.25rem; }
+  .legend-track { margin: 0 0.5rem; }
+  .legend-marker::before { font-size: 0.55rem; }
+  .legend-marker::after { font-size: 0.55rem; }
+  .legend-scale-name { font-size: 0.7rem; }
+
+  .theme-preview-popup { display: none; }
+}

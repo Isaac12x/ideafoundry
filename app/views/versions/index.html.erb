@@ -1,0 +1,118 @@
+<div class="version-history-container">
+  <div class="version-header">
+    <h1>Version History</h1>
+    <p class="idea-title"><%= link_to @idea.title, idea_path(@idea) %></p>
+  </div>
+
+  <% if @versions.empty? %>
+    <div class="version-empty-state">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+      </svg>
+      <p>No versions yet. Create your first version by editing the idea.</p>
+      <%= link_to "Edit Idea", edit_idea_path(@idea), class: "btn btn-primary btn-sm" %>
+    </div>
+  <% else %>
+    <%# SVG Score Sparkline %>
+    <% scored_versions = @versions.select { |v| v.snapshot_data && v.snapshot_data['computed_score'] }.sort_by(&:created_at) %>
+    <% if scored_versions.length >= 2 %>
+      <div class="sparkline-chart">
+        <h3>Score Trend</h3>
+        <% scores = scored_versions.map { |v| v.snapshot_data['computed_score'].to_f } %>
+        <% min_score = scores.min - 0.5 %>
+        <% max_score = scores.max + 0.5 %>
+        <% range = max_score - min_score %>
+        <% range = 1.0 if range == 0 %>
+        <% chart_w = 800 %>
+        <% chart_h = 80 %>
+        <% padding = 30 %>
+        <% points = scored_versions.each_with_index.map { |v, i|
+             x = padding + (i.to_f / (scored_versions.length - 1)) * (chart_w - padding * 2)
+             y = padding / 2 + (1.0 - (scores[i] - min_score) / range) * (chart_h - padding)
+             [x.round(1), y.round(1)]
+           } %>
+        <% polyline = points.map { |p| p.join(',') }.join(' ') %>
+        <% area_points = "#{padding},#{chart_h} #{polyline} #{chart_w - padding},#{chart_h}" %>
+        <svg viewBox="0 0 <%= chart_w %> <%= chart_h + 20 %>" preserveAspectRatio="none">
+          <polygon class="sparkline-area" points="<%= area_points %>" />
+          <polyline class="sparkline-line" points="<%= polyline %>" />
+          <% points.each_with_index do |pt, i| %>
+            <circle class="sparkline-dot" cx="<%= pt[0] %>" cy="<%= pt[1] %>" r="3" />
+            <% if i == 0 || i == points.length - 1 || i == points.length / 2 %>
+              <text class="sparkline-label" x="<%= pt[0] %>" y="<%= chart_h + 16 %>" text-anchor="middle"><%= number_with_precision(scores[i], precision: 1) %></text>
+            <% end %>
+          <% end %>
+        </svg>
+      </div>
+    <% end %>
+
+    <div class="timeline">
+      <% @timeline.each_with_index do |version_data, index| %>
+        <% version = @versions.find { |v| v.id == version_data[:id] } %>
+        <div class="timeline-item <%= 'has-branches' if version_data[:has_branches] %> <%= 'is-root' if version_data[:is_root] %>">
+          <div class="timeline-marker">
+            <div class="timeline-dot"></div>
+            <% if index < @timeline.length - 1 %>
+              <div class="timeline-line"></div>
+            <% end %>
+          </div>
+
+          <div class="timeline-content">
+            <div class="version-card">
+              <div class="version-header-info">
+                <h3 class="commit-message"><%= version.commit_message %></h3>
+                <span class="version-date"><%= time_ago_in_words(version.created_at) %> ago</span>
+              </div>
+
+              <%# Score delta + field pills %>
+              <% sc = version.scoring_changes %>
+              <% if sc.any? %>
+                <div class="version-card-meta">
+                  <% if sc['computed_score'] %>
+                    <% delta = sc['computed_score'][:change] %>
+                    <span class="score-delta <%= delta > 0 ? 'positive' : delta < 0 ? 'negative' : 'neutral' %>">
+                      <%= delta > 0 ? '+' : '' %><%= number_with_precision(delta, precision: 2) %>
+                    </span>
+                  <% end %>
+
+                  <div class="field-pills">
+                    <% %w[trl difficulty opportunity timing].each do |field| %>
+                      <% if sc[field] %>
+                        <span class="field-pill <%= field %>">
+                          <span class="pill-label"><%= field.upcase %></span>
+                          <span class="pill-delta"><%= sc[field][:from] %>&rarr;<%= sc[field][:to] %></span>
+                        </span>
+                      <% end %>
+                    <% end %>
+                  </div>
+                </div>
+              <% end %>
+
+              <div class="version-actions">
+                <%= link_to "View Details", idea_version_path(@idea, version), class: "btn btn-secondary" %>
+
+                <% if version.parent_version %>
+                  <%= link_to "Compare with Parent",
+                      compare_idea_versions_path(@idea, from: version.parent_version_id, to: version.id),
+                      class: "btn btn-secondary" %>
+                <% end %>
+
+                <%= button_to "Restore",
+                    restore_idea_version_path(@idea, version),
+                    method: :post,
+                    class: "btn btn-warning",
+                    form: { data: { turbo_confirm: "Are you sure you want to restore this version? This will create a new version based on this snapshot." } } %>
+              </div>
+
+              <% if version_data[:has_branches] %>
+                <div class="branch-indicator">
+                  <span class="badge">Has branches</span>
+                </div>
+              <% end %>
+            </div>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  <% end %>
+</div>

@@ -1,0 +1,32 @@
+<%# Compact chip for field — rendered inside drop zones %>
+<% idx = 0 %>
+<div class="tpl-field-chip"
+     draggable="true"
+     data-field-name="<%= field['name'] %>"
+     data-field-label="<%= field['label'] %>"
+     data-field-type="<%= field['type'] %>"
+     data-field-default="<%= field['default_value'] %>"
+     data-field-placeholder="<%= field['placeholder'] %>"
+     data-field-required="<%= field['required'] %>"
+     data-field-options="<%= field['options'].is_a?(Array) ? field['options'].join(', ') : field['options'] %>"
+     data-field-tab="<%= field['tab'] %>"
+     data-field-instance-id="<%= field['instance_id'] %>"
+     data-action="dragstart->template-form#chipDragStart dragend->template-form#chipDragEnd click->template-form#editField">
+  <span class="tpl-field-chip__label"><%= field['label'].presence || field['name'] %></span>
+  <span class="tpl-field-chip__type tpl-field-chip__type--<%= field['type'] %>"><%= field['type'] %></span>
+  <% if field['required'].to_s == 'true' %>
+    <span class="tpl-field-chip__required">req</span>
+  <% end %>
+  <button type="button" class="tpl-field-chip__remove" data-action="click->template-form#removeField">&times;</button>
+  <%# Hidden inputs for form submission — indices set by JS reindex %>
+  <input type="hidden" class="chip-input-name" name="template[field_definitions][0][name]" value="<%= field['name'] %>">
+  <input type="hidden" class="chip-input-label" name="template[field_definitions][0][label]" value="<%= field['label'] %>">
+  <input type="hidden" class="chip-input-type" name="template[field_definitions][0][type]" value="<%= field['type'] %>">
+  <input type="hidden" class="chip-input-default" name="template[field_definitions][0][default_value]" value="<%= field['default_value'] %>">
+  <input type="hidden" class="chip-input-placeholder" name="template[field_definitions][0][placeholder]" value="<%= field['placeholder'] %>">
+  <input type="hidden" class="chip-input-required" name="template[field_definitions][0][required]" value="<%= field['required'] %>">
+  <input type="hidden" class="chip-input-options" name="template[field_definitions][0][options]" value="<%= field['options'].is_a?(Array) ? field['options'].join(', ') : field['options'] %>">
+  <input type="hidden" class="chip-input-tab" name="template[field_definitions][0][tab]" value="<%= field['tab'] %>">
+  <input type="hidden" class="chip-input-position" name="template[field_definitions][0][position]" value="0">
+  <input type="hidden" class="chip-input-instance-id" name="template[field_definitions][0][instance_id]" value="<%= field['instance_id'] %>">
+</div>

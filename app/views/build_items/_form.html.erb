@@ -1,0 +1,31 @@
+<%= form_with(model: build_item, class: "backlog-form", data: { controller: "build-item-form", action: "turbo:submit-end->build-item-form#reset" }) do |f| %>
+  <div class="backlog-form-main">
+    <%= f.text_field :title, placeholder: "What should you build next?", class: "backlog-form-input", required: true, autocomplete: "off", data: { build_item_form_target: "input" } %>
+    <%= f.submit "Add", class: "btn btn-primary backlog-form-submit" %>
+  </div>
+
+  <div class="backlog-form-extras" data-build-item-form-target="descRow" style="display:none;">
+    <%= f.text_area :description, placeholder: "Notes or details...", class: "backlog-form-textarea", rows: 2 %>
+
+    <div class="backlog-form-links" data-controller="backlog-links">
+      <input type="hidden" name="build_item[links_json]" value="[]" data-backlog-links-target="hidden">
+      <div class="backlog-form-links-header">
+        <span class="backlog-form-links-label">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+          Links & References
+        </span>
+      </div>
+      <div data-backlog-links-target="container" class="backlog-link-chips"></div>
+      <div class="backlog-link-add-row">
+        <input type="text" placeholder="URL" class="backlog-link-input" data-backlog-links-target="urlInput" data-action="keydown.enter->backlog-links#add">
+        <input type="text" placeholder="Label (optional)" class="backlog-link-label-input" data-backlog-links-target="labelInput" data-action="keydown.enter->backlog-links#add">
+        <button type="button" class="btn btn-sm" data-action="click->backlog-links#add">+</button>
+      </div>
+    </div>
+  </div>
+
+  <button type="button" class="backlog-expand-btn" data-action="click->build-item-form#toggleDesc" data-build-item-form-target="descToggle">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    Add details
+  </button>
+<% end %>

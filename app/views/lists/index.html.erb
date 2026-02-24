@@ -1,0 +1,53 @@
+<div class="lists-container"
+     data-controller="drag"
+     data-drag-url-value="<%= update_idea_position_lists_path %>">
+
+  <div class="page-header">
+    <h2>Lists</h2>
+    <div class="header-actions">
+      <%= link_to ideas_path, class: "btn" do %>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+        All Ideas
+      <% end %>
+      <%= link_to new_list_path, class: "btn btn-primary" do %>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+        New List
+      <% end %>
+    </div>
+  </div>
+
+  <div class="lists-grid">
+    <% @lists.each do |list| %>
+      <div class="list-container">
+        <div class="list-header">
+          <h3><%= list.name %></h3>
+          <div class="list-actions">
+            <%= button_to send_email_list_path(list), method: :post, class: "btn btn-sm", form: { style: "display: inline" }, data: { turbo_confirm: "Email this list to your default recipients?" } do %>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+              Email
+            <% end %>
+            <%= link_to "Edit", edit_list_path(list), class: "btn btn-sm" %>
+            <%= link_to "Delete", list_path(list), method: :delete,
+                        data: { turbo_method: :delete, turbo_confirm: "Delete this list?" },
+                        class: "btn btn-sm btn-danger" %>
+          </div>
+        </div>
+
+        <div class="drop-zone"
+             data-drag-target="container"
+             data-list-id="<%= list.id %>"
+             id="list_<%= list.id %>_ideas">
+          <%= render 'ideas', list: list, ideas: list.ideas.includes(:idea_lists).order('idea_lists.position') %>
+        </div>
+      </div>
+    <% end %>
+
+    <% if @lists.empty? %>
+      <div class="empty-state" style="grid-column: 1 / -1;">
+        <h3>No lists yet</h3>
+        <p>Create your first list to start organizing ideas.</p>
+        <%= link_to "Create List", new_list_path, class: "btn btn-primary" %>
+      </div>
+    <% end %>
+  </div>
+</div>

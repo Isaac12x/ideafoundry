@@ -1,0 +1,382 @@
+<div class="settings-container">
+  <div class="page-header">
+    <h2>Email Settings</h2>
+    <div class="header-actions">
+      <%= link_to settings_path, class: "btn btn-sm" do %>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        Back to Settings
+      <% end %>
+    </div>
+  </div>
+
+  <div class="scoring-config-layout">
+    <div class="scoring-config-main">
+      <div class="config-section">
+        <h3>Email Configuration</h3>
+        <p class="config-description">
+          Configure default recipients and sender details for sharing ideas and lists via email.
+        </p>
+
+        <%= form_with url: settings_email_path, method: :patch, local: true do |f| %>
+          <div class="weight-grid">
+            <div class="weight-item" style="grid-column: 1 / -1;">
+              <label class="weight-label">Default Recipients</label>
+              <span class="weight-description">Comma-separated email addresses. Used when sending ideas or lists.</span>
+              <div class="weight-input-group">
+                <input type="text"
+                       name="email_settings[recipients]"
+                       value="<%= @email_settings['recipients'] %>"
+                       class="weight-input"
+                       style="text-align: left;"
+                       placeholder="alice@example.com, bob@example.com">
+              </div>
+            </div>
+
+            <div class="weight-item">
+              <label class="weight-label">From Name</label>
+              <span class="weight-description">Sender name displayed in emails</span>
+              <div class="weight-input-group">
+                <input type="text"
+                       name="email_settings[from_name]"
+                       value="<%= @email_settings['from_name'] %>"
+                       class="weight-input"
+                       style="text-align: left;"
+                       placeholder="<%= @user.name %>">
+              </div>
+            </div>
+
+            <div class="weight-item">
+              <label class="weight-label">From Email</label>
+              <span class="weight-description">Sender email address</span>
+              <div class="weight-input-group">
+                <input type="email"
+                       name="email_settings[from_email]"
+                       value="<%= @email_settings['from_email'] %>"
+                       class="weight-input"
+                       style="text-align: left;"
+                       placeholder="<%= @user.email %>">
+              </div>
+            </div>
+          </div>
+
+          <div class="config-actions">
+            <%= f.submit "Save Email Settings", class: "btn btn-primary" %>
+            <%= link_to "Cancel", settings_path, class: "btn" %>
+          </div>
+        <% end %>
+      </div>
+      <div class="" style="margin-top: 2rem;">
+        <div class="">
+          <div class="config-section">
+            <h3>Notification Triggers</h3>
+            <p class="config-description">
+              Choose which events trigger email notifications. Emails are sent to the recipients configured above.
+            </p>
+
+            <%= form_with url: settings_notifications_path, method: :patch, local: true do |f| %>
+              <div class="email-trigger-list">
+                <% User::ALLOWED_NOTIFICATION_TRIGGERS.each do |trigger| %>
+                  <div class="email-trigger-item">
+                    <input type="checkbox"
+                           name="notification_triggers[]"
+                           value="<%= trigger %>"
+                           id="trigger_<%= trigger %>"
+                           <%= 'checked' if @notification_triggers.include?(trigger) %>
+                           class="email-checkbox">
+                    <label for="trigger_<%= trigger %>" class="email-trigger-label">
+                      <%= trigger.humanize %>
+                    </label>
+                  </div>
+                <% end %>
+              </div>
+
+              <h4 class="email-content-heading">Email Content Per Event</h4>
+              <p class="config-description">
+                Toggle what sections to include in notification emails for each event type.
+              </p>
+
+              <div class="email-event-list">
+                <% %w[state_changed score_changed added_to_list created webhook_triggered digest_daily digest_weekly].each do |evt| %>
+                  <% allowed = User::ALLOWED_NOTIFICATION_MAILERS[evt] || [] %>
+                  <% current_template = @notification_templates[evt] || User::DEFAULT_NOTIFICATION_TEMPLATES[evt] %>
+                  <div class="email-event-card">
+                    <div class="email-event-header">
+                      <strong class="email-event-name"><%= evt.humanize %></strong>
+                      <% if allowed.size > 1 %>
+                        <select name="notification_templates[<%= evt %>]" class="email-event-select">
+                          <% allowed.each do |tpl| %>
+                            <option value="<%= tpl %>" <%= 'selected' if current_template == tpl %>><%= tpl.humanize %></option>
+                          <% end %>
+                        </select>
+                      <% else %>
+                        <span class="email-event-locked"><%= allowed.first&.humanize || 'Digest' %> (locked)</span>
+                        <input type="hidden" name="notification_templates[<%= evt %>]" value="<%= allowed.first %>">
+                      <% end %>
+                    </div>
+                    <div class="email-event-toggles">
+                      <label class="email-event-toggle">
+                        <input type="hidden" name="notification_content[<%= evt %>][include_scores]" value="false">
+                        <input type="checkbox"
+                               name="notification_content[<%= evt %>][include_scores]"
+                               value="true"
+                               <%= 'checked' if (@notification_content.dig(evt, 'include_scores') != false) %>
+                               class="email-checkbox">
+                        Scores
+                      </label>
+                      <label class="email-event-toggle">
+                        <input type="hidden" name="notification_content[<%= evt %>][include_description]" value="false">
+                        <input type="checkbox"
+                               name="notification_content[<%= evt %>][include_description]"
+                               value="true"
+                               <%= 'checked' if (@notification_content.dig(evt, 'include_description') != false) %>
+                               class="email-checkbox">
+                        Description
+                      </label>
+                      <% if evt == "webhook_triggered" %>
+                        <label class="email-event-toggle">
+                          <input type="hidden" name="notification_content[<%= evt %>][include_external_content]" value="false">
+                          <input type="checkbox"
+                                 name="notification_content[<%= evt %>][include_external_content]"
+                                 value="true"
+                                 <%= 'checked' if (@notification_content.dig(evt, 'include_external_content') != false) %>
+                                 class="email-checkbox">
+                          External content
+                        </label>
+                      <% end %>
+                    </div>
+                  </div>
+                <% end %>
+              </div>
+
+              <div class="config-actions">
+                <%= f.submit "Save Notification Preferences", class: "btn btn-primary" %>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="scoring-config-sidebar">
+      <div class="config-info-card">
+        <h4>How It Works</h4>
+        <ul>
+          <li>Set default recipients here, or enter addresses on-the-fly when sending</li>
+          <li>Share individual ideas from the idea detail page</li>
+          <li>Share entire lists from the lists view</li>
+          <li>Emails include scores, metrics, topologies, and descriptions</li>
+        </ul>
+      </div>
+
+      <div class="config-info-card">
+        <h4>Email Ingestion Setup</h4>
+        <% if @inbound_address.present? %>
+          <p>Send emails to this address to create ideas:</p>
+          <p class="email-mono-block"><%= @inbound_address %></p>
+        <% else %>
+          <p>Configure an inbound address in <code>credentials.yml</code> under <code>resend.inbound_address</code> to enable email ingestion.</p>
+        <% end %>
+        <p>For local development, expose the Action Mailbox ingress with:</p>
+        <p class="email-mono-block">ngrok http 3333</p>
+        <p>Then point your email provider's inbound webhook to:</p>
+        <p class="email-mono-block">&lt;ngrok-url&gt;/rails/action_mailbox/ingresses/relay/inbound_emails</p>
+        <ul>
+          <li>Subject becomes the idea title</li>
+          <li>Include <code>[IDEA-ID]</code> in subject to append to existing idea</li>
+          <li>Include <code>#topology: name</code> in body to auto-tag</li>
+          <li>Attachments are saved to the idea</li>
+        </ul>
+        <% if @sha3_key.present? %>
+          <h4 class="email-subheading">SHA3 Signing Key</h4>
+          <div class="email-key-block">
+            <p id="sha3-key" class="email-mono-block">
+              <%= @sha3_key %>
+            </p>
+            <button type="button" onclick="navigator.clipboard.writeText(document.getElementById('sha3-key').textContent.trim()).then(() => { this.textContent = 'Copied!'; setTimeout(() => { this.textContent = 'Copy'; }, 2000); })" class="btn btn-sm email-copy-btn">
+              Copy
+            </button>
+          </div>
+          <p>Used to generate SHA3-256 integrity hashes for email-ingested ideas.</p>
+        <% end %>
+      </div>
+
+      <div class="config-info-card">
+        <h4>Webhook Setup</h4>
+        <p>External services can create ideas or trigger notifications via:</p>
+        <p class="email-mono-block">POST /webhooks/external</p>
+        <p>For local development:</p>
+        <p class="email-mono-block">ngrok http 3333</p>
+        <p>Then use:</p>
+        <p class="email-mono-block">&lt;ngrok-url&gt;/webhooks/external</p>
+        <p>Authenticate with a <code>Bearer</code> token set in <code>credentials.yml</code> under <code>external_webhook.token</code>.</p>
+        <ul>
+          <li><code>event: "create_idea"</code> creates a new idea</li>
+          <li>Other events update an existing idea via <code>payload.idea_id</code></li>
+          <li>Include <code>content</code> for extra context</li>
+        </ul>
+      </div>
+
+      <div class="scoring-config-sidebar">
+        <div class="config-info-card">
+          <h4>Notification Tips</h4>
+          <ul>
+            <li><strong>Triggers</strong> control which events send emails</li>
+            <li><strong>Content toggles</strong> let you choose what's included per event</li>
+            <li>Digest emails combine multiple events into a single summary</li>
+            <li>Webhook events can include external content from the triggering payload</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+</div>
+
+<style>
+  /* Sidebar helpers */
+  .email-mono-block {
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    background: var(--bg-elevated);
+    padding: 8px;
+    border-radius: var(--radius-sm);
+    word-break: break-all;
+    border: 1px solid var(--border-subtle);
+  }
+
+  .email-subheading {
+    margin-top: 1rem;
+  }
+
+  .email-key-block {
+    position: relative;
+  }
+
+  .email-copy-btn {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    font-size: 0.7rem;
+    padding: 2px 8px;
+  }
+
+  /* Notification Triggers */
+  .email-trigger-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    margin-bottom: 2rem;
+  }
+
+  .email-trigger-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.65rem 0;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .email-trigger-item:last-child {
+    border-bottom: none;
+  }
+
+  .email-checkbox {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--accent);
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  .email-trigger-label {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    cursor: pointer;
+    margin: 0;
+  }
+
+  /* Event Content Section */
+  .email-content-heading {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0 0 0.5rem 0;
+  }
+
+  .email-event-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 2rem;
+  }
+
+  .email-event-card {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    padding: 0.75rem 1rem;
+  }
+
+  .email-event-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .email-event-name {
+    font-size: 0.85rem;
+    color: var(--text-primary);
+  }
+
+  .email-event-select {
+    font-size: 0.75rem;
+    padding: 3px 8px;
+    background: var(--bg-input);
+    color: var(--text-primary);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-sm);
+    font-family: var(--font-body);
+  }
+
+  .email-event-select:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px var(--accent-muted);
+  }
+
+  .email-event-locked {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+  }
+
+  .email-event-toggles {
+    display: flex;
+    gap: 1.5rem;
+    margin-top: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .email-event-toggle {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+  }
+
+  .email-event-toggle .email-checkbox {
+    width: 16px;
+    height: 16px;
+  }
+
+  @media (max-width: 768px) {
+    .email-event-toggles {
+      gap: 1rem;
+    }
+  }
+</style>

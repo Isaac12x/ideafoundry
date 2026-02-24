@@ -1,0 +1,45 @@
+<div class="topology-node <%= 'topology-node--child' if depth > 0 %> topology-node--depth-<%= [depth, 5].min %>" style="<%= "--node-depth: #{depth}; --parent-color: #{topology.parent&.color || 'var(--accent)'}" if depth > 0 %>">
+  <div class="topology-node-content" style="<%= "--node-color: #{topology.color}" if topology.color.present? %>">
+    <div class="topology-node-info">
+      <div class="topology-node-icon" style="<%= "color: #{topology.color}" if topology.color.present? %>">
+        <% if topology.children.any? %>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h10M4 18h6"/><circle cx="20" cy="12" r="2"/></svg>
+        <% else %>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/></svg>
+        <% end %>
+      </div>
+      <span class="topology-node-name"><%= topology.name %></span>
+      <div class="topology-node-detail">
+        <span class="topology-node-type"><%= topology.topology_type %></span>
+        <% count = topology.ideas.count %>
+        <% if count > 0 %>
+          <span class="topology-node-count">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+            <%= count %>
+          </span>
+        <% end %>
+      </div>
+    </div>
+    <div class="topology-node-actions">
+      <%= link_to topology_path(topology), class: "btn btn-sm" do %>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+      <% end %>
+      <%= link_to edit_topology_path(topology), class: "btn btn-sm" do %>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+      <% end %>
+      <%= link_to topology_path(topology), method: :delete,
+                  data: { turbo_method: :delete, turbo_confirm: "Delete '#{topology.name}' and all children?" },
+                  class: "btn btn-sm btn-danger" do %>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+      <% end %>
+    </div>
+  </div>
+
+  <% if topology.children.ordered.any? %>
+    <div class="topology-node-children" style="--parent-color: <%= topology.color || 'var(--accent)' %>">
+      <% topology.children.ordered.each do |child| %>
+        <%= render 'topology_node', topology: child, depth: depth + 1 %>
+      <% end %>
+    </div>
+  <% end %>
+</div>

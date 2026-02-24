@@ -1,0 +1,74 @@
+<div class="topologies-container" data-controller="tabs" data-tabs-default-tab-value="<%= @default_view %>">
+  <div class="page-header">
+    <div class="header-left">
+      <h2>Topologies</h2>
+      <% if @topologies.any? %>
+        <div class="view-toggle">
+          <button class="view-toggle__btn active" data-tabs-target="tab" data-tab-name="tree" data-action="click->tabs#switch">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:2px;"><path d="M12 3v9M12 12H6M12 12h6M6 12v5M18 12v5M12 12v9"/><circle cx="12" cy="3" r="1.5" fill="currentColor"/><circle cx="6" cy="17" r="1.5" fill="currentColor"/><circle cx="18" cy="17" r="1.5" fill="currentColor"/><circle cx="12" cy="21" r="1.5" fill="currentColor"/></svg>
+            Tree
+          </button>
+          <button class="view-toggle__btn" data-tabs-target="tab" data-tab-name="graph" data-action="click->tabs#switch">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:2px;"><circle cx="5" cy="6" r="3"/><circle cx="19" cy="6" r="3"/><circle cx="12" cy="18" r="3"/><line x1="5" y1="9" x2="12" y2="15"/><line x1="19" y1="9" x2="12" y2="15"/></svg>
+            Graph
+          </button>
+        </div>
+      <% end %>
+    </div>
+    <div class="header-actions">
+      <%= link_to settings_path, class: "btn btn-sm" do %>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12.22 2h-.44a2 2 0 00-2 2v.18a2 2 0 01-1 1.73l-.43.25a2 2 0 01-2 0l-.15-.08a2 2 0 00-2.73.73l-.22.38a2 2 0 00.73 2.73l.15.1a2 2 0 011 1.72v.51a2 2 0 01-1 1.74l-.15.09a2 2 0 00-.73 2.73l.22.38a2 2 0 002.73.73l.15-.08a2 2 0 012 0l.43.25a2 2 0 011 1.73V20a2 2 0 002 2h.44a2 2 0 002-2v-.18a2 2 0 011-1.73l.43-.25a2 2 0 012 0l.15.08a2 2 0 002.73-.73l.22-.39a2 2 0 00-.73-2.73l-.15-.08a2 2 0 01-1-1.74v-.5a2 2 0 011-1.74l.15-.09a2 2 0 00.73-2.73l-.22-.38a2 2 0 00-2.73-.73l-.15.08a2 2 0 01-2 0l-.43-.25a2 2 0 01-1-1.73V4a2 2 0 00-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+        Settings
+      <% end %>
+      <%= link_to new_topology_path, class: "btn btn-primary" do %>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+        New Topology
+      <% end %>
+    </div>
+  </div>
+
+  <% if @topologies.any? %>
+    <!-- Tree Panel -->
+    <div data-tabs-target="panel" data-tab-panel="tree">
+      <div class="topology-tree">
+        <% @topologies.each do |topology| %>
+          <%= render 'topology_node', topology: topology, depth: 0 %>
+        <% end %>
+      </div>
+    </div>
+
+    <!-- Graph Panel -->
+    <div data-tabs-target="panel" data-tab-panel="graph" class="hidden">
+      <div class="topology-graph-wrapper"
+           data-controller="topology-graph"
+           data-topology-graph-url-value="<%= graph_data_topologies_path(format: :json) %>"
+           data-topology-graph-show-ideas-value="true">
+        <div class="topology-graph-controls">
+          <input type="text" class="topology-graph-search" placeholder="Search nodes..."
+                 data-topology-graph-target="search"
+                 data-action="input->topology-graph#search">
+          <div class="topology-graph-zoom">
+            <button class="btn btn-sm" data-action="click->topology-graph#zoomIn" title="Zoom In">+</button>
+            <button class="btn btn-sm" data-action="click->topology-graph#zoomOut" title="Zoom Out">&minus;</button>
+            <button class="btn btn-sm" data-action="click->topology-graph#fitAll" title="Fit All">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+            </button>
+          </div>
+          <button class="btn btn-sm" data-action="click->topology-graph#toggleIdeas">Toggle Ideas</button>
+          <button class="btn btn-sm" data-action="click->topology-graph#toggleDag">Layout: Tree / Free</button>
+        </div>
+        <div class="topology-graph-canvas" data-topology-graph-target="canvas">
+        </div>
+      </div>
+    </div>
+  <% else %>
+    <div class="empty-state">
+      <h3>No topologies yet</h3>
+      <p>Create topologies to organize and tag your ideas with<br>hierarchical categories, freeform tags, or structured trees.</p>
+      <%= link_to new_topology_path, class: "btn btn-primary" do %>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+        Create First Topology
+      <% end %>
+    </div>
+  <% end %>
+</div>

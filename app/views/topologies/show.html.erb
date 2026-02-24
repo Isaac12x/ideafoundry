@@ -1,0 +1,124 @@
+<div class="topologies-container" style="<%= "--topo-color: #{@topology.color}" if @topology.color.present? %>">
+  <!-- Hero Section -->
+  <div class="topology-hero">
+    <div class="topology-hero-content">
+      <% if @topology.ancestors.any? %>
+        <p class="breadcrumb-path">
+          <% @topology.ancestors.each do |ancestor| %>
+            <%= link_to ancestor.name, topology_path(ancestor) %><span class="breadcrumb-sep">&rsaquo;</span>
+          <% end %>
+          <span class="breadcrumb-current"><%= @topology.name %></span>
+        </p>
+      <% end %>
+
+      <h1 class="topology-hero-title">
+        <% if @topology.color.present? %>
+          <span class="topology-hero-dot" style="background: <%= @topology.color %>"></span>
+        <% end %>
+        <%= @topology.name %>
+      </h1>
+
+      <div class="topology-hero-meta">
+        <span class="topology-node-type"><%= @topology.topology_type %></span>
+        <% if @topology.parent.present? %>
+          <span class="topology-badge" style="--badge-color: <%= @topology.parent.color || 'var(--accent)' %>">
+            <span class="topology-color-dot" style="background-color: <%= @topology.parent.color || 'var(--accent)' %>"></span>
+            Parent: <%= @topology.parent.name %>
+          </span>
+        <% end %>
+      </div>
+    </div>
+
+    <div class="header-actions" style="position: absolute; top: 1.5rem; right: 1.5rem; z-index: 2;">
+      <%= link_to topologies_path, class: "btn btn-sm" do %>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        All
+      <% end %>
+      <%= link_to edit_topology_path(@topology), class: "btn btn-sm btn-primary" do %>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        Edit
+      <% end %>
+    </div>
+  </div>
+
+  <!-- Stats Row -->
+  <div class="topology-stats-row">
+    <div class="topology-stat-card" style="--stat-color: #d4953a">
+      <div class="topology-stat-label">Ideas</div>
+      <div class="topology-stat-value"><%= @ideas.count %></div>
+    </div>
+    <div class="topology-stat-card" style="--stat-color: #6ec6e6">
+      <div class="topology-stat-label">Children</div>
+      <div class="topology-stat-value"><%= @children.count %></div>
+    </div>
+    <div class="topology-stat-card" style="--stat-color: #b28cdb">
+      <div class="topology-stat-label">Depth</div>
+      <div class="topology-stat-value"><%= @topology.depth %></div>
+    </div>
+    <div class="topology-stat-card" style="--stat-color: <%= @topology.color || '#d4953a' %>">
+      <div class="topology-stat-label">Type</div>
+      <div class="topology-stat-value" style="font-size: 1rem; text-transform: capitalize;"><%= @topology.topology_type %></div>
+    </div>
+  </div>
+
+  <!-- Neighborhood Graph -->
+  <div class="topo-section" style="animation-delay: 0.15s;">
+    <div class="topo-section-header">
+      <h3>Neighborhood</h3>
+    </div>
+    <div class="topology-graph-wrapper"
+         data-controller="topology-graph"
+         data-topology-graph-url-value="<%= neighborhood_topology_path(@topology, format: :json) %>"
+         data-topology-graph-focus-id-value="t_<%= @topology.id %>"
+         data-topology-graph-show-ideas-value="true">
+      <div class="topology-graph-controls">
+        <input type="text" class="topology-graph-search" placeholder="Search nodes..."
+               data-topology-graph-target="search"
+               data-action="input->topology-graph#search">
+        <div class="topology-graph-zoom">
+          <button class="btn btn-sm" data-action="click->topology-graph#zoomIn" title="Zoom In">+</button>
+          <button class="btn btn-sm" data-action="click->topology-graph#zoomOut" title="Zoom Out">&minus;</button>
+          <button class="btn btn-sm" data-action="click->topology-graph#fitAll" title="Fit All">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+          </button>
+        </div>
+        <button class="btn btn-sm" data-action="click->topology-graph#toggleIdeas">Toggle Ideas</button>
+        <button class="btn btn-sm" data-action="click->topology-graph#toggleDag">Layout: Tree / Free</button>
+      </div>
+      <div class="topology-graph-canvas topology-graph-canvas--compact" data-topology-graph-target="canvas">
+      </div>
+    </div>
+  </div>
+
+  <% if @children.any? %>
+    <div class="topo-section">
+      <div class="topo-section-header">
+        <h3>Children</h3>
+        <span class="count"><%= @children.count %></span>
+      </div>
+      <div class="topology-tree">
+        <% @children.each do |child| %>
+          <%= render 'topology_node', topology: child, depth: 0 %>
+        <% end %>
+      </div>
+    </div>
+  <% end %>
+
+  <div class="topo-section">
+    <div class="topo-section-header">
+      <h3>Ideas</h3>
+      <span class="count"><%= @ideas.count %></span>
+    </div>
+    <% if @ideas.any? %>
+      <div class="ideas-grid">
+        <% @ideas.each do |idea| %>
+          <%= render 'ideas/idea_card', idea: idea %>
+        <% end %>
+      </div>
+    <% else %>
+      <div class="empty-state">
+        <p>No ideas tagged with this topology yet.</p>
+      </div>
+    <% end %>
+  </div>
+</div>

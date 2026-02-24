@@ -1,0 +1,20 @@
+<%= @idea.title %>
+<%= "=" * @idea.title.length %>
+
+Shared by <%= @sender_name %>
+State: <%= @idea.state.humanize %>
+<% if @idea.computed_score.present? %>Score: <%= number_with_precision(@idea.computed_score, precision: 2) %><% end %>
+<% if @idea.topologies.any? %>Topologies: <%= @idea.topologies.map(&:name).join(", ") %><% end %>
+
+<% if @idea.description.present? %>
+<%= @idea.description.to_plain_text %>
+<% end %>
+
+Metrics:
+  TRL: <%= @idea.trl || 0 %>
+  Opportunity: <%= @idea.opportunity || 0 %>
+  Timing: <%= @idea.timing || 0 %>
+  Difficulty: <%= @idea.difficulty || 0 %>
+
+Created: <%= @idea.created_at.strftime("%B %d, %Y") %>
+Attempts: <%= @idea.attempt_count %>

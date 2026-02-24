@@ -1,0 +1,397 @@
+<% if idea.errors.any? %>
+  <div class="alert alert-error">
+    <h4><%= pluralize(idea.errors.count, "error") %> prohibited this idea from being saved:</h4>
+    <ul>
+      <% idea.errors.full_messages.each do |message| %>
+        <li><%= message %></li>
+      <% end %>
+    </ul>
+  </div>
+<% end %>
+
+<% templates = @templates || [] %>
+<% show_template_step = idea.new_record? && templates.any? %>
+
+<div data-controller="template-step" data-template-step-selected-value="<%= idea.persisted? || idea.template_id.present? || idea.errors.any? %>">
+
+  <% if show_template_step %>
+    <!-- ===== STEP 1: Template Selection ===== -->
+    <div class="template-step" data-template-step-target="step">
+      <h3>Choose a Template</h3>
+      <p>Pick a template to structure your idea, or start with a blank form.</p>
+      <div class="template-cards">
+        <% templates.each do |tmpl| %>
+          <div class="template-card"
+               data-action="click->template-step#select"
+               data-template-id="<%= tmpl.id %>">
+            <span class="template-card-name"><%= tmpl.name %></span>
+            <% if tmpl.is_default? %>
+              <span class="template-card-badge">Default</span>
+            <% end %>
+            <span class="template-card-meta">
+              <%= pluralize(tmpl.field_definitions&.size || 0, 'field') %>
+            </span>
+          </div>
+        <% end %>
+      </div>
+      <button type="button" class="template-step-skip" data-action="click->template-step#skip">
+        Skip &mdash; blank form
+      </button>
+    </div>
+  <% end %>
+
+  <!-- ===== STEP 2: Full Form ===== -->
+  <div class="form-layout" data-controller="template-switch" data-template-step-target="form" <% if show_template_step %>style="display:none"<% end %>>
+
+    <% if templates.any? %>
+      <!-- Template Selector (hidden during step 1, visible as dropdown in form) -->
+      <div class="form-template-selector">
+        <label class="form-template-label">Template</label>
+        <select class="form-control template-select"
+                name="idea[template_id]"
+                data-template-switch-target="selector"
+                data-action="change->template-switch#change">
+          <option value="">No template</option>
+          <% templates.each do |tmpl| %>
+            <option value="<%= tmpl.id %>"
+                    <%= 'selected' if idea.template_id == tmpl.id %>
+                    data-default="<%= tmpl.is_default? %>">
+              <%= tmpl.name %><%= ' (default)' if tmpl.is_default? %>
+            </option>
+          <% end %>
+        </select>
+      </div>
+    <% end %>
+
+    <!-- ===== MAIN COLUMN ===== -->
+    <div class="form-main">
+
+      <!-- Title -->
+      <div class="form-panel">
+        <h3 class="form-panel-title">Basics</h3>
+        <div class="form-group">
+          <%= form.label :title %>
+          <%= form.text_field :title, class: "form-control", required: true, placeholder: "What's the idea?" %>
+        </div>
+        <div class="form-group">
+          <%= form.label :state %>
+          <%= form.select :state,
+              Idea.states.keys.map { |k| [k.humanize, k] },
+              {},
+              class: "form-control" %>
+        </div>
+      </div>
+
+      <!-- Hero Image -->
+      <div class="form-panel">
+        <h3 class="form-panel-title">Hero Image</h3>
+        <div data-controller="dropzone" data-dropzone-multiple-value="false" data-dropzone-accept-value="image/*">
+          <div class="dropzone" data-dropzone-target="zone" data-action="click->dropzone#click dragover->dropzone#dragover dragenter->dropzone#dragenter dragleave->dropzone#dragleave drop->dropzone#drop">
+            <div class="dropzone__label" data-dropzone-target="placeholder">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+              <span>Drag & drop an image or <strong>browse</strong></span>
+              <small>Recommended: at least 800×600px</small>
+            </div>
+            <div class="dropzone__preview-hero" data-dropzone-target="preview">
+              <% if idea.hero_image.attached? %>
+                <%= image_tag idea.hero_image, style: "max-width:100%;max-height:200px;border-radius:6px;border:1px solid var(--border-default);" %>
+              <% end %>
+            </div>
+          </div>
+          <%= form.file_field :hero_image, accept: "image/*", class: "form-control", style: "display:none", data: { dropzone_target: "input" } %>
+        </div>
+      </div>
+
+      <!-- Description (TipTap) -->
+      <div class="form-panel">
+        <h3 class="form-panel-title">Description</h3>
+        <div class="form-group" data-controller="editor"
+             data-editor-content-value="<%= idea.description&.body&.to_html&.gsub('"', '&quot;') || '' %>"
+             data-editor-upload-url-value="<%= uploads_path %>">
+          <%= form.hidden_field :description, data: { editor_target: "input" } %>
+          <div class="tiptap-toolbar" data-editor-target="toolbar">
+            <div class="tiptap-toolbar__group">
+              <button type="button" data-cmd="bold" title="Bold"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M6 4h8a4 4 0 014 4 4 4 0 01-4 4H6z"/><path d="M6 12h9a4 4 0 014 4 4 4 0 01-4 4H6z"/></svg></button>
+              <button type="button" data-cmd="italic" title="Italic"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="4" x2="10" y2="4"/><line x1="14" y1="20" x2="5" y2="20"/><line x1="15" y1="4" x2="9" y2="20"/></svg></button>
+              <button type="button" data-cmd="underline" title="Underline"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3v7a6 6 0 006 6 6 6 0 006-6V3"/><line x1="4" y1="21" x2="20" y2="21"/></svg></button>
+              <button type="button" data-cmd="strike" title="Strikethrough"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.3 4.9c-1.1-.7-2.6-1.2-4.3-1.2-3.2 0-5 1.6-5 3.8 0 1 .3 1.8 1 2.5"/><line x1="4" y1="12" x2="20" y2="12"/><path d="M17 14c.2.5.3 1.1.3 1.7 0 2.4-2 4.3-5.3 4.3-1.8 0-3.5-.6-4.7-1.5"/></svg></button>
+            </div>
+            <div class="tiptap-toolbar__group">
+              <button type="button" data-cmd="heading" data-level="1" title="Heading 1">H1</button>
+              <button type="button" data-cmd="heading" data-level="2" title="Heading 2">H2</button>
+              <button type="button" data-cmd="heading" data-level="3" title="Heading 3">H3</button>
+            </div>
+            <div class="tiptap-toolbar__group">
+              <button type="button" data-cmd="bulletList" title="Bullet List"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="4" cy="6" r="1" fill="currentColor"/><circle cx="4" cy="12" r="1" fill="currentColor"/><circle cx="4" cy="18" r="1" fill="currentColor"/></svg></button>
+              <button type="button" data-cmd="orderedList" title="Numbered List"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="10" y1="6" x2="21" y2="6"/><line x1="10" y1="12" x2="21" y2="12"/><line x1="10" y1="18" x2="21" y2="18"/><text x="3" y="7" font-size="7" fill="currentColor" stroke="none">1</text><text x="3" y="13" font-size="7" fill="currentColor" stroke="none">2</text><text x="3" y="19" font-size="7" fill="currentColor" stroke="none">3</text></svg></button>
+              <button type="button" data-cmd="blockquote" title="Blockquote"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V20c0 1 0 1 1 1z"/><path d="M15 21c3 0 7-1 7-8V5c0-1.25-.757-2.017-2-2h-4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2h.75c0 2.25.25 4-2.75 4v3c0 1 0 1 1 1z"/></svg></button>
+            </div>
+            <div class="tiptap-toolbar__group">
+              <button type="button" data-cmd="code" title="Inline Code"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></button>
+              <button type="button" data-cmd="codeBlock" title="Code Block"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/><line x1="12" y1="2" x2="12" y2="22" stroke-dasharray="2 2"/></svg></button>
+              <button type="button" data-cmd="horizontalRule" title="Horizontal Rule">&mdash;</button>
+            </div>
+            <div class="tiptap-toolbar__group">
+              <button type="button" data-cmd="link" title="Link"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg></button>
+              <button type="button" data-cmd="image" title="Insert Image"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg></button>
+            </div>
+            <div class="tiptap-toolbar__group tiptap-toolbar__group--end">
+              <button type="button" data-cmd="undo" title="Undo"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg></button>
+              <button type="button" data-cmd="redo" title="Redo"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg></button>
+            </div>
+          </div>
+          <div class="tiptap-editor" data-editor-target="editor"></div>
+        </div>
+      </div>
+
+      <!-- Attachments -->
+      <div class="form-panel">
+        <h3 class="form-panel-title">Attachments</h3>
+
+        <% if idea.attachments.attached? %>
+          <div class="current-attachments" style="margin-bottom: 0.75rem;">
+            <ul>
+              <% idea.attachments.each do |attachment| %>
+                <li><%= attachment.filename %> (<%= number_to_human_size(attachment.byte_size) %>)</li>
+              <% end %>
+            </ul>
+          </div>
+        <% end %>
+
+        <div data-controller="dropzone" data-dropzone-multiple-value="true" data-dropzone-accept-value="*/*">
+          <div class="dropzone" data-dropzone-target="zone" data-action="click->dropzone#click dragover->dropzone#dragover dragenter->dropzone#dragenter dragleave->dropzone#dragleave drop->dropzone#drop">
+            <div class="dropzone__label" data-dropzone-target="placeholder">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+              <span>Drag files here or <strong>browse</strong></span>
+              <small>Multiple files allowed</small>
+            </div>
+            <div class="dropzone__preview-grid" data-dropzone-target="preview"></div>
+          </div>
+          <%= form.file_field :attachments, multiple: true, style: "display:none", data: { dropzone_target: "input" } %>
+        </div>
+      </div>
+
+      <!-- Topologies & Lists -->
+      <div class="form-panel">
+        <h3 class="form-panel-title">Organization</h3>
+
+        <div class="form-group">
+          <label>Topologies</label>
+          <div class="checkbox-group topology-picker">
+            <% topologies.each do |topology| %>
+              <div class="checkbox-item">
+                <%= check_box_tag 'idea[topology_ids][]', topology.id,
+                    idea.topologies.include?(topology),
+                    id: "topology_#{topology.id}" %>
+                <label for="topology_<%= topology.id %>">
+                  <% if topology.color.present? %>
+                    <span class="topology-color-dot" style="background-color: <%= topology.color %>;"></span>
+                  <% end %>
+                  <%= topology.full_path %>
+                </label>
+              </div>
+            <% end %>
+            <% if topologies.empty? %>
+              <p class="text-muted" style="font-size: 0.85rem;">No topologies yet. <%= link_to "Create one", new_topology_path %>.</p>
+            <% end %>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Assign to Lists</label>
+          <div class="checkbox-group">
+            <% lists.each do |list| %>
+              <div class="checkbox-item">
+                <%= check_box_tag 'list_ids[]', list.id,
+                    idea.lists.include?(list),
+                    id: "list_#{list.id}" %>
+                <%= label_tag "list_#{list.id}", list.name %>
+              </div>
+            <% end %>
+            <% if lists.empty? %>
+              <p class="text-muted" style="font-size: 0.85rem;">No lists yet. Create one from the Lists page.</p>
+            <% end %>
+          </div>
+        </div>
+      </div>
+
+      <!-- Custom Fields from Template (flat, sorted by position) -->
+      <% if idea.template && idea.template.field_definitions.present? %>
+        <div class="form-panel" data-template-switch-target="customFieldsPanel">
+          <h3 class="form-panel-title">Custom Fields</h3>
+          <div class="weight-grid">
+            <% idea.template.field_definitions.sort_by { |f| f['position'].to_i }.each do |field| %>
+              <% meta_key = field['instance_id'] || field['name'] %>
+              <% field_value = idea.metadata&.dig(meta_key) || field['default_value'] || '' %>
+              <div class="weight-item" data-custom-field="<%= meta_key %>" data-field-instance-id="<%= field['instance_id'] %>">
+                <label class="weight-label">
+                  <%= field['label'] || field['name'].humanize %>
+                  <% if field['required'] %><span style="color:var(--danger)">*</span><% end %>
+                </label>
+                <div class="weight-input-group">
+                  <% case field['type'] %>
+                  <% when 'textarea' %>
+                    <textarea name="idea[metadata][<%= meta_key %>]"
+                              class="weight-input" style="text-align:left;min-height:80px;"
+                              placeholder="<%= field['placeholder'] %>"
+                              <%= 'required' if field['required'] %>><%= field_value %></textarea>
+                  <% when 'select' %>
+                    <select name="idea[metadata][<%= meta_key %>]" class="weight-input"
+                            <%= 'required' if field['required'] %>>
+                      <option value="">Select...</option>
+                      <% (field['options'] || []).each do |opt| %>
+                        <option value="<%= opt %>" <%= 'selected' if opt == field_value %>><%= opt %></option>
+                      <% end %>
+                    </select>
+                  <% when 'number' %>
+                    <input type="number" name="idea[metadata][<%= meta_key %>]"
+                           value="<%= field_value %>" class="weight-input"
+                           <%= 'required' if field['required'] %>>
+                  <% when 'boolean' %>
+                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+                      <input type="checkbox" name="idea[metadata][<%= meta_key %>]"
+                             value="true" <%= 'checked' if field_value.to_s == 'true' %>>
+                      <%= field['label'] || field['name'].humanize %>
+                    </label>
+                  <% when 'date' %>
+                    <input type="date" name="idea[metadata][<%= meta_key %>]"
+                           value="<%= field_value %>" class="weight-input"
+                           <%= 'required' if field['required'] %>>
+                  <% else %>
+                    <input type="text" name="idea[metadata][<%= meta_key %>]"
+                           value="<%= field_value %>" class="weight-input" style="text-align:left;"
+                           placeholder="<%= field['placeholder'] %>"
+                           <%= 'required' if field['required'] %>>
+                  <% end %>
+                </div>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      <% end %>
+      <!-- Hidden container for dynamic tab panels rendered by template-switch JS -->
+      <div data-template-switch-target="tabPanelsContainer"></div>
+
+    </div>
+
+    <!-- ===== SIDEBAR ===== -->
+    <div class="form-sidebar">
+
+      <!-- Orphaned Content (from template switch) -->
+      <div class="form-panel orphaned-panel" data-template-switch-target="orphanedPanel" style="display:none;">
+        <h3 class="form-panel-title">Orphaned Content</h3>
+        <p class="orphaned-hint">These values don't match the new template. Drag them into a field above, or they'll be discarded.</p>
+        <div class="orphaned-list" data-template-switch-target="orphanedList"></div>
+      </div>
+
+      <!-- Scoring -->
+      <% user = User.first || User.create!(email: 'user@example.com', name: 'Default User') %>
+      <% weights = user.scoring_weights %>
+      <div class="form-panel scoring-section" data-controller="score"
+           data-score-trl-weight-value="<%= weights['trl'] %>"
+           data-score-difficulty-weight-value="<%= weights['difficulty'] %>"
+           data-score-opportunity-weight-value="<%= weights['opportunity'] %>"
+           data-score-timing-weight-value="<%= weights['timing'] %>">
+        <h3 class="form-panel-title">Scoring</h3>
+
+        <div class="scoring-grid">
+          <div class="score-item">
+            <div class="score-item-header">
+              <label class="score-label score-tooltip">
+                TRL
+                <span class="tooltip-text">Technology Readiness Level (0=concept, 10=proven)</span>
+              </label>
+              <span class="score-value trl" data-score-target="trlValue"><%= idea.trl || 0 %></span>
+            </div>
+            <%= form.range_field :trl,
+                min: 0, max: 10, step: 1,
+                value: idea.trl || 0,
+                class: "score-slider trl",
+                data: { score_target: "trlSlider", action: "input->score#updateTrl" } %>
+            <div class="score-range"><span>Concept</span><span>Proven</span></div>
+          </div>
+
+          <div class="score-item">
+            <div class="score-item-header">
+              <label class="score-label score-tooltip">
+                Difficulty
+                <span class="tooltip-text">Execution difficulty (0=easy, 10=extremely hard)</span>
+              </label>
+              <span class="score-value difficulty" data-score-target="difficultyValue"><%= idea.difficulty || 0 %></span>
+            </div>
+            <%= form.range_field :difficulty,
+                min: 0, max: 10, step: 1,
+                value: idea.difficulty || 0,
+                class: "score-slider difficulty",
+                data: { score_target: "difficultySlider", action: "input->score#updateDifficulty" } %>
+            <div class="score-range"><span>Easy</span><span>Extreme</span></div>
+            <%= form.text_area :difficulty_explanation,
+                placeholder: "Why this score?",
+                class: "score-explanation",
+                data: { score_target: "difficultyExplanation", action: "input->score#debouncedSave" } %>
+          </div>
+
+          <div class="score-item">
+            <div class="score-item-header">
+              <label class="score-label score-tooltip">
+                Opportunity
+                <span class="tooltip-text">Market opportunity size (0=small, 10=huge)</span>
+              </label>
+              <span class="score-value opportunity" data-score-target="opportunityValue"><%= idea.opportunity || 0 %></span>
+            </div>
+            <%= form.range_field :opportunity,
+                min: 0, max: 10, step: 1,
+                value: idea.opportunity || 0,
+                class: "score-slider opportunity",
+                data: { score_target: "opportunitySlider", action: "input->score#updateOpportunity" } %>
+            <div class="score-range"><span>Small</span><span>Huge</span></div>
+            <%= form.text_area :opportunity_explanation,
+                placeholder: "Why this score?",
+                class: "score-explanation",
+                data: { score_target: "opportunityExplanation", action: "input->score#debouncedSave" } %>
+          </div>
+
+          <div class="score-item">
+            <div class="score-item-header">
+              <label class="score-label score-tooltip">
+                Timing
+                <span class="tooltip-text">Market timing (0=poor, 10=perfect)</span>
+              </label>
+              <span class="score-value timing" data-score-target="timingValue"><%= idea.timing || 0 %></span>
+            </div>
+            <%= form.range_field :timing,
+                min: 0, max: 10, step: 1,
+                value: idea.timing || 0,
+                class: "score-slider timing",
+                data: { score_target: "timingSlider", action: "input->score#updateTiming" } %>
+            <div class="score-range"><span>Poor</span><span>Perfect</span></div>
+            <%= form.text_area :timing_explanation,
+                placeholder: "Why this score?",
+                class: "score-explanation",
+                data: { score_target: "timingExplanation", action: "input->score#debouncedSave" } %>
+          </div>
+        </div>
+
+        <div class="computed-score-display" data-score-target="computedScore">
+          <div class="computed-score-label">Computed Score</div>
+          <div class="computed-score-value" data-score-target="computedScore">
+            <%= number_with_precision(idea.computed_score || 0, precision: 2) %>
+          </div>
+          <div class="score-formula" data-score-target="scoreFormula">
+            <%= user.scoring_formula_display %>
+          </div>
+        </div>
+      </div>
+
+      <!-- Form Actions -->
+      <div class="form-panel">
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <%= form.submit idea.new_record? ? "Create Idea" : "Update Idea", class: "btn btn-primary", style: "width:100%;justify-content:center;" %>
+          <%= link_to "Cancel", idea.new_record? ? ideas_path : idea_path(idea), class: "btn", style: "width:100%;justify-content:center;" %>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>

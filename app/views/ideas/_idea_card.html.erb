@@ -1,0 +1,47 @@
+<div class="idea-card">
+  <%= link_to idea_path(idea), class: "idea-card-link", data: { turbo_frame: "_top" } do %>
+    <div class="idea-card-header">
+      <h3 class="idea-title"><%= idea.title %></h3>
+      <span class="idea-state <%= idea.state %>"><%= idea.state.humanize %></span>
+    </div>
+
+    <div class="idea-meta">
+      <% idea.topologies.each do |topology| %>
+        <span class="topology-badge" style="--badge-color: <%= topology.color || 'var(--accent)' %>">
+          <span class="topology-color-dot" style="background-color: <%= topology.color || 'var(--accent)' %>"></span>
+          <%= topology.name %>
+        </span>
+      <% end %>
+      <% if idea.computed_score %>
+        <span class="idea-score">
+          <%= number_with_precision(idea.computed_score, precision: 1) %>
+        </span>
+      <% end %>
+      <span class="idea-trl">TRL <%= idea.trl %></span>
+    </div>
+
+    <% if idea.description.present? %>
+      <div class="idea-description">
+        <%= truncate(strip_tags(idea.description.to_s), length: 120) %>
+      </div>
+    <% end %>
+
+    <div class="idea-footer">
+      <span class="idea-date"><%= time_ago_in_words(idea.created_at) %> ago</span>
+      <% if idea.lists.any? %>
+        <span class="idea-lists"><%= idea.lists.pluck(:name).join(', ') %></span>
+      <% end %>
+    </div>
+  <% end %>
+
+  <div class="idea-actions">
+    <%= link_to edit_idea_path(idea), class: "btn btn-sm", data: { turbo_frame: "_top" } do %>
+      Edit
+    <% end %>
+    <%= link_to idea_path(idea), method: :delete,
+                data: { turbo_method: :delete, turbo_confirm: "Are you sure?" },
+                class: "btn btn-sm btn-danger" do %>
+      Delete
+    <% end %>
+  </div>
+</div>

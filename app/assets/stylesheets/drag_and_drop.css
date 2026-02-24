@@ -1,0 +1,136 @@
+/* ============================================
+   Drag & Drop — "Dark Forge" Theme
+   ============================================ */
+
+.draggable-item {
+  cursor: move;
+  transition: opacity 0.2s, transform 0.2s, border-color 0.2s;
+  border: 1px solid transparent;
+}
+
+.draggable-item:hover {
+  border-color: var(--border-emphasis);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+.draggable-item.dragging {
+  opacity: 0.4;
+  transform: rotate(3deg);
+  z-index: 1000;
+}
+
+/* Drop zones */
+.drop-zone {
+  min-height: 80px;
+  border: 2px dashed transparent;
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  transition: all 0.2s;
+  position: relative;
+}
+
+.drop-zone.drag-over {
+  border-color: var(--accent);
+  background: var(--accent-muted);
+}
+
+.drop-zone.drag-over::before {
+  content: "Drop here";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: var(--accent);
+  font-weight: 600;
+  font-size: 0.8rem;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.drop-zone:empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
+.drop-zone:empty::after {
+  content: "Drop ideas here";
+}
+
+/* List idea cards (in drag context) */
+.drop-zone .idea-card {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  margin-bottom: 6px;
+}
+
+.drop-zone .idea-card:last-child { margin-bottom: 0; }
+
+.drop-zone .idea-card .idea-title {
+  font-weight: 500;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.drop-zone .idea-card .idea-meta {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  display: flex;
+  gap: 10px;
+}
+
+.drop-zone .idea-card .idea-state {
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 0.65rem;
+}
+
+.drag-handle {
+  cursor: grab;
+  color: var(--text-muted);
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.drag-handle:hover {
+  color: var(--text-secondary);
+  background: var(--bg-overlay);
+}
+
+.drag-handle:active { cursor: grabbing; }
+
+/* Loading states */
+.updating {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.updating::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 20px;
+  height: 20px;
+  margin: -10px 0 0 -10px;
+  border: 2px solid var(--accent);
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (max-width: 768px) {
+  .drop-zone { min-height: 60px; padding: 10px; }
+  .drop-zone .idea-card { padding: 8px 10px; }
+}

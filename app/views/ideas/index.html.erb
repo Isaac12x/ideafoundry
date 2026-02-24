@@ -1,0 +1,41 @@
+<div class="ideas-container">
+  <div class="page-header">
+    <h2>Ideas</h2>
+    <div class="header-actions">
+      <%= link_to lists_path, class: "btn" do %>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        Lists
+      <% end %>
+      <%= link_to new_idea_path, class: "btn btn-primary" do %>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+        New Idea
+      <% end %>
+    </div>
+  </div>
+
+  <%= turbo_frame_tag "ideas_filters" do %>
+    <%= render 'filters' %>
+  <% end %>
+
+  <%= turbo_frame_tag "ideas_list" do %>
+    <div class="ideas-grid">
+      <% @ideas.each do |idea| %>
+        <%= render 'idea_card', idea: idea %>
+      <% end %>
+
+      <% if @ideas.empty? %>
+        <div class="empty-state" style="grid-column: 1 / -1;">
+          <h3>No ideas found</h3>
+          <p>Adjust your filters or forge a new idea.</p>
+          <%= link_to "Create Idea", new_idea_path, class: "btn btn-primary" %>
+        </div>
+      <% end %>
+    </div>
+
+    <% if @ideas.respond_to?(:total_pages) && @ideas.total_pages > 1 %>
+      <div class="pagination">
+        <%= paginate @ideas %>
+      </div>
+    <% end %>
+  <% end %>
+</div>

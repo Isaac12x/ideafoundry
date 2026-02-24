@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+
+# All-in-one portable launcher for idea-app
+# Works from any directory. Prepares DB, starts jobs + web server.
+
+set -e
+
+APP_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+export RAILS_ENV="${RAILS_ENV:-production}"
+export PORT="${PORT:-3333}"
+
+cd "$APP_DIR"
+
+echo "==> Preparing database..."
+bin/rails db:prepare
+
+echo "==> Starting SolidQueue in background..."
+bin/jobs &
+JOBS_PID=$!
+mkdir -p tmp/pids
+echo "$JOBS_PID" > tmp/pids/solid_queue.pid
+
+cleanup() {
+  echo "==> Shutting down SolidQueue (PID $JOBS_PID)..."
+  kill "$JOBS_PID" 2>/dev/null || true
+  wait "$JOBS_PID" 2>/dev/null || true
+}
+trap cleanup EXIT INT TERM
+
+echo "==> Starting Puma on port $PORT..."
+exec bin/rails server -p "$PORT"

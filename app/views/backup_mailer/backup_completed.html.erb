@@ -1,0 +1,28 @@
+<h2>Backup Completed</h2>
+
+<p>A scheduled backup has completed successfully.</p>
+
+<table style="border-collapse: collapse; width: 100%; max-width: 400px;">
+  <tr>
+    <td style="padding: 8px 12px; font-weight: bold; color: #666;">Date</td>
+    <td style="padding: 8px 12px;"><%= @export_job.created_at.strftime("%b %d, %Y at %l:%M %p") %></td>
+  </tr>
+  <tr>
+    <td style="padding: 8px 12px; font-weight: bold; color: #666;">Size</td>
+    <td style="padding: 8px 12px;"><%= @export_job.file_size_human %></td>
+  </tr>
+  <% if @export_job.duration_human %>
+  <tr>
+    <td style="padding: 8px 12px; font-weight: bold; color: #666;">Duration</td>
+    <td style="padding: 8px 12px;"><%= @export_job.duration_human %></td>
+  </tr>
+  <% end %>
+  <tr>
+    <td style="padding: 8px 12px; font-weight: bold; color: #666;">Format</td>
+    <td style="padding: 8px 12px;"><%= @export_job.password_protected? ? 'Encrypted ZIP' : 'tar.gz' %></td>
+  </tr>
+</table>
+
+<p style="margin-top: 1.5rem;">
+  You can download this backup from Settings > Export & Backup in your workspace.
+</p>

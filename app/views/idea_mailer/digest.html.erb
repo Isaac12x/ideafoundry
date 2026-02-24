@@ -1,0 +1,42 @@
+<div style="max-width: 600px; margin: 0 auto; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: <%= @theme[:text] %>; background: <%= @theme[:bg] %>; padding: 2rem; border-radius: 10px;">
+  <div style="border-bottom: 1px solid <%= @theme[:border] %>; padding-bottom: 1rem; margin-bottom: 1.5rem;">
+    <h1 style="margin: 0; font-size: 1.5rem; font-weight: 400; font-style: italic; color: <%= @theme[:accent] %>;">
+      Your <%= @period %> digest
+    </h1>
+    <p style="margin: 6px 0 0; font-size: 0.85rem; color: <%= @theme[:muted] %>;">
+      <%= @ideas.size %> idea<%= 's' if @ideas.size != 1 %> updated &middot; <%= Time.current.strftime("%B %d, %Y") %>
+    </p>
+  </div>
+
+  <% @ideas.each do |idea| %>
+    <div style="background: <%= @theme[:card_bg] %>; border: 1px solid <%= @theme[:border] %>; border-radius: 6px; padding: 1rem; margin-bottom: 1rem;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+        <h3 style="margin: 0; font-size: 1rem; color: <%= @theme[:text] %>; font-weight: 500;">
+          <%= idea.title %>
+        </h3>
+        <% if idea.computed_score.present? && @content_prefs['include_scores'] %>
+          <span style="background: <%= @theme[:bg] %>; border: 1px solid <%= @theme[:border] %>; border-radius: 4px; padding: 2px 8px; font-size: 0.8rem; color: <%= @theme[:accent] %>; font-weight: 600;">
+            <%= number_with_precision(idea.computed_score, precision: 2) %>
+          </span>
+        <% end %>
+      </div>
+
+      <p style="margin: 0; font-size: 0.8rem; color: <%= @theme[:muted] %>;">
+        <%= idea.state.humanize %>
+        <% if idea.topologies.any? %>
+          &middot; <%= idea.topologies.map(&:name).join(", ") %>
+        <% end %>
+      </p>
+
+      <% if idea.description.present? && @content_prefs['include_description'] %>
+        <p style="margin: 0.5rem 0 0; font-size: 0.85rem; color: <%= @theme[:text] %>; line-height: 1.5;">
+          <%= truncate(idea.description.to_plain_text, length: 200) %>
+        </p>
+      <% end %>
+    </div>
+  <% end %>
+
+  <div style="border-top: 1px solid <%= @theme[:border] %>; padding-top: 1rem; font-size: 0.8rem; color: <%= @theme[:muted] %>;">
+    You're receiving this because you opted into <%= @period %> digests.
+  </div>
+</div>

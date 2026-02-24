@@ -1,0 +1,251 @@
+<div class="template-show">
+  <div class="page-header">
+    <h2><%= @template.name %></h2>
+    <div class="header-actions">
+      <%= link_to "Edit", edit_template_path(@template), class: "btn" %>
+      <%= link_to "All Templates", templates_path, class: "btn" %>
+    </div>
+  </div>
+
+  <% if @template.is_default? %>
+    <div class="template-show__badge">
+      <span class="template-show__default-pill">Default Template</span>
+      <span class="template-show__badge-note">New ideas will use this template automatically</span>
+    </div>
+  <% end %>
+
+  <div class="template-show__grid">
+    <!-- Section Order -->
+    <div class="template-show__panel">
+      <h3>Section Order</h3>
+      <p class="form-text" style="margin-top: 0; margin-bottom: 1rem;">How sections appear on the idea detail page</p>
+      <ol class="template-show__section-list">
+        <% @template.get_sections.each_with_index do |section, i| %>
+          <li class="template-show__section-item" style="animation-delay: <%= i * 40 %>ms;">
+            <span class="template-show__section-num"><%= i + 1 %></span>
+            <span><%= section.humanize %></span>
+          </li>
+        <% end %>
+      </ol>
+    </div>
+
+    <!-- Custom Fields -->
+    <div class="template-show__panel">
+      <h3>Custom Fields</h3>
+      <p class="form-text" style="margin-top: 0; margin-bottom: 1rem;">
+        <%= pluralize(@template.field_definitions.length, 'field') %> defined
+      </p>
+
+      <% if @template.field_definitions.any? %>
+        <% standard_attrs = %w[title state trl difficulty opportunity timing description] %>
+        <div class="template-show__fields">
+          <% @template.field_definitions.sort_by { |f| f['position'].to_i }.each_with_index do |field, i| %>
+            <% is_custom = !standard_attrs.include?(field['name']) %>
+            <div class="template-show__field" style="animation-delay: <%= i * 50 %>ms;">
+              <div class="template-show__field-header">
+                <span class="template-show__field-name"><%= field['label'] || field['name'].humanize %></span>
+                <% if is_custom %>
+                  <span class="template-show__custom-badge">custom</span>
+                <% end %>
+                <span class="field-def__type-badge field-def__type-badge--<%= field['type'] %>"><%= field['type'] %></span>
+                <% if field['required'] %>
+                  <span class="field-def__required-badge">required</span>
+                <% end %>
+              </div>
+              <div class="template-show__field-details">
+                <span class="template-show__field-key"><%= field['name'] %></span>
+                <% if field['default_value'].present? %>
+                  <span class="template-show__field-default">default: <%= field['default_value'] %></span>
+                <% end %>
+                <% if field['options'].present? %>
+                  <span class="template-show__field-options"><%= field['options'].join(' / ') %></span>
+                <% end %>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      <% else %>
+        <div class="empty-state">
+          <p>No custom fields defined.</p>
+        </div>
+      <% end %>
+    </div>
+  </div>
+
+  <div class="template-show__meta">
+    Created <%= time_ago_in_words(@template.created_at) %> ago
+    <% if @template.updated_at != @template.created_at %>
+      &middot; Updated <%= time_ago_in_words(@template.updated_at) %> ago
+    <% end %>
+    <% if @template.ideas.any? %>
+      &middot; Used by <%= pluralize(@template.ideas.count, 'idea') %>
+    <% end %>
+  </div>
+</div>
+
+<style>
+  .template-show {
+    max-width: 1000px;
+    margin: 0 auto;
+  }
+
+  .template-show__badge {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .template-show__default-pill {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 4px 12px;
+    border-radius: var(--radius-xl);
+    background: var(--accent-muted);
+    color: var(--accent);
+    border: 1px solid var(--accent-emphasis);
+  }
+
+  .template-show__badge-note {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+  }
+
+  .template-show__grid {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+  }
+
+  .template-show__panel {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    padding: 1.5rem;
+  }
+
+  .template-show__panel h3 {
+    margin: 0 0 4px 0;
+    font-family: var(--font-display);
+    font-style: italic;
+    font-size: 1.3rem;
+    font-weight: 400;
+    color: var(--text-primary);
+  }
+
+  /* Section list */
+  .template-show__section-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .template-show__section-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 8px 12px;
+    background: var(--bg-input);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    animation: fadeInUp 0.3s ease both;
+  }
+
+  .template-show__section-num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    font-weight: 500;
+    color: var(--text-muted);
+    background: var(--bg-elevated);
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  /* Fields */
+  .template-show__fields {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .template-show__field {
+    padding: 0.75rem 1rem;
+    background: var(--bg-input);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    animation: fadeInUp 0.3s ease both;
+    transition: border-color 0.2s;
+  }
+
+  .template-show__field:hover {
+    border-color: var(--border-default);
+  }
+
+  .template-show__field-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+  }
+
+  .template-show__field-name {
+    font-weight: 500;
+    font-size: 0.9rem;
+    color: var(--text-primary);
+  }
+
+  .template-show__custom-badge {
+    font-size: 0.65rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    padding: 2px 8px;
+    border-radius: var(--radius-xl);
+    background: var(--accent-muted);
+    color: var(--accent);
+    border: 1px solid var(--accent-emphasis);
+  }
+
+  .template-show__field-details {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+  }
+
+  .template-show__field-key {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    color: var(--text-muted);
+  }
+
+  .template-show__field-default::before { content: ''; }
+  .template-show__field-options { font-style: italic; }
+
+  .template-show__meta {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border-subtle);
+  }
+
+  @media (max-width: 768px) {
+    .template-show__grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

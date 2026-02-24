@@ -1,0 +1,70 @@
+<% index ||= 0 %>
+<div class="backlog-item <%= 'backlog-item--completed' if build_item.completed? %>"
+     id="build_item_<%= build_item.id %>"
+     data-build-item-sort-target="item"
+     data-item-id="<%= build_item.id %>"
+     data-position="<%= build_item.position %>"
+     draggable="<%= build_item.completed? ? 'false' : 'true' %>"
+     style="animation-delay: <%= index * 50 %>ms">
+
+  <% unless build_item.completed? %>
+    <span class="backlog-index"><%= index + 1 %></span>
+    <div class="backlog-drag" title="Drag to reorder">
+      <svg width="10" height="16" viewBox="0 0 10 16" fill="currentColor">
+        <circle cx="3" cy="2" r="1.2"/><circle cx="7" cy="2" r="1.2"/>
+        <circle cx="3" cy="6" r="1.2"/><circle cx="7" cy="6" r="1.2"/>
+        <circle cx="3" cy="10" r="1.2"/><circle cx="7" cy="10" r="1.2"/>
+        <circle cx="3" cy="14" r="1.2"/><circle cx="7" cy="14" r="1.2"/>
+      </svg>
+    </div>
+  <% end %>
+
+  <div class="backlog-check">
+    <%= button_to toggle_build_item_path(build_item), method: :patch, class: "backlog-check-btn", data: { turbo_stream: true } do %>
+      <% if build_item.completed? %>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="4" fill="var(--success)" stroke="var(--success)" stroke-width="2"/><polyline points="9 12 11.5 14.5 15.5 10" stroke="var(--bg-base)" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <% else %>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="4" stroke="var(--border-emphasis)" stroke-width="1.5"/></svg>
+      <% end %>
+    <% end %>
+  </div>
+
+  <div class="backlog-body">
+    <div class="backlog-title-row">
+      <span class="backlog-title"><%= build_item.title %></span>
+      <% if build_item.links.any? %>
+        <span class="backlog-link-count" title="<%= build_item.links.size %> link<%= build_item.links.size == 1 ? '' : 's' %>">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+          <%= build_item.links.size %>
+        </span>
+      <% end %>
+    </div>
+    <% if build_item.description.present? %>
+      <span class="backlog-desc"><%= truncate(build_item.description, length: 140) %></span>
+    <% end %>
+    <% if build_item.links.any? %>
+      <div class="backlog-links-row">
+        <% build_item.links.first(3).each do |link| %>
+          <a href="<%= link['url'] %>" target="_blank" rel="noopener" class="backlog-link-pill">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            <%= link['label'].presence || begin URI.parse(link['url']).host&.sub('www.','') rescue link['url'] end %>
+          </a>
+        <% end %>
+        <% if build_item.links.size > 3 %>
+          <span class="backlog-link-more">+<%= build_item.links.size - 3 %></span>
+        <% end %>
+      </div>
+    <% end %>
+  </div>
+
+  <div class="backlog-actions">
+    <% unless build_item.completed? %>
+      <button class="backlog-action-btn" data-controller="inline-edit" data-action="click->inline-edit#start" data-build-item-id="<%= build_item.id %>" title="Edit">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+      </button>
+    <% end %>
+    <%= button_to build_item_path(build_item), method: :delete, class: "backlog-action-btn backlog-action-btn--danger", data: { turbo_stream: true, turbo_confirm: "Delete this item?" }, title: "Delete" do %>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+    <% end %>
+  </div>
+</div>

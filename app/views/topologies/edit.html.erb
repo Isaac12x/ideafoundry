@@ -1,0 +1,10 @@
+<div class="form-container">
+  <div class="form-container-header">
+    <h2>Edit Topology</h2>
+    <p class="form-container-subtitle"><%= @topology.name %></p>
+  </div>
+
+  <%= form_with model: @topology, local: true do |form| %>
+    <%= render 'form', form: form, topology: @topology, parent_options: @parent_options %>
+  <% end %>
+</div>

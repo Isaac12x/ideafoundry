@@ -1,0 +1,910 @@
+/* ============================================
+   Backlog — Dark Forge editorial journal
+   ============================================ */
+
+/* ---- Page Container ---- */
+.backlog-page {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 8px 24px 80px;
+  position: relative;
+}
+
+/* ---- Header ---- */
+.backlog-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--border-subtle);
+  position: relative;
+  animation: backlogFadeInUp 0.4s ease both;
+}
+
+/* Atmospheric glow behind header */
+.backlog-header::before {
+  content: '';
+  position: absolute;
+  top: -60px;
+  right: -40px;
+  width: 360px;
+  height: 200px;
+  background: radial-gradient(ellipse at center, rgba(212, 149, 58, 0.06) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: -1;
+}
+
+.backlog-header-text h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 2.2rem;
+  font-weight: 400;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.backlog-subtitle {
+  margin: 4px 0 0;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  letter-spacing: 0.01em;
+}
+
+.backlog-stats {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.backlog-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+}
+
+.backlog-stat-num {
+  font-family: var(--font-mono);
+  font-size: 1.3rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  line-height: 1;
+}
+
+.backlog-stat-label {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.backlog-stat-divider {
+  width: 1px;
+  height: 28px;
+  background: var(--border-subtle);
+}
+
+/* ---- Progress Bar ---- */
+.backlog-progress {
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.backlog-progress-track {
+  flex: 1;
+  height: 3px;
+  background: var(--bg-overlay);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.backlog-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--success));
+  border-radius: 2px;
+  transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 0 8px rgba(52, 211, 153, 0.2);
+}
+
+.backlog-progress-label {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  letter-spacing: 0.02em;
+}
+
+/* ---- Add Form ---- */
+.backlog-add-section {
+  margin-bottom: 1.5rem;
+  animation: backlogFadeInUp 0.4s ease 0.1s both;
+}
+
+.backlog-form {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  transition: border-color 0.3s, box-shadow 0.3s, background 0.3s;
+  position: relative;
+}
+
+.backlog-form::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-md);
+  background: radial-gradient(ellipse at 50% 0%, rgba(212, 149, 58, 0.04) 0%, transparent 60%);
+  opacity: 0;
+  transition: opacity 0.3s;
+  pointer-events: none;
+}
+
+.backlog-form:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-muted), var(--shadow-sm), 0 0 20px rgba(212, 149, 58, 0.06);
+  background: var(--bg-elevated);
+}
+
+.backlog-form:focus-within::before {
+  opacity: 1;
+}
+
+.backlog-form-main {
+  display: flex;
+  gap: 10px;
+}
+
+.backlog-form-input {
+  flex: 1;
+  padding: 10px 14px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  transition: border-color 0.2s, background 0.2s;
+  outline: none;
+}
+
+.backlog-form-input:focus {
+  border-color: var(--accent);
+  background: var(--bg-base);
+}
+
+.backlog-form-input::placeholder {
+  color: var(--text-muted);
+}
+
+.backlog-form-submit {
+  flex-shrink: 0;
+}
+
+.backlog-form-extras {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  animation: backlogSlideDown 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes backlogSlideDown {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.backlog-form-textarea {
+  width: 100%;
+  padding: 10px 14px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  resize: vertical;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.backlog-form-textarea:focus {
+  border-color: var(--accent);
+}
+
+.backlog-form-textarea::placeholder {
+  color: var(--text-muted);
+}
+
+.backlog-expand-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 8px;
+  padding: 0;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-family: var(--font-body);
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.backlog-expand-btn:hover {
+  color: var(--accent);
+}
+
+/* ---- Links in Form ---- */
+.backlog-form-links {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+}
+
+.backlog-form-links-header {
+  margin-bottom: 8px;
+}
+
+.backlog-form-links-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+
+.backlog-link-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.backlog-link-chips:empty {
+  margin-bottom: 0;
+}
+
+.backlog-link-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  background: var(--bg-overlay);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-xl);
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  transition: all 0.15s;
+  max-width: 240px;
+}
+
+.backlog-link-chip:hover {
+  border-color: var(--accent);
+  background: var(--accent-muted);
+}
+
+.backlog-link-chip svg {
+  flex-shrink: 0;
+  opacity: 0.5;
+}
+
+.backlog-link-text {
+  color: var(--accent);
+  text-decoration: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.backlog-link-text:hover {
+  text-decoration: underline;
+}
+
+.backlog-link-remove {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0 2px;
+  font-size: 1rem;
+  line-height: 1;
+  transition: color 0.15s;
+}
+
+.backlog-link-remove:hover {
+  color: var(--danger);
+}
+
+.backlog-link-add-row {
+  display: flex;
+  gap: 6px;
+}
+
+.backlog-link-input {
+  flex: 1;
+  padding: 6px 10px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.backlog-link-input:focus {
+  border-color: var(--accent);
+}
+
+.backlog-link-input::placeholder { color: var(--text-muted); }
+
+.backlog-link-label-input {
+  width: 140px;
+  padding: 6px 10px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.backlog-link-label-input:focus {
+  border-color: var(--accent);
+}
+
+.backlog-link-label-input::placeholder { color: var(--text-muted); }
+
+/* ---- Item List ---- */
+.backlog-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-height: 40px;
+  animation: backlogFadeInUp 0.4s ease 0.15s both;
+}
+
+/* ---- Single Item ---- */
+.backlog-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px 12px 16px;
+  background: var(--bg-surface);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: backlogItemIn 0.35s ease both;
+  position: relative;
+}
+
+/* Left accent bar */
+.backlog-item::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 8px;
+  bottom: 8px;
+  width: 3px;
+  border-radius: 0 2px 2px 0;
+  background: var(--accent);
+  opacity: 0;
+  transition: opacity 0.2s, top 0.2s, bottom 0.2s;
+}
+
+@keyframes backlogItemIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.backlog-item:hover {
+  background: var(--bg-elevated);
+  border-color: var(--border-subtle);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md), 0 0 16px rgba(212, 149, 58, 0.04);
+}
+
+.backlog-item:hover::after {
+  opacity: 1;
+  top: 6px;
+  bottom: 6px;
+}
+
+/* ---- Position Index ---- */
+.backlog-index {
+  flex-shrink: 0;
+  width: 20px;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  text-align: right;
+  padding-top: 3px;
+  opacity: 0.4;
+  transition: opacity 0.15s;
+  user-select: none;
+}
+
+.backlog-item:hover .backlog-index {
+  opacity: 0.7;
+}
+
+/* ---- Drag Handle ---- */
+.backlog-drag {
+  flex-shrink: 0;
+  cursor: grab;
+  color: var(--text-muted);
+  padding: 3px 2px;
+  opacity: 0;
+  transition: opacity 0.15s, color 0.15s;
+  user-select: none;
+  margin-top: 1px;
+}
+
+.backlog-item:hover .backlog-drag {
+  opacity: 0.4;
+}
+
+.backlog-drag:hover {
+  opacity: 1 !important;
+  color: var(--accent);
+}
+
+.backlog-drag:active {
+  cursor: grabbing;
+}
+
+/* ---- Checkbox ---- */
+.backlog-check {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.backlog-check-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  line-height: 1;
+  transition: transform 0.15s;
+}
+
+.backlog-check-btn:hover {
+  transform: scale(1.15);
+}
+
+.backlog-check-btn:active {
+  transform: scale(0.9);
+}
+
+/* ---- Body / Content ---- */
+.backlog-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.backlog-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.backlog-title {
+  font-weight: 500;
+  font-size: 0.92rem;
+  color: var(--text-primary);
+  line-height: 1.35;
+}
+
+.backlog-link-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  background: var(--bg-overlay);
+  padding: 1px 6px;
+  border-radius: var(--radius-xl);
+  font-family: var(--font-mono);
+  font-weight: 500;
+}
+
+.backlog-desc {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+
+.backlog-links-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 4px;
+}
+
+.backlog-link-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  background: var(--accent-muted);
+  border-radius: var(--radius-xl);
+  font-size: 0.72rem;
+  color: var(--accent);
+  text-decoration: none;
+  transition: all 0.15s;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+.backlog-link-pill:hover {
+  background: var(--accent-emphasis);
+  color: var(--accent-hover);
+}
+
+.backlog-link-pill svg {
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+.backlog-link-more {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 7px;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+}
+
+/* ---- Actions ---- */
+.backlog-actions {
+  display: flex;
+  gap: 2px;
+  opacity: 0;
+  transition: opacity 0.15s;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.backlog-item:hover .backlog-actions {
+  opacity: 1;
+}
+
+.backlog-action-btn {
+  background: none;
+  border: 1px solid transparent;
+  padding: 5px 7px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  transition: all 0.15s;
+}
+
+.backlog-action-btn:hover {
+  color: var(--text-primary);
+  background: var(--bg-overlay);
+  border-color: var(--border-subtle);
+}
+
+.backlog-action-btn--danger:hover {
+  color: var(--danger);
+  background: var(--danger-bg);
+  border-color: rgba(248, 113, 113, 0.2);
+}
+
+/* ---- Completed State ---- */
+.backlog-item--completed {
+  opacity: 0.4;
+}
+
+.backlog-item--completed::after {
+  display: none;
+}
+
+.backlog-item--completed .backlog-title {
+  text-decoration: line-through;
+  text-decoration-color: var(--text-muted);
+  color: var(--text-muted);
+}
+
+.backlog-item--completed .backlog-desc {
+  text-decoration: line-through;
+  text-decoration-color: var(--border-emphasis);
+}
+
+.backlog-item--completed:hover {
+  opacity: 0.6;
+  transform: none;
+  box-shadow: none;
+}
+
+.backlog-item--completed .backlog-index {
+  display: none;
+}
+
+/* ---- Completed Section ---- */
+.backlog-completed-section {
+  margin-top: 2.5rem;
+  position: relative;
+  animation: backlogFadeInUp 0.4s ease 0.25s both;
+}
+
+/* Decorative divider line */
+.backlog-completed-section::before {
+  content: '';
+  display: block;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border-subtle) 20%, var(--border-subtle) 80%, transparent);
+  margin-bottom: 1rem;
+}
+
+.backlog-completed-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 6px 0;
+  transition: color 0.2s;
+}
+
+.backlog-completed-toggle:hover {
+  color: var(--text-secondary);
+}
+
+.backlog-completed-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 18px;
+  padding: 0 6px;
+  background: var(--success-bg);
+  border-radius: var(--radius-xl);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--success);
+}
+
+.chevron-icon {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.completed-items {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.completed-items--visible {
+  max-height: 5000px;
+}
+
+.completed-items--hidden {
+  max-height: 0;
+}
+
+/* ---- Edit Form Inline ---- */
+.backlog-item--editing {
+  background: var(--bg-elevated);
+  border-color: var(--accent);
+  padding: 16px;
+  box-shadow: 0 0 0 3px var(--accent-muted), var(--shadow-md);
+}
+
+.backlog-item--editing::after {
+  opacity: 1;
+  background: var(--accent);
+  top: 4px;
+  bottom: 4px;
+}
+
+.backlog-edit-form {
+  width: 100%;
+}
+
+.backlog-edit-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.backlog-edit-actions {
+  display: flex;
+  gap: 6px;
+}
+
+/* ---- Drag States ---- */
+.backlog-item.dragging {
+  opacity: 0.25;
+  transform: scale(0.98) rotate(1deg);
+  box-shadow: var(--shadow-lg);
+  border-color: var(--accent);
+}
+
+.backlog-item.dragging::after {
+  opacity: 1;
+  background: var(--accent);
+}
+
+/* Drop target hint */
+.backlog-item.drag-over {
+  border-top: 2px solid var(--accent);
+}
+
+/* ---- Empty State ---- */
+.backlog-empty {
+  text-align: center;
+  padding: 4rem 2rem;
+  animation: backlogFadeIn 0.6s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Constellation background */
+.backlog-empty::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(1.5px 1.5px at 15% 25%, rgba(212, 149, 58, 0.15) 50%, transparent 50%),
+    radial-gradient(1px 1px at 75% 20%, rgba(212, 149, 58, 0.1) 50%, transparent 50%),
+    radial-gradient(1.5px 1.5px at 45% 70%, rgba(212, 149, 58, 0.12) 50%, transparent 50%),
+    radial-gradient(1px 1px at 85% 65%, rgba(212, 149, 58, 0.08) 50%, transparent 50%),
+    radial-gradient(1px 1px at 25% 80%, rgba(212, 149, 58, 0.1) 50%, transparent 50%),
+    radial-gradient(1.5px 1.5px at 60% 35%, rgba(212, 149, 58, 0.12) 50%, transparent 50%),
+    radial-gradient(1px 1px at 90% 45%, rgba(212, 149, 58, 0.08) 50%, transparent 50%);
+  animation: constellationDrift 20s linear infinite alternate;
+  pointer-events: none;
+}
+
+/* Connector traces between constellation points */
+.backlog-empty::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(135deg, transparent 14%, rgba(212, 149, 58, 0.03) 15%, rgba(212, 149, 58, 0.03) 15.5%, transparent 16%),
+    linear-gradient(45deg, transparent 44%, rgba(212, 149, 58, 0.02) 44.5%, rgba(212, 149, 58, 0.02) 45%, transparent 45.5%),
+    linear-gradient(170deg, transparent 24%, rgba(212, 149, 58, 0.025) 24.5%, rgba(212, 149, 58, 0.025) 25%, transparent 25.5%);
+  pointer-events: none;
+}
+
+@keyframes constellationDrift {
+  from { transform: translate(0, 0); }
+  to   { transform: translate(4px, -4px); }
+}
+
+@keyframes backlogFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.backlog-empty-icon {
+  margin-bottom: 16px;
+  opacity: 0.2;
+  filter: drop-shadow(0 0 8px rgba(212, 149, 58, 0.15));
+  animation: emptyIconFloat 4s ease-in-out infinite;
+}
+
+@keyframes emptyIconFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+.backlog-empty h3 {
+  margin: 0 0 6px;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 1.3rem;
+  font-weight: 400;
+  color: var(--text-secondary);
+  position: relative;
+}
+
+.backlog-empty p {
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--text-muted);
+  position: relative;
+}
+
+/* ---- Shared Animations ---- */
+@keyframes backlogFadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ---- Responsive ---- */
+@media (max-width: 768px) {
+  .backlog-page {
+    padding: 8px 16px 60px;
+  }
+
+  .backlog-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .backlog-actions {
+    opacity: 1;
+  }
+
+  .backlog-drag {
+    opacity: 0.4;
+  }
+
+  .backlog-link-label-input {
+    display: none;
+  }
+
+  .backlog-index {
+    display: none;
+  }
+
+  .backlog-item:hover {
+    transform: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .backlog-header-text h2 {
+    font-size: 1.75rem;
+  }
+
+  .backlog-link-add-row {
+    flex-wrap: wrap;
+  }
+
+  .backlog-link-input {
+    width: 100%;
+  }
+}

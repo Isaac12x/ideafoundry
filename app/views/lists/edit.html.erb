@@ -1,0 +1,26 @@
+<div class="form-container">
+  <h2>Edit List</h2>
+  
+  <%= form_with model: @list, local: true do |form| %>
+    <% if @list.errors.any? %>
+      <div class="alert alert-error">
+        <h4><%= pluralize(@list.errors.count, "error") %> prohibited this list from being saved:</h4>
+        <ul>
+          <% @list.errors.full_messages.each do |message| %>
+            <li><%= message %></li>
+          <% end %>
+        </ul>
+      </div>
+    <% end %>
+
+    <div class="form-group">
+      <%= form.label :name %>
+      <%= form.text_field :name, class: "form-control" %>
+    </div>
+
+    <div class="form-actions">
+      <%= form.submit "Update List", class: "btn btn-primary" %>
+      <%= link_to "Cancel", lists_path, class: "btn btn-secondary" %>
+    </div>
+  <% end %>
+</div>

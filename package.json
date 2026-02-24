@@ -1,0 +1,20 @@
+{
+  "name": "idea-app",
+  "private": true,
+  "scripts": {
+    "build": "esbuild app/javascript/graph/index.js --bundle --sourcemap --format=esm --minify --outdir=app/assets/builds/graph",
+    "build:watch": "esbuild app/javascript/graph/index.js --bundle --sourcemap --format=esm --outdir=app/assets/builds/graph --watch"
+  },
+  "dependencies": {
+    "3d-force-graph": "^1.73.4",
+    "three": "^0.183.0",
+    "three-spritetext": "^1.9.0",
+    "@rails/actioncable": "^7.0.0"
+  },
+  "overrides": {
+    "three": "$three"
+  },
+  "devDependencies": {
+    "esbuild": "^0.20.0"
+  }
+}

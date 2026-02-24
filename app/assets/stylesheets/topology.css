@@ -1,0 +1,874 @@
+/* ============================================
+   TOPOLOGY — "Molten Taxonomy"
+   Hot ingots in a dark forge. Liquid-gold circuitry.
+   Each node's color = its heat signature.
+   ============================================ */
+
+/* ---- Topology Badges (global — idea cards, show pages, filters) ---- */
+.topology-badge {
+  --badge-color: var(--accent);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  padding: 3px 11px;
+  border-radius: var(--radius-xl);
+  background: color-mix(in srgb, var(--badge-color) 10%, transparent);
+  color: var(--badge-color);
+  text-decoration: none;
+  white-space: nowrap;
+  line-height: 1.45;
+  letter-spacing: 0.03em;
+  border: 1px solid color-mix(in srgb, var(--badge-color) 20%, transparent);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  backdrop-filter: blur(4px);
+}
+
+/* Ember glow on hover */
+.topology-badge:hover {
+  background: color-mix(in srgb, var(--badge-color) 18%, transparent);
+  border-color: color-mix(in srgb, var(--badge-color) 35%, transparent);
+  box-shadow:
+    0 0 12px color-mix(in srgb, var(--badge-color) 15%, transparent),
+    0 2px 6px rgba(0, 0, 0, 0.3);
+  transform: translateY(-1px);
+}
+
+/* Inner pulse ring on hover */
+.topology-badge::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  border: 1px solid var(--badge-color);
+  opacity: 0;
+  transition: opacity 0.3s;
+  pointer-events: none;
+}
+
+.topology-badge:hover::after {
+  opacity: 0.15;
+  animation: badgePulse 1.5s ease-in-out infinite;
+}
+
+@keyframes badgePulse {
+  0%, 100% { opacity: 0.15; transform: scale(1); }
+  50% { opacity: 0.05; transform: scale(1.04); }
+}
+
+/* Color dot — the ember */
+.topology-color-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  position: relative;
+}
+
+/* Ember glow halo */
+.topology-color-dot::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  background: inherit;
+  opacity: 0.3;
+  filter: blur(3px);
+}
+
+.topology-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+/* ---- Topologies Container ---- */
+.topologies-container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* ---- Topology Tree ---- */
+.topology-tree {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  position: relative;
+}
+
+/* ---- Topology Node ---- */
+.topology-node {
+  position: relative;
+  --connector-y: 26px;
+  --indent: 2.5rem;
+}
+
+/* ---- Children container — creates the indented group ---- */
+.topology-node-children {
+  padding-left: var(--indent);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-top: 3px;
+}
+
+/* ---- Wire Connectors (the molten traces) ---- */
+
+/* Vertical spine — per child segment.
+   Last child: stops at branch midpoint.
+   Non-last: extends full height + gap for continuity. */
+.topology-node-children > .topology-node::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: calc(var(--indent) * -0.5);
+  height: var(--connector-y);
+  width: 0;
+  border-left: 2px solid var(--parent-color, var(--accent));
+  opacity: 0.55;
+  pointer-events: none;
+  z-index: 0;
+  filter: drop-shadow(0 0 5px color-mix(in srgb, var(--parent-color, var(--accent)) 30%, transparent));
+}
+
+/* Non-last children: extend spine through gap to next sibling */
+.topology-node-children > .topology-node:not(:last-child)::after {
+  height: auto;
+  bottom: -3px;
+}
+
+/* Horizontal branch — connects spine to each child node */
+.topology-node-children > .topology-node::before {
+  content: '';
+  position: absolute;
+  top: var(--connector-y);
+  left: calc(var(--indent) * -0.5);
+  width: calc(var(--indent) * 0.5);
+  height: 0;
+  border-top: 2px solid var(--parent-color, var(--accent));
+  opacity: 0.55;
+  pointer-events: none;
+  z-index: 0;
+  filter: drop-shadow(0 0 5px color-mix(in srgb, var(--parent-color, var(--accent)) 30%, transparent));
+}
+
+/* Last child: rounded elbow corner */
+.topology-node-children > .topology-node:last-child::after {
+  border-radius: 0 0 0 6px;
+}
+
+.topology-node-children > .topology-node:last-child::before {
+  border-radius: 0;
+  left: calc(var(--indent) * -0.5 - 1px);
+  width: calc(var(--indent) * 0.5 + 1px);
+}
+
+/* Brighten connectors on hover — heat trace intensifies */
+.topology-node-children > .topology-node:hover > .topology-node-content ~ *,
+.topology-node-children > .topology-node:hover::after,
+.topology-node-children > .topology-node:hover::before {
+  opacity: 0.85;
+  filter: drop-shadow(0 0 8px color-mix(in srgb, var(--parent-color, var(--accent)) 50%, transparent));
+}
+
+/* ---- Node Content Card ---- */
+.topology-node-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1.25rem;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+  animation: nodeForge 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Depth-based scaling — deeper nodes feel more compact */
+.topology-node--depth-1 > .topology-node-content { padding: 0.65rem 1.15rem; }
+.topology-node--depth-2 > .topology-node-content { padding: 0.6rem 1rem; }
+.topology-node--depth-3 > .topology-node-content { padding: 0.55rem 0.9rem; }
+.topology-node--depth-4 > .topology-node-content,
+.topology-node--depth-5 > .topology-node-content { padding: 0.5rem 0.85rem; }
+
+.topology-node--depth-1 > .topology-node-content .topology-node-name { font-size: 0.9rem; }
+.topology-node--depth-2 > .topology-node-content .topology-node-name { font-size: 0.87rem; }
+.topology-node--depth-3 > .topology-node-content .topology-node-name,
+.topology-node--depth-4 > .topology-node-content .topology-node-name,
+.topology-node--depth-5 > .topology-node-content .topology-node-name { font-size: 0.84rem; }
+
+/* Left heat-bar — the ingot's edge */
+.topology-node-content::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--node-color, var(--accent));
+  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Ambient glow wash — very subtle */
+.topology-node-content::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 120px;
+  bottom: 0;
+  background: linear-gradient(
+    to right,
+    color-mix(in srgb, var(--node-color, var(--accent)) 4%, transparent),
+    transparent
+  );
+  pointer-events: none;
+  transition: width 0.35s;
+}
+
+.topology-node-content:hover {
+  border-color: color-mix(in srgb, var(--node-color, var(--accent)) 30%, var(--border-emphasis));
+  box-shadow:
+    var(--shadow-md),
+    0 0 30px color-mix(in srgb, var(--node-color, var(--accent)) 8%, transparent);
+  transform: translateX(3px);
+}
+
+.topology-node-content:hover::before {
+  width: 4px;
+  box-shadow: 0 0 10px color-mix(in srgb, var(--node-color, var(--accent)) 40%, transparent);
+}
+
+.topology-node-content:hover::after {
+  width: 180px;
+}
+
+@keyframes nodeForge {
+  from {
+    opacity: 0;
+    transform: translateX(-16px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+/* Cascade stagger — deeper = later, like heat spreading */
+.topology-node:nth-child(1) > .topology-node-content { animation-delay: 0ms; }
+.topology-node:nth-child(2) > .topology-node-content { animation-delay: 60ms; }
+.topology-node:nth-child(3) > .topology-node-content { animation-delay: 120ms; }
+.topology-node:nth-child(4) > .topology-node-content { animation-delay: 180ms; }
+.topology-node:nth-child(5) > .topology-node-content { animation-delay: 240ms; }
+.topology-node:nth-child(6) > .topology-node-content { animation-delay: 300ms; }
+.topology-node:nth-child(7) > .topology-node-content { animation-delay: 360ms; }
+.topology-node:nth-child(8) > .topology-node-content { animation-delay: 420ms; }
+.topology-node:nth-child(9) > .topology-node-content { animation-delay: 480ms; }
+.topology-node:nth-child(10) > .topology-node-content { animation-delay: 540ms; }
+
+/* Children appear slightly after parent */
+.topology-node .topology-node .topology-node-content {
+  animation-delay: calc(var(--child-index, 0) * 70ms + 100ms);
+}
+
+/* ---- Node Info ---- */
+.topology-node-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  position: relative;
+  z-index: 1;
+}
+
+.topology-node-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: color-mix(in srgb, var(--node-color, var(--accent)) 12%, var(--bg-elevated));
+  border: 1px solid color-mix(in srgb, var(--node-color, var(--accent)) 20%, transparent);
+  transition: all 0.3s;
+}
+
+.topology-node-content:hover .topology-node-icon {
+  background: color-mix(in srgb, var(--node-color, var(--accent)) 20%, var(--bg-elevated));
+  box-shadow: 0 0 12px color-mix(in srgb, var(--node-color, var(--accent)) 20%, transparent);
+}
+
+.topology-node-name {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+}
+
+.topology-node-detail {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.topology-node-type {
+  font-size: 0.6rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: var(--bg-overlay);
+  padding: 2px 7px;
+  border-radius: var(--radius-xl);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  border: 1px solid var(--border-subtle);
+}
+
+.topology-node-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-weight: 500;
+}
+
+.topology-node-count svg {
+  opacity: 0.5;
+}
+
+/* ---- Reveal-on-hover Actions ---- */
+.topology-node-actions {
+  display: flex;
+  gap: 3px;
+  opacity: 0;
+  transform: translateX(6px);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  z-index: 1;
+}
+
+.topology-node-content:hover .topology-node-actions {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* ---- Show Page Hero ---- */
+.topology-hero {
+  position: relative;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  padding: 2.5rem 2.5rem 2rem;
+  margin-bottom: 1.5rem;
+  overflow: hidden;
+  animation: fadeInUp 0.4s ease;
+}
+
+/* Color atmosphere — large ambient wash from topology color */
+.topology-hero::before {
+  content: '';
+  position: absolute;
+  top: -60%;
+  right: -15%;
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--topo-color, var(--accent)) 8%, transparent) 0%,
+    transparent 65%
+  );
+  pointer-events: none;
+}
+
+/* Subtle noise texture overlay */
+.topology-hero::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.015'/%3E%3C/svg%3E");
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+.topology-hero-content {
+  position: relative;
+  z-index: 1;
+}
+
+.topology-hero-title {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 2.75rem;
+  font-weight: 400;
+  color: var(--text-primary);
+  margin: 0 0 0.5rem 0;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.topology-hero-dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.topology-hero-dot::after {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  background: inherit;
+  opacity: 0.25;
+  filter: blur(8px);
+  animation: dotBreath 3s ease-in-out infinite;
+}
+
+@keyframes dotBreath {
+  0%, 100% { opacity: 0.25; transform: scale(1); }
+  50% { opacity: 0.15; transform: scale(1.2); }
+}
+
+.topology-hero-meta {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 0.75rem;
+}
+
+/* ---- Breadcrumbs ---- */
+.breadcrumb-path {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0;
+  flex-wrap: wrap;
+}
+
+.breadcrumb-path a {
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: color 0.2s;
+  padding: 2px 0;
+}
+
+.breadcrumb-path a:hover {
+  color: var(--accent);
+}
+
+.breadcrumb-sep {
+  color: var(--text-muted);
+  margin: 0 6px;
+  font-size: 0.7rem;
+  opacity: 0.5;
+}
+
+.breadcrumb-current {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+/* ---- Stats Row ---- */
+.topology-stats-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 2rem;
+  animation: fadeInUp 0.4s ease 0.1s both;
+}
+
+.topology-stat-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  padding: 1.25rem 1rem;
+  text-align: center;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Bottom-edge heat bar */
+.topology-stat-card::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--stat-color, var(--accent));
+  opacity: 0.4;
+  transition: opacity 0.3s, height 0.3s;
+}
+
+.topology-stat-card:hover {
+  border-color: var(--border-emphasis);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.topology-stat-card:hover::after {
+  opacity: 0.7;
+  height: 3px;
+}
+
+.topology-stat-label {
+  font-size: 0.6rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+
+.topology-stat-value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1;
+}
+
+/* ---- Section Headers ---- */
+.topo-section {
+  margin-top: 2.5rem;
+  animation: fadeInUp 0.4s ease 0.2s both;
+}
+
+.topo-section-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 1.25rem;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.topo-section-header h3 {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 1.3rem;
+  font-weight: 400;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.topo-section-header .count {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  background: var(--bg-overlay);
+  padding: 2px 8px;
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--border-subtle);
+}
+
+/* ---- Topology Picker (idea form) ---- */
+.topology-picker {
+  max-height: 260px;
+  overflow-y: auto;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  padding: 6px;
+  background: var(--bg-input);
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-emphasis) transparent;
+}
+
+.topology-picker::-webkit-scrollbar { width: 5px; }
+.topology-picker::-webkit-scrollbar-track { background: transparent; }
+.topology-picker::-webkit-scrollbar-thumb {
+  background: var(--border-emphasis);
+  border-radius: 3px;
+}
+
+.topology-picker .checkbox-item {
+  border-radius: var(--radius-sm);
+  padding: 7px 10px;
+  transition: all 0.2s;
+  border: 1px solid transparent;
+}
+
+.topology-picker .checkbox-item:hover {
+  background: var(--bg-elevated);
+  border-color: var(--border-subtle);
+}
+
+.topology-picker .checkbox-item:has(input:checked) {
+  background: var(--accent-muted);
+  border-color: rgba(212, 149, 58, 0.25);
+}
+
+.topology-picker .checkbox-item:has(input:checked) label {
+  color: var(--accent);
+}
+
+.topology-picker .checkbox-item label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  transition: color 0.2s;
+}
+
+/* ---- Color Picker Enhancement ---- */
+input[type="color"].form-control {
+  padding: 3px;
+  height: 42px;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  background: var(--bg-input);
+}
+
+input[type="color"].form-control::-webkit-color-swatch-wrapper { padding: 2px; }
+
+input[type="color"].form-control::-webkit-color-swatch {
+  border: 1px solid var(--border-default);
+  border-radius: 4px;
+}
+
+.color-preview-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.color-preview-row .topology-badge {
+  animation: fadeIn 0.3s ease;
+}
+
+/* ---- Empty State ---- */
+.topologies-container .empty-state {
+  padding: 5rem 2rem;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Constellation background */
+.topologies-container .empty-state::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(circle at 12% 22%, var(--accent) 1.5px, transparent 1.5px),
+    radial-gradient(circle at 78% 18%, var(--accent) 2px, transparent 2px),
+    radial-gradient(circle at 42% 72%, var(--accent) 1.5px, transparent 1.5px),
+    radial-gradient(circle at 68% 55%, var(--accent) 1px, transparent 1px),
+    radial-gradient(circle at 22% 50%, var(--accent) 2px, transparent 2px),
+    radial-gradient(circle at 88% 75%, var(--accent) 1.5px, transparent 1.5px),
+    radial-gradient(circle at 55% 30%, var(--accent) 1px, transparent 1px);
+  opacity: 0.06;
+  pointer-events: none;
+  animation: constellationDrift 20s linear infinite;
+}
+
+/* Connector traces between constellation dots */
+.topologies-container .empty-state::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(135deg, transparent 10%, transparent 11%, rgba(212,149,58,0.03) 11.5%, transparent 12%, transparent 100%),
+    linear-gradient(225deg, transparent 15%, transparent 16%, rgba(212,149,58,0.02) 16.5%, transparent 17%, transparent 100%),
+    linear-gradient(45deg, transparent 20%, transparent 21%, rgba(212,149,58,0.025) 21.5%, transparent 22%, transparent 100%);
+  pointer-events: none;
+}
+
+@keyframes constellationDrift {
+  from { transform: translate(0, 0); }
+  to { transform: translate(4px, -4px); }
+}
+
+/* ---- Animations (shared) ---- */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* ---- Responsive ---- */
+@media (max-width: 1024px) {
+  .topology-stats-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .topology-node-actions {
+    opacity: 1;
+    transform: none;
+  }
+
+  .topology-node-content {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 0.75rem 1rem;
+  }
+
+  .topology-stats-row {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .topology-hero {
+    padding: 1.5rem;
+  }
+
+  .topology-hero-title {
+    font-size: 1.75rem;
+  }
+}
+
+/* ============================================
+   3D Topology Graph
+   ============================================ */
+
+.topology-graph-wrapper {
+  background: var(--bg-base);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  position: relative;
+}
+
+.topology-graph-canvas {
+  height: 600px;
+  width: 100%;
+}
+
+.topology-graph-canvas--compact {
+  height: 400px;
+}
+
+.topology-graph-controls {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  max-width: calc(100% - 24px);
+}
+
+.topology-graph-controls .btn {
+  backdrop-filter: blur(8px);
+  background: rgba(20, 20, 26, 0.8);
+  font-size: 0.75rem;
+  padding: 5px 10px;
+}
+
+.topology-graph-search {
+  width: 160px;
+  padding: 5px 10px;
+  font-size: 0.75rem;
+  border: 1px solid var(--border-default, #2a2a36);
+  border-radius: var(--radius-sm, 6px);
+  background: rgba(20, 20, 26, 0.85);
+  backdrop-filter: blur(8px);
+  color: var(--text-primary, #ece8e1);
+  outline: none;
+  font-family: var(--font-body);
+}
+.topology-graph-search::placeholder { color: var(--text-muted, #5c5860); }
+.topology-graph-search:focus { border-color: var(--accent, #d4953a); }
+
+.topology-graph-zoom {
+  display: flex;
+  gap: 2px;
+}
+.topology-graph-zoom .btn {
+  min-width: 28px;
+  justify-content: center;
+}
+
+/* View Toggle (Tree / Graph pill group) */
+.view-toggle {
+  display: inline-flex;
+  background: var(--bg-overlay);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.view-toggle__btn {
+  padding: 6px 16px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-family: var(--font-body);
+  transition: all 0.2s;
+}
+
+.view-toggle__btn:hover {
+  color: var(--text-primary);
+  background: var(--bg-elevated);
+}
+
+.view-toggle__btn.active {
+  color: var(--text-on-accent);
+  background: var(--accent);
+}
+
+/* Graph hover tooltip (idea nodes) */
+.graph-tooltip {
+  font-family: var(--font-body, 'Outfit', sans-serif);
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #ece8e1;
+  background: rgba(12, 12, 15, 0.85);
+  backdrop-filter: blur(8px);
+  padding: 5px 12px;
+  border-radius: 6px;
+  border: 1px solid rgba(212, 149, 58, 0.2);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+/* Override 3d-force-graph default tooltip wrapper */
+.scene-tooltip {
+  font-family: var(--font-body, 'Outfit', sans-serif) !important;
+  color: #ece8e1 !important;
+  background: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+
+.hidden { display: none !important; }
+
+@media (max-width: 768px) {
+  .topology-graph-canvas {
+    height: 350px;
+  }
+  .topology-graph-canvas--compact {
+    height: 280px;
+  }
+}

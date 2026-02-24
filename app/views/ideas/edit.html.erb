@@ -1,0 +1,10 @@
+<div class="form-container">
+  <div class="form-container-header">
+    <h2>Edit Idea</h2>
+    <p class="form-container-subtitle"><%= @idea.title %></p>
+  </div>
+
+  <%= form_with model: @idea, local: true do |form| %>
+    <%= render 'form', form: form, idea: @idea, lists: @lists, topologies: @topologies %>
+  <% end %>
+</div>

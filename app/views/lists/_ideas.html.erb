@@ -1,0 +1,36 @@
+<% ideas.each do |idea| %>
+  <% idea_list = idea.idea_lists.find_by(list: list) %>
+  <div class="idea-card draggable-item"
+       data-drag-target="item"
+       data-idea-id="<%= idea.id %>"
+       data-list-id="<%= list.id %>"
+       data-position="<%= idea_list&.position || 0 %>">
+
+    <div class="idea-card-header">
+      <div class="drag-handle" title="Drag to reorder">&#8942;&#8942;</div>
+      <div class="idea-title">
+        <%= link_to idea.title, idea_path(idea) %>
+      </div>
+    </div>
+
+    <div class="idea-meta">
+      <span class="idea-state <%= idea.state %>"><%= idea.state.humanize %></span>
+      <% if idea.computed_score %>
+        <span class="idea-score"><%= number_with_precision(idea.computed_score, precision: 1) %></span>
+      <% end %>
+      <span class="idea-date"><%= time_ago_in_words(idea.created_at) %> ago</span>
+    </div>
+
+    <% if idea.description.present? %>
+      <div class="idea-description">
+        <%= truncate(strip_tags(idea.description.to_s), length: 80) %>
+      </div>
+    <% end %>
+  </div>
+<% end %>
+
+<% if ideas.empty? %>
+  <div class="empty-drop-zone">
+    <p>No ideas in this list yet.</p>
+  </div>
+<% end %>
