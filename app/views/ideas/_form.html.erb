@@ -198,13 +198,15 @@
         </div>
 
         <div class="form-group">
-          <label>Assign to Lists</label>
+          <label>Assign to List</label>
           <div class="checkbox-group">
+            <div class="checkbox-item">
+              <%= radio_button_tag 'list_id', '', idea.lists.empty?, id: "list_none" %>
+              <%= label_tag "list_none", "None" %>
+            </div>
             <% lists.each do |list| %>
               <div class="checkbox-item">
-                <%= check_box_tag 'list_ids[]', list.id,
-                    idea.lists.include?(list),
-                    id: "list_#{list.id}" %>
+                <%= radio_button_tag 'list_id', list.id, idea.lists.include?(list), id: "list_#{list.id}" %>
                 <%= label_tag "list_#{list.id}", list.name %>
               </div>
             <% end %>

@@ -4,7 +4,7 @@ class IdeaList < ApplicationRecord
 
   # Validations
   validates :position, presence: true
-  validates :idea_id, uniqueness: { scope: :list_id }
+  validates :idea_id, uniqueness: true
 
   # Callbacks
   before_validation :set_position, on: :create

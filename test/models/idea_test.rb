@@ -246,17 +246,17 @@ class IdeaTest < ActiveSupport::TestCase
   end
 
   # Relationship tests (Requirement 1.4)
-  test "should belong to multiple lists" do
-    idea = Idea.create!(user: @user, title: "Multi-list Idea")
+  test "should belong to only one list" do
+    idea = Idea.create!(user: @user, title: "Single-list Idea")
     list1 = List.create!(user: @user, name: "List 1")
     list2 = List.create!(user: @user, name: "List 2")
-    
-    idea.lists << list1
-    idea.lists << list2
-    
-    assert_equal 2, idea.lists.count
-    assert_includes idea.lists, list1
-    assert_includes idea.lists, list2
+
+    idea.idea_lists.create!(list: list1)
+    assert_equal 1, idea.lists.count
+
+    # Adding to a second list should fail validation
+    second = idea.idea_lists.build(list: list2)
+    assert_not second.valid?
   end
 
   test "should cascade delete idea_lists when idea is deleted" do

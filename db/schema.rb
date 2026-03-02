@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_03_02_121151) do
+ActiveRecord::Schema[8.0].define(version: 2026_03_02_124801) do
   create_table "action_mailbox_inbound_emails", force: :cascade do |t|
     t.integer "status", default: 0, null: false
     t.string "message_id", null: false
@@ -94,8 +94,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_02_121151) do
     t.integer "position"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["idea_id", "list_id"], name: "index_idea_lists_on_idea_id_and_list_id", unique: true
-    t.index ["idea_id"], name: "index_idea_lists_on_idea_id"
+    t.index ["idea_id"], name: "index_idea_lists_on_idea_id", unique: true
     t.index ["list_id", "position"], name: "index_idea_lists_on_list_id_and_position"
     t.index ["list_id"], name: "index_idea_lists_on_list_id"
   end

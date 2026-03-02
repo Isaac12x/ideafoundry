@@ -65,49 +65,47 @@ class ListsController < ApplicationController
     idea = @user.ideas.find(idea_id)
     new_list = @user.lists.find(new_list_id)
 
-    # Find or create the idea_list association
-    idea_list = idea.idea_lists.find_by(list: new_list)
-    
-    if idea_list.nil?
-      # Moving to a new list
-      idea_list = idea.idea_lists.build(list: new_list)
-    end
+    old_list = nil
 
-    # Update positions in a transaction
     ActiveRecord::Base.transaction do
-      # Remove from current position if it exists
-      if idea_list.persisted?
-        old_position = idea_list.position
-        old_list = idea_list.list
-        
-        # Shift other items up in the old list
-        old_list.idea_lists.where('position > ?', old_position).update_all('position = position - 1')
-      end
+      existing = idea.idea_lists.includes(:list).first
 
-      # Make room in the new position
-      new_list.idea_lists.where('position >= ?', new_position).update_all('position = position + 1')
-      
-      # Set the new position
-      idea_list.position = new_position
-      idea_list.save!
+      if existing && existing.list == new_list
+        # Reordering within same list
+        old_position = existing.position
+        new_list.idea_lists.where('position > ?', old_position).update_all('position = position - 1')
+        new_list.idea_lists.where('position >= ?', new_position).update_all('position = position + 1')
+        existing.update!(position: new_position)
+      else
+        # Moving to a different list
+        if existing
+          old_list = existing.list
+          old_list.idea_lists.where('position > ?', existing.position).update_all('position = position - 1')
+          existing.destroy!
+        end
+
+        new_list.idea_lists.where('position >= ?', new_position).update_all('position = position + 1')
+        idea.idea_lists.create!(list: new_list, position: new_position)
+      end
     end
 
     respond_to do |format|
       format.turbo_stream do
-        render turbo_stream: [
-          turbo_stream.replace("list_#{new_list.id}_ideas", 
-            partial: 'lists/ideas', 
+        streams = [
+          turbo_stream.replace("list_#{new_list.id}_ideas",
+            partial: 'lists/ideas',
             locals: { list: new_list, ideas: new_list.ideas.includes(:idea_lists).order('idea_lists.position') }
-          ),
-          # If the idea moved between lists, update the old list too
-          if idea_list.list_id_was && idea_list.list_id_was != new_list.id
-            old_list = List.find(idea_list.list_id_was)
-            turbo_stream.replace("list_#{old_list.id}_ideas",
-              partial: 'lists/ideas',
-              locals: { list: old_list, ideas: old_list.ideas.includes(:idea_lists).order('idea_lists.position') }
-            )
-          end
-        ].compact
+          )
+        ]
+
+        if old_list
+          streams << turbo_stream.replace("list_#{old_list.id}_ideas",
+            partial: 'lists/ideas',
+            locals: { list: old_list, ideas: old_list.ideas.reload.includes(:idea_lists).order('idea_lists.position') }
+          )
+        end
+
+        render turbo_stream: streams
       end
       format.json { head :ok }
     end

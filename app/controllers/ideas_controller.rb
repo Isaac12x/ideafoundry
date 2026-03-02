@@ -34,12 +34,10 @@ class IdeasController < ApplicationController
     if @idea.save
       @idea.create_version("Initial version")
 
-      # Add to selected lists if provided
-      if params[:list_ids].present?
-        params[:list_ids].reject(&:blank?).each do |list_id|
-          list = @user.lists.find(list_id)
-          @idea.idea_lists.create(list: list)
-        end
+      # Add to selected list if provided
+      if params[:list_id].present?
+        list = @user.lists.find(params[:list_id])
+        @idea.idea_lists.create(list: list)
       end
 
       redirect_to @idea, notice: 'Idea was successfully created.'
@@ -62,20 +60,12 @@ class IdeasController < ApplicationController
       if @idea.update(idea_params)
         @idea.create_version(version_commit_message)
 
-        # Update list associations if provided (only for non-AJAX requests)
-        if params[:list_ids] && !request.xhr?
-          current_list_ids = @idea.lists.pluck(:id)
-          new_list_ids = params[:list_ids].reject(&:blank?).map(&:to_i)
-          
-          # Remove from lists that are no longer selected
-          (current_list_ids - new_list_ids).each do |list_id|
-            @idea.idea_lists.find_by(list_id: list_id)&.destroy
-          end
-          
-          # Add to new lists
-          (new_list_ids - current_list_ids).each do |list_id|
-            list = @user.lists.find(list_id)
-            @idea.idea_lists.create(list: list)
+        # Update list association if provided (only for non-AJAX requests)
+        if params.key?(:list_id) && !request.xhr?
+          @idea.idea_lists.destroy_all
+          if params[:list_id].present?
+            list = @user.lists.find(params[:list_id])
+            @idea.idea_lists.create!(list: list)
           end
         end
         
