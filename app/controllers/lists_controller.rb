@@ -92,14 +92,14 @@ class ListsController < ApplicationController
     respond_to do |format|
       format.turbo_stream do
         streams = [
-          turbo_stream.replace("list_#{new_list.id}_ideas",
+          turbo_stream.update("list_#{new_list.id}_ideas",
             partial: 'lists/ideas',
             locals: { list: new_list, ideas: new_list.ideas.includes(:idea_lists).order('idea_lists.position') }
           )
         ]
 
         if old_list
-          streams << turbo_stream.replace("list_#{old_list.id}_ideas",
+          streams << turbo_stream.update("list_#{old_list.id}_ideas",
             partial: 'lists/ideas',
             locals: { list: old_list, ideas: old_list.ideas.reload.includes(:idea_lists).order('idea_lists.position') }
           )
