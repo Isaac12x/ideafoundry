@@ -540,6 +540,20 @@
   line-height: 1.45;
 }
 
+.backlog-desc p {
+  margin: 0;
+}
+
+.backlog-desc ul {
+  margin: 2px 0;
+  padding-left: 1.2em;
+  list-style: disc;
+}
+
+.backlog-desc li {
+  margin: 1px 0;
+}
+
 .backlog-links-row {
   display: flex;
   flex-wrap: wrap;

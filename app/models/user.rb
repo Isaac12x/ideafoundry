@@ -130,6 +130,10 @@ class User < ApplicationRecord
     email_settings['recipients'].to_s.split(',').map(&:strip).reject(&:blank?)
   end
 
+  def email_configured?
+    email_recipients.present?
+  end
+
   def update_scoring_weights(weights)
     self.settings ||= {}
     self.settings['scoring_weights'] = weights.slice('trl', 'difficulty', 'opportunity', 'timing')

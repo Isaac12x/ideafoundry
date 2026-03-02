@@ -11,9 +11,11 @@
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
           Edit
         <% end %>
-        <%= button_to send_email_idea_path(@idea), method: :post, class: "btn btn-sm", form: { style: "display: inline" }, data: { turbo_confirm: "Send this idea to your default recipients?" } do %>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-          Email
+        <% if @user.email_configured? %>
+          <%= button_to send_email_idea_path(@idea), method: :post, class: "btn btn-sm btn-email", form: { style: "display: inline" }, data: { turbo_confirm: "Send this idea to #{@user.email_recipients.join(', ')}?" } do %>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+            Email
+          <% end %>
         <% end %>
         <%= link_to idea_path(@idea), method: :delete,
                     data: { turbo_method: :delete, turbo_confirm: "Are you sure?" },
@@ -163,6 +165,10 @@
             </button>
           <% end %>
         <% end %>
+        <% todo_count = @idea.todo_items.count %>
+        <button data-tabs-target="tab" data-tab-name="todo" data-action="click->tabs#switch" class="tab-button">
+          <span id="todo_tab_label_<%= @idea.id %>">Todo<% if todo_count > 0 %> (<%= todo_count %>)<% end %></span>
+        </button>
         <button data-tabs-target="tab" data-tab-name="history" data-action="click->tabs#switch" class="tab-button">
           History<% if @idea.versions.any? %> (<%= @idea.versions.count %>)<% end %>
         </button>
@@ -353,6 +359,11 @@
             </div>
           <% end %>
         <% end %>
+
+        <!-- Todo Tab -->
+        <div data-tabs-target="panel" data-tab-panel="todo" class="tab-panel hidden">
+          <%= render "todo_items/tab", idea: @idea %>
+        </div>
 
         <!-- History Tab -->
         <div data-tabs-target="panel" data-tab-panel="history" class="tab-panel hidden">

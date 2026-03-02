@@ -38,6 +38,14 @@ Rails.application.routes.draw do
         get :compare
       end
     end
+    resources :todo_items, only: [:create, :destroy] do
+      member do
+        patch :toggle
+      end
+      collection do
+        patch :reorder
+      end
+    end
   end
 
   # Lists and drag-and-drop functionality

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_02_23_154554) do
+ActiveRecord::Schema[8.0].define(version: 2026_03_02_121151) do
   create_table "action_mailbox_inbound_emails", force: :cascade do |t|
     t.integer "status", default: 0, null: false
     t.string "message_id", null: false
@@ -162,6 +162,19 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_23_154554) do
     t.index ["user_id"], name: "index_templates_on_user_id"
   end
 
+  create_table "todo_items", force: :cascade do |t|
+    t.integer "idea_id", null: false
+    t.string "title", null: false
+    t.integer "position"
+    t.boolean "completed", default: false, null: false
+    t.datetime "completed_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["idea_id", "completed"], name: "index_todo_items_on_idea_id_and_completed"
+    t.index ["idea_id", "position"], name: "index_todo_items_on_idea_id_and_position"
+    t.index ["idea_id"], name: "index_todo_items_on_idea_id"
+  end
+
   create_table "topologies", force: :cascade do |t|
     t.integer "user_id", null: false
     t.integer "parent_id"
@@ -211,6 +224,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_23_154554) do
   add_foreign_key "ideas", "users"
   add_foreign_key "lists", "users"
   add_foreign_key "templates", "users"
+  add_foreign_key "todo_items", "ideas"
   add_foreign_key "topologies", "topologies", column: "parent_id"
   add_foreign_key "topologies", "users"
   add_foreign_key "versions", "ideas"

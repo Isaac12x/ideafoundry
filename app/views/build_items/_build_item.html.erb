@@ -40,7 +40,7 @@
       <% end %>
     </div>
     <% if build_item.description.present? %>
-      <span class="backlog-desc"><%= truncate(build_item.description, length: 140) %></span>
+      <div class="backlog-desc"><%= format_description(build_item.description) %></div>
     <% end %>
     <% if build_item.links.any? %>
       <div class="backlog-links-row">

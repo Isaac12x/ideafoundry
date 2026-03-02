@@ -8,6 +8,7 @@ class Idea < ApplicationRecord
   has_many :idea_lists, dependent: :destroy
   has_many :lists, through: :idea_lists
   has_many :versions, dependent: :destroy
+  has_many :todo_items, dependent: :destroy
   has_one_attached :hero_image
   has_many_attached :attachments
   has_rich_text :description
