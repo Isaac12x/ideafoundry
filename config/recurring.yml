@@ -29,3 +29,7 @@ production:
   scheduled_backup:
     class: ScheduledBackupJob
     schedule: at 2am every day
+
+  sync_production_to_development:
+    class: DbSyncJob
+    schedule: every 6 hours
