@@ -1,6 +1,7 @@
 <%= form_with(model: [idea, idea.todo_items.build], class: "todo-form", data: { controller: "todo-form", action: "turbo:submit-end->todo-form#reset" }) do |f| %>
   <div class="todo-form-row">
     <%= f.text_field :title, placeholder: "Add a task...", class: "todo-form-input", required: true, autocomplete: "off", data: { todo_form_target: "input" } %>
-    <%= f.submit "+", class: "btn btn-primary todo-form-submit" %>
+    <span class="todo-form-hint">Enter &crarr;</span>
+    <%= f.submit "Add", class: "btn btn-primary todo-form-submit" %>
   </div>
 <% end %>
