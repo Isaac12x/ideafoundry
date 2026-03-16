@@ -2,6 +2,7 @@ import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
   static targets = ["input", "preview", "zone", "placeholder"]
+  static outlets = ["image-editor"]
   static values = {
     multiple: { type: Boolean, default: false },
     accept: { type: String, default: "*/*" }
@@ -46,24 +47,44 @@ export default class extends Controller {
     const dt = e.dataTransfer
     if (!dt.files.length) return
 
-    const accepted = this._filterAccepted(dt.files)
-    if (!accepted.length) return
-
-    this.inputTarget.files = this._buildFileList(accepted)
-
-    // Trigger change event so Rails picks it up
-    this.inputTarget.dispatchEvent(new Event("change", { bubbles: true }))
-
-    this._renderPreviews(accepted)
+    this._handleFiles(Array.from(dt.files))
   }
 
   // Also handle normal file input change
   inputTargetConnected() {
     this.inputTarget.addEventListener("change", () => {
+      if (this._processingFiles) return
       if (this.inputTarget.files.length) {
-        this._renderPreviews(Array.from(this.inputTarget.files))
+        this._handleFiles(Array.from(this.inputTarget.files))
       }
     })
+  }
+
+  async _handleFiles(rawFiles) {
+    const accepted = this._filterAccepted(rawFiles)
+    if (!accepted.length) return
+
+    const processed = []
+    for (const file of accepted) {
+      if (file.type.startsWith("image/") && this.hasImageEditorOutlet) {
+        const result = await this.imageEditorOutlet.edit(file)
+        if (result) processed.push(result)
+      } else {
+        processed.push(file)
+      }
+    }
+
+    if (!processed.length) {
+      this.inputTarget.value = ""
+      return
+    }
+
+    this._processingFiles = true
+    this.inputTarget.files = this._buildFileList(processed)
+    this.inputTarget.dispatchEvent(new Event("change", { bubbles: true }))
+    this._processingFiles = false
+
+    this._renderPreviews(processed)
   }
 
   _acceptsFiles() {
