@@ -18,6 +18,9 @@ cd "$APP_DIR"
 # Ensure DB is ready
 bin/rails db:prepare
 
+# Precompile assets if missing or stale
+bin/rails assets:precompile
+
 # Start SolidQueue in background
 bin/jobs &
 JOBS_PID=$!

@@ -107,6 +107,6 @@ Rails.application.routes.draw do
   # Defines the root path route ("/")
   root "lists#index"
 
-  # Catch-all: redirect unmatched routes to root
-  get "*path", to: redirect("/"), via: :all
+  # Catch-all: redirect unmatched routes to root (exclude Rails internal paths like ActiveStorage)
+  get "*path", to: redirect("/"), constraints: ->(req) { !req.path.start_with?("/rails/") }
 end
