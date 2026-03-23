@@ -207,6 +207,24 @@ class SettingsController < ApplicationController
     end
   end
 
+  def api_keys
+    @api_keys = @user.api_keys.order(created_at: :desc)
+  end
+
+  def create_api_key
+    key = ApiKey.generate(user: @user, name: params[:name])
+    flash[:api_token] = key.raw_token
+    redirect_to settings_api_keys_path, notice: "API key created."
+  rescue => e
+    redirect_to settings_api_keys_path, alert: "Failed to create key: #{e.message}"
+  end
+
+  def destroy_api_key
+    key = @user.api_keys.find(params[:id])
+    key.destroy!
+    redirect_to settings_api_keys_path, notice: "API key deleted."
+  end
+
   private
 
   def scoring_params

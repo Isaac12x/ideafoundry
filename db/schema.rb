@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_03_02_124801) do
+ActiveRecord::Schema[8.0].define(version: 2026_03_23_000001) do
   create_table "action_mailbox_inbound_emails", force: :cascade do |t|
     t.integer "status", default: 0, null: false
     t.string "message_id", null: false
@@ -56,6 +56,19 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_02_124801) do
     t.bigint "blob_id", null: false
     t.string "variation_digest", null: false
     t.index ["blob_id", "variation_digest"], name: "index_active_storage_variant_records_uniqueness", unique: true
+  end
+
+  create_table "api_keys", force: :cascade do |t|
+    t.integer "user_id", null: false
+    t.string "token_digest", null: false
+    t.string "name", null: false
+    t.datetime "last_used_at"
+    t.datetime "expires_at"
+    t.boolean "active", default: true, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["token_digest"], name: "index_api_keys_on_token_digest", unique: true
+    t.index ["user_id"], name: "index_api_keys_on_user_id"
   end
 
   create_table "build_items", force: :cascade do |t|
@@ -147,6 +160,29 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_02_124801) do
     t.index ["user_id"], name: "index_lists_on_user_id"
   end
 
+  create_table "submissions", force: :cascade do |t|
+    t.integer "user_id", null: false
+    t.string "title", null: false
+    t.text "body"
+    t.string "source"
+    t.string "source_reference"
+    t.integer "status", default: 0, null: false
+    t.text "raw_data"
+    t.text "review_notes"
+    t.datetime "reviewed_at"
+    t.integer "idea_id"
+    t.integer "priority", default: 1, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.string "intake_reference", null: false
+    t.index ["idea_id"], name: "index_submissions_on_idea_id"
+    t.index ["intake_reference"], name: "index_submissions_on_intake_reference", unique: true
+    t.index ["reviewed_at"], name: "index_submissions_on_reviewed_at"
+    t.index ["source", "source_reference"], name: "index_submissions_on_source_and_source_reference", unique: true
+    t.index ["user_id", "status"], name: "index_submissions_on_user_id_and_status"
+    t.index ["user_id"], name: "index_submissions_on_user_id"
+  end
+
   create_table "templates", force: :cascade do |t|
     t.integer "user_id", null: false
     t.string "name", null: false
@@ -213,6 +249,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_02_124801) do
 
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
+  add_foreign_key "api_keys", "users"
   add_foreign_key "build_items", "users"
   add_foreign_key "export_jobs", "users"
   add_foreign_key "idea_lists", "ideas"
@@ -222,6 +259,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_02_124801) do
   add_foreign_key "ideas", "templates"
   add_foreign_key "ideas", "users"
   add_foreign_key "lists", "users"
+  add_foreign_key "submissions", "ideas"
+  add_foreign_key "submissions", "users"
   add_foreign_key "templates", "users"
   add_foreign_key "todo_items", "ideas"
   add_foreign_key "topologies", "topologies", column: "parent_id"

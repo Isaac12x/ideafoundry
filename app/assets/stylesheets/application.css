@@ -168,6 +168,22 @@ a:hover { color: var(--accent-hover); }
 
 .nav-pill.active svg { opacity: 1; stroke: var(--accent); }
 
+.nav-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: var(--accent);
+  color: var(--text-on-accent);
+  font-size: 0.65rem;
+  font-weight: 600;
+  line-height: 1;
+  margin-left: 4px;
+}
+
 /* ---- Main Content ---- */
 .app-main {
   position: relative;

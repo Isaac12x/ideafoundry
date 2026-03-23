@@ -26,5 +26,18 @@ bin/jobs &
 JOBS_PID=$!
 echo "$JOBS_PID" > tmp/pids/solid_queue.pid
 
+# Start Caddy reverse proxy (HTTPS on ideas.local → localhost:$PORT)
+caddy start --config "$APP_DIR/Caddyfile" --pidfile "$APP_DIR/tmp/pids/caddy.pid"
+CADDY_PID=$(cat "$APP_DIR/tmp/pids/caddy.pid" 2>/dev/null)
+
+cleanup() {
+  echo "==> Shutting down Caddy..."
+  caddy stop --config "$APP_DIR/Caddyfile" 2>/dev/null || true
+  echo "==> Shutting down SolidQueue (PID $JOBS_PID)..."
+  kill "$JOBS_PID" 2>/dev/null || true
+  wait "$JOBS_PID" 2>/dev/null || true
+}
+trap cleanup EXIT INT TERM
+
 # Start Puma (foreground — LaunchAgent manages the process)
-exec bin/rails server -p $PORT
+bin/rails server -p $PORT
