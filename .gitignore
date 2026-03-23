@@ -19,8 +19,9 @@
 /exports/*
 !/exports/.keep
 
-# Ignore .plist files
+# Ignore generated .plist files (but keep the template)
 *.plist
+!com.USERNAME.idea-app.plist
 
 # Ignore database backups
 /backups/
@@ -46,6 +47,7 @@
 # Ignore environment files
 .env
 .env.*
+.secret_key_base
 
 # OS files
 .DS_Store

@@ -1,7 +1,7 @@
 #!/bin/zsh
 
 # Startup script for idea-app (production)
-# Used by LaunchAgent com.iamin.idea-app
+# Used by LaunchAgent com.<username>.idea-app
 
 set -e
 

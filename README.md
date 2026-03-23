@@ -41,22 +41,33 @@ A personal idea management system for entrepreneurs. Capture rough ideas, evolve
 | Email | Resend + Action Mailbox |
 | Real-time | ActionCable (WebSocket) |
 
-## Quick Start
+## Install (macOS)
+
+One command — installs all dependencies, configures the LaunchAgent, and starts the service:
 
 ```bash
-git clone <repo-url> idea-foundry
-cd idea-foundry
-bundle install && npm install
-bin/rails db:prepare
-bin/rails db:seed    # optional sample data
-bin/dev              # starts Rails + esbuild watcher
+git clone <repo-url> idea-app && cd idea-app && bin/install
 ```
 
-Open `http://localhost:3000`.
+This handles: Homebrew, rbenv, Ruby 3.4.5, Node.js, Caddy, gems, npm deps, DB setup, asset precompilation, `/etc/hosts` entry, Apache httpd disable, and LaunchAgent registration. Requires `sudo` for hosts file and httpd changes.
 
-See [SETUP.md](SETUP.md) for detailed setup instructions including Docker and production deployment.
+Once running: **https://ideas.local:8443**
 
-See [DEVELOPMENT.md](DEVELOPMENT.md) for contribution guidelines and architecture overview.
+Logs: `/tmp/idea-app.out` and `/tmp/idea-app.err`
+
+### Development
+
+```bash
+bin/dev              # starts Rails + esbuild watcher (dev mode)
+```
+
+### Already cloned?
+
+```bash
+bin/install
+```
+
+See [SETUP.md](SETUP.md) for Docker and advanced deployment options.
 
 ## Screenshots
 
