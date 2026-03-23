@@ -23,7 +23,12 @@ JOBS_PID=$!
 mkdir -p tmp/pids
 echo "$JOBS_PID" > tmp/pids/solid_queue.pid
 
+echo "==> Starting Caddy reverse proxy (HTTPS on ideas.local)..."
+caddy start --config "$APP_DIR/Caddyfile" --pidfile "$APP_DIR/tmp/pids/caddy.pid"
+
 cleanup() {
+  echo "==> Shutting down Caddy..."
+  caddy stop --config "$APP_DIR/Caddyfile" 2>/dev/null || true
   echo "==> Shutting down SolidQueue (PID $JOBS_PID)..."
   kill "$JOBS_PID" 2>/dev/null || true
   wait "$JOBS_PID" 2>/dev/null || true
@@ -31,4 +36,4 @@ cleanup() {
 trap cleanup EXIT INT TERM
 
 echo "==> Starting Puma on port $PORT..."
-exec bin/rails server -p "$PORT"
+bin/rails server -p "$PORT"

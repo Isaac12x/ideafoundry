@@ -16,6 +16,22 @@ Rails.application.routes.draw do
     end
   end
 
+  # Programmatic intake API
+  namespace :api do
+    namespace :v1 do
+      resources :submissions, only: [:create, :show]
+    end
+  end
+
+  # Submission review queue
+  resources :submissions, only: [:index, :show, :destroy] do
+    member do
+      post :approve
+      post :reject
+      post :reopen
+    end
+  end
+
   # Reveal health status on /up that returns 200 if the app boots with no exceptions, otherwise 500.
   # Can be used by load balancers and uptime monitors to verify that the app is live.
   get "up" => "rails/health#show", as: :rails_health_check
@@ -93,6 +109,9 @@ Rails.application.routes.draw do
   post 'settings/exports/cleanup', to: 'settings#cleanup_exports'
   patch 'settings/backup', to: 'settings#update_backup'
   post 'settings/backup/now', to: 'settings#create_backup', as: :settings_backup_now
+  get 'settings/api_keys', to: 'settings#api_keys'
+  post 'settings/api_keys', to: 'settings#create_api_key'
+  delete 'settings/api_keys/:id', to: 'settings#destroy_api_key', as: :settings_api_key_destroy
 
   # Backlog
   resources :build_items, path: "backlog", except: [:show] do

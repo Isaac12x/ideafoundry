@@ -314,6 +314,37 @@ class Idea < ApplicationRecord
     digest.hexdigest == integrity_hash
   end
 
+  def append_intake_update!(body:, source: nil, intake_reference: nil)
+    changed = false
+
+    transaction do
+      cleaned_body = body.to_s.strip
+      if cleaned_body.present?
+        current_body = description.to_plain_text.to_s.strip
+        self.description = [current_body.presence, cleaned_body].compact.join("\n\n---\n\n")
+        changed = true
+      end
+
+      self.metadata ||= {}
+      references = Array(metadata["submission_references"]).map(&:to_s)
+      if intake_reference.present? && !references.include?(intake_reference)
+        metadata["submission_references"] = references << intake_reference
+        metadata["submission_reference"] ||= intake_reference
+        changed = true
+      end
+
+      if source.present? && metadata["last_intake_source"] != source
+        metadata["last_intake_source"] = source
+        changed = true
+      end
+
+      save! if changed
+      create_version("Updated via intake #{intake_reference || "chat"}") if changed
+    end
+
+    changed
+  end
+
   private
 
   def broadcast_graph_updated

@@ -5,6 +5,8 @@ class User < ApplicationRecord
   has_many :export_jobs, dependent: :destroy
   has_many :topologies, dependent: :destroy
   has_many :build_items, dependent: :destroy
+  has_many :submissions, dependent: :destroy
+  has_many :api_keys, dependent: :destroy
 
   # Single-user application - one user per instance
   validates :email, presence: true, uniqueness: true
