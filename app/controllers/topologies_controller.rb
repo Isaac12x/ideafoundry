@@ -28,8 +28,8 @@ class TopologiesController < ApplicationController
     else
       @parent_options = @user.topologies.ordered
       respond_to do |format|
-        format.html { render :new, status: :unprocessable_entity }
-        format.json { render json: { errors: @topology.errors }, status: :unprocessable_entity }
+        format.html { render :new, status: :unprocessable_content }
+        format.json { render json: { errors: @topology.errors }, status: :unprocessable_content }
       end
     end
   end
@@ -61,8 +61,8 @@ class TopologiesController < ApplicationController
     else
       @parent_options = @user.topologies.where.not(id: [@topology.id] + @topology.descendants.map(&:id)).ordered
       respond_to do |format|
-        format.html { render :edit, status: :unprocessable_entity }
-        format.json { render json: { errors: @topology.errors }, status: :unprocessable_entity }
+        format.html { render :edit, status: :unprocessable_content }
+        format.json { render json: { errors: @topology.errors }, status: :unprocessable_content }
       end
     end
   end

@@ -13,7 +13,7 @@ class TodoItemsController < ApplicationController
       end
     else
       respond_to do |format|
-        format.turbo_stream { head :unprocessable_entity }
+        format.turbo_stream { head :unprocessable_content }
         format.html { redirect_to idea_path(@idea, anchor: "todo"), alert: @todo_item.errors.full_messages.join(", ") }
       end
     end
