@@ -37,7 +37,7 @@ class TemplatesController < ApplicationController
     if @template.save
       redirect_to settings_templates_path, notice: 'Template was successfully created.'
     else
-      render :new, status: :unprocessable_entity
+      render :new, status: :unprocessable_content
     end
   end
 
@@ -48,7 +48,7 @@ class TemplatesController < ApplicationController
     if @template.update(template_params)
       redirect_to @template, notice: 'Template was successfully updated.'
     else
-      render :edit, status: :unprocessable_entity
+      render :edit, status: :unprocessable_content
     end
   end
 

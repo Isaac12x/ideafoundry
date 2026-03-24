@@ -18,7 +18,7 @@ class BuildItemsController < ApplicationController
       end
     else
       respond_to do |format|
-        format.turbo_stream { render turbo_stream: turbo_stream.replace("build_item_form", partial: "build_items/form", locals: { build_item: @build_item }), status: :unprocessable_entity }
+        format.turbo_stream { render turbo_stream: turbo_stream.replace("build_item_form", partial: "build_items/form", locals: { build_item: @build_item }), status: :unprocessable_content }
         format.html { redirect_to build_items_path, alert: @build_item.errors.full_messages.join(", ") }
       end
     end
@@ -39,8 +39,8 @@ class BuildItemsController < ApplicationController
       end
     else
       respond_to do |format|
-        format.turbo_stream { render turbo_stream: turbo_stream.replace("build_item_#{@build_item.id}", partial: "build_items/edit_form", locals: { build_item: @build_item }), status: :unprocessable_entity }
-        format.html { render :edit, status: :unprocessable_entity }
+        format.turbo_stream { render turbo_stream: turbo_stream.replace("build_item_#{@build_item.id}", partial: "build_items/edit_form", locals: { build_item: @build_item }), status: :unprocessable_content }
+        format.html { render :edit, status: :unprocessable_content }
       end
     end
   end

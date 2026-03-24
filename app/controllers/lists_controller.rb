@@ -20,7 +20,7 @@ class ListsController < ApplicationController
     if @list.save
       redirect_to lists_path, notice: 'List was successfully created.'
     else
-      render :new, status: :unprocessable_entity
+      render :new, status: :unprocessable_content
     end
   end
 
@@ -31,7 +31,7 @@ class ListsController < ApplicationController
     if @list.update(list_params)
       redirect_to @list, notice: 'List was successfully updated.'
     else
-      render :edit, status: :unprocessable_entity
+      render :edit, status: :unprocessable_content
     end
   end
 
@@ -116,8 +116,8 @@ class ListsController < ApplicationController
     end
   rescue => e
     respond_to do |format|
-      format.turbo_stream { head :unprocessable_entity }
-      format.json { render json: { error: e.message }, status: :unprocessable_entity }
+      format.turbo_stream { head :unprocessable_content }
+      format.json { render json: { error: e.message }, status: :unprocessable_content }
     end
   end
 

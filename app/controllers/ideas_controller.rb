@@ -45,7 +45,7 @@ class IdeasController < ApplicationController
       @lists = @user.lists.ordered
       @topologies = @user.topologies.ordered
       @templates = @user.templates.order(:name)
-      render :new, status: :unprocessable_entity
+      render :new, status: :unprocessable_content
     end
   end
 
@@ -82,13 +82,13 @@ class IdeasController < ApplicationController
           @lists = @user.lists.ordered
           @topologies = @user.topologies.ordered
           @templates = @user.templates.order(:name)
-          render :edit, status: :unprocessable_entity
+          render :edit, status: :unprocessable_content
         }
         format.json { 
           render json: { 
             success: false, 
             errors: @idea.errors.full_messages 
-          }, status: :unprocessable_entity 
+          }, status: :unprocessable_content 
         }
       end
     end

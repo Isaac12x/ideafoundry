@@ -32,13 +32,13 @@ class SettingsController < ApplicationController
       respond_to do |format|
         format.html { 
           flash.now[:alert] = 'Invalid scoring weights. Please ensure all values are numbers between -1 and 1.'
-          render :scoring, status: :unprocessable_entity 
+          render :scoring, status: :unprocessable_content 
         }
         format.json { 
           render json: { 
             success: false, 
             errors: ['Invalid scoring weights. Please ensure all values are numbers between -1 and 1.']
-          }, status: :unprocessable_entity 
+          }, status: :unprocessable_content 
         }
       end
     end
@@ -104,7 +104,7 @@ class SettingsController < ApplicationController
     else
       @topology_settings = @user.topology_settings
       flash.now[:alert] = 'Failed to update settings.'
-      render :topologies, status: :unprocessable_entity
+      render :topologies, status: :unprocessable_content
     end
   end
 

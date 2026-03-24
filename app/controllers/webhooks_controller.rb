@@ -7,7 +7,7 @@ class WebhooksController < ActionController::API
     content = params[:content]
 
     user = User.first
-    return head :unprocessable_entity unless user
+    return head :unprocessable_content unless user
 
     if intake_event?(event, payload)
       result = IntakeSubmissionService.new(
