@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_03_23_000001) do
+ActiveRecord::Schema[8.0].define(version: 2026_03_28_000001) do
   create_table "action_mailbox_inbound_emails", force: :cascade do |t|
     t.integer "status", default: 0, null: false
     t.string "message_id", null: false
@@ -160,6 +160,19 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_23_000001) do
     t.index ["user_id"], name: "index_lists_on_user_id"
   end
 
+  create_table "notes", force: :cascade do |t|
+    t.integer "idea_id", null: false
+    t.integer "parent_note_id"
+    t.text "body", null: false
+    t.integer "depth", default: 0, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["idea_id", "created_at"], name: "index_notes_on_idea_id_and_created_at"
+    t.index ["idea_id"], name: "index_notes_on_idea_id"
+    t.index ["parent_note_id", "created_at"], name: "index_notes_on_parent_note_id_and_created_at"
+    t.index ["parent_note_id"], name: "index_notes_on_parent_note_id"
+  end
+
   create_table "submissions", force: :cascade do |t|
     t.integer "user_id", null: false
     t.string "title", null: false
@@ -259,6 +272,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_23_000001) do
   add_foreign_key "ideas", "templates"
   add_foreign_key "ideas", "users"
   add_foreign_key "lists", "users"
+  add_foreign_key "notes", "ideas"
+  add_foreign_key "notes", "notes", column: "parent_note_id"
   add_foreign_key "submissions", "ideas"
   add_foreign_key "submissions", "users"
   add_foreign_key "templates", "users"
