@@ -1391,6 +1391,64 @@ select.form-control {
   }
 }
 
+/* ---- Reminder Popover ---- */
+.reminder-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.reminder-popover {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 50;
+  min-width: 240px;
+  padding: 1rem;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.reminder-popover.hidden {
+  display: none;
+}
+
+.reminder-label {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.reminder-input {
+  width: 100%;
+  padding: 0.5rem 0.6rem;
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  background: var(--bg-input);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  outline: none;
+}
+
+.reminder-input:focus {
+  border-color: var(--accent);
+}
+
+.reminder-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.reminder-actions .btn {
+  flex: 1;
+  justify-content: center;
+}
+
 /* ---- Responsive ---- */
 @media (max-width: 768px) {
   .app-header {
