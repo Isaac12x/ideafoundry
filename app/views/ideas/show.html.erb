@@ -17,6 +17,31 @@
             Email
           <% end %>
         <% end %>
+        <div class="reminder-wrapper" data-controller="reminder"
+             data-reminder-title-value="<%= @idea.title %>"
+             data-reminder-url-value="<%= idea_url(@idea) %>"
+             data-reminder-score-value="<%= number_with_precision(@idea.computed_score || 0, precision: 1) %>"
+             data-reminder-state-value="<%= @idea.state.humanize %>"
+             data-reminder-snippet-value="<%= truncate(strip_tags(@idea.description.to_s), length: 200) %>">
+          <button type="button" class="btn btn-sm" aria-expanded="false" data-action="click->reminder#toggle">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            Remind
+          </button>
+          <div class="reminder-popover hidden" role="dialog" aria-label="Set reminder" data-reminder-target="popover" data-action="click@window->reminder#closeOnOutsideClick keydown.esc@window->reminder#closeOnEscape">
+            <label class="reminder-label" for="reminder-datetime">When?</label>
+            <input type="datetime-local" id="reminder-datetime" class="reminder-input" data-reminder-target="datetime">
+            <div class="reminder-actions">
+              <button type="button" class="btn btn-sm btn-primary" data-action="click->reminder#downloadIcs">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+                .ics
+              </button>
+              <button type="button" class="btn btn-sm btn-primary" data-action="click->reminder#openGoogle">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/></svg>
+                Google
+              </button>
+            </div>
+          </div>
+        </div>
         <%= link_to idea_path(@idea), method: :delete,
                     data: { turbo_method: :delete, turbo_confirm: "Are you sure?" },
                     class: "btn btn-sm btn-danger" do %>
