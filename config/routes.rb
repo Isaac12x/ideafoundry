@@ -62,6 +62,7 @@ Rails.application.routes.draw do
         patch :reorder
       end
     end
+    resources :notes, only: [:create, :destroy]
   end
 
   # Lists and drag-and-drop functionality

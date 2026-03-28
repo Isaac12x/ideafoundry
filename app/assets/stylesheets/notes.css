@@ -1,0 +1,396 @@
+/* ============================================
+   Notes Tree — Dark Forge
+   Threaded note system with organic branching lines.
+   Lives inside .tabs-content > .tab-panel
+   ============================================ */
+
+/* ---- Container ---- */
+.notes-tab {
+  max-width: 100%;
+  position: relative;
+}
+
+/* Neutralise button_to <form> wrappers */
+.note-actions form {
+  display: contents;
+}
+
+/* ---- Add Form (root level) ---- */
+.notes-add-section {
+  margin-bottom: 1.25rem;
+}
+
+/* ---- Form ---- */
+.note-form {
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 0;
+}
+
+.note-form-row {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+}
+
+.note-form-input {
+  flex: 1;
+  padding: 10px 14px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  line-height: 1.5;
+  outline: none;
+  resize: none;
+  overflow: hidden;
+  min-height: 40px;
+  max-height: 200px;
+  transition: border-color 0.25s, box-shadow 0.25s, background 0.25s;
+}
+
+.note-form-input:hover {
+  border-color: var(--border-default);
+  background: var(--bg-overlay);
+}
+
+.note-form-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-muted), 0 0 16px rgba(212, 149, 58, 0.06);
+  background: var(--bg-overlay);
+}
+
+.note-form-input::placeholder {
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+.note-form-submit {
+  flex-shrink: 0;
+  padding: 8px 16px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  min-width: 0;
+  border-radius: var(--radius-md);
+  text-transform: uppercase;
+  align-self: flex-end;
+}
+
+/* ---- Tree ---- */
+.notes-tree {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* ---- Note Node ---- */
+.note-node {
+  position: relative;
+  animation: noteNodeIn 0.3s ease both;
+}
+
+@keyframes noteNodeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ---- Note Card ---- */
+.note-card {
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+
+.note-card:hover {
+  background: rgba(28, 28, 36, 0.6);
+  border-color: var(--border-subtle);
+}
+
+/* Accent mark on root notes */
+.note-node--root > .note-card {
+  border-left: 2px solid var(--accent);
+  padding-left: 16px;
+}
+
+.note-node--root > .note-card:hover {
+  border-left-color: var(--accent);
+}
+
+/* ---- Body ---- */
+.note-body {
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  line-height: 1.55;
+  font-weight: 400;
+}
+
+.note-body p {
+  margin: 0 0 0.35em;
+}
+
+.note-body p:last-child {
+  margin-bottom: 0;
+}
+
+/* ---- Meta Row ---- */
+.note-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 6px;
+  flex-wrap: wrap;
+}
+
+.note-timestamp {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.note-reply-count {
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: var(--accent);
+  opacity: 0.7;
+  letter-spacing: 0.02em;
+}
+
+.note-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: auto;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.note-card:hover .note-actions {
+  opacity: 1;
+}
+
+.note-action-btn {
+  background: none;
+  border: none;
+  padding: 3px 8px;
+  cursor: pointer;
+  font-family: var(--font-body);
+  font-size: 0.7rem;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: var(--radius-sm);
+  transition: all 0.15s;
+}
+
+.note-reply-btn {
+  color: var(--text-muted);
+}
+
+.note-reply-btn:hover {
+  color: var(--accent);
+  background: var(--accent-muted);
+}
+
+.note-delete-btn {
+  color: var(--text-muted);
+  opacity: 0.5;
+}
+
+.note-delete-btn:hover {
+  color: var(--danger);
+  background: var(--danger-bg);
+  opacity: 1;
+}
+
+/* ---- Reply Form (inline) ---- */
+.note-reply-form {
+  padding-left: 20px;
+  margin-top: 4px;
+  margin-bottom: 4px;
+}
+
+.note-reply-form .note-form-input {
+  font-size: 0.84rem;
+  padding: 8px 12px;
+  min-height: 36px;
+}
+
+.note-reply-form .note-form-submit {
+  padding: 6px 12px;
+  font-size: 0.72rem;
+}
+
+/* ---- Children / Thread ---- */
+.note-children {
+  position: relative;
+  padding-left: 20px;
+  margin-left: 8px;
+}
+
+/* Vertical branch line */
+.note-children::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 12px;
+  width: 1px;
+  background: linear-gradient(
+    180deg,
+    var(--border-default) 0%,
+    var(--border-subtle) 80%,
+    transparent 100%
+  );
+}
+
+/* Horizontal connector for each child */
+.note-children > .note-thread > .note-node::before {
+  content: '';
+  position: absolute;
+  left: -20px;
+  top: 18px;
+  width: 16px;
+  height: 1px;
+  background: var(--border-default);
+}
+
+/* Deeper nesting: tighter spacing, thinner lines */
+.note-children .note-children {
+  padding-left: 16px;
+  margin-left: 6px;
+}
+
+.note-children .note-children::before {
+  background: linear-gradient(
+    180deg,
+    var(--border-subtle) 0%,
+    transparent 100%
+  );
+}
+
+.note-children .note-children > .note-thread > .note-node::before {
+  left: -16px;
+  width: 12px;
+  background: var(--border-subtle);
+}
+
+/* ---- Thread ---- */
+.note-thread {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.note-thread--collapsed {
+  display: none;
+}
+
+/* ---- Collapse Button ---- */
+.note-collapse-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: none;
+  border: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+  font-family: var(--font-body);
+  font-size: 0.68rem;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 3px 10px;
+  border-radius: var(--radius-xl);
+  margin: 4px 0;
+  transition: all 0.2s;
+}
+
+.note-collapse-btn:hover {
+  color: var(--text-secondary);
+  border-color: var(--border-default);
+  background: var(--bg-elevated);
+}
+
+.note-collapse-chevron {
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.note-collapse-btn--collapsed .note-collapse-chevron {
+  transform: rotate(-90deg);
+}
+
+/* ---- Depth-based fade ---- */
+.note-node[data-depth="2"] > .note-card {
+  opacity: 0.92;
+}
+
+.note-node[data-depth="3"] > .note-card {
+  opacity: 0.85;
+}
+
+.note-node[data-depth="4"] > .note-card {
+  opacity: 0.78;
+}
+
+/* ---- Empty State ---- */
+.notes-empty {
+  text-align: center;
+  padding: 3rem 1.5rem;
+  position: relative;
+}
+
+.notes-empty-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 12px;
+  border-radius: var(--radius-md);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+}
+
+.notes-empty p {
+  margin: 0 0 4px;
+  font-size: 0.88rem;
+  color: var(--text-muted);
+  font-weight: 450;
+}
+
+.notes-empty .notes-empty-hint {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  opacity: 0.6;
+}
+
+/* ---- Responsive ---- */
+@media (max-width: 768px) {
+  .note-actions {
+    opacity: 1;
+  }
+
+  .note-children {
+    padding-left: 14px;
+    margin-left: 4px;
+  }
+
+  .note-children > .note-thread > .note-node::before {
+    left: -14px;
+    width: 10px;
+  }
+
+  .note-reply-form {
+    padding-left: 14px;
+  }
+
+  .note-form-input {
+    font-size: 1rem;
+  }
+}

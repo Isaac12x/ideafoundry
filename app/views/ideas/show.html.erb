@@ -165,6 +165,10 @@
             </button>
           <% end %>
         <% end %>
+        <% note_count = @idea.notes.count %>
+        <button data-tabs-target="tab" data-tab-name="notes" data-action="click->tabs#switch" class="tab-button">
+          <span id="notes_tab_label_<%= @idea.id %>">Notes<% if note_count > 0 %> (<%= note_count %>)<% end %></span>
+        </button>
         <% todo_count = @idea.todo_items.count %>
         <button data-tabs-target="tab" data-tab-name="todo" data-action="click->tabs#switch" class="tab-button">
           <span id="todo_tab_label_<%= @idea.id %>">Todo<% if todo_count > 0 %> (<%= todo_count %>)<% end %></span>
@@ -359,6 +363,11 @@
             </div>
           <% end %>
         <% end %>
+
+        <!-- Notes Tab -->
+        <div data-tabs-target="panel" data-tab-panel="notes" class="tab-panel hidden">
+          <%= render "notes/tab", idea: @idea %>
+        </div>
 
         <!-- Todo Tab -->
         <div data-tabs-target="panel" data-tab-panel="todo" class="tab-panel hidden">
