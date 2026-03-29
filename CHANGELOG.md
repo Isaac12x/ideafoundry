@@ -1,0 +1,83 @@
+# Changelog
+
+All notable changes to Idea Foundry will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+### Changed
+
+- Standardized button sizes across the app for visual consistency
+
+### Added
+
+- `.btn-xs` size variant for extra-small inline action buttons
+
+## [1.3.0] - 2026-03-28
+
+### Added
+
+- Threaded notes system for ideas with collapsible tree UI
+- Calendar reminder UI with .ics download and Google Calendar links
+- Calendar reminder design specification
+
+## [1.2.0] - 2026-03-24
+
+### Added
+
+- Intake submission system with email ingestion and fuzzy matching
+- API key management for external submissions
+- Caddy HTTPS reverse proxy configuration
+- One-line installer with templatized plist for any user
+
+### Fixed
+
+- SQLite locking under concurrent access
+- Rack deprecation warnings
+
+## [1.1.0] - 2026-03-16
+
+### Added
+
+- Todo checklist per idea
+- Backlog description list rendering
+- README documentation
+
+### Fixed
+
+- Email buttons mismatch and functionality
+- Ideas restricted to a single list
+- Color picker
+- Image rendering
+- Various UI gremlins
+
+### Security
+
+- Bumped nokogiri from 1.18.10 to 1.19.1
+- Bumped rack from 3.2.1 to 3.2.5
+- Bumped uri from 1.0.3 to 1.0.4
+- Bumped esbuild from 0.20.2 to 0.25.0
+
+## [1.0.0] - 2026-02-24
+
+### Added
+
+- Idea lifecycle tracking with 9 states (spark through archived)
+- Weighted scoring system (TRL, Difficulty, Opportunity, Timing)
+- Kanban boards with drag-and-drop list management
+- 3D topology graph with idea relationships
+- Version history with git-like snapshots and diffs
+- Rich text editing with TipTap and image uploads
+- Image editor with paint, crop, undo, and reset
+- Custom templates with draggable field definitions
+- Build backlog with prioritized task tracking
+- Export and backup system
+- Dark Forge theme with editorial typography
+
+[unreleased]: https://github.com/Isaac12x/ideafoundry/compare/v1.3.0...HEAD
+[1.3.0]: https://github.com/Isaac12x/ideafoundry/compare/v1.2.0...v1.3.0
+[1.2.0]: https://github.com/Isaac12x/ideafoundry/compare/v1.1.0...v1.2.0
+[1.1.0]: https://github.com/Isaac12x/ideafoundry/compare/v1.0.0...v1.1.0
+[1.0.0]: https://github.com/Isaac12x/ideafoundry/releases/tag/v1.0.0
