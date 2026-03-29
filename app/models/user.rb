@@ -144,7 +144,7 @@ class User < ApplicationRecord
 
   def scoring_formula_display
     weights = scoring_weights
-    "TRL × #{weights['trl']} + Opportunity × #{weights['opportunity']} + Timing × #{weights['timing']} + Difficulty × #{weights['difficulty']}"
+    "normalize(TRL × #{weights['trl']} + Opportunity × #{weights['opportunity']} + Timing × #{weights['timing']} + Difficulty × #{weights['difficulty']}) → 0–10"
   end
 
   def backup_settings

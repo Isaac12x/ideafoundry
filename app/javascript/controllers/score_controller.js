@@ -109,12 +109,18 @@ export default class extends Controller {
     const opportunity = parseFloat(this.opportunitySliderTarget?.value) || 0;
     const timing = parseFloat(this.timingSliderTarget?.value) || 0;
 
-    // Calculate score using configurable weights
-    const score =
-      trl * this.trlWeightValue +
-      difficulty * this.difficultyWeightValue +
-      opportunity * this.opportunityWeightValue +
-      timing * this.timingWeightValue;
+    // Calculate raw score using configurable weights
+    const weights = [this.trlWeightValue, this.difficultyWeightValue, this.opportunityWeightValue, this.timingWeightValue];
+    const raw =
+      trl * weights[0] +
+      difficulty * weights[1] +
+      opportunity * weights[2] +
+      timing * weights[3];
+
+    // Normalize to 0.0–10.0 range regardless of weight signs
+    const rawMin = 10 * weights.filter(w => w < 0).reduce((s, w) => s + w, 0);
+    const rawMax = 10 * weights.filter(w => w > 0).reduce((s, w) => s + w, 0);
+    const score = rawMax === rawMin ? 0 : ((raw - rawMin) / (rawMax - rawMin)) * 10;
 
     const roundedScore = Math.round(score * 100) / 100;
 
