@@ -51,7 +51,9 @@ class IdeaTest < ActiveSupport::TestCase
 
   test "should calculate score automatically" do
     @idea.save!
-    expected_score = (5 * 0.3 + 8 * 0.4 + 6 * 0.2 - 3 * 0.1).round(2)
+    # Raw: 5*0.3 + 3*(-0.1) + 8*0.4 + 6*0.2 = 5.6, normalized to 0-10: (5.6+1)/10*10 = 6.6
+    raw = 5 * 0.3 + 8 * 0.4 + 6 * 0.2 - 3 * 0.1
+    expected_score = ((raw - (-1.0)) / (9.0 - (-1.0)) * 10.0).round(2)
     assert_equal expected_score, @idea.computed_score
   end
 

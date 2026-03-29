@@ -14,13 +14,16 @@ class ScoringTest < ActiveSupport::TestCase
   end
 
   test "should calculate score with default weights" do
-    expected_score = (7 * 0.3 + 8 * 0.4 + 6 * 0.2 - 4 * 0.1).round(2)
+    # Raw: 7*0.3 + 4*(-0.1) + 8*0.4 + 6*0.2 = 6.1, normalized: (6.1+1)/10*10 = 7.1
+    raw = 7 * 0.3 + 8 * 0.4 + 6 * 0.2 - 4 * 0.1
+    expected_score = ((raw + 1.0) / 10.0 * 10.0).round(2)
     assert_equal expected_score, @idea.computed_score
   end
 
   test "should recalculate score when scoring attributes change" do
     @idea.update!(trl: 9, opportunity: 10)
-    expected_score = (9 * 0.3 + 10 * 0.4 + 6 * 0.2 - 4 * 0.1).round(2)
+    raw = 9 * 0.3 + 10 * 0.4 + 6 * 0.2 - 4 * 0.1
+    expected_score = ((raw + 1.0) / 10.0 * 10.0).round(2)
     assert_equal expected_score, @idea.computed_score
   end
 
@@ -115,7 +118,10 @@ class ScoringTest < ActiveSupport::TestCase
     @idea.send(:calculate_score)
     @idea.save!
     
-    expected_score = (7 * 0.4 + 8 * 0.3 + 6 * 0.1 - 4 * 0.2).round(2)
+    # New weights: trl=0.4, diff=-0.2, opp=0.3, timing=0.1
+    # raw_min = 10*(-0.2) = -2.0, raw_max = 10*(0.4+0.3+0.1) = 8.0
+    raw = 7 * 0.4 + 8 * 0.3 + 6 * 0.1 - 4 * 0.2
+    expected_score = ((raw + 2.0) / 10.0 * 10.0).round(2)
     assert_equal expected_score, @idea.computed_score
   end
 end

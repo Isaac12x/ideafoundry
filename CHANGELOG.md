@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Scoring system now always produces scores in 0.0–10.0 range instead of -1.0–9.0
+
 ### Changed
 
 - Standardized button sizes across the app for visual consistency

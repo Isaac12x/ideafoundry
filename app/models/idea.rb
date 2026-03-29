@@ -366,15 +366,22 @@ class Idea < ApplicationRecord
 
   def calculate_score
     return unless trl && difficulty && opportunity && timing
-    
+
     # Use user's configurable scoring weights
     weights = user.scoring_weights
-    self.computed_score = (
-      trl * weights['trl'].to_f +
-      difficulty * weights['difficulty'].to_f +
-      opportunity * weights['opportunity'].to_f +
-      timing * weights['timing'].to_f
-    ).round(2)
+    w = [weights['trl'].to_f, weights['difficulty'].to_f, weights['opportunity'].to_f, weights['timing'].to_f]
+
+    raw = trl * w[0] + difficulty * w[1] + opportunity * w[2] + timing * w[3]
+
+    # Normalize to 0.0–10.0 range regardless of weight signs
+    raw_min = 10.0 * w.select(&:negative?).sum
+    raw_max = 10.0 * w.select(&:positive?).sum
+
+    self.computed_score = if raw_max == raw_min
+                           0.0
+                         else
+                           ((raw - raw_min) / (raw_max - raw_min) * 10.0).round(2)
+                         end
   end
 
   def template_required_fields_present

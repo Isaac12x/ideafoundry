@@ -183,27 +183,15 @@
 
       <div class="config-info-card">
         <h4>📈 Score Range</h4>
-        <p>With current weights, scores will range from:</p>
+        <p>Scores are always normalized to:</p>
         <div class="score-range-display">
           <div class="range-item">
             <span class="range-label">Minimum:</span>
-            <span class="range-value negative">
-              <%= number_with_precision(
-                10 * [@user.scoring_weights['trl'], @user.scoring_weights['difficulty'], @user.scoring_weights['opportunity'], @user.scoring_weights['timing']].select(&:negative?).sum +
-                0 * [@user.scoring_weights['trl'], @user.scoring_weights['difficulty'], @user.scoring_weights['opportunity'], @user.scoring_weights['timing']].select(&:positive?).sum,
-                precision: 1
-              ) %>
-            </span>
+            <span class="range-value">0.0</span>
           </div>
           <div class="range-item">
             <span class="range-label">Maximum:</span>
-            <span class="range-value positive">
-              <%= number_with_precision(
-                10 * [@user.scoring_weights['trl'], @user.scoring_weights['difficulty'], @user.scoring_weights['opportunity'], @user.scoring_weights['timing']].select(&:positive?).sum +
-                0 * [@user.scoring_weights['trl'], @user.scoring_weights['difficulty'], @user.scoring_weights['opportunity'], @user.scoring_weights['timing']].select(&:negative?).sum,
-                precision: 1
-              ) %>
-            </span>
+            <span class="range-value positive">10.0</span>
           </div>
         </div>
       </div>
