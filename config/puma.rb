@@ -31,5 +31,8 @@ environment ENV.fetch("RAILS_ENV") { "development" }
 # Specifies the `pidfile` that Puma will use.
 pidfile ENV.fetch("PIDFILE") { "tmp/pids/server.pid" }
 
+# Set the process title so it shows as "IdeaApp" instead of "ruby"
+tag "IdeaApp"
+
 # Allow puma to be restarted by `bin/rails restart` command.
 plugin :tmp_restart
