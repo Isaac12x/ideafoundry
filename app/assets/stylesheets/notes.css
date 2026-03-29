@@ -70,8 +70,6 @@
 
 .note-form-submit {
   flex-shrink: 0;
-  padding: 8px 16px;
-  font-size: 0.8rem;
   font-weight: 600;
   letter-spacing: 0.04em;
   min-width: 0;
@@ -223,8 +221,8 @@
 }
 
 .note-reply-form .note-form-submit {
-  padding: 6px 12px;
-  font-size: 0.72rem;
+  padding: 4px 10px;
+  font-size: 0.8rem;
 }
 
 /* ---- Children / Thread ---- */

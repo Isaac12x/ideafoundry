@@ -615,7 +615,7 @@
 .backlog-action-btn {
   background: none;
   border: 1px solid transparent;
-  padding: 5px 7px;
+  padding: 4px 8px;
   border-radius: var(--radius-sm);
   cursor: pointer;
   color: var(--text-muted);
@@ -690,7 +690,7 @@
   border: none;
   color: var(--text-muted);
   font-family: var(--font-body);
-  font-size: 0.82rem;
+  font-size: 0.78rem;
   font-weight: 500;
   cursor: pointer;
   padding: 6px 0;

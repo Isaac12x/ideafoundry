@@ -302,6 +302,11 @@ a:hover { color: var(--accent-hover); }
   font-size: 0.8rem;
 }
 
+.btn-xs {
+  padding: 4px 8px;
+  font-size: 0.75rem;
+}
+
 .btn.disabled {
   opacity: 0.4;
   cursor: not-allowed;
