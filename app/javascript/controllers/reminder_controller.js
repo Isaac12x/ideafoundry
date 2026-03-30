@@ -38,7 +38,7 @@ export default class extends Controller {
     if (isNaN(dt)) return
     const end = new Date(dt.getTime() + 30 * 60000)
     const now = new Date()
-    const title = this._escapeIcsText("Review: " + this.titleValue)
+    const title = this._escapeIcsText("Reminder: review idea " + this.titleValue)
     const description = [
       this._escapeIcsText(this.urlValue),
       "",
@@ -48,7 +48,7 @@ export default class extends Controller {
       this._escapeIcsText(this.snippetValue)
     ].join("\\n")
 
-    const ics = [
+    const lines = [
       "BEGIN:VCALENDAR",
       "VERSION:2.0",
       "PRODID:-//Idea Foundry//Reminder//EN",
@@ -59,6 +59,7 @@ export default class extends Controller {
       `DTEND:${this._formatDateUTC(end)}`,
       `SUMMARY:${title}`,
       `DESCRIPTION:${description}`,
+      `URL:${this.urlValue}`,
       "BEGIN:VALARM",
       "TRIGGER:PT0M",
       "ACTION:DISPLAY",
@@ -66,13 +67,15 @@ export default class extends Controller {
       "END:VALARM",
       "END:VEVENT",
       "END:VCALENDAR"
-    ].join("\r\n")
+    ]
+    const ics = lines.map(l => this._foldIcsLine(l)).join("\r\n")
 
+    const slug = this.titleValue.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '').slice(0, 40)
     const blob = new Blob([ics], { type: "text/calendar" })
     const url = URL.createObjectURL(blob)
     const a = document.createElement("a")
     a.href = url
-    a.download = "reminder.ics"
+    a.download = `reminder-${slug || 'idea'}.ics`
     a.click()
     URL.revokeObjectURL(url)
 
@@ -83,7 +86,7 @@ export default class extends Controller {
     const dt = new Date(this.datetimeTarget.value)
     if (isNaN(dt)) return
     const end = new Date(dt.getTime() + 30 * 60000)
-    const title = encodeURIComponent(`Review: ${this.titleValue}`)
+    const title = encodeURIComponent(`Reminder: review idea ${this.titleValue}`)
     const details = encodeURIComponent(`${this.urlValue}\n\nScore: ${this.scoreValue}\nState: ${this.stateValue}\n\n${this.snippetValue}`)
     const dates = `${this._formatDateUTC(dt)}/${this._formatDateUTC(end)}`
 
@@ -94,13 +97,30 @@ export default class extends Controller {
   }
 
   closeOnOutsideClick(event) {
-    if (!this.element.contains(event.target)) {
+    if (!this.element.contains(event.target) && document.activeElement !== this.datetimeTarget) {
       this.popoverTarget.classList.add("hidden")
     }
   }
 
   _escapeIcsText(str) {
-    return str.replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,')
+    if (!str) return ''
+    return str
+      .replace(/\\/g, '\\\\')
+      .replace(/;/g, '\\;')
+      .replace(/,/g, '\\,')
+      .replace(/\r?\n/g, '\\n')
+  }
+
+  _foldIcsLine(line) {
+    const maxLen = 75
+    if (line.length <= maxLen) return line
+    let result = line.slice(0, maxLen)
+    let pos = maxLen
+    while (pos < line.length) {
+      result += '\r\n ' + line.slice(pos, pos + maxLen - 1)
+      pos += maxLen - 1
+    }
+    return result
   }
 
   _formatDateUTC(date) {
