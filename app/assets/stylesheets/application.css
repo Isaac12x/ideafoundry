@@ -274,6 +274,18 @@ a:hover { color: var(--accent-hover); }
   color: #60a5fa;
 }
 
+.btn-reminder {
+  background: transparent;
+  border-color: rgba(212, 149, 58, 0.3);
+  color: var(--accent);
+}
+
+.btn-reminder:hover {
+  background: var(--accent-muted);
+  border-color: rgba(212, 149, 58, 0.6);
+  color: var(--accent-hover);
+}
+
 .btn-danger {
   background: transparent;
   border-color: rgba(248, 113, 113, 0.3);
@@ -1399,7 +1411,8 @@ select.form-control {
 /* ---- Reminder Popover ---- */
 .reminder-wrapper {
   position: relative;
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
 }
 
 .reminder-popover {
@@ -1447,11 +1460,7 @@ select.form-control {
 .reminder-actions {
   display: flex;
   gap: 0.5rem;
-}
-
-.reminder-actions .btn {
-  flex: 1;
-  justify-content: center;
+  justify-content: flex-end;
 }
 
 /* ---- Responsive ---- */
