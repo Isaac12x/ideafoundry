@@ -193,6 +193,37 @@
   border-bottom: 1px solid var(--border-default);
   background: var(--bg-elevated);
   padding: 0 4px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
+  cursor: grab;
+  user-select: none;
+}
+
+.tabs-nav.is-dragging {
+  cursor: grabbing;
+}
+
+.tabs-nav.is-dragging .tab-button {
+  pointer-events: none;
+}
+
+.tabs-nav::-webkit-scrollbar {
+  height: 6px;
+}
+
+.tabs-nav::-webkit-scrollbar-thumb {
+  background: var(--border-default);
+  border-radius: 3px;
+}
+
+.tabs-nav::-webkit-scrollbar-thumb:hover {
+  background: var(--border-emphasis);
+}
+
+.tab-button {
+  white-space: nowrap;
 }
 
 .tab-button {

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_03_28_000001) do
+ActiveRecord::Schema[8.0].define(version: 2026_04_30_000002) do
   create_table "action_mailbox_inbound_emails", force: :cascade do |t|
     t.integer "status", default: 0, null: false
     t.string "message_id", null: false
@@ -86,6 +86,19 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_28_000001) do
     t.index ["user_id"], name: "index_build_items_on_user_id"
   end
 
+  create_table "drawings", force: :cascade do |t|
+    t.integer "idea_id", null: false
+    t.string "title", null: false
+    t.text "content", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.integer "role", default: 0, null: false
+    t.integer "position"
+    t.index ["idea_id", "role", "position"], name: "index_drawings_on_idea_id_and_role_and_position"
+    t.index ["idea_id", "updated_at"], name: "index_drawings_on_idea_id_and_updated_at"
+    t.index ["idea_id"], name: "index_drawings_on_idea_id"
+  end
+
   create_table "export_jobs", force: :cascade do |t|
     t.integer "user_id", null: false
     t.integer "status", default: 0, null: false
@@ -99,6 +112,20 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_28_000001) do
     t.index ["created_at"], name: "index_export_jobs_on_created_at"
     t.index ["user_id", "status"], name: "index_export_jobs_on_user_id_and_status"
     t.index ["user_id"], name: "index_export_jobs_on_user_id"
+  end
+
+  create_table "idea_entries", force: :cascade do |t|
+    t.integer "idea_id", null: false
+    t.integer "kind", null: false
+    t.string "name", null: false
+    t.string "url"
+    t.text "description"
+    t.integer "position"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["idea_id", "kind", "position"], name: "index_idea_entries_on_idea_id_and_kind_and_position"
+    t.index ["idea_id", "kind"], name: "index_idea_entries_on_idea_id_and_kind"
+    t.index ["idea_id"], name: "index_idea_entries_on_idea_id"
   end
 
   create_table "idea_lists", force: :cascade do |t|
@@ -142,11 +169,15 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_28_000001) do
     t.text "timing_explanation"
     t.boolean "email_ingested", default: false, null: false
     t.string "integrity_hash"
+    t.datetime "discarded_at"
+    t.boolean "draft", default: false, null: false
     t.index ["computed_score"], name: "index_ideas_on_computed_score"
     t.index ["cool_off_until"], name: "index_ideas_on_cool_off_until"
+    t.index ["discarded_at"], name: "index_ideas_on_discarded_at"
     t.index ["integrity_hash"], name: "index_ideas_on_integrity_hash"
     t.index ["state"], name: "index_ideas_on_state"
     t.index ["template_id"], name: "index_ideas_on_template_id"
+    t.index ["user_id", "draft"], name: "index_ideas_on_user_id_and_draft"
     t.index ["user_id"], name: "index_ideas_on_user_id"
   end
 
@@ -264,7 +295,9 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_28_000001) do
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "api_keys", "users"
   add_foreign_key "build_items", "users"
+  add_foreign_key "drawings", "ideas"
   add_foreign_key "export_jobs", "users"
+  add_foreign_key "idea_entries", "ideas"
   add_foreign_key "idea_lists", "ideas"
   add_foreign_key "idea_lists", "lists"
   add_foreign_key "idea_topologies", "ideas"

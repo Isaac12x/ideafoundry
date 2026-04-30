@@ -2,6 +2,10 @@
   <div class="page-header">
     <h2>Ideas</h2>
     <div class="header-actions">
+      <%= link_to archived_ideas_path, class: "btn" do %>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4"/></svg>
+        Archive
+      <% end %>
       <%= link_to lists_path, class: "btn" do %>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
         Lists
