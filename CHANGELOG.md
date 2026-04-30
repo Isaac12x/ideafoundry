@@ -7,17 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Fixed
+### Added
 
-- Scoring system now always produces scores in 0.0–10.0 range instead of -1.0–9.0
+- Configurable idea detail tabs, including structured tool and competitor entries
+- Idea-attached Excalidraw drawings with hero and attachment roles
+- Auto-draft idea creation with orphaned draft cleanup
+- Archived ideas view with restore support and idea search
+- Web enrichment workflow for idea competitors, market context, and resources
+- `.btn-xs` size variant for extra-small inline action buttons
 
 ### Changed
 
 - Standardized button sizes across the app for visual consistency
+- Scheduled backup notifications now use the configured backup recipient and enqueue email delivery
+- Recurring digest jobs now accept scheduler positional arguments
 
-### Added
+### Fixed
 
-- `.btn-xs` size variant for extra-small inline action buttons
+- Scoring system now always produces scores in 0.0–10.0 range instead of -1.0–9.0
+- Idea search filters now use SQLite-compatible case-insensitive matching
 
 ## [1.3.0] - 2026-03-28
 
