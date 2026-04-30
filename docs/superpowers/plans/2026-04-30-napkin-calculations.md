@@ -6,7 +6,7 @@
 
 **Architecture:** New `napkin_calculations` JSON column on `ideas`. Stimulus controller (`napkin_controller.js`) drives the editable grid using a lazy-loaded `hot-formula-parser`. The show page renders cells server-side using the `dentaku` gem (no JS). Helpers shared between server-render and client-render keep formatting consistent.
 
-**Tech Stack:** Rails 8, SQLite, Stimulus, esbuild, `dentaku` (Ruby), `hot-formula-parser` (JS).
+**Tech Stack:** Rails 8, SQLite, Stimulus, esbuild, `dentaku` (Ruby), `hyperformula` (JS, GPL-v3).
 
 **Spec:** `docs/superpowers/specs/2026-04-30-napkin-calculations-design.md`.
 
@@ -41,7 +41,7 @@ test/system/napkin_calculations_test.rb                    NEW
 
 ---
 
-## Task 1: Add `dentaku` gem and `hot-formula-parser` package
+## Task 1: Add `dentaku` gem and `hyperformula` package
 
 **Files:**
 - Modify: `Gemfile`
@@ -65,10 +65,10 @@ Expected: `dentaku 3.x.x` resolved and installed; `Gemfile.lock` updated.
 Run: `bin/rails runner 'puts Dentaku::Calculator.new.evaluate("2 + 2")'`
 Expected: `4`
 
-- [ ] **Step 4: Add `hot-formula-parser` to package.json**
+- [ ] **Step 4: Add `hyperformula` to package.json**
 
-Run: `yarn add hot-formula-parser@^4.0.0`
-Expected: `package.json` shows `"hot-formula-parser": "^4.0.0"` under dependencies; `yarn.lock` updated.
+Run: `yarn add hyperformula`
+Expected: `package.json` shows `"hyperformula": "^3.x.x"` under dependencies; `yarn.lock` updated.
 
 - [ ] **Step 5: Verify build still works**
 
@@ -79,7 +79,7 @@ Expected: build completes without errors.
 
 ```bash
 git add Gemfile Gemfile.lock package.json yarn.lock
-git commit -m "deps: add dentaku and hot-formula-parser for napkin calculations"
+git commit -m "deps: add dentaku and hyperformula for napkin calculations"
 ```
 
 ---
@@ -839,7 +839,9 @@ export default class extends Controller {
       cells: new Map(Object.entries(init.cells || {})),
       selection: { anchor: "A1", focus: "A1" }
     }
-    this.parser = null
+    this.hf = null
+    this.hfSheetId = null
+    this.hfSheetIndex = null
     this.parserLoading = false
 
     this.renderGrid()
@@ -894,8 +896,8 @@ export default class extends Controller {
   computeDisplay(ref, cell) {
     if (!cell || !cell.raw) return { text: "", error: null }
     if (cell.raw.startsWith("=")) {
-      // Stub until parser loads (Task 10).
-      return this.parser ? this.evaluateFormula(ref, cell) : { text: cell.raw, error: null }
+      // Stub until HyperFormula loads (Task 10).
+      return this.hf ? this.evaluateFormula(ref, cell) : { text: cell.raw, error: null }
     }
     return { text: this.formatNumeric(cell.raw, cell.fmt), error: null }
   }
@@ -1035,42 +1037,31 @@ git commit -m "js: napkin Stimulus controller — render, edit, persist (no form
 
 ---
 
-## Task 10: Lazy-load `hot-formula-parser` and wire formula evaluation
+## Task 10: Lazy-load `hyperformula` and wire formula evaluation
 
 **Files:**
 - Modify: `app/javascript/controllers/napkin_controller.js`
 
 > Note: Task 9 was merged into Task 8. Keeping numbering forward.
 
-- [ ] **Step 1: Replace `ensureParserLoaded` and `evaluateFormula`**
+**Approach:** HyperFormula maintains its own sheet model. Strategy: on lazy load, create a single `HyperFormula` instance with one sheet; mirror our `state.cells` into it. On every cell change, call `hf.setCellContents(addr, raw)`. To render a formula's display, query `hf.getCellValue(addr)`.
 
-In `app/javascript/controllers/napkin_controller.js`, replace the `ensureParserLoaded()` and `evaluateFormula()` methods:
+- [ ] **Step 1: Replace `ensureParserLoaded` and `evaluateFormula` and add a sync helper**
+
+In `app/javascript/controllers/napkin_controller.js`, replace the stub `ensureParserLoaded()` and `evaluateFormula()` methods with the following:
 
 ```javascript
   async ensureParserLoaded() {
-    if (this.parser || this.parserLoading) return
+    if (this.hf || this.parserLoading) return
     this.parserLoading = true
     if (this.hasLoadingTarget) this.loadingTarget.classList.remove("hidden")
     try {
-      const mod = await import("hot-formula-parser")
-      const Parser = mod.Parser || mod.default?.Parser || mod.default
-      this.parser = new Parser()
-      this.parser.on("callCellValue", (ref, done) => {
-        const r = `${ref.column.label}${ref.row.label + 1 || ref.row.index + 1}`
-        done(this.cellNumericValue(r, new Set()))
-      })
-      this.parser.on("callRangeValue", (start, end, done) => {
-        const out = []
-        for (let r = start.row.index; r <= end.row.index; r++) {
-          const row = []
-          for (let c = start.column.index; c <= end.column.index; c++) {
-            const ref = `${COL_LETTERS[c]}${r + 1}`
-            row.push(this.cellNumericValue(ref, new Set()))
-          }
-          out.push(row)
-        }
-        done(out)
-      })
+      const mod = await import("hyperformula")
+      const HyperFormula = mod.HyperFormula || mod.default?.HyperFormula || mod.default
+      this.hf = HyperFormula.buildEmpty({ licenseKey: "gpl-v3" })
+      this.hfSheetId = this.hf.addSheet("napkin")
+      this.hfSheetIndex = this.hf.getSheetId(this.hfSheetId)
+      this.syncAllCellsToHF()
       this.renderGrid()
     } finally {
       this.parserLoading = false
@@ -1078,74 +1069,92 @@ In `app/javascript/controllers/napkin_controller.js`, replace the `ensureParserL
     }
   }
 
-  cellNumericValue(ref, visited) {
-    if (visited.has(ref)) return { error: "#CYCLE" }
-    visited.add(ref)
+  syncAllCellsToHF() {
+    if (!this.hf) return
+    const { rows, cols } = this.state
+    const data = []
+    for (let r = 0; r < rows; r++) {
+      const row = []
+      for (let c = 0; c < cols; c++) {
+        const ref = this.cellRef(c, r)
+        const cell = this.state.cells.get(ref)
+        row.push(cell ? cell.raw : null)
+      }
+      data.push(row)
+    }
+    this.hf.setSheetContent(this.hfSheetIndex, data)
+  }
+
+  syncCellToHF(ref) {
+    if (!this.hf) return
+    const p = this.parseRef(ref)
+    if (!p) return
     const cell = this.state.cells.get(ref)
-    if (!cell || !cell.raw) return null
-    if (cell.raw.startsWith("=")) {
-      const inner = this.evalRaw(cell.raw.slice(1), visited)
-      return inner.error ? { error: inner.error } : inner.value
-    }
-    const n = Number(cell.raw)
-    return Number.isNaN(n) ? cell.raw : n
-  }
-
-  evalRaw(expr, visited) {
-    if (!this.parser) return { value: null, error: "#ERR" }
-    // The parser internally re-enters callCellValue/callRangeValue. We swap visited via a closure
-    // by stashing it on the instance for the duration of the parse.
-    const prev = this._visited
-    this._visited = visited
-    try {
-      const { error, result } = this.parser.parse(expr)
-      if (error) return { value: null, error: this.mapError(error) }
-      return { value: result, error: null }
-    } finally {
-      this._visited = prev
-    }
-  }
-
-  mapError(err) {
-    const s = String(err)
-    if (s.includes("CYCLE")) return "#CYCLE"
-    if (s.includes("#REF")) return "#REF"
-    if (s.includes("DIV")) return "#DIV/0"
-    return "#ERR"
+    this.hf.setCellContents(
+      { sheet: this.hfSheetIndex, row: p.r, col: p.c },
+      cell ? cell.raw : null
+    )
   }
 
   evaluateFormula(ref, cell) {
-    if (!this.parser) return { text: cell.raw, error: null }
-    const { value, error } = this.evalRaw(cell.raw.slice(1), new Set([ref]))
-    if (error) return { text: error, error }
-    return { text: typeof value === "number" ? this.formatValue(value, cell.fmt) : String(value), error: null }
+    if (!this.hf) return { text: cell.raw, error: null }
+    const p = this.parseRef(ref)
+    if (!p) return { text: "#REF", error: "#REF" }
+    const value = this.hf.getCellValue({ sheet: this.hfSheetIndex, row: p.r, col: p.c })
+    if (value && typeof value === "object" && value.type === "ERROR") {
+      return { text: this.mapHFError(value), error: this.mapHFError(value) }
+    }
+    if (typeof value === "number") {
+      return { text: this.formatValue(value, cell.fmt), error: null }
+    }
+    return { text: String(value ?? ""), error: null }
+  }
+
+  mapHFError(err) {
+    const t = (err && err.value) || (err && err.error) || ""
+    const s = String(t)
+    if (s.includes("CYCLE")) return "#CYCLE"
+    if (s.includes("REF")) return "#REF"
+    if (s.includes("DIV")) return "#DIV/0"
+    return "#ERR"
   }
 ```
 
-Also adjust `cellNumericValue` so it inherits `this._visited` when present:
+- [ ] **Step 2: Sync HF on every cell change**
+
+In `setCell(ref, cell)`, add a single line at the end so HF stays in sync:
 
 ```javascript
-  cellNumericValue(ref, visited) {
-    visited = this._visited || visited
-    if (visited.has(ref)) return { error: "#CYCLE" }
-    visited.add(ref)
-    const cell = this.state.cells.get(ref)
-    if (!cell || !cell.raw) return null
-    if (cell.raw.startsWith("=")) {
-      const inner = this.evalRaw(cell.raw.slice(1), visited)
-      return inner.error ? { error: inner.error } : inner.value
-    }
-    const n = Number(cell.raw)
-    return Number.isNaN(n) ? cell.raw : n
+  setCell(ref, cell) {
+    if (!cell.raw && !cell.fmt) this.state.cells.delete(ref)
+    else this.state.cells.set(ref, cell)
+    this.syncCellToHF(ref)
+    this.syncHiddenInput()
   }
 ```
 
-- [ ] **Step 2: Build**
+Also update `addRow()` / `addCol()` (Task 12 will define these) to call `syncAllCellsToHF()` afterwards.
+
+- [ ] **Step 3: Update `computeDisplay` to use `evaluateFormula` once parser ready**
+
+The existing `computeDisplay` already delegates to `evaluateFormula` when `this.parser` is set. With the HyperFormula migration, change the gate from `this.parser` to `this.hf`:
+
+```javascript
+  computeDisplay(ref, cell) {
+    if (!cell || !cell.raw) return { text: "", error: null }
+    if (cell.raw.startsWith("=")) {
+      return this.hf ? this.evaluateFormula(ref, cell) : { text: cell.raw, error: null }
+    }
+    return { text: this.formatNumeric(cell.raw, cell.fmt), error: null }
+  }
+```
+
+- [ ] **Step 4: Build**
 
 Run: `yarn build`
-Expected: succeeds; bundle creates a separate chunk for `hot-formula-parser` (dynamic import).
+Expected: succeeds; bundle creates a separate chunk for `hyperformula` (dynamic import).
 
-- [ ] **Step 3: Manual verify**
+- [ ] **Step 5: Manual verify**
 
 In `bin/dev`, on an idea edit page:
 - Expand panel → "Loading formula engine…" briefly appears, then disappears.
@@ -1156,11 +1165,11 @@ In `bin/dev`, on an idea edit page:
 - Save form, reload → values persist, formulas re-evaluate to same results.
 - Visit show page → server-side dentaku eval renders the same numbers (parity check).
 
-- [ ] **Step 4: Commit**
+- [ ] **Step 6: Commit**
 
 ```bash
 git add app/javascript/controllers/napkin_controller.js
-git commit -m "js: lazy-load hot-formula-parser and wire formula evaluation"
+git commit -m "js: lazy-load hyperformula and wire formula evaluation"
 ```
 
 ---
@@ -1295,6 +1304,7 @@ git commit -m "js: range selection + format toolbar (currency/percent/number/bol
   addRow() {
     if (this.state.rows >= 100) return
     this.state.rows += 1
+    this.syncAllCellsToHF()
     this.renderGrid()
     this.syncHiddenInput()
   }
@@ -1302,10 +1312,13 @@ git commit -m "js: range selection + format toolbar (currency/percent/number/bol
   addCol() {
     if (this.state.cols >= 26) return
     this.state.cols += 1
+    this.syncAllCellsToHF()
     this.renderGrid()
     this.syncHiddenInput()
   }
 ```
+
+> If `syncAllCellsToHF` is undefined when these run (HF not yet loaded), it's a no-op (the method short-circuits on `if (!this.hf) return`). Safe.
 
 (Row/col delete via right-click menu is out of scope for v1; only "+" buttons are exposed. If rows/cols are reduced manually via the JSON, cells beyond the new bounds remain in storage but are invisible — acceptable for v1.)
 

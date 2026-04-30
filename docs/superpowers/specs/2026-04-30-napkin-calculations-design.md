@@ -77,7 +77,7 @@ add_column :ideas, :napkin_calculations, :json
 
 ## Formula Engine
 
-- Library (edit-side, JS): **`hot-formula-parser`** (MIT, ~100KB, Excel-compatible, used by Handsontable). Lazy-loaded — dynamic `import()` triggered on first panel expand, not in main bundle.
+- Library (edit-side, JS): **`hyperformula`** (GPL-v3 / commercial; we use the GPL-v3 license key — acceptable since this is a self-hosted private app). Actively maintained, ~500KB, full Excel-compatible engine with 380+ functions. Lazy-loaded — dynamic `import()` triggered on first panel expand, not in main bundle.
 - Library (show-side, Ruby): **`dentaku`** gem. Server-side eval, no JS shipped to show page.
 - Functions enabled (v1): `SUM AVG MIN MAX COUNT IF ROUND ABS` + arithmetic + comparison operators. Parser exposes more; we don't restrict them but don't document them either.
 - Cell-ref resolution: parser callback maps `A1` → cell value (recursing if formula). Cycle detection via visit-set; cycle → `#CYCLE` error.
@@ -147,7 +147,7 @@ add_column :ideas, :napkin_calculations, :json
 
 ## Risks
 
-1. **Engine drift** between `hot-formula-parser` (JS, edit) and `dentaku` (Ruby, show). Mitigation: parity tests across the v1 function set; document any Excel-edge-case mismatches if found.
+1. **Engine drift** between `hyperformula` (JS, edit) and `dentaku` (Ruby, show). Mitigation: parity tests across the v1 function set; document any Excel-edge-case mismatches if found.
 2. **Migration** — `:json` column on SQLite. Existing rows get `nil`. No backfill.
 3. **Bundle size** — mitigated by lazy-loading parser on panel expand.
 4. **No Excel paste in v1** — acknowledged; deferred.
