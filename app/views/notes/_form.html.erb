@@ -4,6 +4,6 @@
   <% end %>
   <div class="note-form-row">
     <%= f.text_area :body, placeholder: parent_note_id.present? ? "Reply..." : "Add a note...", class: "note-form-input", required: true, autocomplete: "off", rows: 1, data: { note_form_target: "input", action: "input->note-form#autoResize keydown->note-form#submitOnEnter" } %>
-    <%= f.submit parent_note_id.present? ? "Reply" : "Add", class: "btn btn-primary note-form-submit" %>
+    <%= f.submit parent_note_id.present? ? "Reply" : "Add", class: "btn btn-sm btn-primary note-form-submit" %>
   </div>
 <% end %>
