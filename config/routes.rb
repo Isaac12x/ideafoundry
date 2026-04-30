@@ -45,6 +45,14 @@ Rails.application.routes.draw do
       post :send_email
       post :approve_pending_email
       delete :discard_pending_email
+      post :enrich
+      get :enrichment_status
+      post :archive
+      post :restore
+    end
+    collection do
+      get :archived
+      get :search
     end
     resources :versions, only: [:index, :show] do
       member do
@@ -63,6 +71,8 @@ Rails.application.routes.draw do
       end
     end
     resources :notes, only: [:create, :destroy]
+    resources :idea_entries, only: [:create, :update, :destroy]
+    resources :drawings, only: [:new, :show, :create, :update, :destroy]
   end
 
   # Lists and drag-and-drop functionality
@@ -101,6 +111,9 @@ Rails.application.routes.draw do
   patch 'settings/notifications', to: 'settings#update_notifications'
   get 'settings/topologies', to: 'settings#topologies'
   patch 'settings/topologies', to: 'settings#update_topologies'
+  get 'settings/idea-tabs', to: 'settings#idea_tabs'
+  patch 'settings/idea-tabs', to: 'settings#update_idea_tabs'
+  get 'settings/idea_tabs', to: redirect('/settings/idea-tabs')
   get 'settings/templates', to: 'settings#templates'
   get 'settings/templates/new', to: 'templates#new', as: :new_settings_template
   get 'settings/exports', to: 'settings#exports'

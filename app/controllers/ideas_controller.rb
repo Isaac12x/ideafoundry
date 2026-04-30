@@ -1,17 +1,17 @@
 class IdeasController < ApplicationController
   before_action :set_user
-  before_action :set_idea, only: [:show, :edit, :update, :destroy, :send_email, :approve_pending_email, :discard_pending_email]
+  before_action :set_idea, only: [:show, :edit, :update, :destroy, :send_email, :approve_pending_email, :discard_pending_email, :enrich, :enrichment_status, :archive, :restore]
   before_action :check_cool_off_period, only: [:edit, :update]
 
   def index
-    @ideas = @user.ideas.includes(:lists, :idea_lists, :topologies)
-    
+    @ideas = @user.ideas.non_draft.includes(:lists, :idea_lists, :topologies, :idea_entries)
+
     # Apply filters
     @ideas = apply_filters(@ideas)
-    
+
     # Apply sorting
     @ideas = apply_sorting(@ideas)
-    
+
     @ideas = @ideas.page(params[:page]).per(20)
   end
 
@@ -20,17 +20,16 @@ class IdeasController < ApplicationController
   end
 
   def new
-    @idea = @user.ideas.build
-    @lists = @user.lists.ordered
-    @topologies = @user.topologies.ordered
-    @templates = @user.templates.order(:name)
-
-    # User picks template in step 1 of the form
+    # Auto-draft: create a hidden draft idea immediately so drawings can attach
+    # to it during composition. Drafts are filtered from listings and cleaned up
+    # daily by CleanOrphanedDraftsJob if abandoned.
+    @idea = @user.ideas.create!(draft: true, state: :idea_new, attempt_count: 0, title: "")
+    redirect_to edit_idea_path(@idea, draft: 1)
   end
 
   def create
     @idea = @user.ideas.build(idea_params)
-    
+
     if @idea.save
       @idea.create_version("Initial version")
 
@@ -56,9 +55,12 @@ class IdeasController < ApplicationController
   end
 
   def update
+    was_draft = @idea.draft?
+    attrs = idea_params
+    attrs[:draft] = false if was_draft  # Submitting promotes draft → real idea
     respond_to do |format|
-      if @idea.update(idea_params)
-        @idea.create_version(version_commit_message)
+      if @idea.update(attrs)
+        @idea.create_version(was_draft ? "Initial version" : version_commit_message)
 
         # Update list association if provided (only for non-AJAX requests)
         if params.key?(:list_id) && !request.xhr?
@@ -149,10 +151,101 @@ class IdeasController < ApplicationController
     redirect_to ideas_path, notice: 'Idea was successfully deleted.'
   end
 
+  # POST /ideas/:id/enrich
+  # Triggers web enrichment for this idea.
+  def enrich
+    query = params[:query].presence
+    sources = params[:sources].presence&.split(",")
+
+    IdeaEnrichmentJob.perform_later(@idea.id, query: query, sources: sources)
+
+    respond_to do |format|
+      format.html { redirect_to @idea, notice: 'Enrichment started. Results will appear in the Enrichment tab when ready.' }
+      format.json { render json: { status: 'enqueued', idea_id: @idea.id } }
+    end
+  end
+
+  # GET /ideas/:id/enrichment_status
+  # Returns the current enrichment state as JSON.
+  def enrichment_status
+    service = IdeaEnrichmentService.new(@idea)
+    enrichment = service.last_enrichment
+
+    render json: {
+      idea_id: @idea.id,
+      enriched: service.enriched?,
+      enrichment: enrichment,
+      can_enrich: !service.enriched?
+    }
+  end
+
+  # GET /ideas/archived
+  # Shows all archived (soft-deleted) ideas.
+  def archived
+    @ideas = @user.ideas.non_draft.where.not(discarded_at: nil)
+                  .order(discarded_at: :desc)
+                  .page(params[:page]).per(20)
+  end
+
+  # POST /ideas/:id/archive
+  # Soft-deletes an idea (archive).
+  def archive
+    @idea.update!(discarded_at: Time.current)
+
+    respond_to do |format|
+      format.html { redirect_to ideas_path, notice: 'Idea archived.' }
+      format.json { render json: { success: true, discarded_at: @idea.discarded_at } }
+    end
+  end
+
+  # POST /ideas/:id/restore
+  # Restores an archived idea.
+  def restore
+    @idea.update!(discarded_at: nil)
+
+    respond_to do |format|
+      format.html { redirect_to @idea, notice: 'Idea restored.' }
+      format.json { render json: { success: true, discarded_at: nil } }
+    end
+  end
+
+  # GET /ideas/search?q=...
+  # Quick search endpoint returning JSON results.
+  def search
+    query = params[:q].to_s.strip
+    if query.blank?
+      render json: { results: [] }
+      return
+    end
+
+    search_term = "%#{query.downcase}%"
+    ideas = @user.ideas.non_draft.where(discarded_at: nil)
+                 .left_joins(:rich_text_description)
+                 .where("LOWER(ideas.title) LIKE :q OR LOWER(action_text_rich_texts.body) LIKE :q", q: search_term)
+                 .distinct
+                 .order(updated_at: :desc)
+                 .limit(20)
+                 .map do |idea|
+      {
+        id: idea.id,
+        title: idea.title,
+        state: idea.state,
+        score: idea.computed_score,
+        url: idea_path(idea)
+      }
+    end
+
+    render json: { results: ideas }
+  end
+
   private
 
   def set_idea
-    @idea = @user.ideas.find(params[:id])
+    # Use with_discarded to find ideas even if they're archived
+    @idea = @user.ideas.find_by(id: params[:id])
+    unless @idea
+      redirect_to ideas_path, alert: "Idea not found."
+    end
   end
 
   def check_cool_off_period
@@ -236,7 +329,22 @@ class IdeasController < ApplicationController
     elsif params[:has_attachments] == 'false'
       ideas = ideas.left_joins(:attachments_attachments).where(active_storage_attachments: { id: nil })
     end
-    
+
+    # Full-text search across title and description
+    if params[:search].present?
+      search_term = "%#{params[:search].strip.downcase}%"
+      ideas = ideas.left_joins(:rich_text_description)
+                   .where(
+                     "LOWER(ideas.title) LIKE :q OR LOWER(action_text_rich_texts.body) LIKE :q",
+                     q: search_term
+                   ).distinct
+    end
+
+    # Exclude archived ideas by default
+    unless params[:include_archived] == 'true' || params[:state] == 'archived'
+      ideas = ideas.where(discarded_at: nil)
+    end
+
     ideas
   end
 

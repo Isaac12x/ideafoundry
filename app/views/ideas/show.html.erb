@@ -42,8 +42,13 @@
             </div>
           </div>
         </div>
+        <% if @idea.archived? %>
+          <%= button_to "Restore", restore_idea_path(@idea), method: :post, class: "btn btn-sm btn-primary" %>
+        <% else %>
+          <%= button_to "Archive", archive_idea_path(@idea), method: :post, class: "btn btn-sm", form: { data: { turbo_confirm: "Archive this idea? You can restore it later from the archived view." } } %>
+        <% end %>
         <%= link_to idea_path(@idea), method: :delete,
-                    data: { turbo_method: :delete, turbo_confirm: "Are you sure?" },
+                    data: { turbo_method: :delete, turbo_confirm: "Are you sure? This permanently deletes the idea." },
                     class: "btn btn-sm btn-danger" do %>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
           Delete
@@ -107,10 +112,16 @@
   <% end %>
 
   <!-- Hero Image + Scores At-a-Glance -->
-  <% if @idea.hero_image.attached? %>
+  <% hero_drawing = @idea.hero_drawing %>
+  <% has_hero = @idea.hero_image.attached? || (hero_drawing && hero_drawing.rendered_png.attached?) %>
+  <% if has_hero %>
     <div class="hero-scores-row">
       <div class="hero-image-container">
-        <%= image_tag @idea.hero_image, class: "detail-hero-image", alt: @idea.title %>
+        <% if hero_drawing && hero_drawing.rendered_png.attached? %>
+          <%= image_tag hero_drawing.rendered_png, class: "detail-hero-image", alt: hero_drawing.title %>
+        <% else %>
+          <%= image_tag @idea.hero_image, class: "detail-hero-image", alt: @idea.title %>
+        <% end %>
       </div>
       <div class="hero-scores-panel">
         <div class="hero-score-main">
@@ -168,19 +179,25 @@
   <!-- Main Content — Tabbed -->
   <div class="idea-main-content">
     <div data-controller="tabs" data-tabs-default-tab-value="description">
-      <div class="tabs-nav">
+      <div class="tabs-nav" data-controller="drag-scroll">
         <button data-tabs-target="tab" data-tab-name="description" data-action="click->tabs#switch" class="tab-button active">
           Description
         </button>
-        <button data-tabs-target="tab" data-tab-name="scores" data-action="click->tabs#switch" class="tab-button">
-          Scores
-        </button>
-        <button data-tabs-target="tab" data-tab-name="media" data-action="click->tabs#switch" class="tab-button">
-          Media
-        </button>
-        <button data-tabs-target="tab" data-tab-name="metadata" data-action="click->tabs#switch" class="tab-button">
-          Metadata
-        </button>
+        <% if @user.idea_tab_enabled?('scores') %>
+          <button data-tabs-target="tab" data-tab-name="scores" data-action="click->tabs#switch" class="tab-button">
+            Scores
+          </button>
+        <% end %>
+        <% if @user.idea_tab_enabled?('media') %>
+          <button data-tabs-target="tab" data-tab-name="media" data-action="click->tabs#switch" class="tab-button">
+            Media
+          </button>
+        <% end %>
+        <% if @user.idea_tab_enabled?('metadata') %>
+          <button data-tabs-target="tab" data-tab-name="metadata" data-action="click->tabs#switch" class="tab-button">
+            Metadata
+          </button>
+        <% end %>
         <% if @idea.template && @idea.template.field_definitions.present? %>
           <% @idea.template.effective_tab_definitions.sort_by { |t| t['position'].to_i }.each do |tab| %>
             <% tab_fields = @idea.template.fields_by_tab[tab['name']] || [] %>
@@ -190,16 +207,47 @@
             </button>
           <% end %>
         <% end %>
-        <% note_count = @idea.notes.count %>
-        <button data-tabs-target="tab" data-tab-name="notes" data-action="click->tabs#switch" class="tab-button">
-          <span id="notes_tab_label_<%= @idea.id %>">Notes<% if note_count > 0 %> (<%= note_count %>)<% end %></span>
-        </button>
-        <% todo_count = @idea.todo_items.count %>
-        <button data-tabs-target="tab" data-tab-name="todo" data-action="click->tabs#switch" class="tab-button">
-          <span id="todo_tab_label_<%= @idea.id %>">Todo<% if todo_count > 0 %> (<%= todo_count %>)<% end %></span>
-        </button>
-        <button data-tabs-target="tab" data-tab-name="history" data-action="click->tabs#switch" class="tab-button">
-          History<% if @idea.versions.any? %> (<%= @idea.versions.count %>)<% end %>
+        <% if @user.idea_tab_enabled?('tool') %>
+          <% tool_count = @idea.idea_entries.where(kind: 'tool').count %>
+          <button data-tabs-target="tab" data-tab-name="tool" data-action="click->tabs#switch" class="tab-button">
+            <span id="idea_entries_tab_label_<%= @idea.id %>_tool">Tools<% if tool_count > 0 %> (<%= tool_count %>)<% end %></span>
+          </button>
+        <% end %>
+        <% comp_enabled = @user.idea_tab_enabled?('competitor') %>
+        <% pot_enabled  = @user.idea_tab_enabled?('potential_competitor') %>
+        <% if comp_enabled || pot_enabled %>
+          <% comp_count = comp_enabled ? @idea.idea_entries.where(kind: 'competitor').count : 0 %>
+          <% pot_count  = pot_enabled  ? @idea.idea_entries.where(kind: 'potential_competitor').count : 0 %>
+          <% merged_count = comp_count + pot_count %>
+          <button data-tabs-target="tab" data-tab-name="competitors" data-action="click->tabs#switch" class="tab-button">
+            <span id="idea_entries_tab_label_<%= @idea.id %>_competitors">Competitors<% if merged_count > 0 %> (<%= merged_count %>)<% end %></span>
+          </button>
+        <% end %>
+        <% if @user.idea_tab_enabled?('notes') %>
+          <% note_count = @idea.notes.count %>
+          <button data-tabs-target="tab" data-tab-name="notes" data-action="click->tabs#switch" class="tab-button">
+            <span id="notes_tab_label_<%= @idea.id %>">Notes<% if note_count > 0 %> (<%= note_count %>)<% end %></span>
+          </button>
+        <% end %>
+        <% if @user.idea_tab_enabled?('todo') %>
+          <% todo_count = @idea.todo_items.count %>
+          <button data-tabs-target="tab" data-tab-name="todo" data-action="click->tabs#switch" class="tab-button">
+            <span id="todo_tab_label_<%= @idea.id %>">Todo<% if todo_count > 0 %> (<%= todo_count %>)<% end %></span>
+          </button>
+        <% end %>
+        <% if @user.idea_tab_enabled?('history') %>
+          <button data-tabs-target="tab" data-tab-name="history" data-action="click->tabs#switch" class="tab-button">
+            History<% if @idea.versions.any? %> (<%= @idea.versions.count %>)<% end %>
+          </button>
+        <% end %>
+        <% if @user.idea_tab_enabled?('drawing') %>
+          <% drawing_count = @idea.drawings.count %>
+          <button data-tabs-target="tab" data-tab-name="drawing" data-action="click->tabs#switch" class="tab-button">
+            Drawings<% if drawing_count > 0 %> (<%= drawing_count %>)<% end %>
+          </button>
+        <% end %>
+        <button data-tabs-target="tab" data-tab-name="enrichment" data-action="click->tabs#switch" class="tab-button">
+          Enrich<% if @idea.enriched? %> &check;<% end %>
         </button>
       </div>
 
@@ -219,6 +267,7 @@
         </div>
 
         <!-- Scores Tab -->
+        <% if @user.idea_tab_enabled?('scores') %>
         <div data-tabs-target="panel" data-tab-panel="scores" class="tab-panel hidden">
           <div class="idea-metrics-row">
             <div class="metric-card metric-card-score">
@@ -267,11 +316,15 @@
           </div>
         </div>
 
+        <% end %>
+
         <!-- Media Tab -->
+        <% if @user.idea_tab_enabled?('media') %>
         <div data-tabs-target="panel" data-tab-panel="media" class="tab-panel hidden">
           <div class="media-section">
             <h3>Attachments</h3>
-            <% if @idea.attachments.attached? %>
+            <% attachment_drawings = @idea.attachment_drawings %>
+            <% if @idea.attachments.attached? || attachment_drawings.any? %>
               <div class="attachments-grid">
                 <% @idea.attachments.each do |attachment| %>
                   <div class="attachment-item">
@@ -291,6 +344,22 @@
                     </div>
                   </div>
                 <% end %>
+                <% attachment_drawings.each do |drawing| %>
+                  <div class="attachment-item attachment-item--drawing">
+                    <% if drawing.rendered_png.attached? %>
+                      <%= image_tag drawing.rendered_png, class: "attachment-thumbnail" %>
+                    <% else %>
+                      <div class="attachment-file">
+                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                      </div>
+                    <% end %>
+                    <div class="attachment-info">
+                      <p class="attachment-name"><%= drawing.title %></p>
+                      <p class="attachment-size">drawing</p>
+                      <%= link_to "Open", idea_drawing_path(@idea, drawing), class: "btn btn-sm" %>
+                    </div>
+                  </div>
+                <% end %>
               </div>
             <% else %>
               <div class="empty-state-small">
@@ -301,7 +370,10 @@
           </div>
         </div>
 
+        <% end %>
+
         <!-- Metadata Tab -->
+        <% if @user.idea_tab_enabled?('metadata') %>
         <div data-tabs-target="panel" data-tab-panel="metadata" class="tab-panel hidden">
           <div class="metadata-grid">
             <div class="metadata-group">
@@ -366,6 +438,60 @@
           </div>
         </div>
 
+        <% end %>
+
+        <!-- Tools Tab -->
+        <% if @user.idea_tab_enabled?('tool') %>
+          <div data-tabs-target="panel" data-tab-panel="tool" class="tab-panel hidden">
+            <%= render "idea_entries/tab", idea: @idea, kind: 'tool' %>
+          </div>
+        <% end %>
+
+        <!-- Merged Competitors Tab (real + potential) -->
+        <% if comp_enabled || pot_enabled %>
+          <div data-tabs-target="panel" data-tab-panel="competitors" class="tab-panel hidden">
+            <div data-controller="competitor-toggle" class="competitor-toggle-wrapper">
+              <% default_kind = comp_enabled ? 'competitor' : 'potential_competitor' %>
+              <div class="competitor-segmented" role="tablist">
+                <% if comp_enabled %>
+                  <button type="button"
+                          role="tab"
+                          data-competitor-toggle-target="tab"
+                          data-subtab="competitor"
+                          data-action="click->competitor-toggle#switch"
+                          class="competitor-segmented__option <%= 'is-active' if default_kind == 'competitor' %>">
+                    Competitors<% if comp_count > 0 %> <span class="competitor-segmented__count"><%= comp_count %></span><% end %>
+                  </button>
+                <% end %>
+                <% if pot_enabled %>
+                  <button type="button"
+                          role="tab"
+                          data-competitor-toggle-target="tab"
+                          data-subtab="potential_competitor"
+                          data-action="click->competitor-toggle#switch"
+                          class="competitor-segmented__option <%= 'is-active' if default_kind == 'potential_competitor' %>">
+                    Potential<% if pot_count > 0 %> <span class="competitor-segmented__count"><%= pot_count %></span><% end %>
+                  </button>
+                <% end %>
+              </div>
+              <% if comp_enabled %>
+                <div data-competitor-toggle-target="panel"
+                     data-subpanel="competitor"
+                     class="competitor-subpanel <%= 'hidden' unless default_kind == 'competitor' %>">
+                  <%= render "idea_entries/tab", idea: @idea, kind: 'competitor' %>
+                </div>
+              <% end %>
+              <% if pot_enabled %>
+                <div data-competitor-toggle-target="panel"
+                     data-subpanel="potential_competitor"
+                     class="competitor-subpanel <%= 'hidden' unless default_kind == 'potential_competitor' %>">
+                  <%= render "idea_entries/tab", idea: @idea, kind: 'potential_competitor' %>
+                </div>
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+
         <!-- Custom Field Tabs -->
         <% if @idea.template && @idea.template.field_definitions.present? %>
           <% @idea.template.effective_tab_definitions.sort_by { |t| t['position'].to_i }.each do |tab| %>
@@ -390,16 +516,21 @@
         <% end %>
 
         <!-- Notes Tab -->
+        <% if @user.idea_tab_enabled?('notes') %>
         <div data-tabs-target="panel" data-tab-panel="notes" class="tab-panel hidden">
           <%= render "notes/tab", idea: @idea %>
         </div>
+        <% end %>
 
         <!-- Todo Tab -->
+        <% if @user.idea_tab_enabled?('todo') %>
         <div data-tabs-target="panel" data-tab-panel="todo" class="tab-panel hidden">
           <%= render "todo_items/tab", idea: @idea %>
         </div>
+        <% end %>
 
         <!-- History Tab -->
+        <% if @user.idea_tab_enabled?('history') %>
         <div data-tabs-target="panel" data-tab-panel="history" class="tab-panel hidden">
           <% all_versions = @idea.versions.includes(:parent_version, :child_versions).order(created_at: :desc) %>
           <% if all_versions.empty? %>
@@ -569,6 +700,19 @@
               </div>
             </div>
           <% end %>
+        </div>
+        <% end %>
+
+        <!-- Drawings Tab -->
+        <% if @user.idea_tab_enabled?('drawing') %>
+        <div data-tabs-target="panel" data-tab-panel="drawing" class="tab-panel hidden">
+          <%= render "drawings/tab", idea: @idea %>
+        </div>
+        <% end %>
+
+        <!-- Enrichment Tab -->
+        <div data-tabs-target="panel" data-tab-panel="enrichment" class="tab-panel hidden">
+          <%= render "ideas/enrichment_tab", idea: @idea %>
         </div>
       </div>
     </div>

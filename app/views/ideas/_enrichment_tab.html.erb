@@ -1,0 +1,144 @@
+<!-- Enrichment Tab Content -->
+<div class="enrichment-panel" data-controller="enrichment"
+     data-enrichment-idea-id-value="<%= idea.id %>"
+     data-enrichment-enriched-value="<%= idea.enriched? %>">
+
+  <div class="enrichment-header">
+    <h3>Web Enrichment</h3>
+    <p class="text-muted">Scan the web for competitors, market trends, and related tools for this idea.</p>
+  </div>
+
+  <!-- Trigger Enrichment -->
+  <div class="enrichment-actions" style="margin-bottom: 1.5rem;">
+    <%= form_with url: enrich_idea_path(idea), method: :post, local: true, class: "enrichment-form" do |f| %>
+      <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+        <input type="text" name="query" placeholder="Custom search query (optional)" class="form-input" style="flex: 1; min-width: 200px;">
+        <select name="sources" class="form-select" style="min-width: 150px;">
+          <option value="">All sources</option>
+          <option value="competitors">Competitors only</option>
+          <option value="market">Market insights only</option>
+          <option value="resources">Tools & resources only</option>
+        </select>
+        <%= f.submit "Enrich", class: "btn btn-primary btn-sm" %>
+      </div>
+    <% end %>
+  </div>
+
+  <!-- Enrichment Results -->
+  <% enrichment = idea.enrichment_data %>
+
+  <% if enrichment.present? %>
+    <div class="enrichment-results">
+      <div class="enrichment-meta" style="margin-bottom: 1rem; padding: 0.75rem; background: var(--bg-secondary); border-radius: 8px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <span class="text-muted">
+            Last enriched: <%= time_ago_in_words(Time.parse(enrichment["enriched_at"])) %> ago
+          </span>
+          <span class="enrichment-summary"><%= enrichment["summary"] %></span>
+        </div>
+        <div style="margin-top: 0.5rem;">
+          <code style="font-size: 0.8rem; color: var(--text-muted);">Query: <%= enrichment["query"] %></code>
+        </div>
+      </div>
+
+      <% results = enrichment["results"] || {} %>
+
+      <!-- Competitors -->
+      <% if results["competitors"]&.any? %>
+        <div class="enrichment-section" style="margin-bottom: 1.5rem;">
+          <h4 style="margin-bottom: 0.75rem;">
+            Competitors & Alternatives
+            <span class="badge"><%= results["competitors"].size %></span>
+          </h4>
+          <div class="enrichment-items">
+            <% results["competitors"].each do |item| %>
+              <div class="enrichment-item" style="padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 6px; margin-bottom: 0.5rem;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                  <div>
+                    <strong><%= item["name"] %></strong>
+                    <% if item["url"].present? %>
+                      <%= link_to URI.parse(item["url"]).host, item["url"], target: "_blank", class: "text-muted", style: "font-size: 0.8rem; margin-left: 0.5rem;" rescue nil %>
+                    <% end %>
+                    <% if item["potential"] %>
+                      <span class="badge badge-warning" style="font-size: 0.65rem;">Potential</span>
+                    <% end %>
+                  </div>
+                </div>
+                <% if item["description"].present? %>
+                  <p style="font-size: 0.85rem; color: var(--text-secondary); margin: 0.25rem 0 0;"><%= truncate(item["description"], length: 200) %></p>
+                <% end %>
+              </div>
+            <% end %>
+          </div>
+          <div style="margin-top: 0.5rem;">
+            <%= button_to "Add competitors as entries", "#", method: :post, class: "btn btn-sm", disabled: true, title: "Coming soon - will create IdeaEntry records from these results" %>
+          </div>
+        </div>
+      <% end %>
+
+      <!-- Market Insights -->
+      <% if results["market"]&.any? %>
+        <div class="enrichment-section" style="margin-bottom: 1.5rem;">
+          <h4 style="margin-bottom: 0.75rem;">
+            Market & Trends
+            <span class="badge"><%= results["market"].size %></span>
+          </h4>
+          <div class="enrichment-items">
+            <% results["market"].each do |item| %>
+              <div class="enrichment-item" style="padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 6px; margin-bottom: 0.5rem;">
+                <strong><%= item["name"] %></strong>
+                <% if item["url"].present? %>
+                  <%= link_to "link", item["url"], target: "_blank", class: "text-muted", style: "font-size: 0.8rem; margin-left: 0.5rem;" rescue nil %>
+                <% end %>
+                <% if item["description"].present? %>
+                  <p style="font-size: 0.85rem; color: var(--text-secondary); margin: 0.25rem 0 0;"><%= truncate(item["description"], length: 200) %></p>
+                <% end %>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      <% end %>
+
+      <!-- Tools & Resources -->
+      <% if results["resources"]&.any? %>
+        <div class="enrichment-section" style="margin-bottom: 1.5rem;">
+          <h4 style="margin-bottom: 0.75rem;">
+            Tools & Resources
+            <span class="badge"><%= results["resources"].size %></span>
+          </h4>
+          <div class="enrichment-items">
+            <% results["resources"].each do |item| %>
+              <div class="enrichment-item" style="padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 6px; margin-bottom: 0.5rem;">
+                <strong><%= item["name"] %></strong>
+                <% if item["url"].present? %>
+                  <%= link_to "link", item["url"], target: "_blank", class: "text-muted", style: "font-size: 0.8rem; margin-left: 0.5rem;" rescue nil %>
+                <% end %>
+                <% if item["description"].present? %>
+                  <p style="font-size: 0.85rem; color: var(--text-secondary); margin: 0.25rem 0 0;"><%= truncate(item["description"], length: 200) %></p>
+                <% end %>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      <% end %>
+
+      <% if results.values.flatten.empty? %>
+        <div class="empty-state-small">
+          <p>Enrichment completed but no results found. Try a different search query.</p>
+        </div>
+      <% end %>
+    </div>
+
+    <!-- Enrichment Error -->
+    <% if idea.metadata&.dig("enrichment_error").present? %>
+      <div class="alert alert-warning" style="margin-top: 1rem;">
+        <strong>Last enrichment failed:</strong>
+        <p><%= idea.metadata["enrichment_error"] %></p>
+      </div>
+    <% end %>
+  <% else %>
+    <div class="empty-state-small">
+      <p>No enrichment data yet. Click "Enrich" to scan the web for related information.</p>
+    </div>
+  <% end %>
+</div>

@@ -8,3 +8,5 @@
     <%= render 'form', form: form, idea: @idea, lists: @lists, topologies: @topologies %>
   <% end %>
 </div>
+
+<%= javascript_include_tag "excalidraw_app/index", defer: true, type: "module" %>

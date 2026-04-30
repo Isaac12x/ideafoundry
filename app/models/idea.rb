@@ -10,6 +10,8 @@ class Idea < ApplicationRecord
   has_many :versions, dependent: :destroy
   has_many :todo_items, dependent: :destroy
   has_many :notes, dependent: :destroy
+  has_many :idea_entries, dependent: :destroy
+  has_many :drawings, dependent: :destroy
   has_one_attached :hero_image
   has_many_attached :attachments
   has_rich_text :description
@@ -31,7 +33,7 @@ class Idea < ApplicationRecord
   serialize :metadata, coder: JSON
 
   # Validations
-  validates :title, presence: true
+  validates :title, presence: true, unless: :draft?
   validates :state, presence: true
   validates :trl, :difficulty, :opportunity, :timing,
             inclusion: { in: 0..10 }, allow_nil: true
@@ -44,11 +46,29 @@ class Idea < ApplicationRecord
   after_commit :broadcast_graph_updated, on: :update, if: :title_previously_changed?
 
   # Scopes
-  scope :active, -> { where.not(state: [:rejected, :shipped]) }
+  scope :active, -> { where.not(state: [:rejected, :shipped]).where(discarded_at: nil, draft: false) }
+  scope :non_draft, -> { where(draft: false) }
+  scope :drafts, -> { where(draft: true) }
+  scope :stale_drafts, ->(older_than = 24.hours.ago) { drafts.where("ideas.updated_at < ?", older_than) }
   scope :by_state, ->(state) { where(state: state) }
   scope :by_score_range, ->(min, max) { where(computed_score: min..max) }
   scope :in_cool_off, -> { where('cool_off_until > ?', Time.current) }
   scope :cool_off_expired, -> { where('cool_off_until IS NOT NULL AND cool_off_until <= ?', Time.current) }
+  scope :kept, -> { where(discarded_at: nil) }
+  scope :discarded, -> { where.not(discarded_at: nil) }
+  scope :with_discarded, -> { unscope(:where).where.not(discarded_at: nil) }
+
+  def hero_drawing
+    drawings.hero.first
+  end
+
+  def attachment_drawings
+    drawings.attachment.ordered
+  end
+
+  def general_drawings
+    drawings.general.ordered
+  end
 
   # State transition methods
   def transition_to_first_try!
@@ -313,6 +333,32 @@ class Idea < ApplicationRecord
     end
 
     digest.hexdigest == integrity_hash
+  end
+
+  # Soft delete / archive
+  def archived?
+    discarded_at.present?
+  end
+
+  def archive!
+    update!(discarded_at: Time.current)
+  end
+
+  def restore!
+    update!(discarded_at: nil)
+  end
+
+  # Enrichment helpers
+  def enrichment_data
+    metadata&.dig("enrichment")
+  end
+
+  def enriched?
+    enrichment_data.present? &&
+      enrichment_data["enriched_at"].present? &&
+      Time.parse(enrichment_data["enriched_at"]) > 24.hours.ago
+  rescue StandardError
+    false
   end
 
   def append_intake_update!(body:, source: nil, intake_reference: nil)
