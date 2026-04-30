@@ -18,6 +18,7 @@
 /* ---- Add Form (root level) ---- */
 .notes-add-section {
   margin-bottom: 1.25rem;
+  padding-left: 18px;
 }
 
 /* ---- Form ---- */
@@ -31,7 +32,7 @@
 .note-form-row {
   display: flex;
   gap: 8px;
-  align-items: flex-end;
+  align-items: flex-start;
 }
 
 .note-form-input {
@@ -75,7 +76,7 @@
   min-width: 0;
   border-radius: var(--radius-md);
   text-transform: uppercase;
-  align-self: flex-end;
+  height: 40px;
 }
 
 /* ---- Tree ---- */

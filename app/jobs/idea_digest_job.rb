@@ -1,7 +1,14 @@
 class IdeaDigestJob < ApplicationJob
   queue_as :default
 
-  def perform(period:)
+  # Accepts period as a positional or keyword arg for flexibility with recurring scheduler.
+  def perform(period_or_opts = "daily", period: nil)
+    period ||= if period_or_opts.is_a?(Hash)
+                 period_or_opts[:period] || period_or_opts["period"]
+               else
+                 period_or_opts
+               end
+    period ||= "daily"
     trigger = "digest_#{period}"
 
     User.find_each do |user|

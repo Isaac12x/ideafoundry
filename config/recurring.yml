@@ -1,19 +1,51 @@
+# Recurring jobs for Solid Queue.
+# These run automatically in production via Solid Queue's recurring scheduler.
+#
 # examples:
 #   periodic_cleanup:
 #     class: CleanSoftDeletedRecordsJob
 #     queue: background
 #     args: [ 1000, { batch_size: 500 } ]
 #     schedule: every hour
-#   periodic_cleanup_with_command:
-#     command: "SoftDeletedRecord.due.delete_all"
-#     priority: 2
-#     schedule: at 5am every day
 
 production:
+  # Queue maintenance
   clear_solid_queue_finished_jobs:
     command: "SolidQueue::Job.clear_finished_in_batches(sleep_between_batches: 0.3)"
     schedule: every hour at minute 12
+
+  # Submission management
   expire_stale_submissions:
     class: ExpireSubmissionsJob
     queue: default
     schedule: at 3am every day
+
+  # Email digests
+  daily_digest:
+    class: IdeaDigestJob
+    queue: default
+    args: ["daily"]
+    schedule: at 7am every day
+
+  weekly_digest:
+    class: IdeaDigestJob
+    queue: default
+    args: ["weekly"]
+    schedule: at 8am on Monday
+
+  # Automated backups
+  scheduled_backup:
+    class: ScheduledBackupJob
+    queue: default
+    schedule: at 2am every day
+
+  # Cool-off transitions check (catches any missed expirations)
+  process_expired_cool_offs:
+    command: "Idea.cool_off_expired.find_each { |idea| CoolOffTransitionJob.perform_later(idea) }"
+    schedule: every hour at minute 0
+
+  # Orphaned draft cleanup (auto-drafts abandoned during idea creation)
+  clean_orphaned_drafts:
+    class: CleanOrphanedDraftsJob
+    queue: default
+    schedule: at 4am every day
