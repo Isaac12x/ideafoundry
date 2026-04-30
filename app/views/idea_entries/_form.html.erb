@@ -1,0 +1,23 @@
+<% singular = IdeaEntry.singular_for(kind) %>
+<% compact = local_assigns.fetch(:compact, false) %>
+<% form_classes = ["idea-entry-form", ("idea-entry-form--compact" if compact)].compact.join(" ") %>
+<% field_prefix = "idea_entry_#{idea.id}_#{kind}_#{compact ? 'summary' : 'tab'}" %>
+
+<%= form_with(model: [idea, idea_entry], class: form_classes, data: { controller: "idea-entry-form", action: "turbo:submit-end->idea-entry-form#reset" }) do |f| %>
+  <%= f.hidden_field :kind, value: kind, id: "#{field_prefix}_kind" %>
+
+  <% if idea_entry.errors.any? %>
+    <div class="idea-entry-errors">
+      <%= idea_entry.errors.full_messages.to_sentence %>
+    </div>
+  <% end %>
+
+  <div class="idea-entry-form-grid">
+    <%= f.text_field :name, id: "#{field_prefix}_name", placeholder: "#{singular} name", class: "idea-entry-input", required: true, autocomplete: "off", data: { idea_entry_form_target: "name" } %>
+    <%= f.url_field :url, id: "#{field_prefix}_url", placeholder: "https://... (optional)", class: "idea-entry-input", autocomplete: "off", data: { idea_entry_form_target: "url" } %>
+  </div>
+  <%= f.text_area :description, id: "#{field_prefix}_description", placeholder: "Notes (optional)", class: "idea-entry-input idea-entry-textarea", rows: compact ? 1 : 2, data: { idea_entry_form_target: "description" } %>
+  <div class="idea-entry-form-actions">
+    <%= f.submit compact ? "Add" : "Add #{singular}", class: "btn btn-sm btn-primary" %>
+  </div>
+<% end %>

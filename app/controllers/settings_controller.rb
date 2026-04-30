@@ -108,6 +108,26 @@ class SettingsController < ApplicationController
     end
   end
 
+  def idea_tabs
+    @idea_tab_settings = @user.idea_tab_settings
+  end
+
+  def update_idea_tabs
+    raw = if params[:reset_idea_tabs].present?
+            User::DEFAULT_IDEA_TAB_SETTINGS
+          else
+            params[:idea_tabs]&.permit!&.to_h || {}
+          end
+
+    if @user.update_idea_tab_settings(raw)
+      redirect_to settings_idea_tabs_path, notice: 'Idea tab visibility updated.'
+    else
+      @idea_tab_settings = @user.idea_tab_settings
+      flash.now[:alert] = 'Failed to update idea tab settings.'
+      render :idea_tabs, status: :unprocessable_content
+    end
+  end
+
   def templates
     @templates = @user.templates.order(:name)
     @default_template = @templates.find_by(is_default: true)

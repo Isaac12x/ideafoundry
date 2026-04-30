@@ -568,6 +568,179 @@
   opacity: 1;
 }
 
+/* ============================================
+   Idea Tabs — toggle cards
+   ============================================ */
+.idea-tabs-form {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.tab-toggle-section {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.tab-toggle-section__header {
+  padding: 1.25rem 1.5rem 1rem;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.tab-toggle-section__header h3 {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 1.35rem;
+  font-weight: 400;
+  color: var(--text-primary);
+  margin: 0 0 4px 0;
+}
+
+.tab-toggle-section__header p {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.tab-toggle-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.tab-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--border-subtle);
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.tab-toggle:last-child {
+  border-bottom: none;
+}
+
+.tab-toggle:hover {
+  background: var(--bg-elevated);
+}
+
+.tab-toggle__text {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.tab-toggle__name {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: 0.01em;
+}
+
+.tab-toggle__description {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+
+.tab-toggle__badge {
+  font-family: var(--font-body);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: 3px;
+  background: var(--accent-muted);
+  color: var(--accent);
+  border: 1px solid var(--accent-emphasis);
+}
+
+/* --- Switch --- */
+.tab-toggle__switch {
+  position: relative;
+  flex-shrink: 0;
+  width: 40px;
+  height: 22px;
+}
+
+.tab-toggle__input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+  z-index: 1;
+}
+
+.tab-toggle__track {
+  position: absolute;
+  inset: 0;
+  background: var(--bg-input);
+  border: 1px solid var(--border-default);
+  border-radius: 999px;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.tab-toggle__thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.tab-toggle__input:checked ~ .tab-toggle__track {
+  background: var(--accent-muted);
+  border-color: var(--accent);
+}
+
+.tab-toggle__input:checked ~ .tab-toggle__track .tab-toggle__thumb {
+  transform: translateX(18px);
+  background: var(--accent);
+}
+
+.tab-toggle__input:focus-visible ~ .tab-toggle__track {
+  box-shadow: 0 0 0 3px var(--accent-muted);
+}
+
+.tab-toggle-actions {
+  display: flex;
+  gap: 12px;
+  padding-top: 0.5rem;
+}
+
+/* ============================================
+   API Keys — inline form alignment
+   ============================================ */
+.api-key-form .form-row {
+  align-items: flex-end;
+}
+
+.api-key-form .form-group {
+  margin-bottom: 0;
+}
+
+.api-key-form .btn-primary {
+  height: 40px;
+  padding-inline: 20px;
+  flex-shrink: 0;
+}
+
 @media (max-width: 768px) {
   .weight-grid { grid-template-columns: 1fr; }
   .config-actions { flex-direction: column; }
@@ -582,4 +755,9 @@
   .legend-scale-name { font-size: 0.7rem; }
 
   .theme-preview-popup { display: none; }
+
+  .tab-toggle { flex-direction: row; gap: 1rem; padding: 1rem 1.25rem; }
+  .tab-toggle-section__header { padding: 1rem 1.25rem 0.75rem; }
+  .api-key-form .form-row { flex-direction: column; align-items: stretch; }
+  .api-key-form .btn-primary { width: 100%; }
 }

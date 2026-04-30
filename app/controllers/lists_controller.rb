@@ -3,11 +3,11 @@ class ListsController < ApplicationController
   before_action :set_list, only: [:show, :edit, :update, :destroy, :send_email]
 
   def index
-    @lists = @user.lists.ordered.includes(ideas: :idea_lists)
+    @lists = @user.lists.ordered.includes(ideas: [:idea_lists, :idea_entries])
   end
 
   def show
-    @ideas = @list.ideas.includes(:idea_lists).order('idea_lists.position')
+    @ideas = @list.ideas.includes(:idea_lists, :idea_entries).order('idea_lists.position')
   end
 
   def new
@@ -94,14 +94,14 @@ class ListsController < ApplicationController
         streams = [
           turbo_stream.update("list_#{new_list.id}_ideas",
             partial: 'lists/ideas',
-            locals: { list: new_list, ideas: new_list.ideas.includes(:idea_lists).order('idea_lists.position') }
+            locals: { list: new_list, ideas: new_list.ideas.includes(:idea_lists, :idea_entries).order('idea_lists.position') }
           )
         ]
 
         if old_list
           streams << turbo_stream.update("list_#{old_list.id}_ideas",
             partial: 'lists/ideas',
-            locals: { list: old_list, ideas: old_list.ideas.reload.includes(:idea_lists).order('idea_lists.position') }
+            locals: { list: old_list, ideas: old_list.ideas.reload.includes(:idea_lists, :idea_entries).order('idea_lists.position') }
           )
         end
 
