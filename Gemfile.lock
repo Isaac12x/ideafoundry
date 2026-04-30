@@ -102,6 +102,9 @@ GEM
     debug (1.11.0)
       irb (~> 1.10)
       reline (>= 0.3.8)
+    dentaku (3.5.7)
+      bigdecimal
+      concurrent-ruby
     drb (2.2.3)
     erb (5.0.2)
     erubi (1.13.1)
@@ -307,6 +310,7 @@ DEPENDENCIES
   bootsnap
   capybara
   debug
+  dentaku (~> 3.5)
   image_processing (~> 1.2)
   importmap-rails
   jbuilder
