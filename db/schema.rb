@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_04_30_000002) do
+ActiveRecord::Schema[8.0].define(version: 2026_04_30_220919) do
   create_table "action_mailbox_inbound_emails", force: :cascade do |t|
     t.integer "status", default: 0, null: false
     t.string "message_id", null: false
@@ -171,6 +171,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_04_30_000002) do
     t.string "integrity_hash"
     t.datetime "discarded_at"
     t.boolean "draft", default: false, null: false
+    t.json "napkin_calculations"
     t.index ["computed_score"], name: "index_ideas_on_computed_score"
     t.index ["cool_off_until"], name: "index_ideas_on_cool_off_until"
     t.index ["discarded_at"], name: "index_ideas_on_discarded_at"
