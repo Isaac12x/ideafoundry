@@ -52,4 +52,36 @@ class SettingsControllerTest < ActionDispatch::IntegrationTest
     assert_equal 'digest', @user.event_preset_for('score_changed')
     assert_equal ['state_changed'], @user.notification_triggers
   end
+
+  test "idea tabs route uses hyphenated path" do
+    assert_equal "/settings/idea-tabs", settings_idea_tabs_path
+
+    get "/settings/idea_tabs"
+    assert_redirected_to "/settings/idea-tabs"
+  end
+
+  test "PATCH settings/idea-tabs updates idea tab settings" do
+    patch settings_idea_tabs_path, params: {
+      idea_tabs: {
+        scores: "1",
+        tool: "1"
+      }
+    }
+
+    assert_redirected_to settings_idea_tabs_path
+    @user.reload
+    assert_equal true, @user.idea_tab_settings["scores"]
+    assert_equal true, @user.idea_tab_settings["tool"]
+    assert_equal false, @user.idea_tab_settings["competitor"]
+  end
+
+  test "PATCH settings/idea-tabs can reset idea tab settings" do
+    @user.update_idea_tab_settings({ "scores" => "0", "tool" => "1" })
+
+    patch settings_idea_tabs_path, params: { reset_idea_tabs: "1" }
+
+    assert_redirected_to settings_idea_tabs_path
+    @user.reload
+    assert_equal User::DEFAULT_IDEA_TAB_SETTINGS, @user.idea_tab_settings
+  end
 end

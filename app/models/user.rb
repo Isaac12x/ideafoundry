@@ -91,6 +91,42 @@ class User < ApplicationRecord
     bloom_strength fog_density auto_fit_on_load click_behavior
   ].freeze
 
+  # Tabs that can be toggled on the idea detail page.
+  # Description is always visible and not listed here.
+  # Entry-kind tabs (tool/competitor/potential_competitor) match IdeaEntry enum kinds.
+  AVAILABLE_IDEA_TABS = %w[
+    scores media metadata notes todo history drawing
+    tool competitor potential_competitor
+  ].freeze
+
+  DEFAULT_IDEA_TAB_SETTINGS = {
+    'scores' => true,
+    'media' => true,
+    'metadata' => true,
+    'notes' => true,
+    'todo' => true,
+    'history' => true,
+    'drawing' => true,
+    'tool' => false,
+    'competitor' => false,
+    'potential_competitor' => false
+  }.freeze
+
+  IDEA_TAB_LABELS = {
+    'scores' => 'Scores',
+    'media' => 'Media',
+    'metadata' => 'Metadata',
+    'notes' => 'Notes',
+    'todo' => 'Todo',
+    'history' => 'History',
+    'drawing' => 'Drawings',
+    'tool' => 'Tools',
+    'competitor' => 'Competitors',
+    'potential_competitor' => 'Potential Competitors'
+  }.freeze
+
+  IDEA_ENTRY_TABS = %w[tool competitor potential_competitor].freeze
+
   def scoring_weights
     settings&.dig('scoring_weights') || DEFAULT_SCORING_WEIGHTS
   end
@@ -217,6 +253,35 @@ class User < ApplicationRecord
   def update_topology_settings(params)
     self.settings ||= {}
     self.settings['topology_settings'] = params.to_h.slice(*ALLOWED_TOPOLOGY_SETTING_KEYS)
+    save
+  end
+
+  def idea_tab_settings
+    stored = (settings&.dig('idea_tabs') || {}).slice(*AVAILABLE_IDEA_TABS)
+    # Drop nil values so DEFAULTS apply for keys that were never explicitly set
+    # (pre-fix checkbox submissions stored unchecked tabs as nil).
+    stored.reject! { |_, v| v.nil? }
+    DEFAULT_IDEA_TAB_SETTINGS.merge(stored)
+  end
+
+  def idea_tab_enabled?(tab_name)
+    key = tab_name.to_s
+    return false unless AVAILABLE_IDEA_TABS.include?(key)
+    idea_tab_settings[key] == true
+  end
+
+  def enabled_idea_tabs
+    idea_tab_settings.select { |_, v| v }.keys
+  end
+
+  def update_idea_tab_settings(params)
+    # Unchecked checkboxes are absent from params — coerce to a strict boolean
+    # (not nil) so reads don't fall back to defaults and silently re-enable them.
+    cleaned = AVAILABLE_IDEA_TABS.each_with_object({}) do |key, acc|
+      acc[key] = ActiveModel::Type::Boolean.new.cast(params[key]) == true
+    end
+    self.settings ||= {}
+    self.settings['idea_tabs'] = cleaned
     save
   end
 

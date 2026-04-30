@@ -9,7 +9,7 @@ class TopologiesController < ApplicationController
 
   def show
     @children = @topology.children.ordered
-    @ideas = @topology.ideas
+    @ideas = @topology.ideas.includes(:lists, :idea_lists, :topologies, :idea_entries)
   end
 
   def new

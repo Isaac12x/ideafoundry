@@ -1,0 +1,19 @@
+<%= turbo_stream.replace "idea_entries_tab_#{@idea.id}_#{@kind}" do %>
+  <%= render "idea_entries/tab", idea: @idea, kind: @kind %>
+<% end %>
+
+<% if @kind == 'tool' %>
+  <% count = @idea.idea_entries.where(kind: 'tool').count %>
+  <%= turbo_stream.update "idea_entries_tab_label_#{@idea.id}_tool" do %>
+    Tools<% if count > 0 %> (<%= count %>)<% end %>
+  <% end %>
+<% else %>
+  <% merged_count = @idea.idea_entries.where(kind: %w[competitor potential_competitor]).count %>
+  <%= turbo_stream.update "idea_entries_tab_label_#{@idea.id}_competitors" do %>
+    Competitors<% if merged_count > 0 %> (<%= merged_count %>)<% end %>
+  <% end %>
+<% end %>
+
+<%= turbo_stream.replace "idea_entry_summary_#{@idea.id}_#{@kind}" do %>
+  <%= render "idea_entries/card_summary", idea: @idea, kind: @kind, open: true %>
+<% end %>

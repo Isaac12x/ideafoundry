@@ -39,7 +39,7 @@
              data-drag-target="container"
              data-list-id="<%= list.id %>"
              id="list_<%= list.id %>_ideas">
-          <%= render 'ideas', list: list, ideas: list.ideas.includes(:idea_lists).order('idea_lists.position') %>
+          <%= render 'ideas', list: list, ideas: list.ideas.includes(:idea_lists, :idea_entries).order('idea_lists.position') %>
         </div>
       </div>
     <% end %>
