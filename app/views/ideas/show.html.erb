@@ -176,6 +176,14 @@
     <% end %>
   <% end %>
 
+  <!-- Back-of-the-napkin -->
+  <% if @idea.napkin_present? %>
+    <div class="idea-section">
+      <h3 class="idea-section-title">Back-of-the-napkin</h3>
+      <%= render "napkin_readonly", idea: @idea %>
+    </div>
+  <% end %>
+
   <!-- Main Content — Tabbed -->
   <div class="idea-main-content">
     <div data-controller="tabs" data-tabs-default-tab-value="description">
