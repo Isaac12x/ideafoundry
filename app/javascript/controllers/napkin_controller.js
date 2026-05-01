@@ -280,8 +280,21 @@ export default class extends Controller {
     })
     this.renderGrid()
   }
-  addRow()      {} // wired in Task 12
-  addCol()      {} // wired in Task 12
+  addRow() {
+    if (this.state.rows >= 100) return
+    this.state.rows += 1
+    this.syncAllCellsToHF()
+    this.renderGrid()
+    this.syncHiddenInput()
+  }
+
+  addCol() {
+    if (this.state.cols >= 26) return
+    this.state.cols += 1
+    this.syncAllCellsToHF()
+    this.renderGrid()
+    this.syncHiddenInput()
+  }
 
   async ensureParserLoaded() {
     if (this.hf || this.parserLoading) return
