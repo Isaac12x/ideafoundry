@@ -40,4 +40,15 @@ class IdeasControllerNapkinTest < ActionDispatch::IntegrationTest
     assert_nil @idea.napkin_calculations
     assert_equal "T3", @idea.title
   end
+
+  test "update without napkin_calculations key preserves existing value" do
+    existing = { "rows" => 10, "cols" => 5, "cells" => { "A1" => { "raw" => "keep", "fmt" => nil } } }
+    @idea.update!(napkin_calculations: existing)
+    patch idea_path(@idea), params: {
+      idea: { title: "T4", state: "idea_new" }
+    }
+    @idea.reload
+    assert_equal existing, @idea.napkin_calculations
+    assert_equal "T4", @idea.title
+  end
 end
