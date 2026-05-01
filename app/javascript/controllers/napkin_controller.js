@@ -1,0 +1,177 @@
+import { Controller } from "@hotwired/stimulus"
+
+const COL_LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+export default class extends Controller {
+  static targets = ["body", "grid", "toggleBtn", "fmtSelect", "decimalsInput", "boldBtn",
+                    "hiddenInput", "formulaBar", "formulaRef", "loading"]
+  static values  = { initial: String, inputName: String, expanded: Boolean }
+
+  connect() {
+    const init = this.initialValue ? JSON.parse(this.initialValue) : { rows: 10, cols: 5, cells: {} }
+    this.state = {
+      rows: init.rows || 10,
+      cols: init.cols || 5,
+      cells: new Map(Object.entries(init.cells || {})),
+      selection: { anchor: "A1", focus: "A1" }
+    }
+    this.hf = null
+    this.hfSheetId = null
+    this.hfSheetIndex = null
+    this.parserLoading = false
+
+    this.renderGrid()
+    this.syncHiddenInput()
+    if (this.expandedValue) this.ensureParserLoaded()
+  }
+
+  toggle(e) {
+    if (e && e.target.closest("input, select, button.napkin-toggle-btn") === null && e.currentTarget !== this.element.querySelector(".napkin-header")) return
+    const isOpen = !this.bodyTarget.classList.contains("hidden")
+    if (isOpen) {
+      this.bodyTarget.classList.add("hidden")
+      this.toggleBtnTarget.setAttribute("aria-expanded", "false")
+    } else {
+      this.bodyTarget.classList.remove("hidden")
+      this.toggleBtnTarget.setAttribute("aria-expanded", "true")
+      this.ensureParserLoaded()
+    }
+  }
+
+  cellRef(c, r) { return `${COL_LETTERS[c]}${r + 1}` }
+  parseRef(ref) {
+    const m = /^([A-Z])(\d+)$/.exec(ref)
+    return m ? { c: COL_LETTERS.indexOf(m[1]), r: parseInt(m[2], 10) - 1 } : null
+  }
+
+  renderGrid() {
+    const { rows, cols, cells } = this.state
+    const el = this.gridTarget
+    let html = '<table class="napkin-grid-table"><thead><tr><th class="napkin-corner"></th>'
+    for (let c = 0; c < cols; c++) html += `<th class="napkin-col-header">${COL_LETTERS[c]}</th>`
+    html += "</tr></thead><tbody>"
+    for (let r = 0; r < rows; r++) {
+      html += `<tr><th class="napkin-row-header">${r + 1}</th>`
+      for (let c = 0; c < cols; c++) {
+        const ref = this.cellRef(c, r)
+        const cell = cells.get(ref) || { raw: "", fmt: null }
+        const display = this.computeDisplay(ref, cell)
+        const cls = ["napkin-cell"]
+        if (cell.fmt && cell.fmt.includes("bold")) cls.push("is-bold")
+        if (display.error) cls.push("napkin-cell--error")
+        if (this.isSelected(ref)) cls.push("is-selected")
+        html += `<td class="${cls.join(" ")}" data-ref="${ref}" data-action="mousedown->napkin#cellMouseDown dblclick->napkin#editCell">${this.escape(display.text)}</td>`
+      }
+      html += "</tr>"
+    }
+    html += "</tbody></table>"
+    el.innerHTML = html
+    this.updateFormulaBar()
+  }
+
+  computeDisplay(ref, cell) {
+    if (!cell || !cell.raw) return { text: "", error: null }
+    if (cell.raw.startsWith("=")) {
+      return this.hf ? this.evaluateFormula(ref, cell) : { text: cell.raw, error: null }
+    }
+    return { text: this.formatNumeric(cell.raw, cell.fmt), error: null }
+  }
+
+  formatNumeric(raw, fmt) {
+    const n = Number(raw)
+    if (Number.isNaN(n) || raw.trim() === "") return raw
+    return this.formatValue(n, fmt)
+  }
+
+  formatValue(n, fmt) {
+    const parts = (fmt || "").split("|").filter(p => p && p !== "bold")
+    const style = parts[0]
+    if (!style) return Number.isInteger(n) ? String(n) : String(n)
+    const m1 = /^number:(\d+)$/.exec(style)
+    if (m1) return n.toFixed(parseInt(m1[1], 10))
+    const m2 = /^currency:([A-Z]{3}):(\d+)$/.exec(style)
+    if (m2) {
+      const sym = ({ USD: "$", EUR: "€", GBP: "£", JPY: "¥" })[m2[1]] || `${m2[1]} `
+      const dec = parseInt(m2[2], 10)
+      return `${sym}${n.toFixed(dec).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}`
+    }
+    const m3 = /^percent:(\d+)$/.exec(style)
+    if (m3) return `${(n * 100).toFixed(parseInt(m3[1], 10))}%`
+    return String(n)
+  }
+
+  evaluateFormula(_ref, cell) { return { text: cell.raw, error: null } } // wired in Task 10
+
+  cellMouseDown(e) {
+    const ref = e.currentTarget.dataset.ref
+    this.state.selection = { anchor: ref, focus: ref }
+    this.renderGrid()
+  }
+
+  editCell(e) {
+    const ref = e.currentTarget.dataset.ref
+    const cell = this.state.cells.get(ref) || { raw: "", fmt: null }
+    const td = e.currentTarget
+    td.innerHTML = `<input class="napkin-cell-input" value="${this.escape(cell.raw)}">`
+    const input = td.querySelector("input")
+    input.focus()
+    input.select()
+    const commit = () => {
+      const newRaw = input.value
+      this.setCell(ref, { ...cell, raw: newRaw })
+      this.renderGrid()
+    }
+    input.addEventListener("blur", commit)
+    input.addEventListener("keydown", (kev) => {
+      if (kev.key === "Enter") { commit(); }
+      if (kev.key === "Escape") { this.renderGrid(); }
+    })
+  }
+
+  setCell(ref, cell) {
+    if (!cell.raw && !cell.fmt) this.state.cells.delete(ref)
+    else this.state.cells.set(ref, cell)
+    this.syncHiddenInput()
+  }
+
+  syncHiddenInput() {
+    const cells = Object.fromEntries(this.state.cells)
+    const hasAny = Object.keys(cells).length > 0
+    this.hiddenInputTarget.value = hasAny
+      ? JSON.stringify({ rows: this.state.rows, cols: this.state.cols, cells })
+      : ""
+  }
+
+  isSelected(ref) {
+    const sel = this.state.selection
+    return sel && (ref === sel.focus || ref === sel.anchor)
+  }
+
+  updateFormulaBar() {
+    if (!this.hasFormulaBarTarget) return
+    const ref = this.state.selection.focus
+    const cell = this.state.cells.get(ref) || { raw: "", fmt: null }
+    this.formulaRefTarget.textContent = ref
+    this.formulaBarTarget.value = cell.raw
+  }
+
+  formulaBarEdit() {
+    const ref = this.state.selection.focus
+    const cell = this.state.cells.get(ref) || { raw: "", fmt: null }
+    this.setCell(ref, { ...cell, raw: this.formulaBarTarget.value })
+    this.renderGrid()
+  }
+
+  formulaBarKey() {} // no-op for now
+
+  applyFormat() {} // wired in Task 11
+  toggleBold()  {} // wired in Task 11
+  addRow()      {} // wired in Task 12
+  addCol()      {} // wired in Task 12
+
+  ensureParserLoaded() {} // wired in Task 10
+
+  escape(s) {
+    return String(s).replace(/[&<>"']/g, (m) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[m])
+  }
+}
