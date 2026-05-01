@@ -272,16 +272,26 @@ class IdeasController < ApplicationController
   end
 
   def idea_params
-    params.require(:idea).permit(
+    permitted = params.require(:idea).permit(
       :title, :state, :template_id,
       :trl, :difficulty, :opportunity, :timing,
       :difficulty_explanation, :opportunity_explanation, :timing_explanation,
       :description,
       :hero_image,
+      :napkin_calculations,
       attachments: [],
       topology_ids: [],
       metadata: {}
     )
+    permitted[:napkin_calculations] = parse_napkin_param(permitted[:napkin_calculations]) if permitted.key?(:napkin_calculations)
+    permitted
+  end
+
+  def parse_napkin_param(raw)
+    return nil if raw.blank?
+    JSON.parse(raw)
+  rescue JSON::ParserError
+    nil
   end
 
   def apply_filters(ideas)
