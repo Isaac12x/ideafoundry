@@ -63,9 +63,16 @@
   font-family: var(--font-mono); font-size: 13px;
 }
 
-.napkin-grid-wrap { overflow: auto; max-height: 480px; margin-top: 8px; }
+.napkin-grid-wrap {
+  overflow: auto;
+  max-height: 480px;
+  width: 100%;
+  margin-top: 8px;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+}
 .napkin-grid-table,
-.napkin-grid--readonly { border-collapse: collapse; font-size: 13px; }
+.napkin-grid--readonly { border-collapse: collapse; font-size: 13px; table-layout: fixed; }
 .napkin-corner,
 .napkin-col-header,
 .napkin-row-header {
