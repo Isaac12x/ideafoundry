@@ -22,9 +22,10 @@ module NapkinHelper
     cells.each do |ref, cell|
       raw = cell["raw"].to_s
       fmt = cell["fmt"]
+      bold = napkin_bold?(fmt)
 
       if cyclic_refs.include?(ref)
-        out[ref] = { display: "#CYCLE", value: nil, error: "cycle" }
+        out[ref] = { display: "#CYCLE", value: nil, error: "cycle", bold: bold }
         next
       end
 
@@ -32,24 +33,24 @@ module NapkinHelper
         expr = napkin_translate_formula(raw[1..])
         begin
           value = calc.evaluate!(expr)
-          out[ref] = { display: format_napkin_cell(raw, fmt, value), value: value, error: nil }
+          out[ref] = { display: format_napkin_cell(raw, fmt, value), value: value, error: nil, bold: bold }
         rescue Dentaku::ArgumentError, ::ZeroDivisionError, Dentaku::ZeroDivisionError
-          out[ref] = { display: "#ERR", value: nil, error: "argument" }
+          out[ref] = { display: "#ERR", value: nil, error: "argument", bold: bold }
         rescue Dentaku::ParseError, Dentaku::TokenizerError, Dentaku::UnboundVariableError
-          out[ref] = { display: "#ERR", value: nil, error: "parse" }
+          out[ref] = { display: "#ERR", value: nil, error: "parse", bold: bold }
         rescue Dentaku::Error => e
           msg = e.message.to_s
           if msg.match?(/cycle|recursion|stack/i)
-            out[ref] = { display: "#CYCLE", value: nil, error: "cycle" }
+            out[ref] = { display: "#CYCLE", value: nil, error: "cycle", bold: bold }
           else
-            out[ref] = { display: "#ERR", value: nil, error: "eval" }
+            out[ref] = { display: "#ERR", value: nil, error: "eval", bold: bold }
           end
         rescue SystemStackError
-          out[ref] = { display: "#CYCLE", value: nil, error: "cycle" }
+          out[ref] = { display: "#CYCLE", value: nil, error: "cycle", bold: bold }
         end
       else
         value = numeric_cast(raw)
-        out[ref] = { display: format_napkin_cell(raw, fmt, value || raw), value: value || raw, error: nil }
+        out[ref] = { display: format_napkin_cell(raw, fmt, value || raw), value: value || raw, error: nil, bold: bold }
       end
     end
     out
@@ -83,6 +84,11 @@ module NapkinHelper
 
   private
 
+  def napkin_bold?(fmt)
+    return false unless fmt.is_a?(String)
+    fmt.split("|").include?("bold")
+  end
+
   def numeric_cast(s)
     return nil if s.nil? || s.empty?
     Float(s)
@@ -91,7 +97,8 @@ module NapkinHelper
   end
 
   # Build a dependency graph from formula cells and return the set of refs
-  # that participate in a cycle (including self-references).
+  # that participate in a cycle (including self-references). Iterative DFS
+  # with a single shared state map across roots — O(V+E), no recursion.
   def napkin_detect_cycles(cells)
     deps = {}
     cells.each do |ref, cell|
@@ -100,27 +107,32 @@ module NapkinHelper
       deps[ref] = napkin_extract_refs(raw[1..], cells.keys)
     end
 
+    state = {}
     cyclic = Set.new
-    deps.each_key do |ref|
-      visited = {}
-      stack = []
-      detect = lambda do |node|
-        state = visited[node]
-        if state == :visiting
-          # Mark all nodes in the current path back to `node` as cyclic.
-          idx = stack.index(node)
-          stack[idx..].each { |n| cyclic << n } if idx
-          return true
+    deps.each_key do |root|
+      next if state[root]
+      stack = [[root, deps[root].dup]]
+      path = [root]
+      state[root] = :visiting
+      until stack.empty?
+        ref, children = stack.last
+        if children.empty?
+          state[ref] = :done
+          path.pop
+          stack.pop
+          next
         end
-        return false if state == :done
-        visited[node] = :visiting
-        stack.push(node)
-        (deps[node] || []).each { |child| detect.call(child) }
-        stack.pop
-        visited[node] = :done
-        false
+        child = children.shift
+        next unless deps.key?(child)
+        if state[child] == :visiting
+          idx = path.index(child)
+          path[idx..].each { |r| cyclic << r } if idx
+        elsif state[child].nil?
+          state[child] = :visiting
+          path.push(child)
+          stack.push([child, deps[child].dup])
+        end
       end
-      detect.call(ref)
     end
     cyclic
   end

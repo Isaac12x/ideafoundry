@@ -80,4 +80,24 @@ class NapkinHelperTest < ActionView::TestCase
     }))
     assert_equal "#CYCLE", result["A1"][:display]
   end
+
+  test "evaluate handles 3-node cycle" do
+    result = napkin_evaluate(data({
+      "A1" => { "raw" => "=B1", "fmt" => nil },
+      "B1" => { "raw" => "=C1", "fmt" => nil },
+      "C1" => { "raw" => "=A1", "fmt" => nil }
+    }))
+    assert_equal "#CYCLE", result["A1"][:display]
+    assert_equal "#CYCLE", result["B1"][:display]
+    assert_equal "#CYCLE", result["C1"][:display]
+  end
+
+  test "evaluate result includes bold flag" do
+    result = napkin_evaluate(data({
+      "A1" => { "raw" => "100",  "fmt" => "bold|currency:USD:0" },
+      "B1" => { "raw" => "200",  "fmt" => "currency:USD:0" }
+    }))
+    assert_equal true,  result["A1"][:bold]
+    assert_equal false, result["B1"][:bold]
+  end
 end
