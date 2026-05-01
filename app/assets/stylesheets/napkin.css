@@ -1,0 +1,117 @@
+/* ============================================
+   Back-of-the-napkin grid
+   ============================================ */
+
+.napkin-panel { padding: 0; }
+
+.napkin-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 16px; cursor: pointer; user-select: none;
+}
+.napkin-header h3 { margin: 0; }
+
+.napkin-toggle-btn {
+  background: transparent; border: 0; cursor: pointer; padding: 4px;
+  display: flex; align-items: center; color: var(--text-muted);
+}
+.napkin-toggle-btn[aria-expanded="true"] .napkin-chevron { transform: rotate(180deg); }
+.napkin-chevron { transition: transform .15s ease; }
+
+.napkin-body { padding: 0 16px 16px; }
+.napkin-body.hidden { display: none; }
+
+.napkin-toolbar {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  padding: 8px 0; border-bottom: 1px solid var(--border-default);
+}
+.napkin-fmt-select,
+.napkin-decimals-input {
+  padding: 4px 6px; font-size: 13px;
+  background: var(--bg-input); color: var(--text-primary);
+  border: 1px solid var(--border-default); border-radius: var(--radius-sm);
+}
+.napkin-decimals-input { width: 56px; }
+.napkin-decimals { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-secondary); }
+.napkin-bold-btn,
+.napkin-row-btn,
+.napkin-col-btn {
+  padding: 2px 10px; cursor: pointer;
+  background: var(--bg-elevated); color: var(--text-primary);
+  border: 1px solid var(--border-default); border-radius: var(--radius-sm);
+  font-size: 13px;
+}
+.napkin-bold-btn:hover,
+.napkin-row-btn:hover,
+.napkin-col-btn:hover { border-color: var(--border-emphasis); }
+.napkin-bold-btn { font-weight: 700; }
+.napkin-spacer { flex: 1; }
+
+.napkin-formula-bar {
+  display: flex; gap: 8px; align-items: center; padding: 8px 0;
+  border-bottom: 1px solid var(--border-default);
+}
+.napkin-formula-label {
+  display: inline-block; min-width: 32px; padding: 2px 8px;
+  background: var(--bg-overlay); color: var(--text-secondary);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono); font-size: 12px;
+}
+.napkin-formula-input {
+  flex: 1; padding: 4px 8px;
+  background: var(--bg-input); color: var(--text-primary);
+  border: 1px solid var(--border-default); border-radius: var(--radius-sm);
+  font-family: var(--font-mono); font-size: 13px;
+}
+
+.napkin-grid-wrap { overflow: auto; max-height: 480px; margin-top: 8px; }
+.napkin-grid-table,
+.napkin-grid--readonly { border-collapse: collapse; font-size: 13px; }
+.napkin-corner,
+.napkin-col-header,
+.napkin-row-header {
+  background: var(--bg-overlay); color: var(--text-secondary);
+  padding: 4px 8px;
+  border: 1px solid var(--border-default);
+  position: sticky; font-weight: 600;
+}
+.napkin-col-header { top: 0; }
+.napkin-row-header { left: 0; }
+.napkin-corner { top: 0; left: 0; z-index: 2; }
+
+.napkin-cell {
+  border: 1px solid var(--border-default);
+  min-width: 96px; height: 28px; padding: 2px 8px;
+  cursor: cell; vertical-align: middle; text-align: right;
+  color: var(--text-primary); background: var(--bg-surface);
+}
+.napkin-cell.is-bold { font-weight: 700; }
+.napkin-cell.is-selected {
+  outline: 2px solid var(--accent); outline-offset: -2px;
+  background: var(--accent-muted);
+}
+.napkin-cell--error { color: var(--danger); font-style: italic; }
+.napkin-cell-input {
+  width: 100%; height: 100%; border: 0; padding: 0;
+  background: transparent; color: var(--text-primary);
+  font-family: inherit; font-size: inherit;
+  outline: none;
+}
+
+.napkin-loading { padding: 8px; font-size: 12px; color: var(--text-muted); }
+.napkin-loading.hidden { display: none; }
+
+.napkin-readonly { overflow: auto; }
+.napkin-grid--readonly .napkin-cell { cursor: default; }
+
+/* Show-page section wrapper (used in show.html.erb). */
+.idea-section {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  margin: 16px 0;
+}
+.idea-section-title {
+  margin: 0 0 12px; font-size: 0.95rem; color: var(--text-secondary);
+  font-weight: 600; letter-spacing: 0.02em; text-transform: uppercase;
+}
