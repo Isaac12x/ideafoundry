@@ -25,6 +25,12 @@ export default class extends Controller {
     if (this.expandedValue) this.ensureParserLoaded()
 
     this.element.addEventListener("keydown", (e) => {
+      // Stop Enter from submitting the parent form when typing in any input inside the panel.
+      if (e.key === "Enter" && e.target.tagName === "INPUT") {
+        e.preventDefault()
+        if (e.target.matches(".napkin-formula-input")) e.target.blur()
+        return
+      }
       if (e.key === "Delete" || e.key === "Backspace") {
         if (e.target.tagName === "INPUT") return
         e.preventDefault()
