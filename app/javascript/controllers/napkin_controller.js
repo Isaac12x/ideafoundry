@@ -100,7 +100,55 @@ export default class extends Controller {
     return String(n)
   }
 
-  evaluateFormula(_ref, cell) { return { text: cell.raw, error: null } } // wired in Task 10
+  evaluateFormula(ref, cell) {
+    if (!this.hf) return { text: cell.raw, error: null }
+    const p = this.parseRef(ref)
+    if (!p) return { text: "#REF", error: "#REF" }
+    const value = this.hf.getCellValue({ sheet: this.hfSheetIndex, row: p.r, col: p.c })
+    if (value && typeof value === "object" && value.type === "ERROR") {
+      return { text: this.mapHFError(value), error: this.mapHFError(value) }
+    }
+    if (typeof value === "number") {
+      return { text: this.formatValue(value, cell.fmt), error: null }
+    }
+    return { text: String(value ?? ""), error: null }
+  }
+
+  mapHFError(err) {
+    const t = (err && err.value) || (err && err.error) || ""
+    const s = String(t)
+    if (s.includes("CYCLE")) return "#CYCLE"
+    if (s.includes("REF")) return "#REF"
+    if (s.includes("DIV")) return "#DIV/0"
+    return "#ERR"
+  }
+
+  syncAllCellsToHF() {
+    if (!this.hf) return
+    const { rows, cols } = this.state
+    const data = []
+    for (let r = 0; r < rows; r++) {
+      const row = []
+      for (let c = 0; c < cols; c++) {
+        const ref = this.cellRef(c, r)
+        const cell = this.state.cells.get(ref)
+        row.push(cell ? cell.raw : null)
+      }
+      data.push(row)
+    }
+    this.hf.setSheetContent(this.hfSheetIndex, data)
+  }
+
+  syncCellToHF(ref) {
+    if (!this.hf) return
+    const p = this.parseRef(ref)
+    if (!p) return
+    const cell = this.state.cells.get(ref)
+    this.hf.setCellContents(
+      { sheet: this.hfSheetIndex, row: p.r, col: p.c },
+      cell ? cell.raw : null
+    )
+  }
 
   cellMouseDown(e) {
     const ref = e.currentTarget.dataset.ref
@@ -131,6 +179,7 @@ export default class extends Controller {
   setCell(ref, cell) {
     if (!cell.raw && !cell.fmt) this.state.cells.delete(ref)
     else this.state.cells.set(ref, cell)
+    this.syncCellToHF(ref)
     this.syncHiddenInput()
   }
 
@@ -169,7 +218,23 @@ export default class extends Controller {
   addRow()      {} // wired in Task 12
   addCol()      {} // wired in Task 12
 
-  ensureParserLoaded() {} // wired in Task 10
+  async ensureParserLoaded() {
+    if (this.hf || this.parserLoading) return
+    this.parserLoading = true
+    if (this.hasLoadingTarget) this.loadingTarget.classList.remove("hidden")
+    try {
+      const mod = await import("hyperformula")
+      const HyperFormula = mod.HyperFormula || mod.default?.HyperFormula || mod.default
+      this.hf = HyperFormula.buildEmpty({ licenseKey: "gpl-v3" })
+      this.hfSheetId = this.hf.addSheet("napkin")
+      this.hfSheetIndex = this.hf.getSheetId(this.hfSheetId)
+      this.syncAllCellsToHF()
+      this.renderGrid()
+    } finally {
+      this.parserLoading = false
+      if (this.hasLoadingTarget) this.loadingTarget.classList.add("hidden")
+    }
+  }
 
   escape(s) {
     return String(s).replace(/[&<>"']/g, (m) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[m])
