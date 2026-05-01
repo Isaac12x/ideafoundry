@@ -23,6 +23,16 @@ export default class extends Controller {
     this.renderGrid()
     this.syncHiddenInput()
     if (this.expandedValue) this.ensureParserLoaded()
+
+    this.element.addEventListener("keydown", (e) => {
+      if (e.key === "Delete" || e.key === "Backspace") {
+        if (e.target.tagName === "INPUT") return
+        e.preventDefault()
+        this.selectionCells().forEach((ref) => this.setCell(ref, { raw: "", fmt: null }))
+        this.renderGrid()
+      }
+    })
+    this.element.tabIndex = 0
   }
 
   toggle(e) {
@@ -151,9 +161,35 @@ export default class extends Controller {
   }
 
   cellMouseDown(e) {
+    e.preventDefault()
     const ref = e.currentTarget.dataset.ref
     this.state.selection = { anchor: ref, focus: ref }
+    this._dragging = true
     this.renderGrid()
+    const onEnter = (ev) => {
+      const r = ev.target?.dataset?.ref
+      if (this._dragging && r) { this.state.selection.focus = r; this.renderGrid() }
+    }
+    const onUp = () => {
+      this._dragging = false
+      this.gridTarget.removeEventListener("mouseover", onEnter)
+      window.removeEventListener("mouseup", onUp)
+    }
+    this.gridTarget.addEventListener("mouseover", onEnter)
+    window.addEventListener("mouseup", onUp)
+  }
+
+  selectionCells() {
+    const a = this.parseRef(this.state.selection.anchor)
+    const f = this.parseRef(this.state.selection.focus)
+    if (!a || !f) return []
+    const c1 = Math.min(a.c, f.c), c2 = Math.max(a.c, f.c)
+    const r1 = Math.min(a.r, f.r), r2 = Math.max(a.r, f.r)
+    const out = []
+    for (let c = c1; c <= c2; c++)
+      for (let r = r1; r <= r2; r++)
+        out.push(this.cellRef(c, r))
+    return out
   }
 
   editCell(e) {
@@ -192,8 +228,13 @@ export default class extends Controller {
   }
 
   isSelected(ref) {
-    const sel = this.state.selection
-    return sel && (ref === sel.focus || ref === sel.anchor)
+    const a = this.parseRef(this.state.selection.anchor)
+    const f = this.parseRef(this.state.selection.focus)
+    const p = this.parseRef(ref)
+    if (!a || !f || !p) return false
+    const c1 = Math.min(a.c, f.c), c2 = Math.max(a.c, f.c)
+    const r1 = Math.min(a.r, f.r), r2 = Math.max(a.r, f.r)
+    return p.c >= c1 && p.c <= c2 && p.r >= r1 && p.r <= r2
   }
 
   updateFormulaBar() {
@@ -213,8 +254,32 @@ export default class extends Controller {
 
   formulaBarKey() {} // no-op for now
 
-  applyFormat() {} // wired in Task 11
-  toggleBold()  {} // wired in Task 11
+  applyFormat() {
+    const style = this.fmtSelectTarget.value
+    const dec = parseInt(this.decimalsInputTarget.value, 10) || 0
+    let fmtStyle = ""
+    if (style === "number") fmtStyle = `number:${dec}`
+    else if (style.startsWith("currency:")) fmtStyle = `${style}:${dec}`
+    else if (style === "percent") fmtStyle = `percent:${dec}`
+
+    this.selectionCells().forEach((ref) => {
+      const cell = this.state.cells.get(ref) || { raw: "", fmt: null }
+      const bold = (cell.fmt || "").split("|").includes("bold")
+      const merged = [bold ? "bold" : null, fmtStyle || null].filter(Boolean).join("|")
+      this.setCell(ref, { ...cell, fmt: merged || null })
+    })
+    this.renderGrid()
+  }
+
+  toggleBold() {
+    this.selectionCells().forEach((ref) => {
+      const cell = this.state.cells.get(ref) || { raw: "", fmt: null }
+      const parts = new Set((cell.fmt || "").split("|").filter(Boolean))
+      parts.has("bold") ? parts.delete("bold") : parts.add("bold")
+      this.setCell(ref, { ...cell, fmt: parts.size ? [...parts].join("|") : null })
+    })
+    this.renderGrid()
+  }
   addRow()      {} // wired in Task 12
   addCol()      {} // wired in Task 12
 
