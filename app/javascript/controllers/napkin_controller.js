@@ -164,19 +164,60 @@ export default class extends Controller {
     e.preventDefault()
     const ref = e.currentTarget.dataset.ref
     this.state.selection = { anchor: ref, focus: ref }
-    this._dragging = true
-    this.renderGrid()
+    this._dragStartRef = ref
+    this._dragged = false
+    this.updateSelectionClasses()
+    this.updateFormulaBar()
+
     const onEnter = (ev) => {
       const r = ev.target?.dataset?.ref
-      if (this._dragging && r) { this.state.selection.focus = r; this.renderGrid() }
+      if (r && r !== this.state.selection.focus) {
+        this._dragged = true
+        this.state.selection.focus = r
+        this.updateSelectionClasses()
+      }
     }
     const onUp = () => {
-      this._dragging = false
       this.gridTarget.removeEventListener("mouseover", onEnter)
       window.removeEventListener("mouseup", onUp)
+      if (!this._dragged) {
+        const td = this.gridTarget.querySelector(`td[data-ref="${this._dragStartRef}"]`)
+        if (td) this._enterEditMode(td, this._dragStartRef)
+      }
     }
     this.gridTarget.addEventListener("mouseover", onEnter)
     window.addEventListener("mouseup", onUp)
+  }
+
+  updateSelectionClasses() {
+    const setOf = new Set(this.selectionCells())
+    this.gridTarget.querySelectorAll("td[data-ref]").forEach((td) => {
+      if (setOf.has(td.dataset.ref)) td.classList.add("is-selected")
+      else td.classList.remove("is-selected")
+    })
+  }
+
+  _enterEditMode(td, ref) {
+    if (td.querySelector("input")) return
+    const cell = this.state.cells.get(ref) || { raw: "", fmt: null }
+    td.innerHTML = `<input class="napkin-cell-input" value="${this.escape(cell.raw)}">`
+    const input = td.querySelector("input")
+    input.focus()
+    input.select()
+    let done = false
+    const commit = () => {
+      if (done) return
+      done = true
+      this.setCell(ref, { ...cell, raw: input.value })
+      this.renderGrid()
+    }
+    const cancel = () => { done = true; this.renderGrid() }
+    input.addEventListener("blur", commit)
+    input.addEventListener("keydown", (kev) => {
+      if (kev.key === "Enter") { kev.preventDefault(); commit() }
+      else if (kev.key === "Escape") { kev.preventDefault(); cancel() }
+      else if (kev.key === "Tab") { kev.preventDefault(); commit() }
+    })
   }
 
   selectionCells() {
@@ -193,23 +234,7 @@ export default class extends Controller {
   }
 
   editCell(e) {
-    const ref = e.currentTarget.dataset.ref
-    const cell = this.state.cells.get(ref) || { raw: "", fmt: null }
-    const td = e.currentTarget
-    td.innerHTML = `<input class="napkin-cell-input" value="${this.escape(cell.raw)}">`
-    const input = td.querySelector("input")
-    input.focus()
-    input.select()
-    const commit = () => {
-      const newRaw = input.value
-      this.setCell(ref, { ...cell, raw: newRaw })
-      this.renderGrid()
-    }
-    input.addEventListener("blur", commit)
-    input.addEventListener("keydown", (kev) => {
-      if (kev.key === "Enter") { commit(); }
-      if (kev.key === "Escape") { this.renderGrid(); }
-    })
+    this._enterEditMode(e.currentTarget, e.currentTarget.dataset.ref)
   }
 
   setCell(ref, cell) {
