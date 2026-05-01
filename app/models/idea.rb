@@ -31,6 +31,7 @@ class Idea < ApplicationRecord
 
   # JSON serialization
   serialize :metadata, coder: JSON
+  # napkin_calculations is a native json column (auto-serialized by Rails)
 
   # Validations
   validates :title, presence: true, unless: :draft?
@@ -39,6 +40,7 @@ class Idea < ApplicationRecord
             inclusion: { in: 0..10 }, allow_nil: true
   validates :attempt_count, presence: true, numericality: { greater_than_or_equal_to: 0 }
   validate :template_required_fields_present
+  validate :napkin_calculations_within_limits
 
   # Callbacks
   before_validation :set_defaults, on: :create
@@ -361,6 +363,16 @@ class Idea < ApplicationRecord
     false
   end
 
+  # Napkin calculations helpers
+  def napkin_present?
+    napkin_calculations.is_a?(Hash) && napkin_calculations["cells"].is_a?(Hash) && napkin_calculations["cells"].any?
+  end
+
+  def napkin_cell(ref)
+    return nil unless napkin_calculations.is_a?(Hash)
+    napkin_calculations.dig("cells", ref)
+  end
+
   def append_intake_update!(body:, source: nil, intake_reference: nil)
     changed = false
 
@@ -432,10 +444,29 @@ class Idea < ApplicationRecord
 
   def template_required_fields_present
     return unless template
-    
+
     validation_errors = validate_against_template
     validation_errors.each do |error|
       errors.add(:base, error)
+    end
+  end
+
+  def napkin_calculations_within_limits
+    return if napkin_calculations.nil?
+    unless napkin_calculations.is_a?(Hash)
+      errors.add(:napkin_calculations, "must be a hash")
+      return
+    end
+
+    rows = napkin_calculations["rows"].to_i
+    cols = napkin_calculations["cols"].to_i
+    cells = napkin_calculations["cells"]
+
+    errors.add(:napkin_calculations, "rows must be 1..100") if rows < 1 || rows > 100
+    errors.add(:napkin_calculations, "cols must be 1..26") if cols < 1 || cols > 26
+
+    if cells.is_a?(Hash) && cells.size > 2000
+      errors.add(:napkin_calculations, "too many cells (max 2000)")
     end
   end
 
