@@ -127,6 +127,15 @@ Rails.application.routes.draw do
   post 'settings/api_keys', to: 'settings#create_api_key'
   delete 'settings/api_keys/:id', to: 'settings#destroy_api_key', as: :settings_api_key_destroy
 
+  # KB section
+  get 'kb', to: 'kb#index', as: :kb
+  get 'kb/file', to: 'kb#file', as: :kb_file
+  resources :facts, only: [:create, :destroy]
+
+  # Settings - KB folders
+  get 'settings/kb', to: 'settings#kb', as: :settings_kb
+  patch 'settings/kb', to: 'settings#update_kb'
+
   # Backlog
   resources :build_items, path: "backlog", except: [:show] do
     member do

@@ -7,6 +7,7 @@ class User < ApplicationRecord
   has_many :build_items, dependent: :destroy
   has_many :submissions, dependent: :destroy
   has_many :api_keys, dependent: :destroy
+  has_many :facts, dependent: :destroy
 
   # Single-user application - one user per instance
   validates :email, presence: true, uniqueness: true
@@ -272,6 +273,17 @@ class User < ApplicationRecord
 
   def enabled_idea_tabs
     idea_tab_settings.select { |_, v| v }.keys
+  end
+
+  def kb_folders
+    Array(settings&.dig('kb', 'folders'))
+  end
+
+  def update_kb_folders(paths)
+    self.settings ||= {}
+    self.settings['kb'] ||= {}
+    self.settings['kb']['folders'] = Array(paths).map(&:strip).reject(&:blank?)
+    save
   end
 
   def update_idea_tab_settings(params)

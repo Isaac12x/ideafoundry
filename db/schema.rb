@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_04_30_220919) do
+ActiveRecord::Schema[8.0].define(version: 2026_05_02_100758) do
   create_table "action_mailbox_inbound_emails", force: :cascade do |t|
     t.integer "status", default: 0, null: false
     t.string "message_id", null: false
@@ -112,6 +112,13 @@ ActiveRecord::Schema[8.0].define(version: 2026_04_30_220919) do
     t.index ["created_at"], name: "index_export_jobs_on_created_at"
     t.index ["user_id", "status"], name: "index_export_jobs_on_user_id_and_status"
     t.index ["user_id"], name: "index_export_jobs_on_user_id"
+  end
+
+  create_table "facts", force: :cascade do |t|
+    t.text "body"
+    t.integer "user_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
   end
 
   create_table "idea_entries", force: :cascade do |t|
