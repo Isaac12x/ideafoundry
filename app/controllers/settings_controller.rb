@@ -227,6 +227,21 @@ class SettingsController < ApplicationController
     end
   end
 
+  def kb
+    @kb_folders = @user.kb_folders
+  end
+
+  def update_kb
+    paths = Array(params[:kb_folders]).reject(&:blank?)
+    if @user.update_kb_folders(paths)
+      redirect_to settings_kb_path, notice: "KB folders updated."
+    else
+      @kb_folders = paths
+      flash.now[:alert] = "Failed to update KB folders."
+      render :kb, status: :unprocessable_content
+    end
+  end
+
   def api_keys
     @api_keys = @user.api_keys.order(created_at: :desc)
   end

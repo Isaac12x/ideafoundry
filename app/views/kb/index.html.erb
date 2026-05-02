@@ -1,0 +1,113 @@
+<div class="kb-page" data-controller="tabs" data-tabs-default-tab-value="kb">
+  <div class="kb-tab-header">
+    <div class="kb-tab-nav">
+      <button data-tabs-target="tab" data-tab-name="kb" data-action="click->tabs#switch" class="tab-button active">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>
+        KB
+      </button>
+      <button data-tabs-target="tab" data-tab-name="facts" data-action="click->tabs#switch" class="tab-button">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        IPFs/BPFs
+      </button>
+    </div>
+  </div>
+
+  <div data-tabs-target="panel" data-tab-panel="kb" class="kb-panel-full">
+    <div class="kb-layout">
+      <aside class="kb-sidebar">
+        <div class="kb-sidebar-inner">
+          <% if @folders.empty? %>
+            <div class="kb-empty-tree">
+              <p>No folders configured.</p>
+              <%= link_to settings_kb_path, class: "kb-add-folder-link" do %>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Add folder
+              <% end %>
+            </div>
+          <% else %>
+            <div class="kb-tree">
+              <% @folders.each do |folder| %>
+                <div class="kb-folder-group" data-controller="kb-folder">
+                  <button class="kb-folder-header" data-action="click->kb-folder#toggle" type="button">
+                    <svg class="kb-folder-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+                    <span class="kb-folder-label" title="<%= folder[:path] %>"><%= folder[:label] %></span>
+                    <% unless folder[:exists] %>
+                      <span class="kb-folder-missing" title="Folder not found">!</span>
+                    <% end %>
+                  </button>
+                  <div class="kb-folder-files" data-kb-folder-target="files">
+                    <% if folder[:files].empty? %>
+                      <span class="kb-no-files">No .md files found</span>
+                    <% else %>
+                      <% folder[:files].each do |file| %>
+                        <%
+                          active = (@selected_folder_index == folder[:index] && @selected_file == file[:rel])
+                          file_url = kb_file_path(file: file[:rel], src: folder[:index])
+                        %>
+                        <%= link_to file_url,
+                              data: { turbo_frame: "kb-content" },
+                              class: "kb-file-link #{active ? 'is-active' : ''}" do %>
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                          <%= file[:rel].sub(/\.md$/, '').split('/').last %>
+                        <% end %>
+                      <% end %>
+                    <% end %>
+                  </div>
+                </div>
+              <% end %>
+              <div class="kb-tree-footer">
+                <%= link_to settings_kb_path, class: "kb-add-folder-link" do %>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                  Add folder
+                <% end %>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      </aside>
+
+      <main class="kb-content-area">
+        <turbo-frame id="kb-content">
+          <%= render "kb/content", content_html: @content_html, selected_file: @selected_file %>
+        </turbo-frame>
+      </main>
+    </div>
+  </div>
+
+  <div data-tabs-target="panel" data-tab-panel="facts" class="hidden">
+    <div class="kb-facts-container">
+      <div class="page-header">
+        <h2>IPFs / BPFs</h2>
+        <p class="kb-facts-subtitle">Idea-producing facts & business-producing facts</p>
+      </div>
+
+      <div class="kb-fact-form-wrap" id="fact_form">
+        <%= form_with url: facts_path, data: { controller: "fact-form" } do |f| %>
+          <div class="kb-fact-input-row">
+            <%= f.text_area :body,
+                  placeholder: "e.g. Every year millions of untreated leather end up in landfills, making leather a commodity not a luxury item.",
+                  class: "kb-fact-textarea",
+                  rows: 3,
+                  required: true,
+                  data: { action: "keydown->fact-form#submitOnEnter" } %>
+            <div class="kb-fact-actions">
+              <%= f.submit "Add fact", class: "btn btn-primary btn-sm" %>
+            </div>
+          </div>
+        <% end %>
+      </div>
+
+      <div id="facts-list" class="kb-facts-list">
+        <%= render @facts %>
+      </div>
+
+      <% if @facts.empty? %>
+        <div class="kb-facts-empty" id="facts-empty-state">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <p>No facts yet. Add the first one above.</p>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>
