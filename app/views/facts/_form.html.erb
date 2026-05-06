@@ -1,0 +1,19 @@
+<div class="kb-fact-form-wrap" id="fact_form">
+  <% error ||= nil %>
+  <%= form_with url: facts_path, scope: :fact, data: { controller: "fact-form", action: "turbo:submit-end->fact-form#afterSubmit" } do |f| %>
+    <% if error %>
+      <div class="alert alert-error" style="margin-bottom: 0.75rem; padding: 0.5rem 0.75rem; font-size: 0.85rem;"><%= error %></div>
+    <% end %>
+    <div class="kb-fact-input-row">
+      <%= f.text_area :body,
+            placeholder: "e.g. Every year millions of untreated leather end up in landfills, making leather a commodity not a luxury item.",
+            class: "kb-fact-textarea",
+            rows: 3,
+            required: true,
+            data: { action: "keydown->fact-form#submitOnEnter" } %>
+      <div class="kb-fact-actions">
+        <%= f.submit "Add fact", class: "btn btn-primary btn-sm" %>
+      </div>
+    </div>
+  <% end %>
+</div>

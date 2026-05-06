@@ -128,8 +128,10 @@ Rails.application.routes.draw do
   delete 'settings/api_keys/:id', to: 'settings#destroy_api_key', as: :settings_api_key_destroy
 
   # KB section
-  get 'kb', to: 'kb#index', as: :kb
-  get 'kb/file', to: 'kb#file', as: :kb_file
+  get 'knowledge-base', to: 'kb#index', as: :kb
+  get 'kb', to: redirect('/knowledge-base')
+  get 'knowledge-base/file', to: 'kb#file', as: :kb_file
+  get 'kb/file', to: redirect('/knowledge-base/file')
   resources :facts, only: [:create, :destroy]
 
   # Settings - KB folders

@@ -36,12 +36,25 @@ class KbController < ApplicationController
       if Dir.exist?(expanded)
         files = Dir.glob(File.join(expanded, "**", "*.md"))
                    .sort
-                   .map do |f|
-                     { rel: f.sub("#{expanded}/", ""), abs: f }
-                   end
+                   .map { |f| { rel: f.sub("#{expanded}/", ""), abs: f } }
       end
-      { index: idx, path: path, label: File.basename(path), files: files, exists: Dir.exist?(expanded) }
+      tree = build_nested_tree(files)
+      { index: idx, path: path, label: File.basename(path), files: files, tree: tree, exists: Dir.exist?(expanded) }
     end
+  end
+
+  def build_nested_tree(files)
+    root = {}
+    files.each do |file|
+      parts = file[:rel].split("/")
+      current = root
+      parts[0..-2].each do |dir|
+        current[dir] ||= { type: :dir, children: {} }
+        current = current[dir][:children]
+      end
+      current[parts.last] = { type: :file, rel: file[:rel], abs: file[:abs] }
+    end
+    root
   end
 
   def render_file(folder_index, rel_path)

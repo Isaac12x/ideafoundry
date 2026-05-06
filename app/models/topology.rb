@@ -7,7 +7,7 @@ class Topology < ApplicationRecord
 
   enum :topology_type, { predefined: 0, custom: 1 }
 
-  validates :name, presence: true, uniqueness: { scope: :user_id }
+  validates :name, presence: true, uniqueness: { scope: [:user_id, :parent_id] }
   validates :topology_type, presence: true
 
   scope :roots, -> { where(parent_id: nil) }
