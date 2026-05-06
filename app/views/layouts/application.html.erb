@@ -16,7 +16,7 @@
     <meta name="graph-bundle-url" content="<%= asset_path('graph/index.js') %>">
   </head>
 
-  <body class="<%= 'kb-page' if controller_name == 'kb' %>">
+  <body class="<%= content_for?(:body_class) ? yield(:body_class) : '' %>">
     <header class="app-header">
       <div class="header-brand">
         <h1 class="logo"><%= link_to "Idea Foundry", root_path %></h1>

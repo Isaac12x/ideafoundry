@@ -1,16 +1,3 @@
 <%= turbo_stream.prepend "facts-list", partial: "facts/fact", locals: { fact: @fact } %>
 <%= turbo_stream.remove "facts-empty-state" %>
-<%= turbo_stream.replace "fact_form" do %>
-  <%= form_with url: facts_path do |f| %>
-    <div class="kb-fact-input-row">
-      <%= f.text_area :body,
-            placeholder: "e.g. Every year millions of untreated leather end up in landfills, making leather a commodity not a luxury item.",
-            class: "kb-fact-textarea",
-            rows: 3,
-            required: true %>
-      <div class="kb-fact-actions">
-        <%= f.submit "Add fact", class: "btn btn-primary btn-sm" %>
-      </div>
-    </div>
-  <% end %>
-<% end %>
+<%= turbo_stream.replace "fact_form", partial: "facts/form" %>

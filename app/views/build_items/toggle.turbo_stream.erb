@@ -1,15 +1,59 @@
+<% done_items = @user.build_items.done %>
+<% pending_count = @user.build_items.pending.size %>
+<% done_count = done_items.size %>
+<% total = pending_count + done_count %>
+
 <% if @build_item.completed? %>
   <%= turbo_stream.remove "build_item_#{@build_item.id}" %>
-  <%= turbo_stream.replace "completed_build_items" do %>
-    <div class="completed-items completed-items--visible" data-completed-toggle-target="list" id="completed_build_items">
-      <% @user.build_items.done.each_with_index do |item, i| %>
-        <%= render "build_item", build_item: item, index: i %>
-      <% end %>
-    </div>
+
+  <% if done_count == 1 %>
+    <%= turbo_stream.replace "backlog_done_section" do %>
+      <div id="backlog_done_section">
+        <div class="backlog-section-divider"></div>
+        <div id="done_build_items" class="backlog-done-list">
+          <%= render "build_item", build_item: @build_item, index: 0 %>
+        </div>
+      </div>
+    <% end %>
+  <% else %>
+    <%= turbo_stream.prepend "done_build_items" do %>
+      <%= render "build_item", build_item: @build_item, index: 0 %>
+    <% end %>
   <% end %>
+
 <% else %>
-  <%= turbo_stream.remove "build_item_#{@build_item.id}" %>
+  <% if done_count == 0 %>
+    <%= turbo_stream.replace "backlog_done_section" do %>
+      <div id="backlog_done_section">
+        <div id="done_build_items" class="backlog-done-list"></div>
+      </div>
+    <% end %>
+  <% else %>
+    <%= turbo_stream.remove "build_item_#{@build_item.id}" %>
+  <% end %>
+
   <%= turbo_stream.append "build_items_list" do %>
     <%= render "build_item", build_item: @build_item, index: 0 %>
   <% end %>
+<% end %>
+
+<%= turbo_stream.replace "backlog_queued_count" do %>
+  <span class="backlog-stat-num" id="backlog_queued_count"><%= pending_count %></span>
+<% end %>
+
+<%= turbo_stream.replace "backlog_done_count" do %>
+  <span class="backlog-stat-num" id="backlog_done_count"><%= done_count %></span>
+<% end %>
+
+<%= turbo_stream.replace "backlog_progress_wrapper" do %>
+  <div id="backlog_progress_wrapper">
+    <% if total > 0 %>
+      <div class="backlog-progress">
+        <div class="backlog-progress-track">
+          <div class="backlog-progress-fill" style="width: <%= (done_count.to_f / total * 100).round %>%"></div>
+        </div>
+        <span class="backlog-progress-label"><%= (done_count.to_f / total * 100).round %>%</span>
+      </div>
+    <% end %>
+  </div>
 <% end %>

@@ -9,3 +9,24 @@
     <%= render "form", build_item: @user.build_items.build %>
   </div>
 <% end %>
+
+<% pending_count = @user.build_items.pending.size %>
+<% done_count = @user.build_items.done.size %>
+<% total = pending_count + done_count %>
+
+<%= turbo_stream.replace "backlog_queued_count" do %>
+  <span class="backlog-stat-num" id="backlog_queued_count"><%= pending_count %></span>
+<% end %>
+
+<%= turbo_stream.replace "backlog_progress_wrapper" do %>
+  <div id="backlog_progress_wrapper">
+    <% if total > 0 %>
+      <div class="backlog-progress">
+        <div class="backlog-progress-track">
+          <div class="backlog-progress-fill" style="width: <%= (done_count.to_f / total * 100).round %>%"></div>
+        </div>
+        <span class="backlog-progress-label"><%= (done_count.to_f / total * 100).round %>%</span>
+      </div>
+    <% end %>
+  </div>
+<% end %>

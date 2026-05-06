@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_05_02_100758) do
+ActiveRecord::Schema[8.0].define(version: 2026_05_06_000001) do
   create_table "action_mailbox_inbound_emails", force: :cascade do |t|
     t.integer "status", default: 0, null: false
     t.string "message_id", null: false
@@ -272,7 +272,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_05_02_100758) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["parent_id"], name: "index_topologies_on_parent_id"
-    t.index ["user_id", "name"], name: "index_topologies_on_user_id_and_name", unique: true
+    t.index ["user_id", "parent_id", "name"], name: "index_topologies_on_user_id_and_parent_id_and_name", unique: true
     t.index ["user_id", "parent_id"], name: "index_topologies_on_user_id_and_parent_id"
     t.index ["user_id"], name: "index_topologies_on_user_id"
   end
