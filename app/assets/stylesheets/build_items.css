@@ -495,6 +495,16 @@
   transform: scale(1.15);
 }
 
+.backlog-check-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+  transform: none;
+}
+
+.backlog-check-btn--blocked:hover {
+  transform: none;
+}
+
 .backlog-check-btn:active {
   transform: scale(0.9);
 }
@@ -519,6 +529,13 @@
   font-size: 0.92rem;
   color: var(--text-primary);
   line-height: 1.35;
+}
+
+.backlog-checklist-count {
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  white-space: nowrap;
 }
 
 .backlog-link-count {
@@ -552,6 +569,40 @@
 
 .backlog-desc li {
   margin: 1px 0;
+}
+
+.backlog-checklist-item {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: -1.2em;
+}
+
+.backlog-checklist-item--done .backlog-checklist-title {
+  text-decoration: line-through;
+  color: var(--text-muted);
+}
+
+.backlog-subcheck-form {
+  display: inline-flex;
+  margin: 0;
+}
+
+.backlog-subcheck-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.backlog-subcheck-btn:disabled {
+  cursor: default;
 }
 
 .backlog-links-row {

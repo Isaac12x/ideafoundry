@@ -1,1 +1,17 @@
-<%= turbo_stream.remove "build_item_#{@build_item.id}" %>
+<%= turbo_stream.remove "build_item_#{@build_item_id}" %>
+
+<% if !@destroyed_completed && @pending_count.zero? %>
+  <%= turbo_stream.append "build_items_list" do %>
+    <%= render "empty" %>
+  <% end %>
+<% end %>
+
+<% if @done_count.zero? %>
+  <%= turbo_stream.replace "backlog_done_section" do %>
+    <div id="backlog_done_section">
+      <div id="done_build_items" class="backlog-done-list"></div>
+    </div>
+  <% end %>
+<% end %>
+
+<%= render "stats" %>

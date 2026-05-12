@@ -7,8 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Backlog markdown checklist subitems with per-item toggles and remaining/total counts.
+
+### Changed
+
+- Backlog is now disabled by default and requires `BACKLOG_ENABLED=true` when building or running the app.
+
 ### Fixed
 
+- Backlog edit, delete, and completion streams now preserve item context and refresh counts/empty states.
 - KB now fills the viewport below the app header and IPFs/BPFs content is centered within its panel
 
 ## [1.4.0] - 2026-05-12

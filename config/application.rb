@@ -17,6 +17,7 @@ module IdeaApp
     # not contain `.rb` files, or that should not be reloaded or eager loaded.
     # Common ones are `templates`, `generators`, or `middleware`, for example.
     config.autoload_lib(ignore: %w(assets tasks))
+    config.x.backlog_enabled = ENV.fetch("BACKLOG_ENABLED", "false").match?(/\A(1|true|yes|on)\z/i)
 
     # Configuration for the application, engines, and railties goes here.
     #
