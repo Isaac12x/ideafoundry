@@ -20,7 +20,13 @@ class TypingLocksControllerTest < ActionDispatch::IntegrationTest
 
     get ideas_url
 
-    assert_redirected_to typing_lock_path(return_to: ideas_path)
+    assert_redirected_to root_path
+    assert_no_match(/typing-lock/, response.location)
+
+    follow_redirect!
+    assert_response :success
+    assert_match(/Typing rhythm score/, response.body)
+    assert_select 'input[name="return_to"][value=?]', ideas_path
   end
 
   test "enrollment stores fingerprint and unlocks session" do
@@ -53,7 +59,7 @@ class TypingLocksControllerTest < ActionDispatch::IntegrationTest
   test "unlock page does not ask for a manual unlock action" do
     @user.store_typing_fingerprint!(fingerprint_for(SAMPLE_TEXT))
 
-    get typing_lock_path
+    get root_path
 
     assert_response :success
     assert_no_match(/value="Unlock"/, response.body)
@@ -62,7 +68,7 @@ class TypingLocksControllerTest < ActionDispatch::IntegrationTest
   test "unlock form opts out of turbo so matched POST response can render" do
     @user.store_typing_fingerprint!(fingerprint_for(SAMPLE_TEXT))
 
-    get typing_lock_path
+    get root_path
 
     assert_response :success
     assert_match(/data-turbo="false"/, response.body)
@@ -71,7 +77,7 @@ class TypingLocksControllerTest < ActionDispatch::IntegrationTest
   test "unlock page shows keyboard delete icon instead of visible Backspace text" do
     @user.store_typing_fingerprint!(fingerprint_for(SAMPLE_TEXT))
 
-    get typing_lock_path
+    get root_path
 
     assert_response :success
     assert_no_match(/>Backspace</, response.body)
@@ -97,7 +103,7 @@ class TypingLocksControllerTest < ActionDispatch::IntegrationTest
     assert_no_match(/Unlock with your typing rhythm/, response.body)
     assert_no_match(/typing-lock-result/, response.body)
     assert_match(/data-typing-fingerprint-redirect-url-value="#{ideas_path}"/, response.body)
-    assert_match(/typing-unlock-animation:complete-&gt;typing-fingerprint#completeUnlockTransition/, response.body)
+    assert_match(/typing-unlock-animation:complete(?:-&gt;|->)typing-fingerprint#completeUnlockTransition/, response.body)
 
     get ideas_path
     assert_response :success
@@ -145,10 +151,10 @@ class TypingLocksControllerTest < ActionDispatch::IntegrationTest
 
     post lock_typing_lock_path, params: { return_to: ideas_path }
 
-    assert_redirected_to typing_lock_path(return_to: ideas_path)
+    assert_redirected_to root_path
 
     get ideas_path
-    assert_redirected_to typing_lock_path(return_to: ideas_path)
+    assert_redirected_to root_path
   end
 
   test "unlocked pages expose a manual lock button and keyboard shortcut" do
@@ -166,6 +172,7 @@ class TypingLocksControllerTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_select "body[data-controller=?]", "typing-activity"
+    assert_select "body[data-typing-activity-lock-url-value=?]", root_path
     assert_select "body[data-typing-activity-lock-action-url-value=?]", lock_typing_lock_path(return_to: ideas_path)
     assert_select "body[data-typing-activity-shortcut-value=?]", "Ctrl/Cmd+Shift+L"
     assert_select "form.nav-lock-form[action=?][method=?]", lock_typing_lock_path(return_to: ideas_path), "post"
@@ -191,7 +198,7 @@ class TypingLocksControllerTest < ActionDispatch::IntegrationTest
     assert_match(/typing-lock-form/, response.body)
 
     get ideas_path
-    assert_redirected_to typing_lock_path(return_to: ideas_path)
+    assert_redirected_to root_path
   end
 
   test "settings update can disable lock and change timeout" do
@@ -253,7 +260,7 @@ class TypingLocksControllerTest < ActionDispatch::IntegrationTest
     assert_no_match(/typing-lock-animation--matched/, response.body)
 
     get ideas_path
-    assert_redirected_to typing_lock_path(return_to: ideas_path)
+    assert_redirected_to root_path
   end
 
   test "valid authenticator code completes the two step unlock" do
@@ -311,7 +318,7 @@ class TypingLocksControllerTest < ActionDispatch::IntegrationTest
     assert_match(/Invalid authenticator code/, response.body)
 
     get ideas_path
-    assert_redirected_to typing_lock_path(return_to: ideas_path)
+    assert_redirected_to root_path
   end
 
   private

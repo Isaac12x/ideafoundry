@@ -1,6 +1,7 @@
 import * as THREE from "three"
 
 const clamp01 = (value) => Math.max(0, Math.min(1, value))
+const easeOutCubic = (value) => 1 - Math.pow(1 - clamp01(value), 3)
 const easeOutQuint = (value) => 1 - Math.pow(1 - clamp01(value), 5)
 const easeInOut = (value) => {
   const t = clamp01(value)
@@ -62,9 +63,11 @@ export class TypingUnlockAnimation {
     this.container = container
     this.result = options.result || "matched"
     this.isMatched = this.result === "matched"
+    this.onComplete = typeof options.onComplete === "function" ? options.onComplete : () => {}
     this.reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches
     this.destroyed = false
-    this.duration = this.isMatched ? 1350 : 760
+    this.completed = false
+    this.duration = this.isMatched ? 1900 : 760
     this.startTime = performance.now()
 
     this.scene = new THREE.Scene()
@@ -90,6 +93,7 @@ export class TypingUnlockAnimation {
 
     if (this.reducedMotion) {
       this.renderFrame(this.startTime + this.duration)
+      queueMicrotask(() => this.complete())
     } else {
       this.frameRequest = requestAnimationFrame((time) => this.animate(time))
     }
@@ -140,6 +144,7 @@ export class TypingUnlockAnimation {
     })
     const face = new THREE.Mesh(new THREE.PlaneGeometry(1.16, 0.42), faceMaterial)
     face.position.set(-0.06, 0.12, 0.235)
+    this.face = face
     this.bodyGroup.add(face)
 
     const keyholeMaterial = new THREE.MeshBasicMaterial({ color: 0x281f24 })
@@ -148,6 +153,20 @@ export class TypingUnlockAnimation {
     keyholeTop.position.set(0, -0.08, 0.252)
     keyholeStem.position.set(0, -0.245, 0.254)
     this.bodyGroup.add(keyholeTop, keyholeStem)
+
+    this.keyholeGlow = new THREE.Mesh(
+      new THREE.CircleGeometry(0.22, 40),
+      new THREE.MeshBasicMaterial({
+        color: 0xfff0aa,
+        transparent: true,
+        opacity: 0,
+        blending: THREE.AdditiveBlending,
+        depthTest: false,
+        depthWrite: false
+      })
+    )
+    this.keyholeGlow.position.set(0, -0.135, 0.262)
+    this.bodyGroup.add(this.keyholeGlow)
 
     const socketMaterial = new THREE.MeshStandardMaterial({
       color: 0x9b6a35,
@@ -183,6 +202,64 @@ export class TypingUnlockAnimation {
     this.glow = new THREE.Mesh(new THREE.CircleGeometry(1.28, 64), glowMaterial)
     this.glow.position.set(0, -0.12, -0.18)
     this.lockGroup.add(this.glow)
+
+    const ringMaterial = new THREE.MeshBasicMaterial({
+      color: 0x86d892,
+      transparent: true,
+      opacity: 0,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false
+    })
+    this.releaseRing = new THREE.Mesh(new THREE.TorusGeometry(1.08, 0.012, 8, 96), ringMaterial)
+    this.releaseRing.position.set(0, -0.13, -0.1)
+    this.releaseRing.scale.setScalar(0.68)
+    this.lockGroup.add(this.releaseRing)
+
+    this.buildSparks()
+  }
+
+  buildSparks() {
+    const count = 18
+    const positions = new Float32Array(count * 3)
+
+    this.sparkStarts = []
+    this.sparkDirections = []
+
+    for (let index = 0; index < count; index += 1) {
+      const angle = -0.35 + (index / (count - 1)) * (Math.PI + 0.7)
+      const radius = 0.16 + (index % 4) * 0.035
+      const start = new THREE.Vector3(
+        0.42 + Math.cos(angle) * radius,
+        0.12 + Math.sin(angle) * radius * 0.75,
+        0.36
+      )
+      const direction = new THREE.Vector3(
+        Math.cos(angle) * (0.34 + (index % 3) * 0.07),
+        Math.sin(angle) * 0.28 + 0.16,
+        0.02 + (index % 2) * 0.03
+      )
+
+      this.sparkStarts.push(start)
+      this.sparkDirections.push(direction)
+      positions.set([start.x, start.y, start.z], index * 3)
+    }
+
+    const sparkGeometry = new THREE.BufferGeometry()
+    sparkGeometry.setAttribute("position", new THREE.BufferAttribute(positions, 3))
+
+    this.unlockSparks = new THREE.Points(
+      sparkGeometry,
+      new THREE.PointsMaterial({
+        color: 0xfff0a6,
+        size: 0.044,
+        sizeAttenuation: true,
+        transparent: true,
+        opacity: 0,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false
+      })
+    )
+    this.lockGroup.add(this.unlockSparks)
   }
 
   resize() {
@@ -205,22 +282,46 @@ export class TypingUnlockAnimation {
 
     if (time - this.startTime < this.duration) {
       this.frameRequest = requestAnimationFrame((nextTime) => this.animate(nextTime))
+    } else {
+      this.complete()
     }
+  }
+
+  complete() {
+    if (this.destroyed || this.completed) return
+
+    this.completed = true
+    this.onComplete()
   }
 
   renderFrame(time) {
     const rawProgress = this.reducedMotion ? 1 : clamp01((time - this.startTime) / this.duration)
 
     if (this.isMatched) {
-      const release = easeOutQuint((rawProgress - 0.16) / 0.58)
-      const settle = easeInOut((rawProgress - 0.72) / 0.28)
+      const anticipation = easeInOut(rawProgress / 0.2)
+      const release = easeOutQuint((rawProgress - 0.18) / 0.38)
+      const swing = easeOutCubic((rawProgress - 0.3) / 0.44)
+      const spark = easeOutQuint((rawProgress - 0.32) / 0.36)
+      const settle = easeInOut((rawProgress - 0.66) / 0.28)
+      const handoff = easeOutQuint((rawProgress - 0.84) / 0.16)
 
-      this.shacklePivot.position.y = -0.13 + release * 0.34 - settle * 0.04
-      this.shacklePivot.rotation.z = -release * 0.48 + settle * 0.06
-      this.bodyGroup.rotation.z = Math.sin(rawProgress * Math.PI) * 0.035
-      this.bodyGroup.position.y = -0.46 - Math.sin(rawProgress * Math.PI) * 0.025
-      this.glow.scale.setScalar(1 + release * 0.42)
-      this.glow.material.opacity = 0.1 + release * 0.16
+      this.shacklePivot.position.x = -swing * 0.08
+      this.shacklePivot.position.y = -0.13 + release * 0.54 - settle * 0.03
+      this.shacklePivot.rotation.x = swing * 0.18
+      this.shacklePivot.rotation.z = -release * 0.2 - swing * 0.72 + settle * 0.06
+      this.bodyGroup.rotation.z = Math.sin(rawProgress * Math.PI * 1.45) * (1 - release * 0.35) * 0.04 - settle * 0.018
+      this.bodyGroup.position.y = -0.46 - Math.sin(rawProgress * Math.PI) * 0.028 + handoff * 0.045
+      this.bodyGroup.scale.setScalar(1 + anticipation * 0.012 + release * 0.026 - handoff * 0.018)
+      this.face.material.opacity = 0.3 + release * 0.1
+      this.keyholeGlow.scale.setScalar(0.35 + release * 1.65)
+      this.keyholeGlow.material.opacity = Math.sin(release * Math.PI) * 0.58 * (1 - handoff * 0.85)
+      this.releaseRing.scale.setScalar(0.68 + release * 0.52 + handoff * 0.46)
+      this.releaseRing.material.opacity = Math.sin(release * Math.PI) * 0.34 * (1 - handoff)
+      this.glow.scale.setScalar(0.96 + release * 0.46 + handoff * 0.24)
+      this.glow.material.opacity = 0.08 + release * 0.18 - handoff * 0.08
+      this.lockGroup.position.y = -handoff * 0.05
+      this.camera.position.z = 5.7 - release * 0.28 + handoff * 0.18
+      this.updateSparks(spark, handoff)
     } else {
       const shake = Math.sin(rawProgress * Math.PI * 10) * (1 - rawProgress) * 0.06
 
@@ -228,10 +329,29 @@ export class TypingUnlockAnimation {
       this.lockGroup.rotation.z = shake * 0.18
       this.glow.scale.setScalar(1 + Math.sin(rawProgress * Math.PI) * 0.12)
       this.glow.material.opacity = 0.14
+      this.keyholeGlow.material.opacity = 0
+      this.releaseRing.material.opacity = 0
+      this.unlockSparks.material.opacity = 0
     }
 
     this.lockGroup.rotation.y = -0.12 + Math.sin(rawProgress * Math.PI) * 0.08
+    this.camera.lookAt(0, 0.12, 0)
     this.renderer.render(this.scene, this.camera)
+  }
+
+  updateSparks(progress, handoff) {
+    const positions = this.unlockSparks.geometry.attributes.position.array
+
+    this.sparkStarts.forEach((start, index) => {
+      const direction = this.sparkDirections[index]
+      const offset = index * 3
+      positions[offset] = start.x + direction.x * progress
+      positions[offset + 1] = start.y + direction.y * progress - handoff * 0.08
+      positions[offset + 2] = start.z + direction.z * progress
+    })
+
+    this.unlockSparks.geometry.attributes.position.needsUpdate = true
+    this.unlockSparks.material.opacity = Math.sin(progress * Math.PI) * 0.72 * (1 - handoff)
   }
 
   destroy() {

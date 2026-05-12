@@ -51,6 +51,12 @@ body.typing-lock-page .alert {
   width: 100%;
   min-height: min(720px, 72vh);
   place-items: center;
+  transition: opacity 0.22s cubic-bezier(0.22, 1, 0.36, 1), transform 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.typing-lock-shell--handoff {
+  opacity: 0;
+  transform: translateY(-10px) scale(0.985);
 }
 
 .typing-lock-topline {
@@ -570,5 +576,11 @@ body.typing-lock-page .alert {
 
   .typing-settings-layout {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .typing-lock-shell--transitioning {
+    transition-duration: 0.01ms;
   }
 }

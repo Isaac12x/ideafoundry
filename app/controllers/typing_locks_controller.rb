@@ -38,7 +38,8 @@ class TypingLocksController < ApplicationController
     @return_to = challenge_return_to || typing_authenticator_return_to
 
     unless @user.authenticator_app_enabled? && (challenge_return_to.present? || typing_authenticator_challenge_pending?)
-      redirect_to typing_lock_path(return_to: @return_to)
+      remember_typing_lock_return_to!(@return_to)
+      redirect_to root_path
       return
     end
 
@@ -65,8 +66,9 @@ class TypingLocksController < ApplicationController
   end
 
   def lock
+    remember_typing_lock_return_to!(return_to_path)
     expire_typing_session!
-    redirect_to typing_lock_path(return_to: return_to_path)
+    redirect_to root_path
   end
 
   def enroll

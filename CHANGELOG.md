@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Typing fingerprint enrollment and unlock now submit automatically after a complete matching sample is captured
 - Standardized button sizes across the app for visual consistency
 - Scheduled backup notifications now use the configured backup recipient and enqueue email delivery
 - Recurring digest jobs now accept scheduler positional arguments

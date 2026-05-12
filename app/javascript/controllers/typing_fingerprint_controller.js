@@ -30,8 +30,9 @@ export default class extends Controller {
     this.startedAt = null;
     this.lastLength = 0;
     this.submitted = false;
-    this.redirectTimer = null;
-    this.scheduleRedirect();
+    this.transitionComplete = false;
+    this.redirectFallbackTimer = null;
+    this.scheduleRedirectFallback();
     if (!this.hasInputTarget) return;
 
     this.renderPrompt();
@@ -40,7 +41,7 @@ export default class extends Controller {
   }
 
   disconnect() {
-    if (this.redirectTimer) clearTimeout(this.redirectTimer);
+    if (this.redirectFallbackTimer) clearTimeout(this.redirectFallbackTimer);
   }
 
   keydown(event) {
@@ -169,12 +170,44 @@ export default class extends Controller {
     this.formTarget.requestSubmit();
   }
 
-  scheduleRedirect() {
+  scheduleRedirectFallback() {
     if (this.resultValue !== "matched" || !this.redirectUrlValue) return;
 
-    this.redirectTimer = setTimeout(() => {
+    this.redirectFallbackTimer = setTimeout(() => {
+      this.completeUnlockTransition();
+    }, 4000);
+  }
+
+  async completeUnlockTransition() {
+    if (this.transitionComplete) return;
+
+    this.transitionComplete = true;
+    this.element.classList.add("typing-lock-shell--handoff");
+
+    if (this.redirectFallbackTimer) {
+      clearTimeout(this.redirectFallbackTimer);
+      this.redirectFallbackTimer = null;
+    }
+
+    if (!this.redirectUrlValue) return;
+
+    try {
+      const response = await fetch(this.redirectUrlValue, {
+        method: "GET",
+        credentials: "same-origin",
+        headers: {
+          Accept: "text/html",
+          "X-Requested-With": "XMLHttpRequest"
+        }
+      });
+
+      if (!response.ok) throw new Error(`Unlock redirect failed with ${response.status}`);
+
+      const markup = await response.text();
+      this.replaceWithResponse(markup, { url: this.redirectUrlValue });
+    } catch (_error) {
       window.location.assign(this.redirectUrlValue);
-    }, 1400);
+    }
   }
 
   async submitUnlock() {
@@ -222,9 +255,11 @@ export default class extends Controller {
     this.decoyTarget.classList.remove("is-visible");
   }
 
-  replaceWithResponse(markup) {
+  replaceWithResponse(markup, options = {}) {
     const nextDocument = new DOMParser().parseFromString(markup, "text/html");
+    const nextHeader = nextDocument.querySelector(".app-header");
     const nextMain = nextDocument.querySelector(".app-main");
+    const currentHeader = document.querySelector(".app-header");
     const currentMain = document.querySelector(".app-main");
 
     if (!nextMain || !currentMain) {
@@ -235,8 +270,25 @@ export default class extends Controller {
     }
 
     document.title = nextDocument.title;
-    document.body.className = nextDocument.body.className;
+    this.syncBodyAttributes(nextDocument.body);
+    if (nextHeader && currentHeader) currentHeader.replaceWith(nextHeader);
     currentMain.replaceWith(nextMain);
+
+    if (options.url) {
+      window.history.replaceState({}, nextDocument.title, options.url);
+    }
+  }
+
+  syncBodyAttributes(nextBody) {
+    [...document.body.attributes].forEach((attribute) => {
+      if (!nextBody.hasAttribute(attribute.name)) {
+        document.body.removeAttribute(attribute.name);
+      }
+    });
+
+    [...nextBody.attributes].forEach((attribute) => {
+      document.body.setAttribute(attribute.name, attribute.value);
+    });
   }
 
   validEvents() {
