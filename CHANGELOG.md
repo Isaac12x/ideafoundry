@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-05-12
+
 ### Added
 
 - Typing fingerprint lock with inactivity timeout, manual locking, and optional authenticator app verification
@@ -33,6 +35,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Drag-scrolled tab rows now reset cleanly when the window loses focus
 - Scoring system now always produces scores in 0.0–10.0 range instead of -1.0–9.0
 - Idea search filters now use SQLite-compatible case-insensitive matching
+- KB and IPFs/BPFs tabs now share the same full-height page layout
 
 ## [1.3.0] - 2026-03-28
 
@@ -95,7 +98,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Export and backup system
 - Dark Forge theme with editorial typography
 
-[unreleased]: https://github.com/Isaac12x/ideafoundry/compare/v1.3.0...HEAD
+[unreleased]: https://github.com/Isaac12x/ideafoundry/compare/v1.4.0...HEAD
+[1.4.0]: https://github.com/Isaac12x/ideafoundry/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/Isaac12x/ideafoundry/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/Isaac12x/ideafoundry/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/Isaac12x/ideafoundry/compare/v1.0.0...v1.1.0
