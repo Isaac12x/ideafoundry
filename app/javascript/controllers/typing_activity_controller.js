@@ -123,7 +123,7 @@ export default class extends Controller {
 
   submitLockAction() {
     if (!this.hasLockActionUrlValue) {
-      window.location.assign(this.lockUrlValue || "/typing-lock");
+      window.location.assign(this.lockUrlValue || "/");
       return;
     }
 
@@ -148,7 +148,7 @@ export default class extends Controller {
     if (this.locked) return;
 
     this.locked = true;
-    window.location.assign(this.lockUrlValue || "/typing-lock");
+    this.submitLockAction();
   }
 
   csrfToken() {

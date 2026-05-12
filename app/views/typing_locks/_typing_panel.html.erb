@@ -24,7 +24,8 @@
          data-typing-fingerprint-text-value="<%= text %>"
          data-typing-fingerprint-min-samples-value="<%= min_samples %>"
          data-typing-fingerprint-result-value="<%= result %>"
-         data-typing-fingerprint-redirect-url-value="<%= redirect_url %>">
+         data-typing-fingerprint-redirect-url-value="<%= redirect_url %>"
+         <% if transitioning %>data-action="typing-unlock-animation:complete-&gt;typing-fingerprint#completeUnlockTransition"<% end %>>
   <% if transitioning %>
     <div class="typing-lock-transition">
       <div class="typing-lock-animation typing-lock-animation--<%= result_state[:modifier] %>"
