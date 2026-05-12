@@ -37,6 +37,13 @@ const builds = [
     minify: !watch,
     splitting: false,
   },
+  {
+    ...common,
+    entryPoints: ["app/javascript/typing_unlock_animation/index.js"],
+    outdir: "app/assets/builds/typing_unlock_animation",
+    minify: !watch,
+    splitting: false,
+  },
 ];
 
 if (watch) {

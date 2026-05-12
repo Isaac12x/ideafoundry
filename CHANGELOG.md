@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Typing fingerprint lock with inactivity timeout, manual locking, and optional authenticator app verification
+- Idea index list view toggle with compact score rows
 - Configurable idea detail tabs, including structured tool and competitor entries
 - Idea-attached Excalidraw drawings with hero and attachment roles
 - Auto-draft idea creation with orphaned draft cleanup
@@ -24,6 +26,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Typing lock timeout now counts from the last recorded activity instead of the original unlock time
+- Typing lock failures now show a decoy score response while successful unlocks transition through a top-of-page Three.js lock animation
+- Typing lock unlock submissions now bypass Turbo so successful matches can render the transition and continue to the requested page
+- Drag-scrolled tab rows now reset cleanly when the window loses focus
 - Scoring system now always produces scores in 0.0–10.0 range instead of -1.0–9.0
 - Idea search filters now use SQLite-compatible case-insensitive matching
 
