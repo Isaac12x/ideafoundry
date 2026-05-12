@@ -2,39 +2,41 @@
    KB — Knowledge Base Section
    ============================================ */
 
-/* When KB browser is active: lock viewport, strip app-main padding */
-body.kb-page:has(.kb-panel-full:not(.hidden)) {
+/* KB owns the full viewport below the sticky app header. */
+html:has(body.kb-page) {
+  height: 100%;
   overflow: hidden;
 }
 
-body.kb-page:has(.kb-panel-full:not(.hidden)) .app-main {
+body.kb-page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+  overflow: hidden;
+}
+
+body.kb-page .app-main {
   max-width: none;
   padding: 0;
   height: calc(100vh - 60px);
+  min-height: calc(100vh - 60px);
+  height: calc(100dvh - 60px);
+  min-height: calc(100dvh - 60px);
+  width: 100%;
   overflow: hidden;
   display: flex;
   flex-direction: column; 
   margin: 0 !important;
 }
 
-/* ---- Outer page wrapper ---- */
-.kb-page {
-  display: flex;
-  flex-direction: column;
-}
-
 .kb-shell {
   display: flex;
   flex: 1;
   flex-direction: column;
+  height: 100%;
   min-height: 0;
   overflow: hidden;
-}
-
-/* Constrain to viewport only when the file browser panel is active */
-.kb-page:has(.kb-panel-full:not(.hidden)) {
-  flex: 1;
-  overflow: hidden;
+  width: 100%;
 }
 
 /* ---- Tab header — reuse shared .tabs-nav from idea_detail.css ---- */
@@ -52,6 +54,7 @@ body.kb-page:has(.kb-panel-full:not(.hidden)) .app-main {
 /* ---- KB full panel (no container constraint) ---- */
 .kb-panel-full {
   flex: 1;
+  height: 100%;
   min-height: 0;
   overflow: hidden;
   display: flex;
@@ -64,6 +67,7 @@ body.kb-page:has(.kb-panel-full:not(.hidden)) .app-main {
 
 /* ---- Facts panel: same full-page surface as KB ---- */
 .kb-facts-panel-full {
+  align-items: center;
   background: var(--bg-base);
   overflow-y: auto;
 }
@@ -72,6 +76,7 @@ body.kb-page:has(.kb-panel-full:not(.hidden)) .app-main {
 .kb-layout {
   display: flex;
   flex: 1;
+  height: 100%;
   min-height: 0;
   overflow: hidden;
 }
