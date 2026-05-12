@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- KB now fills the viewport below the app header and IPFs/BPFs content is centered within its panel
+
 ## [1.4.0] - 2026-05-12
 
 ### Added
