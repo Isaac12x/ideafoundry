@@ -113,6 +113,22 @@ class SettingsController < ApplicationController
     @topology_settings = @user.topology_settings
   end
 
+  def lists
+    @list_settings = @user.list_settings
+  end
+
+  def update_lists
+    raw = params.require(:list_settings).permit(*User::ALLOWED_LIST_SETTING_KEYS)
+
+    if @user.update_list_settings(raw)
+      redirect_to settings_lists_path, notice: 'List settings updated.'
+    else
+      @list_settings = @user.list_settings
+      flash.now[:alert] = 'Failed to update list settings.'
+      render :lists, status: :unprocessable_content
+    end
+  end
+
   def update_topologies
     raw = params.require(:topology_settings).permit(*User::ALLOWED_TOPOLOGY_SETTING_KEYS)
     coerced = raw.to_h.each_with_object({}) do |(k, v), h|

@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Backlog markdown checklist subitems with per-item toggles and remaining/total counts.
+- Named lists alongside Kanban columns, including a Lists default-view setting.
 
 ### Changed
 

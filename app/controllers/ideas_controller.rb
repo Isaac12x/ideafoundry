@@ -32,26 +32,18 @@ class IdeasController < ApplicationController
 
     if @idea.save
       @idea.create_version("Initial version")
-
-      # Add to selected list if provided
-      if params[:list_id].present?
-        list = @user.lists.find(params[:list_id])
-        @idea.idea_lists.create(list: list)
-      end
+      update_kanban_list_membership
+      update_named_list_memberships
 
       redirect_to @idea, notice: 'Idea was successfully created.'
     else
-      @lists = @user.lists.ordered
-      @topologies = @user.topologies.ordered
-      @templates = @user.templates.order(:name)
+      load_form_options
       render :new, status: :unprocessable_content
     end
   end
 
   def edit
-    @lists = @user.lists.ordered
-    @topologies = @user.topologies.ordered
-    @templates = @user.templates.order(:name)
+    load_form_options
   end
 
   def update
@@ -63,12 +55,9 @@ class IdeasController < ApplicationController
         @idea.create_version(was_draft ? "Initial version" : version_commit_message)
 
         # Update list association if provided (only for non-AJAX requests)
-        if params.key?(:list_id) && !request.xhr?
-          @idea.idea_lists.destroy_all
-          if params[:list_id].present?
-            list = @user.lists.find(params[:list_id])
-            @idea.idea_lists.create!(list: list)
-          end
+        unless request.xhr?
+          update_kanban_list_membership if params.key?(:list_id)
+          update_named_list_memberships if params.key?(:named_list_ids)
         end
         
         format.html { redirect_to @idea, notice: 'Idea was successfully updated.' }
@@ -81,9 +70,7 @@ class IdeasController < ApplicationController
         }
       else
         format.html {
-          @lists = @user.lists.ordered
-          @topologies = @user.topologies.ordered
-          @templates = @user.templates.order(:name)
+          load_form_options
           render :edit, status: :unprocessable_content
         }
         format.json { 
@@ -248,6 +235,33 @@ class IdeasController < ApplicationController
     end
   end
 
+  def load_form_options
+    @lists = @user.lists.kanban.ordered
+    @named_lists = @user.lists.named.ordered
+    @topologies = @user.topologies.ordered
+    @templates = @user.templates.order(:name)
+  end
+
+  def update_kanban_list_membership
+    @idea.idea_lists.joins(:list).where(lists: { kind: "kanban" }).destroy_all
+    return if params[:list_id].blank?
+
+    list = @user.lists.kanban.find(params[:list_id])
+    @idea.idea_lists.create!(list: list)
+  end
+
+  def update_named_list_memberships
+    selected_ids = Array(params[:named_list_ids]).reject(&:blank?).map(&:to_i)
+    selected_lists = @user.lists.named.where(id: selected_ids)
+    current_memberships = @idea.idea_lists.joins(:list).where(lists: { kind: "named" })
+
+    current_memberships.where.not(list_id: selected_lists.select(:id)).destroy_all
+
+    selected_lists.find_each do |list|
+      @idea.idea_lists.find_or_create_by!(list: list)
+    end
+  end
+
   def check_cool_off_period
     if @idea.in_cool_off? && !@idea.can_edit_content?
       redirect_to @idea, alert: "This idea is in a cool-off period until #{@idea.cool_off_until.strftime('%B %d, %Y at %I:%M %p')}. You can only edit notes during this time."
@@ -321,7 +335,7 @@ class IdeasController < ApplicationController
     
     # Filter by list
     if params[:list_id].present? && params[:list_id] != 'all'
-      ideas = ideas.joins(:idea_lists).where(idea_lists: { list_id: params[:list_id] })
+      ideas = ideas.joins(:idea_lists).where(idea_lists: { list_id: params[:list_id] }).distinct
     end
     
     # Filter by date range

@@ -79,6 +79,8 @@ Rails.application.routes.draw do
   resources :lists do
     member do
       post :send_email
+      post :add_idea
+      delete :remove_idea
     end
     collection do
       patch :update_idea_position
@@ -113,6 +115,8 @@ Rails.application.routes.draw do
   patch 'settings/security', to: 'settings#update_security'
   get 'settings/topologies', to: 'settings#topologies'
   patch 'settings/topologies', to: 'settings#update_topologies'
+  get 'settings/lists', to: 'settings#lists'
+  patch 'settings/lists', to: 'settings#update_lists'
   get 'settings/idea-tabs', to: 'settings#idea_tabs'
   patch 'settings/idea-tabs', to: 'settings#update_idea_tabs'
   get 'settings/idea_tabs', to: redirect('/settings/idea-tabs')
@@ -153,6 +157,8 @@ Rails.application.routes.draw do
   resources :build_items, path: "backlog", except: [:show] do
     member do
       patch :toggle
+      patch :toggle_checklist_item
+      get :cancel_edit
     end
     collection do
       patch :reorder

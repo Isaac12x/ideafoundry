@@ -35,13 +35,44 @@ class IdeaListTest < ActiveSupport::TestCase
     assert_equal 2, second_idea_list.position
   end
 
-  test "should not allow idea in multiple lists" do
+  test "should not allow idea in multiple kanban lists by default" do
     @idea_list.save!
 
     other_list = List.create!(user: @user, name: "Other List")
     duplicate = IdeaList.new(idea: @idea, list: other_list)
     assert_not duplicate.valid?
-    assert_includes duplicate.errors[:idea_id], "has already been taken"
+    assert_includes duplicate.errors[:idea_id], "already has a kanban list"
+  end
+
+  test "should allow idea in one kanban list and multiple named lists" do
+    @idea_list.save!
+    shortlist = List.create!(user: @user, name: "Shortlist", kind: :named)
+    launch = List.create!(user: @user, name: "Launch", kind: :named)
+
+    assert_difference -> { @idea.idea_lists.count }, 2 do
+      IdeaList.create!(idea: @idea, list: shortlist)
+      IdeaList.create!(idea: @idea, list: launch)
+    end
+  end
+
+  test "should not allow idea in multiple kanban lists" do
+    @idea_list.save!
+    other_column = List.create!(user: @user, name: "Other Column", kind: :kanban)
+
+    duplicate = IdeaList.new(idea: @idea, list: other_column)
+
+    assert_not duplicate.valid?
+    assert_includes duplicate.errors[:idea_id], "already has a kanban list"
+  end
+
+  test "should not allow duplicate idea in same named list" do
+    named_list = List.create!(user: @user, name: "Shortlist", kind: :named)
+    IdeaList.create!(idea: @idea, list: named_list)
+
+    duplicate = IdeaList.new(idea: @idea, list: named_list)
+
+    assert_not duplicate.valid?
+    assert_includes duplicate.errors[:idea_id], "is already in this list"
   end
 
   test "should not allow duplicate idea in same list" do
@@ -49,7 +80,7 @@ class IdeaListTest < ActiveSupport::TestCase
 
     duplicate = IdeaList.new(idea: @idea, list: @list)
     assert_not duplicate.valid?
-    assert_includes duplicate.errors[:idea_id], "has already been taken"
+    assert_includes duplicate.errors[:idea_id], "is already in this list"
   end
 
   test "should have ordered scope" do
