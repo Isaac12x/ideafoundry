@@ -62,6 +62,9 @@ gem "kaminari"
 # SHA3 digest for integrity hashing
 gem "sha3"
 
+# Local QR code rendering for authenticator app setup
+gem "rqrcode", "~> 2.2"
+
 # Resend for email delivery
 gem "resend"
 

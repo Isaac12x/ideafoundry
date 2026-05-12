@@ -67,6 +67,32 @@ class SettingsController < ApplicationController
     @sha3_key = Rails.application.credentials.dig(:email_ingestion, :sha3_key)
   end
 
+  def security
+    @typing_lock_settings = @user.typing_lock_settings
+    @authenticator_app_settings = @user.authenticator_app_settings
+    @authenticator_app_qr_svg = AuthenticatorApp.qr_svg(@user.authenticator_app_provisioning_uri) if @user.authenticator_app_configured?
+  end
+
+  def update_security
+    typing_lock_updated = @user.update_typing_lock_settings(typing_lock_params)
+    authenticator_app_updated = @user.update_authenticator_app_settings(authenticator_app_params)
+
+    if typing_lock_updated && authenticator_app_updated
+      if @user.typing_lock_enabled?
+        unlock_typing_session!
+      else
+        expire_typing_session!
+      end
+      redirect_to settings_security_path, notice: "Security settings updated."
+    else
+      @typing_lock_settings = @user.typing_lock_settings
+      @authenticator_app_settings = @user.authenticator_app_settings
+      @authenticator_app_qr_svg = AuthenticatorApp.qr_svg(@user.authenticator_app_provisioning_uri) if @user.authenticator_app_configured?
+      flash.now[:alert] = "Failed to update security settings."
+      render :security, status: :unprocessable_content
+    end
+  end
+
   def update_notifications
     triggers = params[:notification_triggers] || []
     content = params[:notification_content]&.permit!&.to_h || {}
@@ -268,6 +294,14 @@ class SettingsController < ApplicationController
 
   def email_params
     params.require(:email_settings).permit(:recipients)
+  end
+
+  def typing_lock_params
+    params.require(:typing_lock).permit(:enabled, :lock_after_minutes)
+  end
+
+  def authenticator_app_params
+    params.fetch(:authenticator_app, {}).permit(:enabled)
   end
 
   def valid_scoring_weights?(weights)

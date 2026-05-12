@@ -1,6 +1,64 @@
 require "test_helper"
 
 class UserTest < ActiveSupport::TestCase
+  test "typing lock defaults to disabled with five minute timeout" do
+    user = User.new(email: "fresh@example.com", name: "Fresh", settings: nil)
+
+    refute user.typing_lock_enabled?
+    assert_equal 300, user.typing_lock_timeout_seconds
+    refute user.typing_fingerprint_configured?
+  end
+
+  test "typing lock settings can be updated and clamped" do
+    user = users(:one)
+
+    assert user.update_typing_lock_settings("enabled" => "0", "lock_after_minutes" => "9999")
+
+    assert_equal false, user.typing_lock_enabled?
+    assert_equal 86_400, user.typing_lock_timeout_seconds
+  end
+
+  test "typing fingerprint can be stored and cleared" do
+    user = users(:one)
+    fingerprint = { "version" => 1, "keys" => { "a" => { "mean" => 90 } } }
+
+    assert user.store_typing_fingerprint!(fingerprint)
+    assert user.typing_fingerprint_configured?
+    assert_equal fingerprint, user.typing_fingerprint
+
+    assert user.clear_typing_fingerprint!
+    refute user.typing_fingerprint_configured?
+  end
+
+  test "authenticator app settings default to disabled" do
+    user = User.new(email: "fresh-auth@example.com", name: "Fresh Auth", settings: nil)
+
+    refute user.authenticator_app_enabled?
+    refute user.authenticator_app_configured?
+    assert_nil user.authenticator_app_secret
+  end
+
+  test "authenticator app settings generate and clear a secret" do
+    user = users(:one)
+
+    assert user.update_authenticator_app_settings("enabled" => "1")
+
+    assert user.authenticator_app_enabled?
+    assert user.authenticator_app_configured?
+    assert_match(/\A[A-Z2-7]{32}\z/, user.authenticator_app_secret)
+    assert_includes user.authenticator_app_provisioning_uri, "otpauth://totp/Idea%20Foundry:"
+
+    secret = user.authenticator_app_secret
+
+    assert user.update_authenticator_app_settings("enabled" => "1")
+    assert_equal secret, user.authenticator_app_secret
+
+    assert user.update_authenticator_app_settings("enabled" => "0")
+    refute user.authenticator_app_enabled?
+    refute user.authenticator_app_configured?
+    assert_nil user.authenticator_app_secret
+  end
+
   def setup
     @user = User.new(email: "test@example.com", name: "Test User")
   end

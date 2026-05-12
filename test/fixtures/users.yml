@@ -3,9 +3,9 @@
 one:
   email: user1@example.com
   name: Test User One
-  settings: '{"theme": "light", "notifications": true}'
+  settings: '{"theme": "light", "notifications": true, "typing_lock": {"enabled": false}}'
 
 two:
   email: user2@example.com
   name: Test User Two
-  settings: '{"theme": "dark", "notifications": false}'
+  settings: '{"theme": "dark", "notifications": false, "typing_lock": {"enabled": false}}'
