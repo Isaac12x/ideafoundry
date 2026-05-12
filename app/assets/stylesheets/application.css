@@ -1025,6 +1025,76 @@ select.form-control {
 
 .list-actions { display: flex; gap: 4px; }
 
+.list-kind-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 0 10px;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.named-lists-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.named-list-card,
+.named-list-item {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+}
+
+.named-list-card {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+  padding: 1rem;
+}
+
+.named-list-card__body h3,
+.named-list-item h3 {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.named-list-card__body p,
+.named-list-item p {
+  margin: 4px 0 0;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+}
+
+.inline-list-form {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.inline-list-form .form-control {
+  max-width: 480px;
+}
+
+.named-list-items {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.named-list-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+  padding: 0.9rem 1rem;
+}
+
 /* ---- Empty States ---- */
 .empty-state {
   text-align: center;

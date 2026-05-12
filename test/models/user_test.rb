@@ -129,6 +129,21 @@ class UserTest < ActiveSupport::TestCase
     assert_nil @user.settings.dig('topology_settings', 'hacker')
   end
 
+  test "list_settings returns defaults when none stored" do
+    @user.save!
+
+    assert_equal User::DEFAULT_LIST_SETTINGS, @user.list_settings
+  end
+
+  test "update_list_settings persists allowed default view" do
+    @user.save!
+    @user.update_list_settings({ 'default_view' => 'named', 'hacker' => 'bad' })
+
+    @user.reload
+    assert_equal 'named', @user.list_settings['default_view']
+    assert_nil @user.settings.dig('list_settings', 'hacker')
+  end
+
   test "topology_overrides_for returns global when no overrides" do
     @user.save!
     resolved = @user.topology_overrides_for(999)

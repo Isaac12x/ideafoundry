@@ -97,6 +97,13 @@ class User < ApplicationRecord
 
   ALLOWED_TOPOLOGY_SETTING_KEYS = DEFAULT_TOPOLOGY_SETTINGS.keys.freeze
 
+  DEFAULT_LIST_SETTINGS = {
+    'default_view' => 'kanban'
+  }.freeze
+
+  ALLOWED_LIST_DEFAULT_VIEWS = %w[kanban named].freeze
+  ALLOWED_LIST_SETTING_KEYS = DEFAULT_LIST_SETTINGS.keys.freeze
+
   ALLOWED_TOPOLOGY_OVERRIDE_KEYS = %w[
     dag_mode show_ideas node_size_topology node_size_idea
     bloom_strength fog_density auto_fit_on_load click_behavior
@@ -353,6 +360,21 @@ class User < ApplicationRecord
   def update_topology_settings(params)
     self.settings ||= {}
     self.settings['topology_settings'] = params.to_h.slice(*ALLOWED_TOPOLOGY_SETTING_KEYS)
+    save
+  end
+
+  def list_settings
+    stored = settings&.dig('list_settings') || {}
+    DEFAULT_LIST_SETTINGS.merge(stored).tap do |resolved|
+      resolved['default_view'] = DEFAULT_LIST_SETTINGS['default_view'] unless ALLOWED_LIST_DEFAULT_VIEWS.include?(resolved['default_view'])
+    end
+  end
+
+  def update_list_settings(params)
+    cleaned = params.to_h.slice(*ALLOWED_LIST_SETTING_KEYS)
+    cleaned['default_view'] = DEFAULT_LIST_SETTINGS['default_view'] unless ALLOWED_LIST_DEFAULT_VIEWS.include?(cleaned['default_view'])
+    self.settings ||= {}
+    self.settings['list_settings'] = cleaned
     save
   end
 
