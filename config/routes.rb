@@ -109,6 +109,8 @@ Rails.application.routes.draw do
   get 'settings/scoring/weights', to: 'settings#get_scoring_weights'
   get 'settings/email', to: 'settings#email'
   patch 'settings/notifications', to: 'settings#update_notifications'
+  get 'settings/security', to: 'settings#security'
+  patch 'settings/security', to: 'settings#update_security'
   get 'settings/topologies', to: 'settings#topologies'
   patch 'settings/topologies', to: 'settings#update_topologies'
   get 'settings/idea-tabs', to: 'settings#idea_tabs'
@@ -126,6 +128,15 @@ Rails.application.routes.draw do
   get 'settings/api_keys', to: 'settings#api_keys'
   post 'settings/api_keys', to: 'settings#create_api_key'
   delete 'settings/api_keys/:id', to: 'settings#destroy_api_key', as: :settings_api_key_destroy
+
+  # Typing fingerprint lock
+  get 'typing-lock', to: 'typing_locks#new', as: :typing_lock
+  post 'typing-lock/lock', to: 'typing_locks#lock', as: :lock_typing_lock
+  post 'typing-lock/verify', to: 'typing_locks#verify', as: :verify_typing_lock
+  post 'typing-lock/authenticator', to: 'typing_locks#verify_authenticator', as: :verify_authenticator_typing_lock
+  patch 'typing-lock/activity', to: 'typing_locks#activity', as: :typing_lock_activity
+  get 'typing-lock/enroll', to: 'typing_locks#enroll', as: :enroll_typing_lock
+  post 'typing-lock/enroll', to: 'typing_locks#create', as: :typing_lock_enrollment
 
   # KB section
   get 'knowledge-base', to: 'kb#index', as: :kb

@@ -16,7 +16,22 @@
     <meta name="graph-bundle-url" content="<%= asset_path('graph/index.js') %>">
   </head>
 
-  <body class="<%= content_for?(:body_class) ? yield(:body_class) : '' %>">
+  <%
+    body_class = content_for?(:body_class) ? yield(:body_class) : ""
+    typing_activity_enabled = @user&.typing_lock_enabled? &&
+      @user.typing_fingerprint_configured? &&
+      !body_class.include?("typing-lock-page")
+    typing_lock_shortcut = "Ctrl/Cmd+Shift+L"
+  %>
+  <body class="<%= body_class %>"
+        <% if typing_activity_enabled %>
+          data-controller="typing-activity"
+          data-typing-activity-url-value="<%= typing_lock_activity_path %>"
+          data-typing-activity-lock-url-value="<%= typing_lock_path(return_to: request.fullpath) %>"
+          data-typing-activity-lock-action-url-value="<%= lock_typing_lock_path(return_to: request.fullpath) %>"
+          data-typing-activity-shortcut-value="<%= typing_lock_shortcut %>"
+          data-typing-activity-timeout-seconds-value="<%= @user.typing_lock_timeout_seconds %>"
+        <% end %>>
     <header class="app-header">
       <div class="header-brand">
         <h1 class="logo"><%= link_to "Idea Foundry", root_path %></h1>
@@ -56,6 +71,24 @@
         <%= link_to settings_path, class: "nav-pill #{controller_name == 'settings' ? 'active' : ''}" do %>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12.22 2h-.44a2 2 0 00-2 2v.18a2 2 0 01-1 1.73l-.43.25a2 2 0 01-2 0l-.15-.08a2 2 0 00-2.73.73l-.22.38a2 2 0 00.73 2.73l.15.1a2 2 0 011 1.72v.51a2 2 0 01-1 1.74l-.15.09a2 2 0 00-.73 2.73l.22.38a2 2 0 002.73.73l.15-.08a2 2 0 012 0l.43.25a2 2 0 011 1.73V20a2 2 0 002 2h.44a2 2 0 002-2v-.18a2 2 0 011-1.73l.43-.25a2 2 0 012 0l.15.08a2 2 0 002.73-.73l.22-.39a2 2 0 00-.73-2.73l-.15-.08a2 2 0 01-1-1.74v-.5a2 2 0 011-1.74l.15-.09a2 2 0 00.73-2.73l-.22-.38a2 2 0 00-2.73-.73l-.15.08a2 2 0 01-2 0l-.43-.25a2 2 0 01-1-1.73V4a2 2 0 00-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
           Settings
+        <% end %>
+
+        <% if typing_activity_enabled %>
+          <%= button_to lock_typing_lock_path(return_to: request.fullpath),
+                method: :post,
+                class: "nav-pill nav-lock-button",
+                title: "Lock (#{typing_lock_shortcut})",
+                aria: { label: "Lock" },
+                form: {
+                  class: "nav-lock-form",
+                  data: { typing_activity_target: "lockForm" }
+                } do %>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="5" y="11" width="14" height="10" rx="2"/>
+              <path d="M8 11V8a4 4 0 018 0v3"/>
+            </svg>
+            Lock
+          <% end %>
         <% end %>
       </nav>
     </header>

@@ -196,6 +196,7 @@
   overflow-x: auto;
   overflow-y: hidden;
   scrollbar-width: thin;
+  scrollbar-color: var(--accent) transparent;
   -webkit-overflow-scrolling: touch;
   cursor: grab;
   user-select: none;
@@ -210,16 +211,21 @@
 }
 
 .tabs-nav::-webkit-scrollbar {
-  height: 6px;
+  height: 1px !important;
+  max-height: 1px !important;
+}
+
+.tabs-nav::-webkit-scrollbar-track {
+  background: transparent !important;
 }
 
 .tabs-nav::-webkit-scrollbar-thumb {
-  background: var(--border-default);
-  border-radius: 3px;
+  background: var(--accent) !important;
+  border-radius: 0 !important;
 }
 
 .tabs-nav::-webkit-scrollbar-thumb:hover {
-  background: var(--border-emphasis);
+  background: var(--accent-hover) !important;
 }
 
 .tab-button {

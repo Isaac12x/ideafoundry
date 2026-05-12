@@ -39,6 +39,11 @@ class SettingsControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
   end
 
+  test "GET settings/security renders page" do
+    get settings_security_path
+    assert_response :success
+  end
+
   test "PATCH settings/notifications saves recipients and presets" do
     patch settings_notifications_path, params: {
       email_settings: { recipients: 'a@b.com' },
