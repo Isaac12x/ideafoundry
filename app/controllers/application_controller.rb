@@ -6,6 +6,8 @@ class ApplicationController < ActionController::Base
   TYPING_AUTHENTICATOR_RETURN_TO_SESSION_KEY = "typing_authenticator_return_to"
   TYPING_AUTHENTICATOR_TIMEOUT = 5.minutes
 
+  helper_method :backlog_enabled?
+
   prepend_before_action :set_user
   before_action :require_typing_unlock
 
@@ -13,6 +15,16 @@ class ApplicationController < ActionController::Base
 
   def set_user
     @user = User.first || User.create!(email: 'user@example.com', name: 'Default User')
+  end
+
+  def require_backlog_enabled
+    return if backlog_enabled?
+
+    redirect_to root_path, alert: "Backlog is not enabled."
+  end
+
+  def backlog_enabled?
+    Rails.application.config.x.backlog_enabled == true
   end
 
   def require_typing_unlock
