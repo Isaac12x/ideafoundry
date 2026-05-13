@@ -182,23 +182,92 @@ class TypingLocksControllerTest < ActionDispatch::IntegrationTest
   test "failed unlock sample shows decoy score without lock language" do
     unlock_text = TypingTextLibrary.unlock_text("spark-gap")
     @user.store_typing_fingerprint!(fingerprint_for(unlock_text, hold: 91, flight: 41))
+    failed_events = timing_events_for(unlock_text, hold: 190, flight: 120)
+    failed_match = TypingFingerprint.match(
+      template: @user.typing_fingerprint,
+      events: failed_events,
+      expected_text: unlock_text
+    )
 
     post verify_typing_lock_path, params: {
       challenge_id: "spark-gap",
-      timing_payload: timing_events_for(unlock_text, hold: 190, flight: 120).to_json,
+      timing_payload: failed_events.to_json,
       return_to: ideas_path
     }
 
     assert_response :unprocessable_content
     assert_match(/This is your score/, response.body)
+    assert_select ".typing-lock-score__value", text: "#{(failed_match.score * 100).round}/100"
+    assert_select ".typing-lock-stat", text: /#{failed_match.sample_count}/
+    assert_select ".typing-lock-stat", text: /#{failed_match.compared_features}/
     assert_no_match(/typing-lock-animation--missed/, response.body)
     assert_no_match(/Fingerprint not matched/, response.body)
     assert_no_match(/>Locked</, response.body)
     assert_no_match(/typing-lock-result/, response.body)
-    assert_match(/typing-lock-form/, response.body)
+    assert_select ".typing-lock-form", count: 0
+
+    stored = @user.reload.settings.dig("typing_lock", "last_failed_unlock")
+    assert_in_delta failed_match.score, stored["score"], 0.001
+    assert_equal failed_match.sample_count, stored["sample_count"]
+    assert_equal failed_match.compared_features, stored["compared_features"]
+    assert stored["cooldown_until"].present?
 
     get ideas_path
     assert_redirected_to root_path
+  end
+
+  test "active failed unlock cooldown reuses the stored score and does not recheck samples" do
+    unlock_text = TypingTextLibrary.unlock_text("spark-gap")
+    @user.store_typing_fingerprint!(fingerprint_for(unlock_text, hold: 91, flight: 41))
+    failed_events = timing_events_for(unlock_text, hold: 190, flight: 120)
+    failed_match = TypingFingerprint.match(
+      template: @user.typing_fingerprint,
+      events: failed_events,
+      expected_text: unlock_text
+    )
+
+    post verify_typing_lock_path, params: {
+      challenge_id: "spark-gap",
+      timing_payload: failed_events.to_json,
+      return_to: ideas_path
+    }
+    assert_response :unprocessable_content
+
+    post verify_typing_lock_path, params: {
+      challenge_id: "spark-gap",
+      timing_payload: timing_events_for(unlock_text, hold: 94, flight: 44).to_json,
+      return_to: ideas_path
+    }
+
+    assert_response :too_many_requests
+    assert_select ".typing-lock-score__value", text: "#{(failed_match.score * 100).round}/100"
+    assert_select ".typing-lock-form", count: 0
+
+    get ideas_path
+    assert_redirected_to root_path
+  end
+
+  test "lock page shows persisted failed score during cooldown" do
+    unlock_text = TypingTextLibrary.unlock_text("spark-gap")
+    @user.store_typing_fingerprint!(fingerprint_for(unlock_text, hold: 91, flight: 41))
+    failed_events = timing_events_for(unlock_text, hold: 190, flight: 120)
+    failed_match = TypingFingerprint.match(
+      template: @user.typing_fingerprint,
+      events: failed_events,
+      expected_text: unlock_text
+    )
+
+    post verify_typing_lock_path, params: {
+      challenge_id: "spark-gap",
+      timing_payload: failed_events.to_json,
+      return_to: ideas_path
+    }
+
+    get root_path
+
+    assert_response :success
+    assert_select ".typing-lock-score__value", text: "#{(failed_match.score * 100).round}/100"
+    assert_select ".typing-lock-form", count: 0
   end
 
   test "settings update can disable lock and change timeout" do

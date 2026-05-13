@@ -126,8 +126,15 @@ class ApplicationController < ActionController::Base
   end
 
   def render_typing_lock_unlock(return_to:)
-    @challenge_id = params[:challenge_id].presence || TypingTextLibrary.random_unlock_id
-    @challenge_text = TypingTextLibrary.unlock_text(@challenge_id)
+    if (failed_unlock = @user.active_typing_lock_failed_unlock)
+      @unlock_result = :missed
+      @unlock_failure = failed_unlock
+      @challenge_id = failed_unlock["challenge_id"].presence || ""
+      @challenge_text = ""
+    else
+      @challenge_id = params[:challenge_id].presence || TypingTextLibrary.random_unlock_id
+      @challenge_text = TypingTextLibrary.unlock_text(@challenge_id)
+    end
     @return_to = return_to
     render "typing_locks/new", status: :ok
   end

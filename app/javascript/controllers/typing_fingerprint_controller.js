@@ -104,13 +104,24 @@ export default class extends Controller {
   }
 
   renderPrompt() {
+    let index = 0;
+    const parts = this.textValue.match(/\S+\s*|\s+/g) || [];
+
     this.promptTarget.replaceChildren(
-      ...this.textValue.split("").map((char, index) => {
-        const span = document.createElement("span");
-        span.dataset.index = index;
-        span.textContent = char === " " ? "·" : char;
-        if (char === " ") span.classList.add("is-space");
-        return span;
+      ...parts.map((part) => {
+        const word = document.createElement("span");
+        word.classList.add("typing-lock-prompt-word");
+
+        part.split("").forEach((char) => {
+          const span = document.createElement("span");
+          span.dataset.index = index;
+          span.textContent = char === " " ? "·" : char;
+          if (char === " ") span.classList.add("is-space");
+          word.append(span);
+          index += 1;
+        });
+
+        return word;
       })
     );
   }
@@ -120,7 +131,8 @@ export default class extends Controller {
     const validPrefix = this.validPrefixLength(value);
     const hasMismatch = validPrefix < value.length;
 
-    this.promptTarget.querySelectorAll("span").forEach((span, index) => {
+    this.promptTarget.querySelectorAll("[data-index]").forEach((span) => {
+      const index = Number(span.dataset.index);
       span.classList.toggle("is-typed", index < validPrefix);
       span.classList.toggle("is-current", index === value.length && !hasMismatch);
       span.classList.toggle("is-error", hasMismatch && index >= validPrefix && index < value.length);
@@ -228,7 +240,7 @@ export default class extends Controller {
       });
       const markup = await response.text();
 
-      if (response.ok) {
+      if (response.ok || response.status === 422 || response.status === 429) {
         this.replaceWithResponse(markup);
         return;
       }
