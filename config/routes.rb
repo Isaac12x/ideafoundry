@@ -19,6 +19,9 @@ Rails.application.routes.draw do
   # Programmatic intake API
   namespace :api do
     namespace :v1 do
+      resources :ideas, only: [] do
+        resource :document, only: [:show, :update], controller: :idea_documents
+      end
       resources :submissions, only: [:create, :show]
     end
   end
@@ -73,6 +76,7 @@ Rails.application.routes.draw do
     resources :notes, only: [:create, :destroy]
     resources :idea_entries, only: [:create, :update, :destroy]
     resources :drawings, only: [:new, :show, :create, :update, :destroy]
+    resources :agent_tokens, only: [:create, :destroy], controller: :idea_agent_tokens
   end
 
   # Lists and drag-and-drop functionality
