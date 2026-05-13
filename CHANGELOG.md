@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Kanban idea cards no longer show tools or competitor summaries.
 - Backlog is now disabled by default and requires `BACKLOG_ENABLED=true` when building or running the app.
 
 ### Fixed
