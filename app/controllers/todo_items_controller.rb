@@ -47,6 +47,7 @@ class TodoItemsController < ApplicationController
         @idea.todo_items.where(id: id).update_all(position: index + 1)
       end
     end
+    @idea.record_history!("Reordered todos", automatic: true)
 
     respond_to do |format|
       format.turbo_stream { head :ok }
