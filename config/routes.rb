@@ -106,6 +106,7 @@ Rails.application.routes.draw do
 
   # Settings management
   get 'settings', to: 'settings#index'
+  patch 'settings', to: 'settings#update_display'
   get 'settings/scoring', to: 'settings#scoring'
   patch 'settings/scoring', to: 'settings#update_scoring'
   get 'settings/scoring/weights', to: 'settings#get_scoring_weights'
