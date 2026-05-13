@@ -4,15 +4,18 @@ class TypingLocksController < ApplicationController
   def new
     return redirect_to enroll_typing_lock_path(return_to: return_to_path) unless @user.typing_fingerprint_configured?
 
+    @return_to = return_to_path
+    return if render_failed_unlock_cooldown(status: :ok)
+
     @challenge_id = params[:challenge_id].presence || TypingTextLibrary.random_unlock_id
     @challenge_text = TypingTextLibrary.unlock_text(@challenge_id)
-    @return_to = return_to_path
   end
 
   def verify
     @challenge_id = params[:challenge_id].to_s
     @challenge_text = TypingTextLibrary.unlock_text(@challenge_id)
     @return_to = return_to_path
+    return if render_failed_unlock_cooldown(status: :too_many_requests)
 
     match = TypingFingerprint.match(
       template: @user.typing_fingerprint || {},
@@ -29,6 +32,7 @@ class TypingLocksController < ApplicationController
       end
     else
       @unlock_result = :missed
+      @unlock_failure = @user.record_typing_lock_failed_unlock!(match:, challenge_id: @challenge_id)
       render :new, status: :unprocessable_content
     end
   end
@@ -107,11 +111,24 @@ class TypingLocksController < ApplicationController
   end
 
   def render_unlock_success
+    @user.clear_typing_lock_failed_unlock!
     unlock_typing_session!
     @unlock_result = :matched
     @unlock_redirect_url = @return_to
     @challenge_id ||= ""
     @challenge_text ||= ""
     render :new, status: :ok
+  end
+
+  def render_failed_unlock_cooldown(status:)
+    failed_unlock = @user.active_typing_lock_failed_unlock
+    return false unless failed_unlock
+
+    @unlock_result = :missed
+    @unlock_failure = failed_unlock
+    @challenge_id = failed_unlock["challenge_id"].presence || @challenge_id || ""
+    @challenge_text = ""
+    render :new, status: status
+    true
   end
 end

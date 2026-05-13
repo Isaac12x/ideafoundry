@@ -185,26 +185,31 @@ body.typing-lock-page .alert {
   font-family: var(--font-mono);
   font-size: clamp(1.08rem, 2vw, 1.72rem);
   line-height: 1.55;
-  overflow-wrap: anywhere;
-  word-break: break-word;
+  overflow-wrap: normal;
+  word-break: normal;
 }
 
-.typing-lock-prompt span {
+.typing-lock-prompt-word {
+  display: inline-block;
+  white-space: nowrap;
+}
+
+.typing-lock-prompt [data-index] {
   position: relative;
   border-radius: 2px;
   transition: color 0.12s ease, background 0.12s ease;
 }
 
-.typing-lock-prompt span.is-typed {
+.typing-lock-prompt [data-index].is-typed {
   color: #262334;
 }
 
-.typing-lock-prompt span.is-current {
+.typing-lock-prompt [data-index].is-current {
   color: #262334;
   background: rgba(54, 114, 181, 0.16);
 }
 
-.typing-lock-prompt span.is-current::after {
+.typing-lock-prompt [data-index].is-current::after {
   content: '';
   position: absolute;
   left: 50%;
@@ -217,12 +222,12 @@ body.typing-lock-page .alert {
   transform: translateX(-50%);
 }
 
-.typing-lock-prompt span.is-error {
+.typing-lock-prompt [data-index].is-error {
   color: #813445;
   background: rgba(200, 82, 96, 0.13);
 }
 
-.typing-lock-prompt span.is-space {
+.typing-lock-prompt [data-index].is-space {
   color: rgba(38, 35, 52, 0.22);
 }
 
@@ -263,6 +268,46 @@ body.typing-lock-page .alert {
 
 .typing-lock-decoy[hidden] {
   display: none;
+}
+
+.typing-lock-score {
+  display: grid;
+  gap: 20px;
+  width: min(640px, 100%);
+}
+
+.typing-lock-score__value {
+  color: #262334;
+  font-family: var(--font-display);
+  font-size: clamp(4rem, 18vw, 9rem);
+  font-style: italic;
+  font-weight: 400;
+  line-height: 0.9;
+}
+
+.typing-lock-score__stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  max-width: 520px;
+}
+
+.typing-lock-stat {
+  border-top: 1px solid rgba(38, 35, 52, 0.14);
+  padding-top: 12px;
+}
+
+.typing-lock-stat strong {
+  display: block;
+  color: #262334;
+  font-family: var(--font-mono);
+  font-size: clamp(1.35rem, 4vw, 2rem);
+  line-height: 1.1;
+}
+
+.typing-lock-stat span {
+  color: rgba(38, 35, 52, 0.54);
+  font-size: 0.78rem;
 }
 
 .typing-lock-progress {
@@ -567,6 +612,10 @@ body.typing-lock-page .alert {
 
   .typing-lock-metrics {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .typing-lock-score__stats {
+    grid-template-columns: 1fr;
   }
 
   .typing-lock-actions,

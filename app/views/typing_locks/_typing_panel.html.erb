@@ -9,7 +9,13 @@
   result = local_assigns[:result].presence&.to_sym
   redirect_url = local_assigns[:redirect_url].presence
   transitioning = mode == :unlock && result == :matched
-  decoy_score = mode == :unlock && result == :missed
+  score_result = local_assigns[:score_result].presence || {}
+  score_screen = mode == :unlock && result == :missed && score_result.present?
+  score_value = "#{(score_result.fetch("score", 0).to_f * 100).round}/100"
+  score_stats = [
+    ["Samples", score_result.fetch("sample_count", 0).to_i],
+    ["Compared features", score_result.fetch("compared_features", 0).to_i]
+  ]
   result_state = {
     matched: {
       label: "Fingerprint matched",
@@ -52,94 +58,108 @@
       <p><%= subtitle %></p>
     </div>
 
-    <%= form_with url: form_url,
-          method: :post,
-          local: true,
-          class: "typing-lock-form",
-          data: {
-            turbo: false,
-            typing_fingerprint_target: "form",
-            action: "submit->typing-fingerprint#submit"
-          } do %>
-      <%= hidden_field_tag :challenge_id, challenge_id %>
-      <%= hidden_field_tag :return_to, return_to %>
-      <%= hidden_field_tag :timing_payload, "", data: { typing_fingerprint_target: "payload" } %>
-
-      <div class="typing-lock-prompt" data-typing-fingerprint-target="prompt" aria-live="polite"></div>
-
-      <%= text_area_tag :typed_text,
-            nil,
-            class: "typing-lock-input",
-            rows: mode == :enroll ? 4 : 2,
-            autocomplete: "off",
-            autocapitalize: "off",
-            spellcheck: false,
-            placeholder: mode == :enroll ? "Type the full passage here" : "Type the passage here",
+    <% if score_screen %>
+      <div class="typing-lock-score" role="status" aria-live="polite">
+        <p class="typing-lock-decoy is-visible">This is your score</p>
+        <strong class="typing-lock-score__value"><%= score_value %></strong>
+        <div class="typing-lock-score__stats">
+          <% score_stats.each do |label, value| %>
+            <div class="typing-lock-stat">
+              <strong><%= value %></strong>
+              <span><%= label %></span>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    <% else %>
+      <%= form_with url: form_url,
+            method: :post,
+            local: true,
+            class: "typing-lock-form",
             data: {
-              typing_fingerprint_target: "input",
-              action: "keydown->typing-fingerprint#keydown keyup->typing-fingerprint#keyup input->typing-fingerprint#input paste->typing-fingerprint#paste"
-            } %>
+              turbo: false,
+              typing_fingerprint_target: "form",
+              action: "submit->typing-fingerprint#submit"
+            } do %>
+        <%= hidden_field_tag :challenge_id, challenge_id %>
+        <%= hidden_field_tag :return_to, return_to %>
+        <%= hidden_field_tag :timing_payload, "", data: { typing_fingerprint_target: "payload" } %>
 
-      <p class="typing-lock-decoy<%= " is-visible" if decoy_score %>"
-         data-typing-fingerprint-target="decoy"
-         role="status"
-         aria-live="polite"
-         <%= "hidden" unless decoy_score %>>This is your score</p>
+        <div class="typing-lock-prompt" data-typing-fingerprint-target="prompt" aria-live="polite"></div>
 
-      <div class="typing-lock-progress" aria-hidden="true">
-        <span data-typing-fingerprint-target="progressBar"></span>
-      </div>
+        <%= text_area_tag :typed_text,
+              nil,
+              class: "typing-lock-input",
+              rows: mode == :enroll ? 4 : 2,
+              autocomplete: "off",
+              autocapitalize: "off",
+              spellcheck: false,
+              placeholder: mode == :enroll ? "Type the full passage here" : "Type the passage here",
+              data: {
+                typing_fingerprint_target: "input",
+                action: "keydown->typing-fingerprint#keydown keyup->typing-fingerprint#keyup input->typing-fingerprint#input paste->typing-fingerprint#paste"
+              } %>
 
-      <div class="typing-keyboard" aria-hidden="true">
-        <% keyboard_rows.each do |row| %>
-          <div class="typing-keyboard-row">
-            <% row.each do |key| %>
-              <% data_key = case key
-                            when 'Space' then ' '
-                            when 'Backspace' then 'Backspace'
-                            when 'Enter' then 'Enter'
-                            when 'Shift' then 'Shift'
-                            when 'Tab' then 'Tab'
-                            when 'Caps' then 'CapsLock'
-                            else key.downcase
-                            end %>
-              <span class="typing-key typing-key--<%= key.downcase.gsub(/[^a-z0-9]+/, '-') %>"
-                    data-typing-fingerprint-target="key"
-                    data-key="<%= data_key %>"
-                    <% if key == 'Backspace' %>aria-label="Backspace"<% end %>>
-                <% if key == 'Backspace' %>
-                  <svg class="typing-key__backspace-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                    <path d="M3.5 12l5.2-6.2h11.8v12.4H8.7L3.5 12z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
-                    <path d="M11 9l6 6M17 9l-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-                  </svg>
-                <% else %>
-                  <%= key %>
-                <% end %>
-              </span>
-            <% end %>
+        <p class="typing-lock-decoy"
+           data-typing-fingerprint-target="decoy"
+           role="status"
+           aria-live="polite"
+           hidden>This is your score</p>
+
+        <div class="typing-lock-progress" aria-hidden="true">
+          <span data-typing-fingerprint-target="progressBar"></span>
+        </div>
+
+        <div class="typing-keyboard" aria-hidden="true">
+          <% keyboard_rows.each do |row| %>
+            <div class="typing-keyboard-row">
+              <% row.each do |key| %>
+                <% data_key = case key
+                              when 'Space' then ' '
+                              when 'Backspace' then 'Backspace'
+                              when 'Enter' then 'Enter'
+                              when 'Shift' then 'Shift'
+                              when 'Tab' then 'Tab'
+                              when 'Caps' then 'CapsLock'
+                              else key.downcase
+                              end %>
+                <span class="typing-key typing-key--<%= key.downcase.gsub(/[^a-z0-9]+/, '-') %>"
+                      data-typing-fingerprint-target="key"
+                      data-key="<%= data_key %>"
+                      <% if key == 'Backspace' %>aria-label="Backspace"<% end %>>
+                  <% if key == 'Backspace' %>
+                    <svg class="typing-key__backspace-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                      <path d="M3.5 12l5.2-6.2h11.8v12.4H8.7L3.5 12z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+                      <path d="M11 9l6 6M17 9l-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                    </svg>
+                  <% else %>
+                    <%= key %>
+                  <% end %>
+                </span>
+              <% end %>
+            </div>
+          <% end %>
+        </div>
+
+        <div class="typing-lock-metrics">
+          <div>
+            <strong data-typing-fingerprint-target="time">00:00</strong>
+            <span>Time</span>
           </div>
-        <% end %>
-      </div>
-
-      <div class="typing-lock-metrics">
-        <div>
-          <strong data-typing-fingerprint-target="time">00:00</strong>
-          <span>Time</span>
+          <div>
+            <strong data-typing-fingerprint-target="accuracy">100%</strong>
+            <span>Accuracy</span>
+          </div>
+          <div>
+            <strong data-typing-fingerprint-target="rhythm">0</strong>
+            <span>Samples</span>
+          </div>
+          <div>
+            <strong data-typing-fingerprint-target="lastKey">-</strong>
+            <span>Last key</span>
+          </div>
         </div>
-        <div>
-          <strong data-typing-fingerprint-target="accuracy">100%</strong>
-          <span>Accuracy</span>
-        </div>
-        <div>
-          <strong data-typing-fingerprint-target="rhythm">0</strong>
-          <span>Samples</span>
-        </div>
-        <div>
-          <strong data-typing-fingerprint-target="lastKey">-</strong>
-          <span>Last key</span>
-        </div>
-      </div>
-
+      <% end %>
     <% end %>
 
     <noscript>

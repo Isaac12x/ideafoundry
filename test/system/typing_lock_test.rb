@@ -18,9 +18,22 @@ class TypingLockTest < ApplicationSystemTestCase
     unlock_text.each_char { |char| input.send_keys(char) }
 
     assert_text "This is your score", wait: 5
-    assert_selector ".typing-lock-form"
+    assert_selector ".typing-lock-score__value"
+    assert_no_selector ".typing-lock-form"
     assert_no_text "Fingerprint not matched"
     assert_current_path %r{/typing-lock}
+  end
+
+  test "unlock prompt keeps words together for wrapping" do
+    user = users(:one)
+    user.update!(settings: { "typing_lock" => { "enabled" => true } })
+    unlock_text = TypingTextLibrary.unlock_text("spark-gap")
+    user.store_typing_fingerprint!(fingerprint_for(unlock_text, hold: 91, flight: 41))
+
+    visit typing_lock_path(challenge_id: "spark-gap", return_to: ideas_path)
+
+    assert_selector ".typing-lock-prompt-word", minimum: 2
+    assert_selector ".typing-lock-prompt-word", text: "useful"
   end
 
   private
