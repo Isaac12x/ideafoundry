@@ -7,7 +7,7 @@ class Idea < ApplicationRecord
   has_many :topologies, through: :idea_topologies
   has_many :idea_lists, dependent: :destroy
   has_many :lists, through: :idea_lists
-  has_many :versions, dependent: :destroy
+  has_many :versions, -> { order(created_at: :desc) }, dependent: :destroy
   has_many :idea_agent_tokens, dependent: :destroy
   has_many :todo_items, dependent: :destroy
   has_many :notes, dependent: :destroy
@@ -46,6 +46,9 @@ class Idea < ApplicationRecord
   # Callbacks
   before_validation :set_defaults, on: :create
   before_save :calculate_score
+  before_destroy :destroy_versions_in_dependency_order
+  around_destroy :suppress_history_tracking_during_destroy
+  after_update_commit :record_automatic_history_version, if: :automatic_history_version_needed?
   after_commit :broadcast_graph_updated, on: :update, if: :title_previously_changed?
 
   # Scopes
@@ -217,7 +220,25 @@ class Idea < ApplicationRecord
 
   # Version control methods
   def create_version(commit_message)
-    versions.create_from_idea(self, commit_message)
+    record_history!(commit_message)
+  end
+
+  def record_history!(commit_message = "Updated idea", parent_version: nil, force: false, replace_message: true, automatic: false)
+    return if destroyed? || !persisted?
+
+    Version.create_from_idea(self, commit_message, parent_version, force: force, replace_message: replace_message, automatic: automatic)
+  end
+
+  def mark_reusable_history_version!(version)
+    @reusable_history_version_id = version&.id
+  end
+
+  def reusable_history_version?(version)
+    @reusable_history_version_id.present? && version&.id == @reusable_history_version_id
+  end
+
+  def clear_reusable_history_version!
+    @reusable_history_version_id = nil
   end
 
   def latest_version
@@ -319,7 +340,9 @@ class Idea < ApplicationRecord
       digest.update(attachment.download)
     end
 
-    update_column(:integrity_hash, digest.hexdigest)
+    new_hash = digest.hexdigest
+    update_column(:integrity_hash, new_hash)
+    record_history!("Updated integrity hash", automatic: true) if integrity_hash == new_hash
   end
 
   def verify_integrity!
@@ -406,6 +429,64 @@ class Idea < ApplicationRecord
   end
 
   private
+
+  def self.without_history_tracking
+    previous = Thread.current[:idea_history_tracking_suppressed]
+    Thread.current[:idea_history_tracking_suppressed] = true
+    yield
+  ensure
+    Thread.current[:idea_history_tracking_suppressed] = previous
+  end
+
+  def self.history_tracking_suppressed?
+    Thread.current[:idea_history_tracking_suppressed]
+  end
+
+  def automatic_history_version_needed?
+    return false if draft?
+    return false if self.class.history_tracking_suppressed?
+
+    history_relevant_previous_changes.any?
+  end
+
+  def record_automatic_history_version
+    record_history!(automatic_history_commit_message, replace_message: false, automatic: true)
+  end
+
+  def history_relevant_previous_changes
+    previous_changes.except("updated_at")
+  end
+
+  def automatic_history_commit_message
+    changes = history_relevant_previous_changes
+    scoring_fields = %w[trl difficulty opportunity timing]
+    changed_scores = scoring_fields.select { |field| changes.key?(field) }
+
+    if changes.key?("state")
+      "State changed to #{state.humanize}"
+    elsif changes.key?("napkin_calculations")
+      "Updated calculations"
+    elsif changes.key?("metadata")
+      "Updated metadata"
+    elsif changed_scores.any? && (changes.keys - scoring_fields - %w[computed_score]).empty?
+      deltas = changed_scores.map { |field| "#{field}: #{changes[field][0]} -> #{changes[field][1]}" }
+      "Score update (#{deltas.join(', ')})"
+    elsif changes.key?("title")
+      "Updated title and details"
+    else
+      "Updated idea"
+    end
+  end
+
+  def suppress_history_tracking_during_destroy
+    self.class.without_history_tracking { yield }
+  end
+
+  def destroy_versions_in_dependency_order
+    versions.reorder(created_at: :desc).to_a.each do |version|
+      version.destroy unless version.destroyed?
+    end
+  end
 
   def broadcast_graph_updated
     ActionCable.server.broadcast("topology_graph:#{user_id}", {

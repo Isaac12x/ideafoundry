@@ -1,4 +1,6 @@
 class IdeaList < ApplicationRecord
+  include RecordsIdeaHistory
+
   belongs_to :idea
   belongs_to :list
 
@@ -9,6 +11,7 @@ class IdeaList < ApplicationRecord
 
   # Callbacks
   before_validation :set_position, on: :create
+  records_idea_history as: "list membership"
 
   # Scopes
   scope :ordered, -> { order(:position) }

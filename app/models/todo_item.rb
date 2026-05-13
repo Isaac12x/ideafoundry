@@ -1,4 +1,6 @@
 class TodoItem < ApplicationRecord
+  include RecordsIdeaHistory
+
   belongs_to :idea
 
   validates :title, presence: true, length: { maximum: 255 }
@@ -7,6 +9,7 @@ class TodoItem < ApplicationRecord
   scope :done, -> { where(completed: true).order(completed_at: :desc) }
 
   before_validation :set_position, on: :create
+  records_idea_history as: "todo"
 
   def mark_completed!
     update!(completed: true, completed_at: Time.current)
