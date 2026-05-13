@@ -8,6 +8,7 @@ class Idea < ApplicationRecord
   has_many :idea_lists, dependent: :destroy
   has_many :lists, through: :idea_lists
   has_many :versions, dependent: :destroy
+  has_many :idea_agent_tokens, dependent: :destroy
   has_many :todo_items, dependent: :destroy
   has_many :notes, dependent: :destroy
   has_many :idea_entries, dependent: :destroy
