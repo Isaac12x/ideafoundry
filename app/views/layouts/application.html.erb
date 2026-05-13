@@ -22,6 +22,7 @@
       @user.typing_fingerprint_configured? &&
       !body_class.include?("typing-lock-page")
     typing_lock_shortcut = "Ctrl/Cmd+Shift+L"
+    display_quote = @user&.display_quote.to_s.strip
   %>
   <body class="<%= body_class %>"
         <% if typing_activity_enabled %>
@@ -94,6 +95,12 @@
         <% end %>
       </nav>
     </header>
+
+    <% if display_quote.present? %>
+      <div class="app-quote-banner">
+        <p class="app-quote-banner__text"><%= display_quote %></p>
+      </div>
+    <% end %>
 
     <main class="app-main">
       <% if notice %>

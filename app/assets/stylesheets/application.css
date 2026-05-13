@@ -200,6 +200,30 @@ a:hover { color: var(--accent-hover); }
   margin-left: 4px;
 }
 
+.app-quote-banner {
+  position: relative;
+  z-index: 2;
+  padding: 0.75rem 2rem;
+  background: color-mix(in srgb, var(--bg-surface) 88%, transparent);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.app-quote-banner__text {
+  max-width: 1400px;
+  margin: 0 auto;
+  color: var(--text-secondary);
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 1.1rem;
+  line-height: 1.45;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+body.typing-lock-page .app-quote-banner {
+  display: none;
+}
+
 /* ---- Main Content ---- */
 .app-main {
   position: relative;
@@ -1560,6 +1584,14 @@ select.form-control {
   }
 
   .header-nav { flex-wrap: wrap; justify-content: center; }
+
+  .app-quote-banner {
+    padding: 0.75rem 1rem;
+  }
+
+  .app-quote-banner__text {
+    font-size: 1rem;
+  }
 
   .app-main { padding: 1rem; }
 

@@ -104,6 +104,10 @@ class User < ApplicationRecord
   ALLOWED_LIST_DEFAULT_VIEWS = %w[kanban named].freeze
   ALLOWED_LIST_SETTING_KEYS = DEFAULT_LIST_SETTINGS.keys.freeze
 
+  DEFAULT_DISPLAY_QUOTE_SETTINGS = {
+    'text' => ''
+  }.freeze
+
   ALLOWED_TOPOLOGY_OVERRIDE_KEYS = %w[
     dag_mode show_ideas node_size_topology node_size_idea
     bloom_strength fog_density auto_fit_on_load click_behavior
@@ -375,6 +379,27 @@ class User < ApplicationRecord
     cleaned['default_view'] = DEFAULT_LIST_SETTINGS['default_view'] unless ALLOWED_LIST_DEFAULT_VIEWS.include?(cleaned['default_view'])
     self.settings ||= {}
     self.settings['list_settings'] = cleaned
+    save
+  end
+
+  def display_quote_settings
+    DEFAULT_DISPLAY_QUOTE_SETTINGS.merge(settings&.dig('display_quote') || {})
+  end
+
+  def display_quote
+    display_quote_settings['text'].to_s
+  end
+
+  def update_display_quote(params)
+    quote = params.to_h.fetch('quote', '').to_s.strip
+    self.settings ||= {}
+
+    if quote.present?
+      self.settings['display_quote'] = { 'text' => quote }
+    else
+      self.settings.delete('display_quote')
+    end
+
     save
   end
 

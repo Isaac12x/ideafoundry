@@ -2,6 +2,17 @@ class SettingsController < ApplicationController
   before_action :set_user
 
   def index
+    @display_quote = @user.display_quote
+  end
+
+  def update_display
+    if @user.update_display_quote(display_settings_params)
+      redirect_to settings_path, notice: 'Display quote updated.'
+    else
+      @display_quote = @user.display_quote
+      flash.now[:alert] = 'Failed to update display quote.'
+      render :index, status: :unprocessable_content
+    end
   end
 
   def scoring
@@ -310,6 +321,10 @@ class SettingsController < ApplicationController
 
   def email_params
     params.require(:email_settings).permit(:recipients)
+  end
+
+  def display_settings_params
+    params.require(:display_settings).permit(:quote)
   end
 
   def typing_lock_params
