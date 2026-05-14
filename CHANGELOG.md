@@ -14,11 +14,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Backlog markdown checklist subitems with per-item toggles and remaining/total counts.
 - Named lists alongside Kanban columns, including a Lists default-view setting.
 - Scoped idea document tokens for agents, LLMs, and harnesses to update an idea's working document with history-tracked API changes.
+- Downloadable per-idea agent skill markdown for sharing idea document API instructions with agents.
 - Comprehensive idea history snapshots and restore support for calculations, drawings, enrichment metadata, todos, notes, tools, competitors, media, scores, and list/topology memberships.
 
 ### Changed
 
 - Kanban idea cards no longer show tools or competitor summaries.
+- Idea work tokens are now gated by a settings toggle and the idea page shows only one compact token control.
 - Backlog is now disabled by default and requires `BACKLOG_ENABLED=true` when building or running the app.
 
 ### Fixed

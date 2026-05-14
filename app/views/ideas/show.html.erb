@@ -184,7 +184,7 @@
     </div>
   <% end %>
 
-  <%= render "agent_access", idea: @idea %>
+  <%= render "agent_access", idea: @idea if @user.idea_work_tokens_enabled? %>
 
   <!-- Main Content — Tabbed -->
   <div class="idea-main-content">

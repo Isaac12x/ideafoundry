@@ -6,6 +6,7 @@ class Api::V1::IdeaDocumentsControllerTest < ActionDispatch::IntegrationTest
     @idea.description = "Initial spec"
     @idea.save!
     @version = @idea.create_version("Initial version")
+    @idea.user.update_idea_work_token_settings("enabled" => "1")
     @token = IdeaAgentToken.generate(idea: @idea, name: "Spec Bot")
     @headers = { "Authorization" => "Bearer #{@token.raw_token}" }
   end
@@ -64,5 +65,13 @@ class Api::V1::IdeaDocumentsControllerTest < ActionDispatch::IntegrationTest
     get api_v1_idea_document_url(other_idea), headers: @headers
 
     assert_response :not_found
+  end
+
+  test "does not allow an idea token when idea work tokens are disabled" do
+    @idea.user.update_idea_work_token_settings("enabled" => "0")
+
+    get api_v1_idea_document_url(@idea), headers: @headers
+
+    assert_response :unauthorized
   end
 end
