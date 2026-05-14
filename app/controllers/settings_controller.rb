@@ -84,6 +84,20 @@ class SettingsController < ApplicationController
     @authenticator_app_qr_svg = AuthenticatorApp.qr_svg(@user.authenticator_app_provisioning_uri) if @user.authenticator_app_configured?
   end
 
+  def idea_work_tokens
+    @idea_work_token_settings = @user.idea_work_token_settings
+  end
+
+  def update_idea_work_tokens
+    if @user.update_idea_work_token_settings(idea_work_token_params)
+      redirect_to settings_idea_work_tokens_path, notice: "Idea work token settings updated."
+    else
+      @idea_work_token_settings = @user.idea_work_token_settings
+      flash.now[:alert] = "Failed to update idea work token settings."
+      render :idea_work_tokens, status: :unprocessable_content
+    end
+  end
+
   def update_security
     typing_lock_updated = @user.update_typing_lock_settings(typing_lock_params)
     authenticator_app_updated = @user.update_authenticator_app_settings(authenticator_app_params)
@@ -333,6 +347,10 @@ class SettingsController < ApplicationController
 
   def authenticator_app_params
     params.fetch(:authenticator_app, {}).permit(:enabled)
+  end
+
+  def idea_work_token_params
+    params.fetch(:idea_work_tokens, {}).permit(:enabled)
   end
 
   def valid_scoring_weights?(weights)

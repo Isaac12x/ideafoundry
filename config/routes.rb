@@ -118,6 +118,8 @@ Rails.application.routes.draw do
   patch 'settings/notifications', to: 'settings#update_notifications'
   get 'settings/security', to: 'settings#security'
   patch 'settings/security', to: 'settings#update_security'
+  get 'settings/idea-work-tokens', to: 'settings#idea_work_tokens', as: :settings_idea_work_tokens
+  patch 'settings/idea-work-tokens', to: 'settings#update_idea_work_tokens'
   get 'settings/topologies', to: 'settings#topologies'
   patch 'settings/topologies', to: 'settings#update_topologies'
   get 'settings/lists', to: 'settings#lists'
@@ -137,6 +139,8 @@ Rails.application.routes.draw do
   get 'settings/api_keys', to: 'settings#api_keys'
   post 'settings/api_keys', to: 'settings#create_api_key'
   delete 'settings/api_keys/:id', to: 'settings#destroy_api_key', as: :settings_api_key_destroy
+
+  get 'ideas/:idea_id/agent-skill.md', to: 'idea_agent_tokens#skill', as: :idea_agent_skill
 
   # Typing fingerprint lock
   get 'typing-lock', to: 'typing_locks#new', as: :typing_lock

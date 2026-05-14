@@ -23,8 +23,10 @@ class IdeaAgentToken < ApplicationRecord
   def self.authenticate(raw_token)
     return nil if raw_token.blank?
 
-    active.find_by(token_digest: Digest::SHA256.hexdigest(raw_token)).tap do |token|
-      token&.update_column(:last_used_at, Time.current)
-    end
+    token = active.includes(idea: :user).find_by(token_digest: Digest::SHA256.hexdigest(raw_token))
+    return nil unless token&.idea&.user&.idea_work_tokens_enabled?
+
+    token.update_column(:last_used_at, Time.current)
+    token
   end
 end

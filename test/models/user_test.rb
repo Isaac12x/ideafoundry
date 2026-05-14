@@ -59,6 +59,25 @@ class UserTest < ActiveSupport::TestCase
     assert_nil user.authenticator_app_secret
   end
 
+  test "idea work tokens default to disabled" do
+    user = User.new(email: "fresh-agent@example.com", name: "Fresh Agent", settings: nil)
+
+    refute user.idea_work_tokens_enabled?
+  end
+
+  test "idea work token settings can be toggled" do
+    user = users(:one)
+
+    assert user.update_idea_work_token_settings("enabled" => "1", "hacker" => "bad")
+
+    assert user.idea_work_tokens_enabled?
+    assert_nil user.reload.settings.dig("idea_work_tokens", "hacker")
+
+    assert user.update_idea_work_token_settings("enabled" => "0")
+
+    refute user.reload.idea_work_tokens_enabled?
+  end
+
   def setup
     @user = User.new(email: "test@example.com", name: "Test User")
   end

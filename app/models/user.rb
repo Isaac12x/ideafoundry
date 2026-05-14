@@ -46,6 +46,9 @@ class User < ApplicationRecord
   DEFAULT_AUTHENTICATOR_APP_SETTINGS = {
     'enabled' => false
   }.freeze
+  DEFAULT_IDEA_WORK_TOKEN_SETTINGS = {
+    'enabled' => false
+  }.freeze
   MIN_TYPING_LOCK_SECONDS = 1.minute.to_i
   MAX_TYPING_LOCK_SECONDS = 24.hours.to_i
 
@@ -353,6 +356,21 @@ class User < ApplicationRecord
       self.settings['authenticator_app'] = { 'enabled' => false }
     end
 
+    save
+  end
+
+  def idea_work_token_settings
+    DEFAULT_IDEA_WORK_TOKEN_SETTINGS.merge(settings&.dig('idea_work_tokens') || {})
+  end
+
+  def idea_work_tokens_enabled?
+    ActiveModel::Type::Boolean.new.cast(idea_work_token_settings['enabled']) == true
+  end
+
+  def update_idea_work_token_settings(params)
+    enabled = ActiveModel::Type::Boolean.new.cast(params.fetch('enabled', false)) == true
+    self.settings ||= {}
+    self.settings['idea_work_tokens'] = { 'enabled' => enabled }
     save
   end
 

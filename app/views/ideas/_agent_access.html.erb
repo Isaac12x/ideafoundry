@@ -1,13 +1,15 @@
+<% token = idea.idea_agent_tokens.order(created_at: :desc).first %>
+
 <div class="idea-agent-access">
   <div class="idea-agent-access__header">
-    <div>
-      <h3>Agent Access</h3>
-      <p>Scoped tokens can read and update this idea's document through the API.</p>
+    <h3>Agent Access</h3>
+    <div class="idea-agent-access__actions">
+      <%= link_to "Download Skill", idea_agent_skill_path(idea), class: "btn btn-secondary btn-sm" %>
+      <%= button_to token.present? ? "Rotate Token" : "Create Token",
+          idea_agent_tokens_path(idea),
+          method: :post,
+          class: "btn btn-primary btn-sm" %>
     </div>
-    <%= form_with url: idea_agent_tokens_path(idea), scope: :idea_agent_token, method: :post, class: "idea-agent-access__form" do |form| %>
-      <%= form.text_field :name, class: "form-control", placeholder: "Agent name", required: true %>
-      <%= form.submit "Create Token", class: "btn btn-primary btn-sm" %>
-    <% end %>
   </div>
 
   <% if flash[:idea_agent_token].present? && flash[:idea_agent_token_idea_id].to_i == idea.id %>
@@ -17,45 +19,24 @@
     </div>
   <% end %>
 
-  <% tokens = idea.idea_agent_tokens.order(created_at: :desc) %>
-  <% if tokens.any? %>
-    <div class="idea-agent-access__list">
-      <% tokens.each do |token| %>
-        <div class="idea-agent-access__row">
-          <div>
-            <span class="idea-agent-access__name"><%= token.name %></span>
-            <span class="idea-agent-access__meta">
-              Created <%= time_ago_in_words(token.created_at) %> ago
-              <% if token.last_used_at.present? %>
-                &middot; Last used <%= time_ago_in_words(token.last_used_at) %> ago
-              <% else %>
-                &middot; Never used
-              <% end %>
-              <% unless token.active? %>
-                &middot; Inactive
-              <% end %>
-            </span>
-          </div>
-          <%= button_to "Revoke",
-              idea_agent_token_path(idea, token),
-              method: :delete,
-              class: "btn btn-sm btn-danger",
-              form: { data: { turbo_confirm: "Revoke this token? Agents using it will lose document access." } } %>
-        </div>
-      <% end %>
-    </div>
-  <% else %>
-    <div class="empty-state-small idea-agent-access__empty">
-      <p>No agent tokens yet.</p>
+  <% if token.present? %>
+    <div class="idea-agent-access__row">
+      <div>
+        <span class="idea-agent-access__name">Token</span>
+        <span class="idea-agent-access__meta">
+          Created <%= time_ago_in_words(token.created_at) %> ago
+          <% if token.last_used_at.present? %>
+            &middot; Last used <%= time_ago_in_words(token.last_used_at) %> ago
+          <% else %>
+            &middot; Never used
+          <% end %>
+        </span>
+      </div>
+      <%= button_to "Revoke",
+          idea_agent_token_path(idea, token),
+          method: :delete,
+          class: "btn btn-sm btn-danger",
+          form: { data: { turbo_confirm: "Revoke this token? Agents using it will lose document access." } } %>
     </div>
   <% end %>
-
-  <div class="idea-agent-access__usage">
-    <pre><code>curl <%= api_v1_idea_document_url(idea) %> \
-  -H "Authorization: Bearer TOKEN"</code></pre>
-    <pre><code>curl -X PATCH <%= api_v1_idea_document_url(idea) %> \
-  -H "Authorization: Bearer TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"description":"Updated spec","commit_message":"Revise spec"}'</code></pre>
-  </div>
 </div>

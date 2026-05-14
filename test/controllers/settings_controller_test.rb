@@ -76,6 +76,24 @@ class SettingsControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
   end
 
+  test "GET settings/idea-work-tokens renders page" do
+    get "/settings/idea-work-tokens"
+
+    assert_response :success
+    assert_select "input[name=?]", "idea_work_tokens[enabled]"
+  end
+
+  test "PATCH settings/idea-work-tokens updates token access setting" do
+    patch "/settings/idea-work-tokens", params: {
+      idea_work_tokens: {
+        enabled: "1"
+      }
+    }
+
+    assert_redirected_to "/settings/idea-work-tokens"
+    assert @user.reload.idea_work_tokens_enabled?
+  end
+
   test "GET settings/lists renders page" do
     get settings_lists_path
     assert_response :success
