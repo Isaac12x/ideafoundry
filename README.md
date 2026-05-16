@@ -26,7 +26,7 @@ A personal idea management system for entrepreneurs. Capture rough ideas, evolve
 
 **Digest Emails** — Configurable daily and weekly digests summarizing idea activity.
 
-**Backlog** — Built-in task board for tracking build items with position ordering and completion toggling.
+**Backlog (optional)** — Built-in task board for tracking build items with position ordering, completion toggling, and markdown checklist subitems. Disabled by default; set `BACKLOG_ENABLED=true` when building or running the app to enable it.
 
 ## Tech Stack
 
@@ -59,6 +59,7 @@ Logs: `/tmp/idea-app.out` and `/tmp/idea-app.err`
 
 ```bash
 bin/dev              # starts Rails + esbuild watcher (dev mode)
+BACKLOG_ENABLED=true bin/dev  # starts dev mode with the optional backlog enabled
 ```
 
 ### Already cloned?

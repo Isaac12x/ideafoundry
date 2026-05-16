@@ -1,4 +1,6 @@
 class IdeaEntry < ApplicationRecord
+  include RecordsIdeaHistory
+
   belongs_to :idea
 
   enum :kind, { tool: 0, competitor: 1, potential_competitor: 2 }
@@ -21,6 +23,8 @@ class IdeaEntry < ApplicationRecord
     "competitor" => "Competitor",
     "potential_competitor" => "Potential Competitor"
   }.freeze
+
+  records_idea_history as: "entry"
 
   def self.label_for(kind)
     KIND_LABELS[kind.to_s] || kind.to_s.humanize

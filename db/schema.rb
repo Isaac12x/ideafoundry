@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_05_02_100758) do
+ActiveRecord::Schema[8.0].define(version: 2026_05_13_090000) do
   create_table "action_mailbox_inbound_emails", force: :cascade do |t|
     t.integer "status", default: 0, null: false
     t.string "message_id", null: false
@@ -121,6 +121,20 @@ ActiveRecord::Schema[8.0].define(version: 2026_05_02_100758) do
     t.datetime "updated_at", null: false
   end
 
+  create_table "idea_agent_tokens", force: :cascade do |t|
+    t.integer "idea_id", null: false
+    t.string "token_digest", null: false
+    t.string "name", null: false
+    t.datetime "last_used_at"
+    t.datetime "expires_at"
+    t.boolean "active", default: true, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["idea_id", "active"], name: "index_idea_agent_tokens_on_idea_id_and_active"
+    t.index ["idea_id"], name: "index_idea_agent_tokens_on_idea_id"
+    t.index ["token_digest"], name: "index_idea_agent_tokens_on_token_digest", unique: true
+  end
+
   create_table "idea_entries", force: :cascade do |t|
     t.integer "idea_id", null: false
     t.integer "kind", null: false
@@ -141,7 +155,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_05_02_100758) do
     t.integer "position"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["idea_id"], name: "index_idea_lists_on_idea_id", unique: true
+    t.index ["idea_id", "list_id"], name: "index_idea_lists_on_idea_id_and_list_id", unique: true
     t.index ["list_id", "position"], name: "index_idea_lists_on_list_id_and_position"
     t.index ["list_id"], name: "index_idea_lists_on_list_id"
   end
@@ -195,7 +209,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_05_02_100758) do
     t.integer "position"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["user_id", "position"], name: "index_lists_on_user_id_and_position", unique: true
+    t.string "kind", default: "kanban", null: false
+    t.index ["user_id", "kind", "position"], name: "index_lists_on_user_id_and_kind_and_position", unique: true
     t.index ["user_id"], name: "index_lists_on_user_id"
   end
 
@@ -272,7 +287,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_05_02_100758) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["parent_id"], name: "index_topologies_on_parent_id"
-    t.index ["user_id", "name"], name: "index_topologies_on_user_id_and_name", unique: true
+    t.index ["user_id", "parent_id", "name"], name: "index_topologies_on_user_id_and_parent_id_and_name", unique: true
     t.index ["user_id", "parent_id"], name: "index_topologies_on_user_id_and_parent_id"
     t.index ["user_id"], name: "index_topologies_on_user_id"
   end
@@ -305,6 +320,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_05_02_100758) do
   add_foreign_key "build_items", "users"
   add_foreign_key "drawings", "ideas"
   add_foreign_key "export_jobs", "users"
+  add_foreign_key "idea_agent_tokens", "ideas"
   add_foreign_key "idea_entries", "ideas"
   add_foreign_key "idea_lists", "ideas"
   add_foreign_key "idea_lists", "lists"

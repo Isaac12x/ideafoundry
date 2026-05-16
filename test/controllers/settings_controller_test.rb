@@ -10,6 +10,38 @@ class SettingsControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
   end
 
+  test "GET settings renders display quote field with current quote" do
+    @user.update!(settings: (@user.settings || {}).merge("display_quote" => { "text" => "Focus on the next useful thing." }))
+
+    get settings_path
+
+    assert_response :success
+    assert_select "textarea[name=?]", "display_settings[quote]" do |elements|
+      assert_equal "Focus on the next useful thing.", elements.first.text
+    end
+  end
+
+  test "GET settings renders configured quote below navigation" do
+    @user.update!(settings: (@user.settings || {}).merge("display_quote" => { "text" => "Focus on the next useful thing." }))
+
+    get settings_path
+
+    assert_response :success
+    assert_select "body > header.app-header + div.app-quote-banner", text: "Focus on the next useful thing."
+  end
+
+  test "PATCH settings updates display quote" do
+    patch settings_path, params: {
+      display_settings: {
+        quote: "  Make the smallest thing that works.  "
+      }
+    }
+
+    assert_redirected_to settings_path
+    @user.reload
+    assert_equal "Make the smallest thing that works.", @user.display_quote
+  end
+
   test "PATCH settings/topologies updates topology settings" do
     patch settings_topologies_path, params: {
       topology_settings: {
@@ -37,6 +69,46 @@ class SettingsControllerTest < ActionDispatch::IntegrationTest
   test "GET settings/email renders page" do
     get settings_email_path
     assert_response :success
+  end
+
+  test "GET settings/security renders page" do
+    get settings_security_path
+    assert_response :success
+  end
+
+  test "GET settings/idea-work-tokens renders page" do
+    get "/settings/idea-work-tokens"
+
+    assert_response :success
+    assert_select "input[name=?]", "idea_work_tokens[enabled]"
+  end
+
+  test "PATCH settings/idea-work-tokens updates token access setting" do
+    patch "/settings/idea-work-tokens", params: {
+      idea_work_tokens: {
+        enabled: "1"
+      }
+    }
+
+    assert_redirected_to "/settings/idea-work-tokens"
+    assert @user.reload.idea_work_tokens_enabled?
+  end
+
+  test "GET settings/lists renders page" do
+    get settings_lists_path
+    assert_response :success
+  end
+
+  test "PATCH settings/lists updates list settings" do
+    patch settings_lists_path, params: {
+      list_settings: {
+        default_view: "named"
+      }
+    }
+
+    assert_redirected_to settings_lists_path
+    @user.reload
+    assert_equal "named", @user.list_settings["default_view"]
   end
 
   test "PATCH settings/notifications saves recipients and presets" do

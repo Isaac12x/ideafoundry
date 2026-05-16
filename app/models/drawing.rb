@@ -1,4 +1,6 @@
 class Drawing < ApplicationRecord
+  include RecordsIdeaHistory
+
   belongs_to :idea
 
   has_one_attached :rendered_png
@@ -12,6 +14,8 @@ class Drawing < ApplicationRecord
   validate :only_one_hero_per_idea
 
   scope :ordered, -> { order(Arel.sql("COALESCE(position, 999999)"), updated_at: :desc) }
+
+  records_idea_history as: "drawing"
 
   def png_url
     return nil unless rendered_png.attached?

@@ -1,8 +1,12 @@
 class IdeaTopology < ApplicationRecord
+  include RecordsIdeaHistory
+
   belongs_to :idea
   belongs_to :topology
 
   validates :topology_id, uniqueness: { scope: :idea_id }
+
+  records_idea_history as: "topology"
 
   after_commit :broadcast_link_added, on: :create
   before_destroy :cache_broadcast_data

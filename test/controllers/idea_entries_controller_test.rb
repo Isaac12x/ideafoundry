@@ -3,7 +3,7 @@ require "test_helper"
 class IdeaEntriesControllerTest < ActionDispatch::IntegrationTest
   def setup
     @user = User.first || User.create!(email: "test@example.com", name: "Test")
-    @user.update_idea_tab_settings({ "tool" => "1", "competitor" => "1" })
+    @user.update_idea_tab_settings({ "tool" => "1", "competitor" => "1", "potential_competitor" => "1" })
     @idea = @user.ideas.create!(title: "Structured Entry Test")
   end
 
@@ -52,15 +52,17 @@ class IdeaEntriesControllerTest < ActionDispatch::IntegrationTest
     assert_select "form[action='#{idea_idea_entries_path(@idea)}']"
   end
 
-  test "lists index exposes quick add controls for enabled structured tabs" do
+  test "lists index hides structured entry controls on kanban cards" do
     list = @user.lists.create!(name: "Structured Entries")
     @idea.idea_lists.create!(list: list, position: 1)
 
     get lists_path
 
     assert_response :success
-    assert_select "#idea_entry_summary_#{@idea.id}_tool"
-    assert_select "form[action='#{idea_idea_entries_path(@idea)}']"
+    assert_select "#idea_entry_summary_#{@idea.id}_tool", false
+    assert_select "#idea_entry_summary_#{@idea.id}_competitor", false
+    assert_select "#idea_entry_summary_#{@idea.id}_potential_competitor", false
+    assert_select "form[action='#{idea_idea_entries_path(@idea)}']", false
   end
 
   test "topology idea listings expose quick add controls for enabled structured tabs" do

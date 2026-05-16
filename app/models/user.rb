@@ -38,6 +38,20 @@ class User < ApplicationRecord
     'email_notification' => false
   }.freeze
 
+  DEFAULT_TYPING_LOCK_SETTINGS = {
+    'enabled' => false,
+    'lock_after_seconds' => 5.minutes.to_i
+  }.freeze
+  TYPING_LOCK_FAILED_UNLOCK_COOLDOWN = 5.minutes
+  DEFAULT_AUTHENTICATOR_APP_SETTINGS = {
+    'enabled' => false
+  }.freeze
+  DEFAULT_IDEA_WORK_TOKEN_SETTINGS = {
+    'enabled' => false
+  }.freeze
+  MIN_TYPING_LOCK_SECONDS = 1.minute.to_i
+  MAX_TYPING_LOCK_SECONDS = 24.hours.to_i
+
   ALLOWED_NOTIFICATION_TRIGGERS = %w[
     state_changed score_changed added_to_list created
     digest_daily digest_weekly webhook_triggered
@@ -86,6 +100,17 @@ class User < ApplicationRecord
   }.freeze
 
   ALLOWED_TOPOLOGY_SETTING_KEYS = DEFAULT_TOPOLOGY_SETTINGS.keys.freeze
+
+  DEFAULT_LIST_SETTINGS = {
+    'default_view' => 'kanban'
+  }.freeze
+
+  ALLOWED_LIST_DEFAULT_VIEWS = %w[kanban named].freeze
+  ALLOWED_LIST_SETTING_KEYS = DEFAULT_LIST_SETTINGS.keys.freeze
+
+  DEFAULT_DISPLAY_QUOTE_SETTINGS = {
+    'text' => ''
+  }.freeze
 
   ALLOWED_TOPOLOGY_OVERRIDE_KEYS = %w[
     dag_mode show_ideas node_size_topology node_size_idea
@@ -194,6 +219,161 @@ class User < ApplicationRecord
     save
   end
 
+  def typing_lock_settings
+    DEFAULT_TYPING_LOCK_SETTINGS.merge(settings&.dig('typing_lock') || {})
+  end
+
+  def typing_lock_enabled?
+    ActiveModel::Type::Boolean.new.cast(typing_lock_settings['enabled']) == true
+  end
+
+  def typing_lock_timeout_seconds
+    raw_seconds = typing_lock_settings['lock_after_seconds']
+    raw_seconds = typing_lock_settings['lock_after_minutes'].to_f.minutes.to_i if raw_seconds.blank?
+    raw_seconds.to_i.clamp(MIN_TYPING_LOCK_SECONDS, MAX_TYPING_LOCK_SECONDS)
+  end
+
+  def typing_lock_timeout_minutes
+    typing_lock_timeout_seconds / 60
+  end
+
+  def typing_fingerprint
+    typing_lock_settings['fingerprint']
+  end
+
+  def typing_fingerprint_configured?
+    typing_fingerprint.present?
+  end
+
+  def active_typing_lock_failed_unlock
+    failed_unlock = typing_lock_failed_unlock
+    return unless failed_unlock.present?
+
+    cooldown_until = typing_lock_failed_unlock_cooldown_until(failed_unlock)
+    return unless cooldown_until&.future?
+
+    failed_unlock
+  end
+
+  def typing_lock_failed_unlock
+    typing_lock_settings['last_failed_unlock']
+  end
+
+  def typing_lock_failed_unlock_cooldown_until(failed_unlock = typing_lock_failed_unlock)
+    Time.zone.parse(failed_unlock&.dig('cooldown_until').to_s)
+  rescue ArgumentError, TypeError
+    nil
+  end
+
+  def record_typing_lock_failed_unlock!(match:, challenge_id:)
+    failed_unlock = {
+      "score" => match.score.to_f,
+      "sample_count" => match.sample_count.to_i,
+      "compared_features" => match.compared_features.to_i,
+      "challenge_id" => challenge_id.to_s,
+      "created_at" => Time.current.iso8601,
+      "cooldown_until" => TYPING_LOCK_FAILED_UNLOCK_COOLDOWN.from_now.iso8601
+    }
+
+    self.settings ||= {}
+    self.settings['typing_lock'] ||= {}
+    self.settings['typing_lock']['last_failed_unlock'] = failed_unlock
+    save!
+
+    failed_unlock
+  end
+
+  def clear_typing_lock_failed_unlock!
+    return true unless settings&.dig('typing_lock', 'last_failed_unlock')
+
+    self.settings ||= {}
+    self.settings['typing_lock'] ||= {}
+    self.settings['typing_lock'].delete('last_failed_unlock')
+    save!
+  end
+
+  def update_typing_lock_settings(params)
+    self.settings ||= {}
+    self.settings['typing_lock'] ||= {}
+    lock_after_minutes = params['lock_after_minutes'].presence || typing_lock_timeout_minutes
+    lock_after_seconds = (lock_after_minutes.to_f * 60).round.clamp(MIN_TYPING_LOCK_SECONDS, MAX_TYPING_LOCK_SECONDS)
+
+    enabled = ActiveModel::Type::Boolean.new.cast(params.fetch('enabled', false)) == true
+    self.settings['typing_lock']['enabled'] = enabled
+    self.settings['typing_lock']['lock_after_seconds'] = lock_after_seconds
+    self.settings['typing_lock'].delete('last_failed_unlock') unless enabled
+    save
+  end
+
+  def store_typing_fingerprint!(fingerprint)
+    self.settings ||= {}
+    self.settings['typing_lock'] ||= {}
+    self.settings['typing_lock']['enabled'] = true
+    self.settings['typing_lock']['fingerprint'] = fingerprint
+    self.settings['typing_lock'].delete('last_failed_unlock')
+    save
+  end
+
+  def clear_typing_fingerprint!
+    self.settings ||= {}
+    self.settings['typing_lock'] ||= {}
+    self.settings['typing_lock'].delete('fingerprint')
+    self.settings['typing_lock'].delete('last_failed_unlock')
+    save
+  end
+
+  def authenticator_app_settings
+    DEFAULT_AUTHENTICATOR_APP_SETTINGS.merge(settings&.dig('authenticator_app') || {})
+  end
+
+  def authenticator_app_enabled?
+    ActiveModel::Type::Boolean.new.cast(authenticator_app_settings['enabled']) == true && authenticator_app_configured?
+  end
+
+  def authenticator_app_configured?
+    authenticator_app_secret.present?
+  end
+
+  def authenticator_app_secret
+    authenticator_app_settings['secret'].presence
+  end
+
+  def authenticator_app_provisioning_uri
+    return unless authenticator_app_secret
+
+    AuthenticatorApp.provisioning_uri(secret: authenticator_app_secret, account: email)
+  end
+
+  def update_authenticator_app_settings(params)
+    enabled = ActiveModel::Type::Boolean.new.cast(params.fetch('enabled', false)) == true
+    self.settings ||= {}
+    self.settings['authenticator_app'] ||= {}
+
+    if enabled
+      self.settings['authenticator_app']['enabled'] = true
+      self.settings['authenticator_app']['secret'] = authenticator_app_secret || AuthenticatorApp.generate_secret
+    else
+      self.settings['authenticator_app'] = { 'enabled' => false }
+    end
+
+    save
+  end
+
+  def idea_work_token_settings
+    DEFAULT_IDEA_WORK_TOKEN_SETTINGS.merge(settings&.dig('idea_work_tokens') || {})
+  end
+
+  def idea_work_tokens_enabled?
+    ActiveModel::Type::Boolean.new.cast(idea_work_token_settings['enabled']) == true
+  end
+
+  def update_idea_work_token_settings(params)
+    enabled = ActiveModel::Type::Boolean.new.cast(params.fetch('enabled', false)) == true
+    self.settings ||= {}
+    self.settings['idea_work_tokens'] = { 'enabled' => enabled }
+    save
+  end
+
   def notification_triggers
     settings&.dig('notification_triggers') || []
   end
@@ -254,6 +434,42 @@ class User < ApplicationRecord
   def update_topology_settings(params)
     self.settings ||= {}
     self.settings['topology_settings'] = params.to_h.slice(*ALLOWED_TOPOLOGY_SETTING_KEYS)
+    save
+  end
+
+  def list_settings
+    stored = settings&.dig('list_settings') || {}
+    DEFAULT_LIST_SETTINGS.merge(stored).tap do |resolved|
+      resolved['default_view'] = DEFAULT_LIST_SETTINGS['default_view'] unless ALLOWED_LIST_DEFAULT_VIEWS.include?(resolved['default_view'])
+    end
+  end
+
+  def update_list_settings(params)
+    cleaned = params.to_h.slice(*ALLOWED_LIST_SETTING_KEYS)
+    cleaned['default_view'] = DEFAULT_LIST_SETTINGS['default_view'] unless ALLOWED_LIST_DEFAULT_VIEWS.include?(cleaned['default_view'])
+    self.settings ||= {}
+    self.settings['list_settings'] = cleaned
+    save
+  end
+
+  def display_quote_settings
+    DEFAULT_DISPLAY_QUOTE_SETTINGS.merge(settings&.dig('display_quote') || {})
+  end
+
+  def display_quote
+    display_quote_settings['text'].to_s
+  end
+
+  def update_display_quote(params)
+    quote = params.to_h.fetch('quote', '').to_s.strip
+    self.settings ||= {}
+
+    if quote.present?
+      self.settings['display_quote'] = { 'text' => quote }
+    else
+      self.settings.delete('display_quote')
+    end
+
     save
   end
 
