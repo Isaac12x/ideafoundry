@@ -119,6 +119,19 @@ class SettingsControllerTest < ActionDispatch::IntegrationTest
     refute @user.voice_id_configured?
   end
 
+  test "PATCH settings/security as json returns voice id enrollment redirect" do
+    patch settings_security_path, as: :json, params: {
+      typing_lock: { enabled: "0", lock_after_minutes: "5" },
+      authenticator_app: { enabled: "0" },
+      voice_id: { enabled: "1" }
+    }
+
+    assert_response :success
+    body = JSON.parse(response.body)
+    assert_equal true, body["saved"]
+    assert_equal enroll_voice_id_path(return_to: settings_security_path), body["redirect_to"]
+  end
+
   test "GET settings/idea-work-tokens renders page" do
     get "/settings/idea-work-tokens"
 
@@ -184,6 +197,22 @@ class SettingsControllerTest < ActionDispatch::IntegrationTest
     }
 
     assert_redirected_to settings_idea_tabs_path
+    @user.reload
+    assert_equal true, @user.idea_tab_settings["scores"]
+    assert_equal true, @user.idea_tab_settings["tool"]
+    assert_equal false, @user.idea_tab_settings["competitor"]
+  end
+
+  test "PATCH settings/idea-tabs as json updates tab visibility" do
+    patch settings_idea_tabs_path, as: :json, params: {
+      idea_tabs: {
+        scores: "1",
+        tool: "1"
+      }
+    }
+
+    assert_response :success
+    assert_equal({ "saved" => true }, JSON.parse(response.body))
     @user.reload
     assert_equal true, @user.idea_tab_settings["scores"]
     assert_equal true, @user.idea_tab_settings["tool"]

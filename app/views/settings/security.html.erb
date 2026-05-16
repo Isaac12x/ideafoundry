@@ -14,14 +14,14 @@
         <p>Use keyboard rhythm and an authenticator app as local unlock checks for this single-user app.</p>
       </header>
 
-      <%= form_with url: settings_security_path, method: :patch, local: true, class: "typing-settings-form" do %>
+      <%= form_with url: settings_security_path, method: :patch, local: true, class: "typing-settings-form", data: { controller: "settings-autosave" } do %>
         <label class="tab-toggle" for="typing_lock_enabled">
           <div class="tab-toggle__text">
             <span class="tab-toggle__name">Require typing fingerprint</span>
             <span class="tab-toggle__description">When enabled, the app locks after the inactivity window below.</span>
           </div>
           <span class="tab-toggle__switch">
-            <%= check_box_tag "typing_lock[enabled]", "1", @user.typing_lock_enabled?, id: "typing_lock_enabled", class: "tab-toggle__input" %>
+            <%= check_box_tag "typing_lock[enabled]", "1", @user.typing_lock_enabled?, id: "typing_lock_enabled", class: "tab-toggle__input", data: { action: "change->settings-autosave#toggleChanged" } %>
             <span class="tab-toggle__track" aria-hidden="true">
               <span class="tab-toggle__thumb"></span>
             </span>
@@ -35,7 +35,7 @@
             <span class="tab-toggle__description">Ask for a six-digit authenticator code. If typing lock is also enabled, this runs after typing.</span>
           </div>
           <span class="tab-toggle__switch">
-            <%= check_box_tag "authenticator_app[enabled]", "1", @user.authenticator_app_enabled?, id: "authenticator_app_enabled", class: "tab-toggle__input" %>
+            <%= check_box_tag "authenticator_app[enabled]", "1", @user.authenticator_app_enabled?, id: "authenticator_app_enabled", class: "tab-toggle__input", data: { action: "change->settings-autosave#toggleChanged" } %>
             <span class="tab-toggle__track" aria-hidden="true">
               <span class="tab-toggle__thumb"></span>
             </span>
@@ -46,10 +46,10 @@
         <label class="tab-toggle" for="voice_id_enabled">
           <div class="tab-toggle__text">
             <span class="tab-toggle__name">Require Voice ID</span>
-            <span class="tab-toggle__description">Say “By my will and power you will open. Open sesame”. Voice ID is always the final lock before the workspace opens.</span>
+            <span class="tab-toggle__description">Unlock with your voice using a passphrase. Runs as the final check each time the workspace reopens.</span>
           </div>
           <span class="tab-toggle__switch">
-            <%= check_box_tag "voice_id[enabled]", "1", @user.voice_id_requested?, id: "voice_id_enabled", class: "tab-toggle__input" %>
+            <%= check_box_tag "voice_id[enabled]", "1", @user.voice_id_requested?, id: "voice_id_enabled", class: "tab-toggle__input", data: { action: "change->settings-autosave#toggleChanged" } %>
             <span class="tab-toggle__track" aria-hidden="true">
               <span class="tab-toggle__thumb"></span>
             </span>
@@ -117,13 +117,13 @@
           <span class="typing-settings-status__label">Voice ID</span>
           <% if @user.voice_id_configured? %>
             <strong><%= @user.voice_id_enabled? ? "Enabled" : "Stored" %></strong>
-            <p><%= @user.voice_id_fingerprint["sample_count"] %> derived voice samples are stored in the database. Raw audio is not stored.</p>
+            <p><%= @user.voice_id_fingerprint["sample_count"] %> voice recordings stored. Raw audio is never saved.</p>
           <% elsif @user.voice_id_requested? %>
             <strong>Setup required</strong>
-            <p>Finish setup by saying the Open Sesame phrase three different ways.</p>
+            <p>Record yourself saying the passphrase 3 times to complete setup.</p>
           <% else %>
             <strong>Off</strong>
-            <p>Enable Voice ID and save to capture a derived voice fingerprint.</p>
+            <p>Enable the toggle above and save to start voice setup.</p>
           <% end %>
         </div>
         <div class="security-fingerprint-row__action">
