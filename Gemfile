@@ -3,7 +3,7 @@ source "https://rubygems.org"
 ruby "3.4.5"
 
 # Bundle edge Rails instead: gem "rails", github: "rails/rails", branch: "main"
-gem 'rails', '~> 8.0', '>= 8.0.2.1'
+gem 'rails', '~> 8.0.4', '>= 8.0.4.1'
 
 # The original asset pipeline for Rails [https://github.com/rails/sprockets-rails]
 gem "sprockets-rails"
@@ -36,7 +36,7 @@ gem "jbuilder"
 # gem "kredis"
 
 # Use Active Model has_secure_password [https://guides.rubyonrails.org/active_model_basics.html#securepassword]
-gem "bcrypt", "~> 3.1.7"
+gem "bcrypt", "~> 3.1", ">= 3.1.22"
 
 # Solid Queue for background jobs [https://github.com/rails/solid_queue]
 gem "solid_queue"
@@ -45,10 +45,10 @@ gem "solid_queue"
 gem "solid_cache"
 
 # Action Mailbox for email processing
-gem "actionmailbox", "~> 8.0", '>= 8.0.2.1'
+gem "actionmailbox", "~> 8.0.4", '>= 8.0.4.1'
 
 # Action Text for rich text content
-gem "actiontext", "~> 8.0", '>= 8.0.2.1'
+gem "actiontext", "~> 8.0.4", '>= 8.0.4.1'
 
 # Image processing for Active Storage variants
 gem "image_processing", "~> 1.2"
@@ -101,6 +101,7 @@ end
 group :test do
   # Use system testing [https://guides.rubyonrails.org/testing.html#system-testing]
   gem "capybara"
+  gem "minitest", "~> 5.25"
   gem "selenium-webdriver"
 end
 
