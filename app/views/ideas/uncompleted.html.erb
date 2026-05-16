@@ -1,0 +1,79 @@
+<% if params[:idea_draft_saved].present? %>
+  <div data-controller="idea-draft-persist"
+       data-idea-draft-persist-clear-on-connect-value="true"
+       data-idea-draft-persist-storage-key-value="idea-draft:v1:user-<%= @user.id %>"></div>
+<% end %>
+
+<div class="ideas-container ideas-uncompleted">
+  <div class="page-header">
+    <div>
+      <h2>Uncompleted Ideas</h2>
+      <p class="page-header-subtitle">Pick up an unfinished draft or keep working on the idea you just started.</p>
+    </div>
+    <div class="header-actions">
+      <%= link_to ideas_path, class: "btn" do %>
+        All Ideas
+      <% end %>
+      <%= link_to new_idea_path, class: "btn btn-primary" do %>
+        New Idea
+      <% end %>
+    </div>
+  </div>
+
+  <section class="uncompleted-section">
+    <div class="section-heading">
+      <h3>Saved drafts</h3>
+      <p>Auto-drafts stay here when you step away before finishing.</p>
+    </div>
+
+    <div class="ideas-grid">
+      <% @draft_ideas.each do |idea| %>
+        <div class="idea-card idea-card--draft">
+          <%= link_to edit_idea_path(idea, draft: 1), class: "idea-card-link", data: { turbo_frame: "_top" } do %>
+            <div class="idea-card-header">
+              <h3 class="idea-title"><%= idea.title.presence || "Untitled idea draft" %></h3>
+            </div>
+            <div class="idea-meta">
+              <span class="topology-badge">Draft</span>
+              <span class="idea-score">Updated <%= time_ago_in_words(idea.updated_at) %> ago</span>
+            </div>
+          <% end %>
+          <div class="idea-actions">
+            <%= link_to "Finish", edit_idea_path(idea, draft: 1), class: "btn btn-sm btn-primary", data: { turbo_frame: "_top" } %>
+            <%= link_to "Delete", idea_path(idea), method: :delete,
+                        data: { turbo_method: :delete, turbo_confirm: "Delete this draft?" },
+                        class: "btn btn-sm btn-danger" %>
+          </div>
+        </div>
+      <% end %>
+
+      <% if @draft_ideas.empty? %>
+        <div class="empty-state" style="grid-column: 1 / -1;">
+          <h3>No saved drafts</h3>
+          <p>Start a new idea and it will appear here if you leave before finishing.</p>
+          <%= link_to "Create Idea", new_idea_path, class: "btn btn-primary" %>
+        </div>
+      <% end %>
+    </div>
+  </section>
+
+  <section class="uncompleted-section">
+    <div class="section-heading">
+      <h3>Recently added</h3>
+      <p>Freshly saved ideas live here briefly so you can continue polishing them.</p>
+    </div>
+
+    <div class="ideas-grid">
+      <% @recent_ideas.each do |idea| %>
+        <%= render 'idea_card', idea: idea %>
+      <% end %>
+
+      <% if @recent_ideas.empty? %>
+        <div class="empty-state" style="grid-column: 1 / -1;">
+          <h3>No recently added ideas</h3>
+          <p>When you save a new idea, you’ll land here before returning to the main list.</p>
+        </div>
+      <% end %>
+    </div>
+  </section>
+</div>

@@ -1,12 +1,17 @@
-<div class="idea-draft-resume" data-idea-draft-persist-target="prompt" hidden>
+<div class="idea-draft-resume idea-draft-resume--toast" data-idea-draft-persist-target="prompt" role="status" hidden>
   <div>
     <strong>Finish your unsaved idea?</strong>
-    <p>A protected draft was saved on this device <span data-idea-draft-persist-target="savedAt">recently</span>. Restore it so the idea is not lost, or discard it.</p>
+    <p data-idea-draft-persist-target="idleMessage">No rush — when you are ready to come back, your unfinished ideas are in one place.</p>
+    <p data-idea-draft-persist-target="storedMessage" hidden>A protected draft was saved on this device <span data-idea-draft-persist-target="savedAt">recently</span>. Restore it so the idea is not lost, or discard it.</p>
     <p class="idea-draft-resume__error" data-idea-draft-persist-target="error"></p>
   </div>
   <div class="idea-draft-resume__actions">
-    <button type="button" class="btn btn-primary btn-sm" data-action="idea-draft-persist#restore">Restore Draft</button>
-    <button type="button" class="btn btn-sm" data-action="idea-draft-persist#discard">Discard</button>
+    <%= link_to "View Uncompleted", uncompleted_ideas_path, class: "btn btn-primary btn-sm", data: { turbo_frame: "_top" } %>
+    <span data-idea-draft-persist-target="storedActions" hidden>
+      <button type="button" class="btn btn-sm" data-action="idea-draft-persist#restore">Restore Draft</button>
+      <button type="button" class="btn btn-sm" data-action="idea-draft-persist#discard">Discard</button>
+    </span>
+    <button type="button" class="btn btn-sm" data-action="idea-draft-persist#dismiss">Keep Writing</button>
   </div>
 </div>
 

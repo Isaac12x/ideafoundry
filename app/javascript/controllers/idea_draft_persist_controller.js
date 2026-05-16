@@ -8,16 +8,18 @@ import {
 } from "../lib/idea_draft_store.mjs";
 
 export default class extends Controller {
-  static targets = ["prompt", "savedAt", "error"];
+  static targets = ["prompt", "savedAt", "error", "idleMessage", "storedMessage", "storedActions"];
   static values = {
     enabled: { type: Boolean, default: false },
     storageKey: String,
     unlockSeed: String,
     clearOnConnect: { type: Boolean, default: false },
+    promptDelay: { type: Number, default: 6000 },
   };
 
   connect() {
     this.saveTimer = null;
+    this.promptTimer = null;
     this.submittingAfterSave = false;
 
     if (this.clearOnConnectValue) {
@@ -26,20 +28,23 @@ export default class extends Controller {
     }
 
     if (!this.enabledValue) return;
-    this.showResumePromptIfNeeded();
+    this.queueResumePrompt();
     this.boundBeforeUnload = () => this.saveImmediately();
     window.addEventListener("beforeunload", this.boundBeforeUnload);
   }
 
   disconnect() {
     clearTimeout(this.saveTimer);
+    clearTimeout(this.promptTimer);
     if (this.boundBeforeUnload) window.removeEventListener("beforeunload", this.boundBeforeUnload);
   }
 
   queueSave() {
     if (!this.enabledValue || this.submittingAfterSave) return;
+    this.hidePrompt();
     clearTimeout(this.saveTimer);
     this.saveTimer = setTimeout(() => this.saveDraft(), 350);
+    this.queueResumePrompt();
   }
 
   async submit(event) {
@@ -76,14 +81,32 @@ export default class extends Controller {
     this.hidePrompt();
   }
 
+  dismiss() {
+    this.hidePrompt();
+  }
+
+  queueResumePrompt() {
+    clearTimeout(this.promptTimer);
+    this.promptTimer = setTimeout(() => this.showResumePromptIfNeeded(), this.promptDelayValue);
+  }
+
   async showResumePromptIfNeeded() {
     const record = this.readStoredRecord();
-    if (!record) return;
+    const currentDraft = collectDraftFields(this.element);
+    if (hasMeaningfulDraft(currentDraft)) return;
 
-    if (this.hasSavedAtTarget) {
+    this.toggleStoredDraftMode(Boolean(record));
+
+    if (record && this.hasSavedAtTarget) {
       this.savedAtTarget.textContent = record.savedAt ? new Date(record.savedAt).toLocaleString() : "recently";
     }
     if (this.hasPromptTarget) this.promptTarget.hidden = false;
+  }
+
+  toggleStoredDraftMode(hasStoredDraft) {
+    if (this.hasIdleMessageTarget) this.idleMessageTarget.hidden = hasStoredDraft;
+    if (this.hasStoredMessageTarget) this.storedMessageTarget.hidden = !hasStoredDraft;
+    if (this.hasStoredActionsTarget) this.storedActionsTarget.hidden = !hasStoredDraft;
   }
 
   async saveDraft() {
