@@ -80,6 +80,33 @@ class SettingsControllerTest < ActionDispatch::IntegrationTest
     assert_match(/Voice ID/, response.body)
   end
 
+  test "GET settings/security renders redo actions on each fingerprint row" do
+    original_settings = @user.settings.deep_dup
+    @user.update!(settings: {
+      "typing_lock" => {
+        "enabled" => false,
+        "fingerprint" => { "sample_count" => 3, "features" => {} }
+      },
+      "voice_id" => {
+        "enabled" => false,
+        "fingerprint" => { "sample_count" => 3, "features" => {} }
+      }
+    })
+
+    get settings_security_path
+
+    assert_response :success
+    assert_select ".typing-settings-actions a", text: /Redo Fingerprint/, count: 0
+    assert_select ".security-fingerprint-row--typing" do
+      assert_select "a[href=?]", enroll_typing_lock_path(return_to: settings_security_path), text: "Redo Typing Fingerprint", count: 1
+    end
+    assert_select ".security-fingerprint-row--voice" do
+      assert_select "a[href=?]", enroll_voice_id_path(return_to: settings_security_path), text: "Redo Voice ID", count: 1
+    end
+  ensure
+    @user.update!(settings: original_settings) if defined?(original_settings)
+  end
+
   test "PATCH settings/security enabling voice id redirects to voice setup" do
     patch settings_security_path, params: {
       typing_lock: { enabled: "0", lock_after_minutes: "5" },
@@ -88,7 +115,7 @@ class SettingsControllerTest < ActionDispatch::IntegrationTest
     }
 
     assert_redirected_to enroll_voice_id_path(return_to: settings_security_path)
-    assert @user.reload.voice_id_enabled?
+    assert @user.reload.voice_id_requested?
     refute @user.voice_id_configured?
   end
 
