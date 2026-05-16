@@ -32,10 +32,24 @@
         <label class="tab-toggle" for="authenticator_app_enabled">
           <div class="tab-toggle__text">
             <span class="tab-toggle__name">Require authenticator app</span>
-            <span class="tab-toggle__description">After the typing fingerprint matches, ask for a six-digit authenticator code.</span>
+            <span class="tab-toggle__description">Ask for a six-digit authenticator code. If typing lock is also enabled, this runs after typing.</span>
           </div>
           <span class="tab-toggle__switch">
             <%= check_box_tag "authenticator_app[enabled]", "1", @user.authenticator_app_enabled?, id: "authenticator_app_enabled", class: "tab-toggle__input" %>
+            <span class="tab-toggle__track" aria-hidden="true">
+              <span class="tab-toggle__thumb"></span>
+            </span>
+          </span>
+        </label>
+
+        <%= hidden_field_tag "voice_id[enabled]", "0" %>
+        <label class="tab-toggle" for="voice_id_enabled">
+          <div class="tab-toggle__text">
+            <span class="tab-toggle__name">Require Voice ID</span>
+            <span class="tab-toggle__description">Say “By my will and power you will open. Open sesame”. Voice ID is always the final lock before the workspace opens.</span>
+          </div>
+          <span class="tab-toggle__switch">
+            <%= check_box_tag "voice_id[enabled]", "1", @user.voice_id_requested?, id: "voice_id_enabled", class: "tab-toggle__input" %>
             <span class="tab-toggle__track" aria-hidden="true">
               <span class="tab-toggle__thumb"></span>
             </span>
@@ -84,6 +98,20 @@
       <% else %>
         <strong>Off</strong>
         <p>Enable the authenticator app option and save to generate a QR code.</p>
+      <% end %>
+
+      <span class="typing-settings-status__label typing-settings-status__label--secondary">Voice ID</span>
+      <% if @user.voice_id_configured? %>
+        <strong><%= @user.voice_id_enabled? ? "Enabled" : "Stored" %></strong>
+        <p><%= @user.voice_id_fingerprint["sample_count"] %> derived voice samples are stored in the database. Raw audio is not stored.</p>
+        <%= link_to "Redo Voice ID", enroll_voice_id_path(return_to: settings_security_path), class: "btn btn-secondary btn-sm" %>
+      <% elsif @user.voice_id_requested? %>
+        <strong>Setup required</strong>
+        <p>Finish setup by saying the Open Sesame phrase three different ways.</p>
+        <%= link_to "Set Up Voice ID", enroll_voice_id_path(return_to: settings_security_path), class: "btn btn-primary btn-sm" %>
+      <% else %>
+        <strong>Off</strong>
+        <p>Enable Voice ID and save to capture a derived voice fingerprint.</p>
       <% end %>
     </aside>
   </div>

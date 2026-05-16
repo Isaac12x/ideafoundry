@@ -46,6 +46,9 @@ class User < ApplicationRecord
   DEFAULT_AUTHENTICATOR_APP_SETTINGS = {
     'enabled' => false
   }.freeze
+  DEFAULT_VOICE_ID_SETTINGS = {
+    'enabled' => false
+  }.freeze
   DEFAULT_IDEA_WORK_TOKEN_SETTINGS = {
     'enabled' => false
   }.freeze
@@ -357,6 +360,63 @@ class User < ApplicationRecord
     end
 
     save
+  end
+
+  def voice_id_settings
+    DEFAULT_VOICE_ID_SETTINGS.merge(settings&.dig('voice_id') || {})
+  end
+
+  def voice_id_enabled?
+    ActiveModel::Type::Boolean.new.cast(voice_id_settings['enabled']) == true && voice_id_configured?
+  end
+
+  def voice_id_requested?
+    ActiveModel::Type::Boolean.new.cast(voice_id_settings['enabled']) == true
+  end
+
+  def voice_id_fingerprint
+    voice_id_settings['fingerprint']
+  end
+
+  def voice_id_configured?
+    voice_id_fingerprint.present? && voice_id_fingerprint['sample_count'].to_i >= VoiceFingerprint::MIN_ENROLLMENT_SAMPLE_COUNT
+  end
+
+  def update_voice_id_settings(params)
+    enabled = ActiveModel::Type::Boolean.new.cast(params.fetch('enabled', false)) == true
+    self.settings ||= {}
+    self.settings['voice_id'] ||= {}
+
+    if enabled
+      self.settings['voice_id']['enabled'] = true
+    else
+      self.settings['voice_id'] = { 'enabled' => false }
+    end
+
+    save
+  end
+
+  def store_voice_id_fingerprint!(fingerprint)
+    self.settings ||= {}
+    self.settings['voice_id'] ||= {}
+    self.settings['voice_id']['enabled'] = true
+    self.settings['voice_id']['fingerprint'] = fingerprint.except('raw_audio', 'audio', 'blob', 'recording')
+    save
+  end
+
+  def clear_voice_id_fingerprint!
+    self.settings ||= {}
+    self.settings['voice_id'] ||= {}
+    self.settings['voice_id'].delete('fingerprint')
+    save
+  end
+
+  def security_lock_enabled?
+    typing_lock_enabled? || authenticator_app_enabled? || voice_id_requested?
+  end
+
+  def security_lock_timeout_seconds
+    typing_lock_timeout_seconds
   end
 
   def idea_work_token_settings
