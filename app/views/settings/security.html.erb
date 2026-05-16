@@ -72,47 +72,68 @@
 
         <div class="typing-settings-actions">
           <%= submit_tag "Save Settings", class: "btn btn-primary" %>
-          <%= link_to "Redo Fingerprint", enroll_typing_lock_path(return_to: settings_security_path), class: "btn btn-secondary" %>
         </div>
       <% end %>
     </section>
 
     <aside class="typing-settings-status">
-      <span class="typing-settings-status__label">Fingerprint</span>
-      <% if @user.typing_fingerprint_configured? %>
-        <strong>Stored</strong>
-        <p><%= @user.typing_fingerprint["sample_count"] %> timing samples are saved in the database.</p>
-      <% else %>
-        <strong>Not trained</strong>
-        <p>The next protected visit will ask for a longer setup passage.</p>
-      <% end %>
-
-      <span class="typing-settings-status__label typing-settings-status__label--secondary">Authenticator App</span>
-      <% if @user.authenticator_app_configured? %>
-        <strong><%= @user.authenticator_app_enabled? ? "Enabled" : "Prepared" %></strong>
-        <p>Scan this QR code with an authenticator app, or enter the setup key manually.</p>
-        <div class="authenticator-setup-qr" aria-label="Authenticator app QR code">
-          <%= raw @authenticator_app_qr_svg %>
+      <section class="security-fingerprint-row security-fingerprint-row--typing">
+        <div class="security-fingerprint-row__content">
+          <span class="typing-settings-status__label">Typing Fingerprint</span>
+          <% if @user.typing_fingerprint_configured? %>
+            <strong>Stored</strong>
+            <p><%= @user.typing_fingerprint["sample_count"] %> timing samples are saved in the database.</p>
+          <% else %>
+            <strong>Not trained</strong>
+            <p>The next protected visit will ask for a longer setup passage.</p>
+          <% end %>
         </div>
-        <code class="authenticator-setup-secret"><%= @user.authenticator_app_secret %></code>
-      <% else %>
-        <strong>Off</strong>
-        <p>Enable the authenticator app option and save to generate a QR code.</p>
-      <% end %>
+        <div class="security-fingerprint-row__action">
+          <%= link_to (@user.typing_fingerprint_configured? ? "Redo Typing Fingerprint" : "Set Up Typing Fingerprint"),
+                enroll_typing_lock_path(return_to: settings_security_path),
+                class: "btn btn-secondary btn-sm" %>
+        </div>
+      </section>
 
-      <span class="typing-settings-status__label typing-settings-status__label--secondary">Voice ID</span>
-      <% if @user.voice_id_configured? %>
-        <strong><%= @user.voice_id_enabled? ? "Enabled" : "Stored" %></strong>
-        <p><%= @user.voice_id_fingerprint["sample_count"] %> derived voice samples are stored in the database. Raw audio is not stored.</p>
-        <%= link_to "Redo Voice ID", enroll_voice_id_path(return_to: settings_security_path), class: "btn btn-secondary btn-sm" %>
-      <% elsif @user.voice_id_requested? %>
-        <strong>Setup required</strong>
-        <p>Finish setup by saying the Open Sesame phrase three different ways.</p>
-        <%= link_to "Set Up Voice ID", enroll_voice_id_path(return_to: settings_security_path), class: "btn btn-primary btn-sm" %>
-      <% else %>
-        <strong>Off</strong>
-        <p>Enable Voice ID and save to capture a derived voice fingerprint.</p>
-      <% end %>
+      <section class="security-fingerprint-row security-fingerprint-row--authenticator">
+        <div class="security-fingerprint-row__content">
+          <span class="typing-settings-status__label">Authenticator App</span>
+          <% if @user.authenticator_app_configured? %>
+            <strong><%= @user.authenticator_app_enabled? ? "Enabled" : "Prepared" %></strong>
+            <p>Scan this QR code with an authenticator app, or enter the setup key manually.</p>
+            <div class="authenticator-setup-qr" aria-label="Authenticator app QR code">
+              <%= raw @authenticator_app_qr_svg %>
+            </div>
+            <code class="authenticator-setup-secret"><%= @user.authenticator_app_secret %></code>
+          <% else %>
+            <strong>Off</strong>
+            <p>Enable the authenticator app option and save to generate a QR code.</p>
+          <% end %>
+        </div>
+      </section>
+
+      <section class="security-fingerprint-row security-fingerprint-row--voice">
+        <div class="security-fingerprint-row__content">
+          <span class="typing-settings-status__label">Voice ID</span>
+          <% if @user.voice_id_configured? %>
+            <strong><%= @user.voice_id_enabled? ? "Enabled" : "Stored" %></strong>
+            <p><%= @user.voice_id_fingerprint["sample_count"] %> derived voice samples are stored in the database. Raw audio is not stored.</p>
+          <% elsif @user.voice_id_requested? %>
+            <strong>Setup required</strong>
+            <p>Finish setup by saying the Open Sesame phrase three different ways.</p>
+          <% else %>
+            <strong>Off</strong>
+            <p>Enable Voice ID and save to capture a derived voice fingerprint.</p>
+          <% end %>
+        </div>
+        <div class="security-fingerprint-row__action">
+          <% if @user.voice_id_configured? %>
+            <%= link_to "Redo Voice ID", enroll_voice_id_path(return_to: settings_security_path), class: "btn btn-secondary btn-sm" %>
+          <% elsif @user.voice_id_requested? %>
+            <%= link_to "Set Up Voice ID", enroll_voice_id_path(return_to: settings_security_path), class: "btn btn-primary btn-sm" %>
+          <% end %>
+        </div>
+      </section>
     </aside>
   </div>
 </div>

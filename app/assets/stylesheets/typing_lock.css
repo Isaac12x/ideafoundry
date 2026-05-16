@@ -529,6 +529,31 @@ body.typing-lock-page .alert {
   padding: 1.4rem;
 }
 
+.security-fingerprint-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.security-fingerprint-row + .security-fingerprint-row {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.security-fingerprint-row__content {
+  min-width: 0;
+}
+
+.security-fingerprint-row__action {
+  flex: 0 0 auto;
+}
+
+.security-fingerprint-row__action .btn {
+  white-space: nowrap;
+}
+
 .typing-settings-status__label {
   display: block;
   margin-bottom: 8px;
