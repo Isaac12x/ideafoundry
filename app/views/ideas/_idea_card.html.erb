@@ -2,7 +2,6 @@
   <%= link_to idea_path(idea), class: "idea-card-link", data: { turbo_frame: "_top" } do %>
     <div class="idea-card-header">
       <h3 class="idea-title"><%= idea.title %></h3>
-      <span class="idea-state <%= idea.state %>"><%= idea.state.humanize %></span>
     </div>
 
     <div class="idea-meta">
@@ -12,24 +11,17 @@
           <%= topology.name %>
         </span>
       <% end %>
-      <% if idea.computed_score %>
-        <span class="idea-score">
-          <%= number_with_precision(idea.computed_score, precision: 1) %>
-        </span>
-      <% end %>
-      <span class="idea-trl">TRL <%= idea.trl %></span>
+      <span class="idea-score">
+        <%= idea.computed_score ? number_with_precision(idea.computed_score, precision: 1) : "—" %>
+      </span>
     </div>
+  <% end %>
 
-    <% if idea.description.present? %>
-      <div class="idea-description">
-        <%= truncate(strip_tags(idea.description.to_s), length: 120) %>
-      </div>
-    <% end %>
-
-    <div class="idea-footer">
-      <span class="idea-date"><%= time_ago_in_words(idea.created_at) %> ago</span>
-      <% if idea.lists.any? %>
-        <span class="idea-lists"><%= idea.lists.pluck(:name).join(', ') %></span>
+  <% enabled_entry_tabs = User::IDEA_ENTRY_TABS.select { |kind| @user&.idea_tab_enabled?(kind) } %>
+  <% if enabled_entry_tabs.any? %>
+    <div class="idea-card-entry-panel">
+      <% enabled_entry_tabs.each do |kind| %>
+        <%= render "idea_entries/card_summary", idea: idea, kind: kind %>
       <% end %>
     </div>
   <% end %>

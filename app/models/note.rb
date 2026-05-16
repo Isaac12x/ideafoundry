@@ -1,4 +1,6 @@
 class Note < ApplicationRecord
+  include RecordsIdeaHistory
+
   belongs_to :idea
   belongs_to :parent_note, class_name: "Note", optional: true
   has_many :replies, class_name: "Note", foreign_key: :parent_note_id, dependent: :destroy
@@ -6,6 +8,7 @@ class Note < ApplicationRecord
   validates :body, presence: true
 
   before_create :set_depth
+  records_idea_history as: "note"
 
   scope :roots, -> { where(parent_note_id: nil) }
   scope :chronological, -> { order(created_at: :asc) }

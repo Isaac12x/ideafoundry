@@ -2,19 +2,26 @@
   "name": "idea-app",
   "private": true,
   "scripts": {
-    "build": "esbuild app/javascript/graph/index.js --bundle --sourcemap --format=esm --minify --outdir=app/assets/builds/graph",
-    "build:watch": "esbuild app/javascript/graph/index.js --bundle --sourcemap --format=esm --outdir=app/assets/builds/graph --watch"
+    "build": "node esbuild.config.mjs",
+    "build:watch": "node esbuild.config.mjs --watch"
   },
   "dependencies": {
     "3d-force-graph": "^1.73.4",
+    "@excalidraw/excalidraw": "^0.17.6",
+    "@rails/actioncable": "^7.0.0",
+    "hyperformula": "^3.2.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
     "three": "^0.183.0",
-    "three-spritetext": "^1.9.0",
-    "@rails/actioncable": "^7.0.0"
+    "three-spritetext": "^1.9.0"
   },
   "overrides": {
     "three": "$three"
   },
   "devDependencies": {
-    "esbuild": "^0.20.0"
+    "@types/react": "^18.3.0",
+    "@types/react-dom": "^18.3.0",
+    "esbuild": "^0.20.0",
+    "typescript": "^5.4.0"
   }
 }

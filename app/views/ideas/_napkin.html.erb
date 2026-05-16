@@ -1,0 +1,49 @@
+<%# Locals: idea, form %>
+<% data = idea.napkin_calculations || { "rows" => 10, "cols" => 5, "cells" => {} } %>
+<% expanded = idea.napkin_present? %>
+<div class="form-panel napkin-panel"
+     data-controller="napkin"
+     data-napkin-initial-value="<%= data.to_json %>"
+     data-napkin-input-name-value="idea[napkin_calculations]"
+     data-napkin-expanded-value="<%= expanded %>">
+
+  <div class="napkin-header" data-action="click->napkin#toggle">
+    <h3 class="form-panel-title">Back-of-the-napkin</h3>
+    <button type="button" class="napkin-toggle-btn" data-napkin-target="toggleBtn" aria-expanded="<%= expanded %>">
+      <svg class="napkin-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+    </button>
+  </div>
+
+  <div class="napkin-body <%= 'hidden' unless expanded %>" data-napkin-target="body">
+    <div class="napkin-toolbar">
+      <select class="napkin-fmt-select" data-napkin-target="fmtSelect" data-action="change->napkin#applyFormat">
+        <option value="">Auto</option>
+        <option value="number">Number</option>
+        <option value="currency:USD">Currency (USD)</option>
+        <option value="currency:EUR">Currency (EUR)</option>
+        <option value="percent">Percent</option>
+      </select>
+      <label class="napkin-decimals">
+        Decimals
+        <input type="number" min="0" max="6" value="2" class="napkin-decimals-input" data-napkin-target="decimalsInput" data-action="change->napkin#applyFormat">
+      </label>
+      <button type="button" class="napkin-bold-btn" data-napkin-target="boldBtn" data-action="click->napkin#toggleBold"><b>B</b></button>
+      <span class="napkin-spacer"></span>
+      <button type="button" class="napkin-row-btn" data-action="click->napkin#addRow">+ Row</button>
+      <button type="button" class="napkin-col-btn" data-action="click->napkin#addCol">+ Col</button>
+    </div>
+
+    <div class="napkin-formula-bar">
+      <span class="napkin-formula-label" data-napkin-target="formulaRef">A1</span>
+      <input type="text" class="napkin-formula-input" data-napkin-target="formulaBar" data-action="input->napkin#formulaBarEdit keydown->napkin#formulaBarKey">
+    </div>
+
+    <div class="napkin-grid-wrap">
+      <div class="napkin-grid" data-napkin-target="grid"></div>
+    </div>
+
+    <div class="napkin-loading hidden" data-napkin-target="loading">Loading formula engine…</div>
+  </div>
+
+  <%= form.hidden_field :napkin_calculations, value: idea.napkin_calculations&.to_json, data: { napkin_target: "hiddenInput" } %>
+</div>

@@ -1,0 +1,3 @@
+<%= turbo_stream.prepend "facts-list", partial: "facts/fact", locals: { fact: @fact } %>
+<%= turbo_stream.remove "facts-empty-state" %>
+<%= turbo_stream.replace "fact_form", partial: "facts/form" %>

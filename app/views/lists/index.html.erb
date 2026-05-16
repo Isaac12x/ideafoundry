@@ -1,9 +1,22 @@
 <div class="lists-container"
-     data-controller="drag"
+     data-controller="tabs drag"
+     data-tabs-default-tab-value="<%= @default_view %>"
      data-drag-url-value="<%= update_idea_position_lists_path %>">
 
   <div class="page-header">
-    <h2>Lists</h2>
+    <div class="header-left">
+      <h2>Lists</h2>
+      <div class="view-toggle">
+        <button class="view-toggle__btn active" data-tabs-target="tab" data-tab-name="kanban" data-action="click->tabs#switch">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:2px;"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+          Kanban
+        </button>
+        <button class="view-toggle__btn" data-tabs-target="tab" data-tab-name="named" data-action="click->tabs#switch">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:2px;"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3" cy="6" r="1"/><circle cx="3" cy="12" r="1"/><circle cx="3" cy="18" r="1"/></svg>
+          Named
+        </button>
+      </div>
+    </div>
     <div class="header-actions">
       <%= link_to ideas_path, class: "btn" do %>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
@@ -16,40 +29,70 @@
     </div>
   </div>
 
-  <div class="lists-grid">
-    <% @lists.each do |list| %>
-      <div class="list-container">
-        <div class="list-header">
-          <h3><%= list.name %></h3>
-          <div class="list-actions">
-            <% if @user.email_configured? %>
-              <%= button_to send_email_list_path(list), method: :post, class: "btn btn-sm btn-email", form: { style: "display: inline" }, data: { turbo_confirm: "Email this list to #{@user.email_recipients.join(', ')}?" } do %>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-                Email
+  <div data-tabs-target="panel" data-tab-panel="kanban">
+    <div class="lists-grid">
+      <% @kanban_lists.each do |list| %>
+        <div class="list-container" data-list-kind="kanban">
+          <div class="list-header">
+            <h3><%= list.name %></h3>
+            <div class="list-actions">
+              <% if @user.email_configured? %>
+                <%= button_to send_email_list_path(list), method: :post, class: "btn btn-sm btn-email", form: { style: "display: inline" }, data: { turbo_confirm: "Email this list to #{@user.email_recipients.join(', ')}?" } do %>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                  Email
+                <% end %>
               <% end %>
-            <% end %>
+              <%= link_to "Edit", edit_list_path(list), class: "btn btn-sm" %>
+              <%= link_to "Delete", list_path(list), method: :delete,
+                          data: { turbo_method: :delete, turbo_confirm: "Delete this list?" },
+                          class: "btn btn-sm btn-danger" %>
+            </div>
+          </div>
+
+          <div class="drop-zone"
+               data-drag-target="container"
+               data-list-id="<%= list.id %>"
+               id="list_<%= list.id %>_ideas">
+            <%= render 'ideas', list: list, ideas: list.ideas.includes(:idea_lists, :idea_entries).order('idea_lists.position') %>
+          </div>
+        </div>
+      <% end %>
+
+      <% if @kanban_lists.empty? %>
+        <div class="empty-state" style="grid-column: 1 / -1;">
+          <h3>No kanban columns yet</h3>
+          <p>Create a column to start organizing ideas on the board.</p>
+          <%= link_to "Create Kanban Column", new_list_path(kind: "kanban"), class: "btn btn-primary" %>
+        </div>
+      <% end %>
+    </div>
+  </div>
+
+  <div data-tabs-target="panel" data-tab-panel="named" class="hidden">
+    <div class="named-lists-grid">
+      <% @named_lists.each do |list| %>
+        <div class="named-list-card" data-list-kind="named">
+          <div class="named-list-card__body">
+            <h3><%= list.name %></h3>
+            <p><%= pluralize(list.ideas.size, "idea") %></p>
+          </div>
+          <div class="list-actions">
+            <%= link_to "Open", list_path(list), class: "btn btn-sm btn-primary" %>
             <%= link_to "Edit", edit_list_path(list), class: "btn btn-sm" %>
             <%= link_to "Delete", list_path(list), method: :delete,
                         data: { turbo_method: :delete, turbo_confirm: "Delete this list?" },
                         class: "btn btn-sm btn-danger" %>
           </div>
         </div>
+      <% end %>
 
-        <div class="drop-zone"
-             data-drag-target="container"
-             data-list-id="<%= list.id %>"
-             id="list_<%= list.id %>_ideas">
-          <%= render 'ideas', list: list, ideas: list.ideas.includes(:idea_lists).order('idea_lists.position') %>
+      <% if @named_lists.empty? %>
+        <div class="empty-state">
+          <h3>No named lists yet</h3>
+          <p>Create a named list for shortlists, launch candidates, or any custom collection.</p>
+          <%= link_to "Create Named List", new_list_path(kind: "named"), class: "btn btn-primary" %>
         </div>
-      </div>
-    <% end %>
-
-    <% if @lists.empty? %>
-      <div class="empty-state" style="grid-column: 1 / -1;">
-        <h3>No lists yet</h3>
-        <p>Create your first list to start organizing ideas.</p>
-        <%= link_to "Create List", new_list_path, class: "btn btn-primary" %>
-      </div>
-    <% end %>
+      <% end %>
+    </div>
   </div>
 </div>

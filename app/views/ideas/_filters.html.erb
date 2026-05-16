@@ -1,5 +1,11 @@
 <div class="filters-panel">
   <%= form_with url: ideas_path, method: :get, data: { turbo_frame: "ideas_list" } do |form| %>
+    <!-- Search bar -->
+    <div class="filter-search-bar" style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
+      <%= form.search_field :search, value: params[:search], placeholder: "Search ideas...", class: "form-control", style: "flex: 1;" %>
+      <%= form.submit "Search", class: "btn btn-sm btn-primary" %>
+    </div>
+
     <div class="filters-grid">
       <div class="filter-group">
         <%= form.label :state, "State" %>

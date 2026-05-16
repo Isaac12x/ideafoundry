@@ -1,0 +1,42 @@
+<% token = idea.idea_agent_tokens.order(created_at: :desc).first %>
+
+<div class="idea-agent-access">
+  <div class="idea-agent-access__header">
+    <h3>Agent Access</h3>
+    <div class="idea-agent-access__actions">
+      <%= link_to "Download Skill", idea_agent_skill_path(idea), class: "btn btn-secondary btn-sm" %>
+      <%= button_to token.present? ? "Rotate Token" : "Create Token",
+          idea_agent_tokens_path(idea),
+          method: :post,
+          class: "btn btn-primary btn-sm" %>
+    </div>
+  </div>
+
+  <% if flash[:idea_agent_token].present? && flash[:idea_agent_token_idea_id].to_i == idea.id %>
+    <div class="alert alert-success idea-agent-access__token">
+      <strong>New token created.</strong>
+      <code><%= flash[:idea_agent_token] %></code>
+    </div>
+  <% end %>
+
+  <% if token.present? %>
+    <div class="idea-agent-access__row">
+      <div>
+        <span class="idea-agent-access__name">Token</span>
+        <span class="idea-agent-access__meta">
+          Created <%= time_ago_in_words(token.created_at) %> ago
+          <% if token.last_used_at.present? %>
+            &middot; Last used <%= time_ago_in_words(token.last_used_at) %> ago
+          <% else %>
+            &middot; Never used
+          <% end %>
+        </span>
+      </div>
+      <%= button_to "Revoke",
+          idea_agent_token_path(idea, token),
+          method: :delete,
+          class: "btn btn-sm btn-danger",
+          form: { data: { turbo_confirm: "Revoke this token? Agents using it will lose document access." } } %>
+    </div>
+  <% end %>
+</div>

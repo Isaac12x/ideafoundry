@@ -62,6 +62,9 @@ gem "kaminari"
 # SHA3 digest for integrity hashing
 gem "sha3"
 
+# Local QR code rendering for authenticator app setup
+gem "rqrcode", "~> 2.2"
+
 # Resend for email delivery
 gem "resend"
 
@@ -73,6 +76,9 @@ gem "tzinfo-data", platforms: %i[ mswin mswin64 mingw x64_mingw jruby ]
 
 # Reduces boot times through caching; required in config/boot.rb
 gem "bootsnap", require: false
+
+# Formula evaluation for napkin calculations
+gem "dentaku", "~> 3.5"
 
 
 
@@ -97,3 +103,5 @@ group :test do
   gem "capybara"
   gem "selenium-webdriver"
 end
+
+gem "redcarpet", "~> 3.6"
