@@ -1,3 +1,15 @@
+<div class="idea-draft-resume" data-idea-draft-persist-target="prompt" hidden>
+  <div>
+    <strong>Finish your unsaved idea?</strong>
+    <p>A protected draft was saved on this device <span data-idea-draft-persist-target="savedAt">recently</span>. Restore it so the idea is not lost, or discard it.</p>
+    <p class="idea-draft-resume__error" data-idea-draft-persist-target="error"></p>
+  </div>
+  <div class="idea-draft-resume__actions">
+    <button type="button" class="btn btn-primary btn-sm" data-action="idea-draft-persist#restore">Restore Draft</button>
+    <button type="button" class="btn btn-sm" data-action="idea-draft-persist#discard">Discard</button>
+  </div>
+</div>
+
 <% if idea.errors.any? %>
   <div class="alert alert-error">
     <h4><%= pluralize(idea.errors.count, "error") %> prohibited this idea from being saved:</h4>
@@ -165,7 +177,7 @@
         <div class="form-group" data-controller="editor"
              data-editor-content-value="<%= idea.description&.body&.to_html&.gsub('"', '&quot;') || '' %>"
              data-editor-upload-url-value="<%= uploads_path %>">
-          <%= form.hidden_field :description, data: { editor_target: "input" } %>
+          <%= form.hidden_field :description, data: { editor_target: "input", action: "idea-draft:restore-description->editor#restoreFromIdeaDraft" } %>
           <div class="tiptap-toolbar" data-editor-target="toolbar">
             <div class="tiptap-toolbar__group">
               <button type="button" data-cmd="bold" title="Bold"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M6 4h8a4 4 0 014 4 4 4 0 01-4 4H6z"/><path d="M6 12h9a4 4 0 014 4 4 4 0 01-4 4H6z"/></svg></button>

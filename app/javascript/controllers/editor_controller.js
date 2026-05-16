@@ -40,6 +40,12 @@ export default class extends Controller {
     if (this._editor) this._editor.destroy()
   }
 
+  restoreFromIdeaDraft(event) {
+    if (!this._editor) return
+    this._editor.commands.setContent(event.detail?.html || "")
+    this._syncToHidden()
+  }
+
   // — Editor init —
 
   _initEditor() {

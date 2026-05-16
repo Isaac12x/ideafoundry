@@ -4,7 +4,17 @@
     <p class="form-container-subtitle"><%= @idea.draft? ? "Capture and score a new concept" : @idea.title %></p>
   </div>
 
-  <%= form_with model: @idea, local: true do |form| %>
+  <% draft_storage_key = "idea-draft:v1:user-#{@user.id}" %>
+  <% persist_draft = @idea.new_record? || @idea.draft? %>
+  <%= form_with model: @idea,
+        local: true,
+        data: {
+          controller: (persist_draft ? "idea-draft-persist" : nil),
+          action: (persist_draft ? "input->idea-draft-persist#queueSave change->idea-draft-persist#queueSave submit->idea-draft-persist#submit" : nil),
+          idea_draft_persist_enabled_value: persist_draft,
+          idea_draft_persist_storage_key_value: draft_storage_key,
+          idea_draft_persist_unlock_seed_value: @user.idea_draft_unlock_seed
+        }.compact do |form| %>
     <%= render 'form', form: form, idea: @idea, lists: @lists, named_lists: @named_lists, topologies: @topologies %>
   <% end %>
 </div>
