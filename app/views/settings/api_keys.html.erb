@@ -20,7 +20,7 @@
     <h3>Create New Key</h3>
     <%= form_with url: settings_api_keys_path, method: :post, class: "api-key-form" do |form| %>
       <div class="form-row">
-        <div class="form-group" style="flex: 1;">
+        <div class="form-group">
           <%= form.label :name, "Key Name" %>
           <%= form.text_field :name, class: "form-control", placeholder: "e.g. Zapier, n8n, CLI script...", required: true %>
         </div>

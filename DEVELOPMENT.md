@@ -11,7 +11,7 @@ Standard Rails 8.0 MVC app. Key models:
 - **Version** — Git-like snapshots. Each save creates a JSON snapshot with parent pointer forming a DAG. Supports diff and restore.
 - **List** — Kanban boards. Ideas assigned to lists via `IdeaList` join table with position ordering.
 - **Template** — Defines custom field definitions, section order, and tab layouts as JSON.
-- **BuildItem** — Simple task/backlog items with position and completion state.
+- **BuildItem** — Optional task/backlog items with position, completion state, and markdown checklist subitems. Enable with `BACKLOG_ENABLED=true` when building or running the app.
 
 ### Frontend
 
@@ -77,10 +77,15 @@ storage/                # SQLite DBs + Active Storage files
 
 ```bash
 bin/dev                          # Rails + esbuild watcher
+BACKLOG_ENABLED=true bin/dev     # Enable the optional backlog while developing
 # Or separately:
 bin/rails server -p 3000         # Rails only
 yarn build:watch                 # esbuild graph watcher only
 ```
+
+### Optional Backlog
+
+Backlog is disabled by default. To include it in a local or production build, set `BACKLOG_ENABLED=true` in the environment used to build and run the app, for example `BACKLOG_ENABLED=true bin/dev` or `BACKLOG_ENABLED=true bin/rails assets:precompile`.
 
 ### Running Tests
 

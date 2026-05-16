@@ -1,10 +1,12 @@
 <div class="form-container">
   <div class="form-container-header">
-    <h2>Edit Idea</h2>
-    <p class="form-container-subtitle"><%= @idea.title %></p>
+    <h2><%= @idea.draft? ? "New Idea" : "Edit Idea" %></h2>
+    <p class="form-container-subtitle"><%= @idea.draft? ? "Capture and score a new concept" : @idea.title %></p>
   </div>
 
   <%= form_with model: @idea, local: true do |form| %>
-    <%= render 'form', form: form, idea: @idea, lists: @lists, topologies: @topologies %>
+    <%= render 'form', form: form, idea: @idea, lists: @lists, named_lists: @named_lists, topologies: @topologies %>
   <% end %>
 </div>
+
+<%= javascript_include_tag "excalidraw_app/index", defer: true, type: "module" %>

@@ -1,0 +1,50 @@
+<div class="settings-container">
+  <div class="page-header">
+    <h2>KB Folders</h2>
+    <%= link_to settings_path, class: "btn btn-sm" do %>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      Back to Settings
+    <% end %>
+  </div>
+
+  <p class="config-description" style="max-width: 720px; margin-bottom: 1.5rem;">
+    Configure local or network-synced folder paths containing <code>.md</code> files.
+    Each folder will appear as a group in the KB sidebar. Folders are read-only.
+  </p>
+
+  <%= form_with url: url_for(action: :update_kb), method: :patch, local: true,
+        data: { controller: "kb-folders" } do |form| %>
+    <div class="kb-folder-list" id="kb-folder-list" data-kb-folders-target="list">
+      <% folders = @kb_folders.any? ? @kb_folders : [""] %>
+      <% folders.each_with_index do |path, i| %>
+        <div class="kb-folder-row" data-kb-folders-target="row">
+          <input type="text"
+                 name="kb_folders[]"
+                 value="<%= path %>"
+                 placeholder="/path/to/your/docs"
+                 class="kb-folder-input" />
+          <button type="button"
+                  class="btn btn-sm btn-danger kb-folder-remove"
+                  data-action="click->kb-folders#removeRow"
+                  title="Remove">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+      <% end %>
+    </div>
+
+    <button type="button"
+            class="btn btn-sm kb-folder-add-btn"
+            data-action="click->kb-folders#addRow">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Add folder
+    </button>
+
+    <div class="settings-form-actions" style="margin-top: 1.5rem;">
+      <%= form.submit "Save", class: "btn btn-primary" %>
+      <%= link_to kb_path, class: "btn btn-sm" do %>
+        Back to KB
+      <% end %>
+    </div>
+  <% end %>
+</div>

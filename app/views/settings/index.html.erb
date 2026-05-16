@@ -7,6 +7,29 @@
     <% end %>
   </div>
 
+  <section class="display-quote-settings">
+    <div class="display-quote-settings__copy">
+      <h3>Page Quote</h3>
+      <p>Shown below the navigation bar across the app.</p>
+    </div>
+
+    <%= form_with url: settings_path, method: :patch, local: true, class: "display-quote-settings__form" do %>
+      <div class="form-group">
+        <label for="display_settings_quote">Quote</label>
+        <%= text_area_tag "display_settings[quote]",
+                          @display_quote,
+                          id: "display_settings_quote",
+                          rows: 2,
+                          class: "form-control display-quote-settings__textarea",
+                          placeholder: "A useful reminder for the top of the page" %>
+      </div>
+
+      <div class="display-quote-settings__actions">
+        <%= submit_tag "Save Quote", class: "btn btn-primary" %>
+      </div>
+    <% end %>
+  </section>
+
   <div class="settings-list">
     <%= link_to settings_scoring_path, class: "settings-row" do %>
       <div class="settings-row-info">
@@ -24,10 +47,42 @@
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
     <% end %>
 
+    <%= link_to settings_lists_path, class: "settings-row" do %>
+      <div class="settings-row-info">
+        <h3>Lists</h3>
+        <p>Choose the default Lists view and manage list behavior</p>
+      </div>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+    <% end %>
+
     <%= link_to settings_email_path, class: "settings-row" do %>
       <div class="settings-row-info">
         <h3>Email Integration</h3>
         <p>Configure recipients and sender settings for sharing ideas via email</p>
+      </div>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+    <% end %>
+
+    <%= link_to settings_security_path, class: "settings-row" do %>
+      <div class="settings-row-info">
+        <h3>Security</h3>
+        <p>Manage fingerprint training, unlock timing, and app protection</p>
+      </div>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+    <% end %>
+
+    <%= link_to settings_idea_work_tokens_path, class: "settings-row" do %>
+      <div class="settings-row-info">
+        <h3>Idea Work Tokens</h3>
+        <p>Enable scoped agent access for individual idea documents</p>
+      </div>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+    <% end %>
+
+    <%= link_to settings_idea_tabs_path, class: "settings-row" do %>
+      <div class="settings-row-info">
+        <h3>Idea Tabs</h3>
+        <p>Choose which tabs (scores, tools, competitors, etc.) appear on each idea</p>
       </div>
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
     <% end %>
@@ -44,6 +99,14 @@
       <div class="settings-row-info">
         <h3>Export & Backup</h3>
         <p>Export your workspace and manage backups</p>
+      </div>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+    <% end %>
+
+    <%= link_to settings_kb_path, class: "settings-row" do %>
+      <div class="settings-row-info">
+        <h3>KB Folders</h3>
+        <p>Configure folders of markdown documents for the Knowledge Base</p>
       </div>
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
     <% end %>

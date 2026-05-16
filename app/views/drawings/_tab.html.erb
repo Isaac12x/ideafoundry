@@ -1,0 +1,38 @@
+<% drawings = idea.drawings.general.ordered %>
+
+<div class="drawings-tab" id="drawings_tab_<%= idea.id %>">
+  <div class="drawings-tab-header">
+    <h3>Drawings</h3>
+    <%= link_to new_idea_drawing_path(idea, role: "general"), class: "btn btn-sm btn-primary" do %>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+      New Drawing
+    <% end %>
+  </div>
+
+  <% if drawings.any? %>
+    <ul class="drawings-list">
+      <% drawings.each do |drawing| %>
+        <li class="drawing-row">
+          <% if drawing.rendered_png.attached? %>
+            <%= link_to idea_drawing_path(idea, drawing), class: "drawing-thumb-link" do %>
+              <%= image_tag drawing.rendered_png, class: "drawing-thumb-image", alt: drawing.title %>
+            <% end %>
+          <% end %>
+          <%= link_to drawing.title.presence || "Untitled", idea_drawing_path(idea, drawing), class: "drawing-title" %>
+          <span class="drawing-meta">updated <%= time_ago_in_words(drawing.updated_at) %> ago</span>
+          <%= button_to idea_drawing_path(idea, drawing),
+                method: :delete,
+                class: "btn btn-sm btn-danger",
+                form: { data: { turbo_confirm: "Delete this drawing?" } } do %>
+            Delete
+          <% end %>
+        </li>
+      <% end %>
+    </ul>
+  <% else %>
+    <div class="empty-state-small">
+      <p>No drawings yet.</p>
+      <%= link_to "Create your first drawing", new_idea_drawing_path(idea, role: "general"), class: "btn btn-sm btn-primary" %>
+    </div>
+  <% end %>
+</div>
