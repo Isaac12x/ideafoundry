@@ -5,7 +5,7 @@
   </div>
 
   <%= form_with model: @idea, local: true do |form| %>
-    <%= render 'form', form: form, idea: @idea, lists: @lists, topologies: @topologies %>
+    <%= render 'form', form: form, idea: @idea, lists: @lists, named_lists: @named_lists, topologies: @topologies %>
   <% end %>
 </div>
 

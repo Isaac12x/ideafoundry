@@ -1,6 +1,83 @@
 require "test_helper"
 
 class UserTest < ActiveSupport::TestCase
+  test "typing lock defaults to disabled with five minute timeout" do
+    user = User.new(email: "fresh@example.com", name: "Fresh", settings: nil)
+
+    refute user.typing_lock_enabled?
+    assert_equal 300, user.typing_lock_timeout_seconds
+    refute user.typing_fingerprint_configured?
+  end
+
+  test "typing lock settings can be updated and clamped" do
+    user = users(:one)
+
+    assert user.update_typing_lock_settings("enabled" => "0", "lock_after_minutes" => "9999")
+
+    assert_equal false, user.typing_lock_enabled?
+    assert_equal 86_400, user.typing_lock_timeout_seconds
+  end
+
+  test "typing fingerprint can be stored and cleared" do
+    user = users(:one)
+    fingerprint = { "version" => 1, "keys" => { "a" => { "mean" => 90 } } }
+
+    assert user.store_typing_fingerprint!(fingerprint)
+    assert user.typing_fingerprint_configured?
+    assert_equal fingerprint, user.typing_fingerprint
+
+    assert user.clear_typing_fingerprint!
+    refute user.typing_fingerprint_configured?
+  end
+
+  test "authenticator app settings default to disabled" do
+    user = User.new(email: "fresh-auth@example.com", name: "Fresh Auth", settings: nil)
+
+    refute user.authenticator_app_enabled?
+    refute user.authenticator_app_configured?
+    assert_nil user.authenticator_app_secret
+  end
+
+  test "authenticator app settings generate and clear a secret" do
+    user = users(:one)
+
+    assert user.update_authenticator_app_settings("enabled" => "1")
+
+    assert user.authenticator_app_enabled?
+    assert user.authenticator_app_configured?
+    assert_match(/\A[A-Z2-7]{32}\z/, user.authenticator_app_secret)
+    assert_includes user.authenticator_app_provisioning_uri, "otpauth://totp/Idea%20Foundry:"
+
+    secret = user.authenticator_app_secret
+
+    assert user.update_authenticator_app_settings("enabled" => "1")
+    assert_equal secret, user.authenticator_app_secret
+
+    assert user.update_authenticator_app_settings("enabled" => "0")
+    refute user.authenticator_app_enabled?
+    refute user.authenticator_app_configured?
+    assert_nil user.authenticator_app_secret
+  end
+
+  test "idea work tokens default to disabled" do
+    user = User.new(email: "fresh-agent@example.com", name: "Fresh Agent", settings: nil)
+
+    refute user.idea_work_tokens_enabled?
+  end
+
+  test "idea work token settings can be toggled" do
+    user = users(:one)
+
+    assert user.update_idea_work_token_settings("enabled" => "1", "hacker" => "bad")
+
+    assert user.idea_work_tokens_enabled?
+    assert_nil user.reload.settings.dig("idea_work_tokens", "hacker")
+
+    assert user.update_idea_work_token_settings("enabled" => "0")
+
+    refute user.reload.idea_work_tokens_enabled?
+  end
+
   def setup
     @user = User.new(email: "test@example.com", name: "Test User")
   end
@@ -69,6 +146,21 @@ class UserTest < ActiveSupport::TestCase
     @user.update_topology_settings({ 'show_ideas' => false, 'hacker' => 'bad' })
     @user.reload
     assert_nil @user.settings.dig('topology_settings', 'hacker')
+  end
+
+  test "list_settings returns defaults when none stored" do
+    @user.save!
+
+    assert_equal User::DEFAULT_LIST_SETTINGS, @user.list_settings
+  end
+
+  test "update_list_settings persists allowed default view" do
+    @user.save!
+    @user.update_list_settings({ 'default_view' => 'named', 'hacker' => 'bad' })
+
+    @user.reload
+    assert_equal 'named', @user.list_settings['default_view']
+    assert_nil @user.settings.dig('list_settings', 'hacker')
   end
 
   test "topology_overrides_for returns global when no overrides" do

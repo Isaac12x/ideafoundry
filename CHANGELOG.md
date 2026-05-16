@@ -9,6 +9,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Static GitHub Pages project overview site and deployment workflow.
+- Configurable page quote shown below the navigation bar.
+- Backlog markdown checklist subitems with per-item toggles and remaining/total counts.
+- Named lists alongside Kanban columns, including a Lists default-view setting.
+- Scoped idea document tokens for agents, LLMs, and harnesses to update an idea's working document with history-tracked API changes.
+- Downloadable per-idea agent skill markdown for sharing idea document API instructions with agents.
+- Comprehensive idea history snapshots and restore support for calculations, drawings, enrichment metadata, todos, notes, tools, competitors, media, scores, and list/topology memberships.
+
+### Changed
+
+- Kanban idea cards no longer show tools or competitor summaries.
+- Idea work tokens are now gated by a settings toggle and the idea page shows only one compact token control.
+- Backlog is now disabled by default and requires `BACKLOG_ENABLED=true` when building or running the app.
+
+### Fixed
+
+- Backlog edit, delete, and completion streams now preserve item context and refresh counts/empty states.
+- KB now fills the viewport below the app header and IPFs/BPFs content is centered within its panel
+- Typing lock failed attempts now persist the real score in the database, hide the retry box during cooldown, and keep prompt words intact when wrapping.
+
+## [1.4.0] - 2026-05-12
+
+### Added
+
+- Typing fingerprint lock with inactivity timeout, manual locking, and optional authenticator app verification
+- Idea index list view toggle with compact score rows
 - Configurable idea detail tabs, including structured tool and competitor entries
 - Idea-attached Excalidraw drawings with hero and attachment roles
 - Auto-draft idea creation with orphaned draft cleanup
@@ -18,14 +44,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Typing fingerprint enrollment and unlock now submit automatically after a complete matching sample is captured
 - Standardized button sizes across the app for visual consistency
 - Scheduled backup notifications now use the configured backup recipient and enqueue email delivery
 - Recurring digest jobs now accept scheduler positional arguments
 
 ### Fixed
 
+- Typing lock timeout now counts from the last recorded activity instead of the original unlock time
+- Typing lock failures now show a decoy score response while successful unlocks transition through a top-of-page Three.js lock animation
+- Typing lock unlock submissions now bypass Turbo so successful matches can render the transition and continue to the requested page
+- Drag-scrolled tab rows now reset cleanly when the window loses focus
 - Scoring system now always produces scores in 0.0–10.0 range instead of -1.0–9.0
 - Idea search filters now use SQLite-compatible case-insensitive matching
+- KB and IPFs/BPFs tabs now share the same full-height page layout
 
 ## [1.3.0] - 2026-03-28
 
@@ -88,7 +120,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Export and backup system
 - Dark Forge theme with editorial typography
 
-[unreleased]: https://github.com/Isaac12x/ideafoundry/compare/v1.3.0...HEAD
+[unreleased]: https://github.com/Isaac12x/ideafoundry/compare/v1.4.0...HEAD
+[1.4.0]: https://github.com/Isaac12x/ideafoundry/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/Isaac12x/ideafoundry/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/Isaac12x/ideafoundry/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/Isaac12x/ideafoundry/compare/v1.0.0...v1.1.0
