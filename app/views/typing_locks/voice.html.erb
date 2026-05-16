@@ -1,0 +1,9 @@
+<% content_for :body_class, "typing-lock-page" %>
+
+<%= render "typing_locks/voice_panel",
+      mode: :unlock,
+      phrase: @voice_id_phrase,
+      return_to: @return_to,
+      error: @voice_id_error,
+      opening: @voice_id_opening,
+      redirect_url: @voice_id_redirect_url %>

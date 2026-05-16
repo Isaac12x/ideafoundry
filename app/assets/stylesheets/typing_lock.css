@@ -591,6 +591,133 @@ body.typing-lock-page .alert {
   line-height: 1.4;
 }
 
+.voice-id-phrase {
+  margin: 1.5rem 0;
+  padding: 1rem 1.25rem;
+  border: 1px solid rgba(218, 165, 32, 0.35);
+  border-radius: var(--radius-md);
+  background: linear-gradient(135deg, rgba(218, 165, 32, 0.13), rgba(20, 20, 24, 0.85));
+  color: var(--text-primary);
+  font-family: var(--font-display);
+  font-size: clamp(1.4rem, 4vw, 2.5rem);
+  font-style: italic;
+  line-height: 1.2;
+}
+
+.voice-id-variants {
+  display: grid;
+  gap: 0.55rem;
+  margin: 0 0 1.25rem;
+  padding-left: 1.25rem;
+  color: var(--text-secondary);
+}
+
+.voice-id-form {
+  display: grid;
+  gap: 1rem;
+}
+
+.voice-id-status {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.voice-lock-fort {
+  position: relative;
+  overflow: hidden;
+  min-height: min(72vh, 620px);
+  border: 1px solid rgba(218, 165, 32, 0.4);
+  border-radius: var(--radius-lg);
+  background: radial-gradient(circle at center, rgba(218, 165, 32, 0.16), rgba(7, 8, 12, 0.96));
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.45);
+}
+
+.voice-lock-fort__panel {
+  position: absolute;
+  left: 0;
+  z-index: 2;
+  width: 100%;
+  height: 50%;
+  background:
+    linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px) 0 0 / 54px 100%,
+    linear-gradient(135deg, #18120b, #3a2a10 48%, #120e08);
+  transition: transform 1.35s cubic-bezier(0.77, 0, 0.175, 1);
+}
+
+.voice-lock-fort__panel--top {
+  top: 0;
+  border-bottom: 2px solid rgba(218, 165, 32, 0.5);
+}
+
+.voice-lock-fort__panel--bottom {
+  bottom: 0;
+  border-top: 2px solid rgba(218, 165, 32, 0.5);
+}
+
+.voice-lock-fort--opening .voice-lock-fort__panel--top {
+  transform: translateY(-102%);
+}
+
+.voice-lock-fort--opening .voice-lock-fort__panel--bottom {
+  transform: translateY(102%);
+}
+
+.voice-lock-fort__lock {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 3;
+  width: 92px;
+  height: 92px;
+  border: 4px solid #d6a42c;
+  border-radius: 26px;
+  background: linear-gradient(135deg, #2c210e, #f6c756 55%, #6e4a11);
+  box-shadow: 0 0 34px rgba(246, 199, 86, 0.45);
+  transform: translate(-50%, -50%);
+  transition: transform 0.95s ease, opacity 0.45s ease 0.85s;
+}
+
+.voice-lock-fort__lock::before {
+  content: "";
+  position: absolute;
+  top: -58px;
+  left: 50%;
+  width: 54px;
+  height: 62px;
+  border: 8px solid #d6a42c;
+  border-bottom: 0;
+  border-radius: 999px 999px 0 0;
+  transform: translateX(-50%);
+}
+
+.voice-lock-fort--opening .voice-lock-fort__lock {
+  opacity: 0;
+  transform: translate(-50%, -50%) rotate(115deg) scale(0.82);
+}
+
+.voice-lock-fort__reveal {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  padding: 2rem;
+  text-align: center;
+}
+
+.voice-lock-fort__reveal h2 {
+  margin: 0 0 0.5rem;
+  color: var(--text-primary);
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 6vw, 4rem);
+  font-style: italic;
+}
+
+.voice-lock-fort__reveal p {
+  margin: 0;
+  color: var(--text-muted);
+}
+
 @media (max-width: 860px) {
   body.typing-lock-page .app-main {
     align-items: start;

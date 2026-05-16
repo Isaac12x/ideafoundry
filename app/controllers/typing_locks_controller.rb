@@ -24,12 +24,7 @@ class TypingLocksController < ApplicationController
     )
 
     if match.passed?
-      if @user.authenticator_app_enabled?
-        @authenticator_challenge_token = begin_typing_authenticator_challenge!(@return_to)
-        render :authenticator, status: :ok
-      else
-        render_unlock_success
-      end
+      render_next_security_lock_after(:typing)
     else
       @unlock_result = :missed
       @unlock_failure = @user.record_typing_lock_failed_unlock!(match:, challenge_id: @challenge_id)
@@ -48,7 +43,7 @@ class TypingLocksController < ApplicationController
     end
 
     if AuthenticatorApp.verify_code(@user.authenticator_app_secret, params[:authenticator_code])
-      render_unlock_success
+      render_next_security_lock_after(:authenticator)
     else
       @authenticator_challenge_token = params[:authenticator_challenge]
       @authenticator_error = "Invalid authenticator code"
@@ -57,12 +52,12 @@ class TypingLocksController < ApplicationController
   end
 
   def activity
-    return render json: { ok: true } unless @user.typing_lock_enabled?
+    return render json: { ok: true } unless @user.security_lock_enabled?
 
     if typing_session_unlocked?
       render json: {
         ok: true,
-        expires_at: @user.typing_lock_timeout_seconds.seconds.from_now.to_i
+        expires_at: @user.security_lock_timeout_seconds.seconds.from_now.to_i
       }
     else
       render json: { error: "Typing lock required" }, status: :unauthorized
@@ -79,6 +74,44 @@ class TypingLocksController < ApplicationController
     @challenge_id = params[:challenge_id].presence || TypingTextLibrary.random_enrollment_id
     @challenge_text = TypingTextLibrary.enrollment_text(@challenge_id)
     @return_to = return_to_path
+  end
+
+  def enroll_voice
+    @return_to = return_to_path
+    @voice_id_phrase = VoiceFingerprint::CANONICAL_PHRASE
+    @voice_id_variants = VoiceFingerprint::SETUP_VARIANTS
+  end
+
+  def create_voice
+    @return_to = return_to_path
+    fingerprint = VoiceFingerprint.build(samples: voice_id_samples)
+
+    if fingerprint["sample_count"].to_i >= VoiceFingerprint::MIN_ENROLLMENT_SAMPLE_COUNT
+      @user.store_voice_id_fingerprint!(fingerprint)
+      unlock_typing_session! unless @user.typing_lock_enabled? || @user.authenticator_app_enabled?
+      redirect_to @return_to
+    else
+      @voice_id_phrase = VoiceFingerprint::CANONICAL_PHRASE
+      @voice_id_variants = VoiceFingerprint::SETUP_VARIANTS
+      flash.now[:alert] = "Say the voice phrase three times before storing Voice ID."
+      render :enroll_voice, status: :unprocessable_content
+    end
+  end
+
+  def verify_voice
+    @return_to = voice_id_return_to.presence || return_to_path
+
+    unless @user.voice_id_enabled? && voice_id_challenge_pending?
+      remember_typing_lock_return_to!(@return_to)
+      redirect_to root_path
+      return
+    end
+
+    if VoiceFingerprint.match?(template: @user.voice_id_fingerprint, transcript: params[:voice_transcript], sample: voice_payload)
+      render_unlock_success(voice: true)
+    else
+      render_voice_id_unlock(return_to: @return_to, error: "Voice ID did not match. Say the exact phrase again.")
+    end
   end
 
   def create
@@ -106,13 +139,38 @@ class TypingLocksController < ApplicationController
     []
   end
 
+  def voice_payload
+    JSON.parse(params[:voice_payload].presence || "{}")
+  rescue JSON::ParserError
+    {}
+  end
+
+  def voice_id_samples
+    raw_samples = params[:voice_id_samples]
+    raw_samples = JSON.parse(raw_samples) if raw_samples.is_a?(String)
+    Array(raw_samples).map do |sample|
+      sample.respond_to?(:to_unsafe_h) ? sample.to_unsafe_h : sample.to_h
+    end
+  rescue JSON::ParserError, NoMethodError
+    []
+  end
+
   def return_to_path
     safe_return_path(params[:return_to])
   end
 
-  def render_unlock_success
+  def render_unlock_success(voice: false)
     @user.clear_typing_lock_failed_unlock!
     unlock_typing_session!
+    if voice
+      @voice_id_phrase = VoiceFingerprint::CANONICAL_PHRASE
+      @voice_id_error = nil
+      @voice_id_opening = true
+      @voice_id_redirect_url = @return_to
+      render :voice, status: :ok
+      return
+    end
+
     @unlock_result = :matched
     @unlock_redirect_url = @return_to
     @challenge_id ||= ""
@@ -130,5 +188,16 @@ class TypingLocksController < ApplicationController
     @challenge_text = ""
     render :new, status: status
     true
+  end
+
+  def render_next_security_lock_after(step)
+    if step == :typing && @user.authenticator_app_enabled?
+      @authenticator_challenge_token = begin_typing_authenticator_challenge!(@return_to)
+      render :authenticator, status: :ok
+    elsif @user.voice_id_enabled?
+      render_voice_id_unlock(return_to: @return_to)
+    else
+      render_unlock_success
+    end
   end
 end

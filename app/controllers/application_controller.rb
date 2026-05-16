@@ -5,6 +5,9 @@ class ApplicationController < ActionController::Base
   TYPING_AUTHENTICATOR_PENDING_SESSION_KEY = "typing_authenticator_pending_at"
   TYPING_AUTHENTICATOR_RETURN_TO_SESSION_KEY = "typing_authenticator_return_to"
   TYPING_AUTHENTICATOR_TIMEOUT = 5.minutes
+  VOICE_ID_PENDING_SESSION_KEY = "voice_id_pending_at"
+  VOICE_ID_RETURN_TO_SESSION_KEY = "voice_id_return_to"
+  VOICE_ID_TIMEOUT = 5.minutes
 
   helper_method :backlog_enabled?
 
@@ -29,20 +32,20 @@ class ApplicationController < ActionController::Base
 
   def require_typing_unlock
     set_user unless defined?(@user) && @user
-    return unless @user&.typing_lock_enabled?
+    return unless @user&.security_lock_enabled?
     return if typing_session_unlocked?
 
     target = safe_return_path(request.fullpath)
 
-    if @user.typing_fingerprint_configured?
-      if typing_lock_root_display_request?
-        render_typing_lock_unlock(return_to: typing_lock_return_to_path(target))
-      else
-        remember_typing_lock_return_to!(target)
-        redirect_for_typing_lock(root_path)
-      end
-    else
+    if @user.typing_lock_enabled? && !@user.typing_fingerprint_configured?
       redirect_for_typing_lock(enroll_typing_lock_path(return_to: target))
+    elsif @user.voice_id_requested? && !@user.voice_id_configured?
+      redirect_for_typing_lock(enroll_voice_id_path(return_to: target))
+    elsif typing_lock_root_display_request?
+      render_first_security_lock(return_to: typing_lock_return_to_path(target))
+    else
+      remember_typing_lock_return_to!(target)
+      redirect_for_typing_lock(root_path)
     end
   end
 
@@ -50,7 +53,7 @@ class ApplicationController < ActionController::Base
     last_activity_at = typing_last_activity_at
     return false if last_activity_at.zero?
 
-    if last_activity_at >= @user.typing_lock_timeout_seconds.seconds.ago.to_i
+    if last_activity_at >= @user.security_lock_timeout_seconds.seconds.ago.to_i
       touch_typing_session_activity!
       true
     else
@@ -62,6 +65,7 @@ class ApplicationController < ActionController::Base
 
   def unlock_typing_session!
     clear_typing_authenticator_challenge!
+    clear_voice_id_challenge!
     clear_typing_lock_return_to!
     touch_typing_session_activity!
   end
@@ -70,6 +74,7 @@ class ApplicationController < ActionController::Base
     session.delete(LEGACY_TYPING_UNLOCK_SESSION_KEY)
     session.delete(TYPING_ACTIVITY_SESSION_KEY)
     clear_typing_authenticator_challenge!
+    clear_voice_id_challenge!
   end
 
   def begin_typing_authenticator_challenge!(return_to)
@@ -113,6 +118,33 @@ class ApplicationController < ActionController::Base
     session.delete(TYPING_AUTHENTICATOR_RETURN_TO_SESSION_KEY)
   end
 
+  def begin_voice_id_challenge!(return_to)
+    safe_return_to = safe_return_path(return_to)
+    session[VOICE_ID_PENDING_SESSION_KEY] = Time.current.to_i
+    session[VOICE_ID_RETURN_TO_SESSION_KEY] = safe_return_to
+  end
+
+  def voice_id_challenge_pending?
+    pending_at = session[VOICE_ID_PENDING_SESSION_KEY].to_i
+    return false unless pending_at.positive?
+
+    if pending_at >= VOICE_ID_TIMEOUT.ago.to_i
+      true
+    else
+      clear_voice_id_challenge!
+      false
+    end
+  end
+
+  def voice_id_return_to
+    safe_return_path(session[VOICE_ID_RETURN_TO_SESSION_KEY])
+  end
+
+  def clear_voice_id_challenge!
+    session.delete(VOICE_ID_PENDING_SESSION_KEY)
+    session.delete(VOICE_ID_RETURN_TO_SESSION_KEY)
+  end
+
   def remember_typing_lock_return_to!(value)
     session[TYPING_LOCK_RETURN_TO_SESSION_KEY] = safe_typing_lock_return_path(value)
   end
@@ -123,6 +155,18 @@ class ApplicationController < ActionController::Base
 
   def clear_typing_lock_return_to!
     session.delete(TYPING_LOCK_RETURN_TO_SESSION_KEY)
+  end
+
+  def render_first_security_lock(return_to:)
+    if @user.typing_lock_enabled?
+      render_typing_lock_unlock(return_to: return_to)
+    elsif @user.authenticator_app_enabled?
+      @return_to = return_to
+      @authenticator_challenge_token = begin_typing_authenticator_challenge!(return_to)
+      render "typing_locks/authenticator", status: :ok
+    elsif @user.voice_id_enabled?
+      render_voice_id_unlock(return_to: return_to)
+    end
   end
 
   def render_typing_lock_unlock(return_to:)
@@ -137,6 +181,15 @@ class ApplicationController < ActionController::Base
     end
     @return_to = return_to
     render "typing_locks/new", status: :ok
+  end
+
+  def render_voice_id_unlock(return_to:, error: nil, opening: false)
+    begin_voice_id_challenge!(return_to) unless voice_id_challenge_pending?
+    @return_to = return_to
+    @voice_id_phrase = VoiceFingerprint::CANONICAL_PHRASE
+    @voice_id_error = error
+    @voice_id_opening = opening
+    render "typing_locks/voice", status: error.present? ? :unprocessable_content : :ok
   end
 
   def touch_typing_session_activity!
