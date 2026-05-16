@@ -6,9 +6,9 @@
     "build:watch": "node esbuild.config.mjs --watch"
   },
   "dependencies": {
-    "3d-force-graph": "^1.73.4",
     "@excalidraw/excalidraw": "^0.17.6",
     "@rails/actioncable": "^7.0.0",
+    "3d-force-graph": "^1.73.4",
     "hyperformula": "^3.2.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
@@ -21,7 +21,7 @@
   "devDependencies": {
     "@types/react": "^18.3.0",
     "@types/react-dom": "^18.3.0",
-    "esbuild": "^0.20.0",
+    "esbuild": "^0.25.12",
     "typescript": "^5.4.0"
   }
 }
