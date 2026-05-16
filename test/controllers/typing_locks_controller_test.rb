@@ -349,6 +349,19 @@ class TypingLocksControllerTest < ActionDispatch::IntegrationTest
     assert_equal 3, @user.voice_id_fingerprint["sample_count"]
   end
 
+  test "voice id enrollment does not offer typed fallback when recording fails" do
+    @user.update!(settings: { "voice_id" => { "enabled" => true } })
+
+    get enroll_voice_id_path(return_to: settings_security_path)
+
+    assert_response :success
+    assert_match(/Voice ID needs browser speech recording/, response.body)
+    assert_match(/turn Voice ID off in/, response.body)
+    assert_select "a[href=?]", settings_security_path, text: "Security settings"
+    assert_select 'input[type="text"]', count: 0
+    assert_select 'input[type="submit"][disabled="disabled"]', count: 1
+  end
+
   test "voice id only lock protects pages and unlocks with fort animation" do
     @user.update!(settings: {})
     @user.store_voice_id_fingerprint!(VoiceFingerprint.build(samples: voice_samples))

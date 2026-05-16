@@ -767,6 +767,30 @@
   padding-top: 0.5rem;
 }
 
+.settings-autosave-indicator {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  padding: 4px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+  font-weight: 600;
+  z-index: 100;
+  pointer-events: none;
+}
+
+.settings-autosave-indicator.saved {
+  background: var(--success-bg);
+  color: var(--success);
+  border: 1px solid rgba(52, 211, 153, 0.2);
+}
+
+.settings-autosave-indicator.error {
+  background: var(--danger-bg);
+  color: var(--danger);
+  border: 1px solid rgba(248, 113, 113, 0.2);
+}
+
 /* ============================================
    API Keys — inline form alignment
    ============================================ */

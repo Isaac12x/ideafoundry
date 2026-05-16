@@ -113,17 +113,29 @@ class SettingsController < ApplicationController
       end
 
       if @user.voice_id_requested? && !was_voice_id_configured && !@user.voice_id_configured?
-        redirect_to enroll_voice_id_path(return_to: settings_security_path), notice: "Say the Voice ID phrase three times to finish setup."
+        enrollment_url = enroll_voice_id_path(return_to: settings_security_path)
+        respond_to do |format|
+          format.html { redirect_to enrollment_url, notice: "Say the Voice ID phrase three times to finish setup." }
+          format.json { render json: { saved: true, redirect_to: enrollment_url } }
+        end
       else
-        redirect_to settings_security_path, notice: "Security settings updated."
+        respond_to do |format|
+          format.html { redirect_to settings_security_path, notice: "Security settings updated." }
+          format.json { render json: { saved: true } }
+        end
       end
     else
       @typing_lock_settings = @user.typing_lock_settings
       @authenticator_app_settings = @user.authenticator_app_settings
       @voice_id_settings = @user.voice_id_settings
       @authenticator_app_qr_svg = AuthenticatorApp.qr_svg(@user.authenticator_app_provisioning_uri) if @user.authenticator_app_configured?
-      flash.now[:alert] = "Failed to update security settings."
-      render :security, status: :unprocessable_content
+      respond_to do |format|
+        format.html do
+          flash.now[:alert] = "Failed to update security settings."
+          render :security, status: :unprocessable_content
+        end
+        format.json { render json: { saved: false }, status: :unprocessable_entity }
+      end
     end
   end
 
@@ -196,11 +208,19 @@ class SettingsController < ApplicationController
           end
 
     if @user.update_idea_tab_settings(raw)
-      redirect_to settings_idea_tabs_path, notice: 'Idea tab visibility updated.'
+      respond_to do |format|
+        format.html { redirect_to settings_idea_tabs_path, notice: 'Idea tab visibility updated.' }
+        format.json { render json: { saved: true } }
+      end
     else
       @idea_tab_settings = @user.idea_tab_settings
-      flash.now[:alert] = 'Failed to update idea tab settings.'
-      render :idea_tabs, status: :unprocessable_content
+      respond_to do |format|
+        format.html do
+          flash.now[:alert] = 'Failed to update idea tab settings.'
+          render :idea_tabs, status: :unprocessable_content
+        end
+        format.json { render json: { saved: false }, status: :unprocessable_entity }
+      end
     end
   end
 
