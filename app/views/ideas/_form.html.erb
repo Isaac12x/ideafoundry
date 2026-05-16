@@ -83,22 +83,79 @@
       </div>
 
       <!-- Hero Image -->
+      <% hero_drawing = idea.persisted? ? idea.hero_drawing : nil %>
+      <% hero_default_mode = hero_drawing ? "draw" : "file" %>
       <div class="form-panel">
         <h3 class="form-panel-title">Hero Image</h3>
-        <div data-controller="dropzone" data-dropzone-multiple-value="false" data-dropzone-accept-value="image/*" data-dropzone-image-editor-outlet=".image-editor">
-          <div class="dropzone" data-dropzone-target="zone" data-action="click->dropzone#click dragover->dropzone#dragover dragenter->dropzone#dragenter dragleave->dropzone#dragleave drop->dropzone#drop">
-            <div class="dropzone__label" data-dropzone-target="placeholder">
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
-              <span>Drag & drop an image or <strong>browse</strong></span>
-              <small>Recommended: at least 800×600px</small>
-            </div>
-            <div class="dropzone__preview-hero" data-dropzone-target="preview">
-              <% if idea.hero_image.attached? %>
-                <%= image_tag idea.hero_image, style: "max-width:100%;max-height:200px;border-radius:6px;border:1px solid var(--border-default);" %>
-              <% end %>
+        <div class="hero-mode-toggle"
+             data-controller="idea-drawings"
+             data-idea-drawings-role-value="hero"
+             data-idea-drawings-create-url-value="<%= idea.persisted? ? idea_drawings_path(idea) : '#' %>"
+             data-idea-drawings-show-url-pattern-value="/ideas/<%= idea.id %>/drawings/__ID__"
+             data-idea-drawings-thumbnail-mode-value="single"
+             data-action="keydown@window->idea-drawings#closeOnEsc">
+          <div class="hero-mode-tabs">
+            <button type="button"
+                    class="hero-mode-tab <%= 'active' if hero_default_mode == 'file' %>"
+                    data-idea-drawings-target="fileToggle"
+                    data-action="click->idea-drawings#selectFile">Upload File</button>
+            <button type="button"
+                    class="hero-mode-tab <%= 'active' if hero_default_mode == 'draw' %>"
+                    data-idea-drawings-target="drawToggle"
+                    data-action="click->idea-drawings#selectDraw">Draw</button>
+          </div>
+
+          <div class="hero-mode-panel <%= 'hidden' if hero_default_mode == 'draw' %>"
+               data-idea-drawings-target="filePanel">
+            <div data-controller="dropzone" data-dropzone-multiple-value="false" data-dropzone-accept-value="image/*" data-dropzone-image-editor-outlet=".image-editor">
+              <div class="dropzone" data-dropzone-target="zone" data-action="click->dropzone#click dragover->dropzone#dragover dragenter->dropzone#dragenter dragleave->dropzone#dragleave drop->dropzone#drop">
+                <div class="dropzone__label" data-dropzone-target="placeholder">
+                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+                  <span>Drag & drop an image or <strong>browse</strong></span>
+                  <small>Recommended: at least 800×600px</small>
+                </div>
+                <div class="dropzone__preview-hero" data-dropzone-target="preview">
+                  <% if idea.hero_image.attached? %>
+                    <%= image_tag idea.hero_image, style: "max-width:100%;max-height:200px;border-radius:6px;border:1px solid var(--border-default);" %>
+                  <% end %>
+                </div>
+              </div>
+              <%= form.file_field :hero_image, accept: "image/*", class: "form-control", style: "display:none", data: { dropzone_target: "input" } %>
             </div>
           </div>
-          <%= form.file_field :hero_image, accept: "image/*", class: "form-control", style: "display:none", data: { dropzone_target: "input" } %>
+
+          <div class="hero-mode-panel <%= 'hidden' if hero_default_mode == 'file' %>"
+               data-idea-drawings-target="drawPanel">
+            <div class="idea-drawings__header">
+              <button type="button" class="btn btn-sm btn-primary"
+                      data-action="click->idea-drawings#open">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+                <%= hero_drawing ? "Edit Hero Drawing" : "Create Hero Drawing" %>
+              </button>
+            </div>
+            <div class="idea-drawings__list" data-idea-drawings-target="list">
+              <% if hero_drawing %>
+                <%= render "drawings/thumbnail", drawing: hero_drawing %>
+              <% end %>
+            </div>
+            <div class="idea-drawings__empty <%= 'hidden' if hero_drawing %>"
+                 data-idea-drawings-target="empty">
+              <p>No hero drawing yet.</p>
+            </div>
+            <div class="idea-drawings__modal hidden"
+                 data-idea-drawings-target="modal"
+                 data-action="click->idea-drawings#closeOnBackdrop">
+              <div class="idea-drawings__modal-dialog">
+                <div class="idea-drawings__modal-header">
+                  <span class="idea-drawings__modal-title">Hero Drawing</span>
+                  <button type="button" class="btn btn-sm" data-action="click->idea-drawings#close">Close</button>
+                </div>
+                <div class="idea-drawings__modal-body">
+                  <div class="excalidraw-mount" data-idea-drawings-target="mount" data-standalone="false"></div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -145,6 +202,7 @@
       </div>
 
       <!-- Attachments -->
+      <% attachment_drawings = idea.persisted? ? idea.attachment_drawings.to_a : [] %>
       <div class="form-panel">
         <h3 class="form-panel-title">Attachments</h3>
 
@@ -169,7 +227,29 @@
           </div>
           <%= form.file_field :attachments, multiple: true, style: "display:none", data: { dropzone_target: "input" } %>
         </div>
+
+        <% if idea.persisted? %>
+          <div class="form-subsection">
+            <h4 class="form-subsection-title">Drawn Attachments</h4>
+            <%= render "drawings/form_section",
+                  idea: idea, role: "attachment", title: "Drawn Attachments",
+                  mode: "list", drawings: attachment_drawings,
+                  add_label: "Add Drawing as Attachment" %>
+          </div>
+        <% end %>
       </div>
+
+      <!-- Drawings -->
+      <% if idea.persisted? %>
+        <% general_drawings = idea.general_drawings.to_a %>
+        <div class="form-panel">
+          <h3 class="form-panel-title">Drawings</h3>
+          <%= render "drawings/form_section",
+                idea: idea, role: "general", title: "Drawings",
+                mode: "list", drawings: general_drawings,
+                add_label: "Add Drawing" %>
+        </div>
+      <% end %>
 
       <!-- Topologies & Lists -->
       <div class="form-panel">
@@ -197,11 +277,13 @@
           </div>
         </div>
 
+        <% named_lists ||= [] %>
+
         <div class="form-group">
-          <label>Assign to List</label>
+          <label>Kanban Column</label>
           <div class="checkbox-group">
             <div class="checkbox-item">
-              <%= radio_button_tag 'list_id', '', idea.lists.empty?, id: "list_none" %>
+              <%= radio_button_tag 'list_id', '', idea.lists.kanban.empty?, id: "list_none" %>
               <%= label_tag "list_none", "None" %>
             </div>
             <% lists.each do |list| %>
@@ -211,7 +293,23 @@
               </div>
             <% end %>
             <% if lists.empty? %>
-              <p class="text-muted" style="font-size: 0.85rem;">No lists yet. Create one from the Lists page.</p>
+              <p class="text-muted" style="font-size: 0.85rem;">No kanban columns yet. Create one from the Lists page.</p>
+            <% end %>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Named Lists</label>
+          <div class="checkbox-group">
+            <%= hidden_field_tag "named_list_ids[]", "" %>
+            <% named_lists.each do |list| %>
+              <div class="checkbox-item">
+                <%= check_box_tag "named_list_ids[]", list.id, idea.lists.include?(list), id: "named_list_#{list.id}" %>
+                <%= label_tag "named_list_#{list.id}", list.name %>
+              </div>
+            <% end %>
+            <% if named_lists.empty? %>
+              <p class="text-muted" style="font-size: 0.85rem;">No named lists yet. Create one from the Lists page.</p>
             <% end %>
           </div>
         </div>
@@ -271,6 +369,10 @@
           </div>
         </div>
       <% end %>
+
+      <!-- Back-of-the-napkin Calculations -->
+      <%= render "napkin", idea: idea, form: form %>
+
       <!-- Hidden container for dynamic tab panels rendered by template-switch JS -->
       <div data-template-switch-target="tabPanelsContainer"></div>
 
@@ -388,8 +490,10 @@
       <!-- Form Actions -->
       <div class="form-panel">
         <div style="display:flex;flex-direction:column;gap:10px;">
-          <%= form.submit idea.new_record? ? "Create Idea" : "Update Idea", class: "btn btn-primary", style: "width:100%;justify-content:center;" %>
-          <%= link_to "Cancel", idea.new_record? ? ideas_path : idea_path(idea), class: "btn", style: "width:100%;justify-content:center;" %>
+          <% submit_label = (idea.new_record? || idea.draft?) ? "Create Idea" : "Update Idea" %>
+          <% cancel_path = (idea.new_record? || idea.draft?) ? ideas_path : idea_path(idea) %>
+          <%= form.submit submit_label, class: "btn btn-primary", style: "width:100%;justify-content:center;" %>
+          <%= link_to "Cancel", cancel_path, class: "btn", style: "width:100%;justify-content:center;" %>
         </div>
       </div>
 

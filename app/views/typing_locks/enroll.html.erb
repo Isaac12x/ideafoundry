@@ -1,0 +1,12 @@
+<% content_for :body_class, "typing-lock-page" %>
+
+<%= render "typing_locks/typing_panel",
+      mode: :enroll,
+      title: "Train your typing fingerprint",
+      subtitle: "Copy the passage once so Idea Foundry can store your keyboard rhythm for future unlocks.",
+      text: @challenge_text,
+      challenge_id: @challenge_id,
+      return_to: @return_to,
+      form_url: typing_lock_enrollment_path,
+      submit_label: "Store Fingerprint",
+      min_samples: TypingFingerprint::MIN_ENROLLMENT_SAMPLE_COUNT %>

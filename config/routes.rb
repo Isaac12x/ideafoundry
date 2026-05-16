@@ -19,6 +19,9 @@ Rails.application.routes.draw do
   # Programmatic intake API
   namespace :api do
     namespace :v1 do
+      resources :ideas, only: [] do
+        resource :document, only: [:show, :update], controller: :idea_documents
+      end
       resources :submissions, only: [:create, :show]
     end
   end
@@ -45,6 +48,14 @@ Rails.application.routes.draw do
       post :send_email
       post :approve_pending_email
       delete :discard_pending_email
+      post :enrich
+      get :enrichment_status
+      post :archive
+      post :restore
+    end
+    collection do
+      get :archived
+      get :search
     end
     resources :versions, only: [:index, :show] do
       member do
@@ -63,12 +74,17 @@ Rails.application.routes.draw do
       end
     end
     resources :notes, only: [:create, :destroy]
+    resources :idea_entries, only: [:create, :update, :destroy]
+    resources :drawings, only: [:new, :show, :create, :update, :destroy]
+    resources :agent_tokens, only: [:create, :destroy], controller: :idea_agent_tokens
   end
 
   # Lists and drag-and-drop functionality
   resources :lists do
     member do
       post :send_email
+      post :add_idea
+      delete :remove_idea
     end
     collection do
       patch :update_idea_position
@@ -94,13 +110,23 @@ Rails.application.routes.draw do
 
   # Settings management
   get 'settings', to: 'settings#index'
+  patch 'settings', to: 'settings#update_display'
   get 'settings/scoring', to: 'settings#scoring'
   patch 'settings/scoring', to: 'settings#update_scoring'
   get 'settings/scoring/weights', to: 'settings#get_scoring_weights'
   get 'settings/email', to: 'settings#email'
   patch 'settings/notifications', to: 'settings#update_notifications'
+  get 'settings/security', to: 'settings#security'
+  patch 'settings/security', to: 'settings#update_security'
+  get 'settings/idea-work-tokens', to: 'settings#idea_work_tokens', as: :settings_idea_work_tokens
+  patch 'settings/idea-work-tokens', to: 'settings#update_idea_work_tokens'
   get 'settings/topologies', to: 'settings#topologies'
   patch 'settings/topologies', to: 'settings#update_topologies'
+  get 'settings/lists', to: 'settings#lists'
+  patch 'settings/lists', to: 'settings#update_lists'
+  get 'settings/idea-tabs', to: 'settings#idea_tabs'
+  patch 'settings/idea-tabs', to: 'settings#update_idea_tabs'
+  get 'settings/idea_tabs', to: redirect('/settings/idea-tabs')
   get 'settings/templates', to: 'settings#templates'
   get 'settings/templates/new', to: 'templates#new', as: :new_settings_template
   get 'settings/exports', to: 'settings#exports'
@@ -114,10 +140,34 @@ Rails.application.routes.draw do
   post 'settings/api_keys', to: 'settings#create_api_key'
   delete 'settings/api_keys/:id', to: 'settings#destroy_api_key', as: :settings_api_key_destroy
 
+  get 'ideas/:idea_id/agent-skill.md', to: 'idea_agent_tokens#skill', as: :idea_agent_skill
+
+  # Typing fingerprint lock
+  get 'typing-lock', to: 'typing_locks#new', as: :typing_lock
+  post 'typing-lock/lock', to: 'typing_locks#lock', as: :lock_typing_lock
+  post 'typing-lock/verify', to: 'typing_locks#verify', as: :verify_typing_lock
+  post 'typing-lock/authenticator', to: 'typing_locks#verify_authenticator', as: :verify_authenticator_typing_lock
+  patch 'typing-lock/activity', to: 'typing_locks#activity', as: :typing_lock_activity
+  get 'typing-lock/enroll', to: 'typing_locks#enroll', as: :enroll_typing_lock
+  post 'typing-lock/enroll', to: 'typing_locks#create', as: :typing_lock_enrollment
+
+  # KB section
+  get 'knowledge-base', to: 'kb#index', as: :kb
+  get 'kb', to: redirect('/knowledge-base')
+  get 'knowledge-base/file', to: 'kb#file', as: :kb_file
+  get 'kb/file', to: redirect('/knowledge-base/file')
+  resources :facts, only: [:create, :destroy]
+
+  # Settings - KB folders
+  get 'settings/kb', to: 'settings#kb', as: :settings_kb
+  patch 'settings/kb', to: 'settings#update_kb'
+
   # Backlog
   resources :build_items, path: "backlog", except: [:show] do
     member do
       patch :toggle
+      patch :toggle_checklist_item
+      get :cancel_edit
     end
     collection do
       patch :reorder

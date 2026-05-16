@@ -1,7 +1,7 @@
-<div class="backlog-item backlog-item--editing" id="build_item_<%= build_item.id %>">
+<div class="backlog-item backlog-item--editing" id="build_item_<%= build_item.id %>" data-item-id="<%= build_item.id %>">
   <%= form_with(model: build_item, class: "backlog-edit-form") do |f| %>
     <div class="backlog-edit-fields">
-      <%= f.text_field :title, class: "backlog-form-input", autofocus: true %>
+      <%= f.text_field :title, class: "backlog-form-input" %>
       <%= f.text_area :description, class: "backlog-form-textarea", rows: 2, placeholder: "Notes or details..." %>
 
       <div class="backlog-form-links" data-controller="backlog-links">
@@ -23,7 +23,7 @@
 
     <div class="backlog-edit-actions">
       <%= f.submit "Save", class: "btn btn-primary btn-sm" %>
-      <button type="button" class="btn btn-sm" data-controller="inline-edit" data-action="click->inline-edit#cancel">Cancel</button>
+      <button type="button" class="btn btn-sm" data-controller="inline-edit" data-action="click->inline-edit#cancel" data-build-item-id="<%= build_item.id %>">Cancel</button>
     </div>
   <% end %>
 </div>

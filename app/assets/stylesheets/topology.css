@@ -156,15 +156,15 @@
   filter: drop-shadow(0 0 5px color-mix(in srgb, var(--parent-color, var(--accent)) 30%, transparent));
 }
 
-/* Last child: rounded elbow corner */
+/* Last child: single L-shaped box (border-left + border-bottom = perfect └ corner) */
 .topology-node-children > .topology-node:last-child::after {
-  border-radius: 0 0 0 6px;
+  width: calc(var(--indent) * 0.5);
+  border-bottom: 2px solid var(--parent-color, var(--accent));
+  border-radius: 0 0 0 3px;
 }
 
 .topology-node-children > .topology-node:last-child::before {
-  border-radius: 0;
-  left: calc(var(--indent) * -0.5 - 1px);
-  width: calc(var(--indent) * 0.5 + 1px);
+  display: none;
 }
 
 /* Brighten connectors on hover — heat trace intensifies */
