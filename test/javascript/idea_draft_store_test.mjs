@@ -39,7 +39,8 @@ test("draft digest is stable for the same content", async () => {
   );
 });
 
-test("meaningful draft detection ignores empty scaffolding", () => {
+test("meaningful draft detection ignores empty scaffolding and default idea fields", () => {
   assert.equal(hasMeaningfulDraft({ "idea[title]": "  ", authenticity_token: "token" }), false);
+  assert.equal(hasMeaningfulDraft({ "idea[state]": "idea_new", "idea[template_id]": "", "idea[title]": "" }), false);
   assert.equal(hasMeaningfulDraft({ "idea[title]": "Something worth saving" }), true);
 });

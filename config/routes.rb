@@ -55,6 +55,7 @@ Rails.application.routes.draw do
     end
     collection do
       get :archived
+      get :uncompleted
       get :search
     end
     resources :versions, only: [:index, :show] do
