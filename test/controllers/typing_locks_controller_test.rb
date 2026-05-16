@@ -332,6 +332,97 @@ class TypingLocksControllerTest < ActionDispatch::IntegrationTest
     assert_redirected_to root_path
   end
 
+  test "voice id enrollment stores fingerprint after multiple phrase variants" do
+    @user.update!(settings: { "voice_id" => { "enabled" => true } })
+
+    post voice_id_enrollment_path, params: {
+      voice_id_samples: [
+        { transcript: "By my will and power you will open. Open sesame", duration_ms: 1900, rms: 0.42 },
+        { transcript: "By my will and power, you will open. Open sesame!", duration_ms: 2050, rms: 0.39 },
+        { transcript: "By my will and power you will open open sesame", duration_ms: 1980, rms: 0.41 }
+      ],
+      return_to: ideas_path
+    }
+
+    assert_redirected_to ideas_path
+    assert @user.reload.voice_id_configured?
+    assert_equal 3, @user.voice_id_fingerprint["sample_count"]
+  end
+
+  test "voice id only lock protects pages and unlocks with fort animation" do
+    @user.update!(settings: {})
+    @user.store_voice_id_fingerprint!(VoiceFingerprint.build(samples: voice_samples))
+
+    get ideas_path
+
+    assert_redirected_to root_path
+
+    follow_redirect!
+    assert_response :success
+    assert_match(/Voice ID/, response.body)
+    assert_match(/By my will and power you will open\. Open sesame/, response.body)
+
+    post verify_voice_id_typing_lock_path, params: {
+      voice_transcript: VoiceFingerprint::CANONICAL_PHRASE,
+      voice_payload: { duration_ms: 2000, rms: 0.4 }.to_json,
+      return_to: ideas_path
+    }
+
+    assert_response :success
+    assert_match(/voice-lock-fort--opening/, response.body)
+    assert_match(/voice-lock-fort__panel--top/, response.body)
+    assert_match(/voice-lock-fort__panel--bottom/, response.body)
+    assert_match(/voice-lock-fort__lock/, response.body)
+    assert_match(/data-voice-id-redirect-url-value="#{ideas_path}"/, response.body)
+
+    get ideas_path
+    assert_response :success
+  end
+
+  test "voice id is the last lock after typing and authenticator" do
+    unlock_text = TypingTextLibrary.unlock_text("spark-gap")
+    @user.store_typing_fingerprint!(fingerprint_for(unlock_text, hold: 91, flight: 41))
+    @user.update_authenticator_app_settings("enabled" => "1")
+    @user.store_voice_id_fingerprint!(VoiceFingerprint.build(samples: voice_samples))
+    travel_time = Time.zone.local(2026, 1, 1, 12, 0, 0)
+
+    travel_to travel_time do
+      post verify_typing_lock_path, params: {
+        challenge_id: "spark-gap",
+        timing_payload: timing_events_for(unlock_text, hold: 94, flight: 44).to_json,
+        return_to: ideas_path
+      }
+
+      assert_response :success
+      assert_match(/Authenticator code/, response.body)
+      assert_no_match(/Voice ID/, response.body)
+      assert_no_match(/typing-lock-animation--matched/, response.body)
+      challenge = css_select('input[name="authenticator_challenge"]').first["value"]
+
+      post verify_authenticator_typing_lock_path, params: {
+        authenticator_challenge: challenge,
+        authenticator_code: AuthenticatorApp.code(@user.authenticator_app_secret, at: travel_time),
+        return_to: ideas_path
+      }
+
+      assert_response :success
+      assert_match(/Voice ID/, response.body)
+      assert_no_match(/typing-lock-animation--matched/, response.body)
+
+      post verify_voice_id_typing_lock_path, params: {
+        voice_transcript: VoiceFingerprint::CANONICAL_PHRASE,
+        voice_payload: { duration_ms: 2000, rms: 0.4 }.to_json,
+        return_to: ideas_path
+      }
+
+      assert_response :success
+      assert_match(/voice-lock-fort--opening/, response.body)
+
+      get ideas_path
+      assert_response :success
+    end
+  end
+
   test "valid authenticator code completes the two step unlock" do
     unlock_text = TypingTextLibrary.unlock_text("spark-gap")
     @user.store_typing_fingerprint!(fingerprint_for(unlock_text, hold: 91, flight: 41))
@@ -394,6 +485,14 @@ class TypingLocksControllerTest < ActionDispatch::IntegrationTest
 
   def fingerprint_for(text, hold: 90, flight: 40)
     TypingFingerprint.build(events: timing_events_for(text, hold:, flight:), expected_text: text)
+  end
+
+  def voice_samples
+    [
+      { "transcript" => "By my will and power you will open. Open sesame", "duration_ms" => 1900, "rms" => 0.42 },
+      { "transcript" => "By my will and power, you will open. Open sesame!", "duration_ms" => 2050, "rms" => 0.39 },
+      { "transcript" => "By my will and power you will open open sesame", "duration_ms" => 1980, "rms" => 0.41 }
+    ]
   end
 
   def timing_events_for(text, hold: 88, flight: 42)
