@@ -1,0 +1,34 @@
+<div class="filters-panel">
+  <%= form_with url: submissions_path, method: :get do |form| %>
+    <%= form.hidden_field :status, value: params[:status] %>
+    <div class="filters-grid">
+      <div class="filter-group">
+        <%= form.label :source, "Source" %>
+        <% sources = @user.submissions.distinct.pluck(:source).compact %>
+        <%= form.select :source,
+            options_for_select(
+              [['All Sources', '']] + sources.map { |s| [s.titleize, s] },
+              params[:source]
+            ),
+            {},
+            class: "form-control" %>
+      </div>
+
+      <div class="filter-group">
+        <%= form.label :priority, "Priority" %>
+        <%= form.select :priority,
+            options_for_select(
+              [['All Priorities', '']] + Submission.priorities.keys.map { |k| [k.titleize, k] },
+              params[:priority]
+            ),
+            {},
+            class: "form-control" %>
+      </div>
+    </div>
+
+    <div class="filter-actions">
+      <%= link_to "Clear", submissions_path(status: params[:status]), class: "btn btn-sm" %>
+      <%= form.submit "Apply", class: "btn btn-sm btn-primary" %>
+    </div>
+  <% end %>
+</div>

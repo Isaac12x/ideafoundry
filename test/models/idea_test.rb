@@ -51,7 +51,9 @@ class IdeaTest < ActiveSupport::TestCase
 
   test "should calculate score automatically" do
     @idea.save!
-    expected_score = (5 * 0.3 + 8 * 0.4 + 6 * 0.2 - 3 * 0.1).round(2)
+    # Raw: 5*0.3 + 3*(-0.1) + 8*0.4 + 6*0.2 = 5.6, normalized to 0-10: (5.6+1)/10*10 = 6.6
+    raw = 5 * 0.3 + 8 * 0.4 + 6 * 0.2 - 3 * 0.1
+    expected_score = ((raw - (-1.0)) / (9.0 - (-1.0)) * 10.0).round(2)
     assert_equal expected_score, @idea.computed_score
   end
 
@@ -246,17 +248,17 @@ class IdeaTest < ActiveSupport::TestCase
   end
 
   # Relationship tests (Requirement 1.4)
-  test "should belong to multiple lists" do
-    idea = Idea.create!(user: @user, title: "Multi-list Idea")
+  test "should belong to only one list" do
+    idea = Idea.create!(user: @user, title: "Single-list Idea")
     list1 = List.create!(user: @user, name: "List 1")
     list2 = List.create!(user: @user, name: "List 2")
-    
-    idea.lists << list1
-    idea.lists << list2
-    
-    assert_equal 2, idea.lists.count
-    assert_includes idea.lists, list1
-    assert_includes idea.lists, list2
+
+    idea.idea_lists.create!(list: list1)
+    assert_equal 1, idea.lists.count
+
+    # Adding to a second list should fail validation
+    second = idea.idea_lists.build(list: list2)
+    assert_not second.valid?
   end
 
   test "should cascade delete idea_lists when idea is deleted" do

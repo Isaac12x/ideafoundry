@@ -1,0 +1,94 @@
+<%
+  tab_descriptions = {
+    'scores'               => 'Breakdown of TRL, opportunity, timing, and difficulty with weighted formula.',
+    'media'                => 'Images, files, and attachments linked to the idea.',
+    'metadata'             => 'Tags, custom fields, and any template-driven data.',
+    'notes'                => 'Free-form notes and running observations.',
+    'todo'                 => 'Actionable checklist items tied to the idea.',
+    'history'              => 'Version history and change log.',
+    'drawing'              => 'Excalidraw whiteboards attached to the idea.',
+    'tool'                 => 'Third-party tools, libraries, or services relevant to this idea.',
+    'competitor'           => 'Direct competitors already in the market.',
+    'potential_competitor' => 'Adjacent players who could become competitors.'
+  }
+
+  core_tabs  = User::AVAILABLE_IDEA_TABS - User::IDEA_ENTRY_TABS
+  entry_tabs = User::AVAILABLE_IDEA_TABS & User::IDEA_ENTRY_TABS
+%>
+
+<div class="settings-container">
+  <div class="page-header">
+    <h2>Idea Tabs</h2>
+    <%= link_to settings_path, class: "btn btn-sm" do %>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      Back to Settings
+    <% end %>
+  </div>
+
+  <p class="config-description" style="max-width: 720px; margin-bottom: 1.5rem;">
+    Every idea's detail page shows a set of tabs below the description. Toggle which tabs appear here &mdash; hidden tabs stay out of the UI but your data is preserved. The <strong>Description</strong> tab is always visible.
+  </p>
+
+  <%= form_with url: settings_idea_tabs_path, method: :patch, local: true, class: "idea-tabs-form" do |form| %>
+    <section class="tab-toggle-section">
+      <header class="tab-toggle-section__header">
+        <h3>Core tabs</h3>
+        <p>Built-in views that ship with every idea.</p>
+      </header>
+
+      <div class="tab-toggle-list">
+        <% core_tabs.each do |tab| %>
+          <label class="tab-toggle" for="idea_tab_<%= tab %>">
+            <div class="tab-toggle__text">
+              <span class="tab-toggle__name"><%= User::IDEA_TAB_LABELS[tab] %></span>
+              <span class="tab-toggle__description"><%= tab_descriptions[tab] %></span>
+            </div>
+            <span class="tab-toggle__switch">
+              <%= check_box_tag "idea_tabs[#{tab}]", "1", @idea_tab_settings[tab] == true, id: "idea_tab_#{tab}", class: "tab-toggle__input" %>
+              <span class="tab-toggle__track" aria-hidden="true">
+                <span class="tab-toggle__thumb"></span>
+              </span>
+            </span>
+          </label>
+        <% end %>
+      </div>
+    </section>
+
+    <section class="tab-toggle-section">
+      <header class="tab-toggle-section__header">
+        <h3>Structured entry tabs</h3>
+        <p>Lists of records saved to the database &mdash; add, edit, and delete per idea. Enable only what you'll use.</p>
+      </header>
+
+      <div class="tab-toggle-list">
+        <% entry_tabs.each do |tab| %>
+          <label class="tab-toggle tab-toggle--entry" for="idea_tab_<%= tab %>">
+            <div class="tab-toggle__text">
+              <span class="tab-toggle__name">
+                <%= User::IDEA_TAB_LABELS[tab] %>
+                <span class="tab-toggle__badge">DB</span>
+              </span>
+              <span class="tab-toggle__description"><%= tab_descriptions[tab] %></span>
+            </div>
+            <span class="tab-toggle__switch">
+              <%= check_box_tag "idea_tabs[#{tab}]", "1", @idea_tab_settings[tab] == true, id: "idea_tab_#{tab}", class: "tab-toggle__input" %>
+              <span class="tab-toggle__track" aria-hidden="true">
+                <span class="tab-toggle__thumb"></span>
+              </span>
+            </span>
+          </label>
+        <% end %>
+      </div>
+    </section>
+
+    <div class="tab-toggle-actions">
+      <%= form.submit "Save Settings", class: "btn btn-primary" %>
+      <%= button_tag "Reset to Defaults",
+            type: "submit",
+            name: "reset_idea_tabs",
+            value: "1",
+            class: "btn btn-secondary",
+            data: { turbo_confirm: "Reset idea tab visibility to defaults?" } %>
+    </div>
+  <% end %>
+</div>

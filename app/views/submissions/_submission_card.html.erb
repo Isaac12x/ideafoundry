@@ -1,0 +1,35 @@
+<div class="submission-card submission-<%= submission.status %>">
+  <%= link_to submission_path(submission), class: "submission-card-link", data: { turbo_frame: "_top" } do %>
+    <div class="submission-card-header">
+      <h3 class="submission-title"><%= submission.title %></h3>
+      <span class="submission-priority priority-<%= submission.priority %>"><%= submission.priority %></span>
+    </div>
+
+    <div class="submission-meta">
+      <span><code><%= submission.temporary_idea_id %></code></span>
+      <% if submission.source.present? %>
+        <span class="source-badge"><%= submission.source %></span>
+      <% end %>
+      <span class="submission-status status-<%= submission.status %>"><%= submission.status %></span>
+      <% if submission.files.attached? %>
+        <span class="file-count">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>
+          <%= submission.files.count %>
+        </span>
+      <% end %>
+    </div>
+
+    <% if submission.body.present? %>
+      <div class="submission-body-preview">
+        <%= truncate(submission.body, length: 140) %>
+      </div>
+    <% end %>
+
+    <div class="submission-footer">
+      <span class="submission-date"><%= time_ago_in_words(submission.created_at) %> ago</span>
+      <% if submission.idea_id.present? %>
+        <span class="submission-linked">Idea #<%= submission.idea_id %></span>
+      <% end %>
+    </div>
+  <% end %>
+</div>

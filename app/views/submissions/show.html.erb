@@ -1,0 +1,202 @@
+<div class="submission-detail-container">
+  <div class="submission-header">
+    <div class="submission-header-top">
+      <%= link_to submissions_path, class: "btn btn-sm" do %>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        Back
+      <% end %>
+      <div class="header-actions">
+        <% if @submission.rejected? %>
+          <%= button_to reopen_submission_path(@submission), method: :post, class: "btn btn-sm", data: { turbo_confirm: "Reopen this submission?" } do %>
+            Reopen
+          <% end %>
+        <% end %>
+        <%= link_to submission_path(@submission), method: :delete,
+                    data: { turbo_method: :delete, turbo_confirm: "Delete this submission?" },
+                    class: "btn btn-sm btn-danger" do %>
+          Delete
+        <% end %>
+      </div>
+    </div>
+
+    <div class="submission-header-content">
+      <h1 class="submission-detail-title"><%= @submission.title %></h1>
+      <div class="submission-header-meta">
+        <span><code><%= @submission.temporary_idea_id %></code></span>
+        <span class="submission-status status-<%= @submission.status %>"><%= @submission.status.humanize %></span>
+        <span class="submission-priority priority-<%= @submission.priority %>"><%= @submission.priority %></span>
+        <% if @submission.source.present? %>
+          <span class="source-badge"><%= @submission.source %></span>
+        <% end %>
+        <span class="submission-timestamp">
+          Received <%= time_ago_in_words(@submission.created_at) %> ago
+        </span>
+        <% if @submission.reviewed_at.present? %>
+          <span class="submission-timestamp">
+            Reviewed <%= time_ago_in_words(@submission.reviewed_at) %> ago
+          </span>
+        <% end %>
+      </div>
+    </div>
+  </div>
+
+  <% if @submission.approved? && @submission.idea.present? %>
+    <div class="alert alert-success">
+      Approved as <%= link_to @submission.idea.title, idea_path(@submission.idea), style: "color: var(--success); text-decoration: underline;" %>.
+    </div>
+  <% end %>
+
+  <% if @submission.rejected? && @submission.review_notes.present? %>
+    <div class="alert alert-error">
+      <strong>Rejection notes:</strong> <%= @submission.review_notes %>
+    </div>
+  <% end %>
+
+  <div class="submission-review-layout">
+    <div class="submission-main-content">
+      <div data-controller="tabs" data-tabs-default-tab-value="content">
+        <div class="tabs-nav">
+          <button data-tabs-target="tab" data-tab-name="content" data-action="click->tabs#switch" class="tab-button active">
+            Content
+          </button>
+          <button data-tabs-target="tab" data-tab-name="files" data-action="click->tabs#switch" class="tab-button">
+            Files<% if @submission.files.attached? %> (<%= @submission.files.count %>)<% end %>
+          </button>
+          <button data-tabs-target="tab" data-tab-name="raw" data-action="click->tabs#switch" class="tab-button">
+            Raw Data
+          </button>
+        </div>
+
+        <div class="tabs-content">
+          <!-- Content Tab -->
+          <div data-tabs-target="panel" data-tab-panel="content" class="tab-panel">
+            <% if @submission.body.present? %>
+              <div class="submission-body-content">
+                <%= simple_format(@submission.body) %>
+              </div>
+            <% else %>
+              <div class="empty-state-small">
+                <p>No body content.</p>
+              </div>
+            <% end %>
+          </div>
+
+          <!-- Files Tab -->
+          <div data-tabs-target="panel" data-tab-panel="files" class="tab-panel hidden">
+            <% if @submission.files.attached? %>
+              <div class="attachments-grid">
+                <% @submission.files.each do |file| %>
+                  <div class="attachment-item">
+                    <% if file.image? %>
+                      <%= image_tag file, class: "attachment-thumbnail" %>
+                    <% else %>
+                      <div class="attachment-file">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                      </div>
+                    <% end %>
+                    <div class="attachment-info">
+                      <p class="attachment-name"><%= file.filename %></p>
+                      <p class="attachment-size"><%= number_to_human_size(file.byte_size) %></p>
+                      <%= link_to "Download", rails_blob_path(file, disposition: "attachment"), class: "btn btn-sm" %>
+                    </div>
+                  </div>
+                <% end %>
+              </div>
+            <% else %>
+              <div class="empty-state-small">
+                <p>No files attached.</p>
+              </div>
+            <% end %>
+          </div>
+
+          <!-- Raw Data Tab -->
+          <div data-tabs-target="panel" data-tab-panel="raw" class="tab-panel hidden">
+            <% if @submission.raw_data.present? %>
+              <div class="raw-data-viewer">
+                <pre><code><%= JSON.pretty_generate(@submission.raw_data) rescue @submission.raw_data %></code></pre>
+              </div>
+            <% else %>
+              <div class="empty-state-small">
+                <p>No raw data stored.</p>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <% if @submission.pending? %>
+      <div class="submission-sidebar">
+        <h3 class="sidebar-title">Review & Approve</h3>
+
+        <%= form_with url: approve_submission_path(@submission), method: :post, class: "approval-form" do |form| %>
+          <div class="form-group">
+            <%= form.label :title, "Title" %>
+            <%= form.text_field :title, value: @submission.title, class: "form-control", placeholder: "Override title..." %>
+          </div>
+
+          <div class="form-group">
+            <%= form.label :topology_ids, "Topologies" %>
+            <div class="topology-checkboxes">
+              <% @topologies.each do |topology| %>
+                <label class="checkbox-label">
+                  <%= check_box_tag "topology_ids[]", topology.id, false %>
+                  <span class="topology-color-dot" style="background-color: <%= topology.color || 'var(--accent)' %>"></span>
+                  <%= topology.name %>
+                </label>
+              <% end %>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <%= form.label :list_id, "List" %>
+            <%= form.select :list_id,
+                options_for_select(
+                  [['No list', '']] + @lists.map { |l| [l.name, l.id] }
+                ),
+                {},
+                class: "form-control" %>
+          </div>
+
+          <div class="scoring-group">
+            <h4>Scores</h4>
+            <div class="score-inputs">
+              <div class="score-input">
+                <%= form.label :trl, "TRL" %>
+                <%= form.number_field :trl, min: 0, max: 10, class: "form-control", placeholder: "0-10" %>
+              </div>
+              <div class="score-input">
+                <%= form.label :opportunity, "Opportunity" %>
+                <%= form.number_field :opportunity, min: 0, max: 10, class: "form-control", placeholder: "0-10" %>
+              </div>
+              <div class="score-input">
+                <%= form.label :timing, "Timing" %>
+                <%= form.number_field :timing, min: 0, max: 10, class: "form-control", placeholder: "0-10" %>
+              </div>
+              <div class="score-input">
+                <%= form.label :difficulty, "Difficulty" %>
+                <%= form.number_field :difficulty, min: 0, max: 10, class: "form-control", placeholder: "0-10" %>
+              </div>
+            </div>
+          </div>
+
+          <div class="approval-actions">
+            <%= form.submit "Approve", class: "btn btn-primary", data: { turbo_confirm: "Approve this submission and create an idea?" } %>
+          </div>
+        <% end %>
+
+        <div class="rejection-section">
+          <%= form_with url: reject_submission_path(@submission), method: :post, class: "rejection-form" do |form| %>
+            <div class="form-group">
+              <%= form.label :review_notes, "Rejection notes" %>
+              <%= form.text_area :review_notes, class: "form-control", rows: 2, placeholder: "Why reject this submission..." %>
+            </div>
+            <%= form.submit "Reject", class: "btn btn-danger", data: { turbo_confirm: "Reject this submission?" } %>
+          <% end %>
+        </div>
+      </div>
+    <% end %>
+  </div>
+</div>

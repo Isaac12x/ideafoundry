@@ -1,0 +1,38 @@
+<div class="todo-item <%= 'todo-item--completed' if todo_item.completed? %>"
+     id="todo_item_<%= todo_item.id %>"
+     data-todo-sort-target="item"
+     data-item-id="<%= todo_item.id %>"
+     draggable="<%= todo_item.completed? ? 'false' : 'true' %>">
+
+  <div class="todo-check">
+    <%= button_to toggle_idea_todo_item_path(todo_item.idea, todo_item), method: :patch, class: "todo-check-btn", data: { turbo_stream: true } do %>
+      <% if todo_item.completed? %>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+          <rect x="3" y="3" width="18" height="18" rx="5" fill="var(--success)" stroke="var(--success)" stroke-width="1.5"/>
+          <polyline points="8.5 12.5 11 15 15.5 9.5" stroke="var(--bg-base)" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      <% else %>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+          <rect x="3" y="3" width="18" height="18" rx="5" stroke="var(--border-emphasis)" stroke-width="1.5" fill="var(--bg-elevated)"/>
+        </svg>
+      <% end %>
+    <% end %>
+  </div>
+
+  <span class="todo-title"><%= todo_item.title %></span>
+
+  <div class="todo-actions">
+    <% unless todo_item.completed? %>
+      <span class="todo-drag" title="Drag to reorder">
+        <svg width="10" height="14" viewBox="0 0 10 16" fill="currentColor">
+          <circle cx="3" cy="3" r="1.3"/><circle cx="7" cy="3" r="1.3"/>
+          <circle cx="3" cy="7.5" r="1.3"/><circle cx="7" cy="7.5" r="1.3"/>
+          <circle cx="3" cy="12" r="1.3"/><circle cx="7" cy="12" r="1.3"/>
+        </svg>
+      </span>
+    <% end %>
+    <%= button_to idea_todo_item_path(todo_item.idea, todo_item), method: :delete, class: "todo-delete-btn", data: { turbo_stream: true, turbo_confirm: "Delete this task?" }, title: "Delete" do %>
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    <% end %>
+  </div>
+</div>

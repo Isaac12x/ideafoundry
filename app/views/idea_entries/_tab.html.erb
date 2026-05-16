@@ -1,0 +1,24 @@
+<%# Renders a tab panel for a given kind of idea_entry (tool / competitor / potential_competitor) %>
+<% entries = idea.idea_entries.where(kind: kind).ordered %>
+<% label = IdeaEntry.label_for(kind) %>
+<% singular = IdeaEntry.singular_for(kind) %>
+<% form_entry = local_assigns[:idea_entry] || IdeaEntry.new(kind: kind) %>
+
+<div class="idea-entries-tab" id="idea_entries_tab_<%= idea.id %>_<%= kind %>">
+  <div class="idea-entries-add-section" id="idea_entry_form_<%= idea.id %>_<%= kind %>">
+    <%= render "idea_entries/form", idea: idea, kind: kind, idea_entry: form_entry %>
+  </div>
+
+  <div class="idea-entries-list" id="idea_entries_list_<%= idea.id %>_<%= kind %>">
+    <% if entries.any? %>
+      <% entries.each do |entry| %>
+        <%= render "idea_entries/idea_entry", idea: idea, idea_entry: entry %>
+      <% end %>
+    <% else %>
+      <div class="idea-entries-empty" id="idea_entries_empty_<%= idea.id %>_<%= kind %>">
+        <p>No <%= label.downcase %> yet</p>
+        <span class="notes-empty-hint">Add your first <%= singular.downcase %> above</span>
+      </div>
+    <% end %>
+  </div>
+</div>

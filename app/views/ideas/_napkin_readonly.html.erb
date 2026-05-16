@@ -1,0 +1,37 @@
+<%# Renders idea.napkin_calculations as a static evaluated grid. %>
+<%# Locals: idea %>
+<% data = idea.napkin_calculations %>
+<% if data.is_a?(Hash) && data["cells"].is_a?(Hash) && data["cells"].any? %>
+  <% rows = (data["rows"] || 10).to_i %>
+  <% cols = (data["cols"] || 5).to_i %>
+  <% evaluated = napkin_evaluate(data) %>
+  <div class="napkin-readonly">
+    <table class="napkin-grid napkin-grid--readonly">
+      <thead>
+        <tr>
+          <th class="napkin-corner"></th>
+          <% cols.times do |c| %>
+            <th class="napkin-col-header"><%= ("A".ord + c).chr %></th>
+          <% end %>
+        </tr>
+      </thead>
+      <tbody>
+        <% rows.times do |r| %>
+          <tr>
+            <th class="napkin-row-header"><%= r + 1 %></th>
+            <% cols.times do |c| %>
+              <% ref = "#{("A".ord + c).chr}#{r + 1}" %>
+              <% cell = evaluated[ref] %>
+              <% classes = ["napkin-cell"] %>
+              <% classes << "is-bold" if cell&.dig(:bold) %>
+              <% classes << "napkin-cell--error" if cell&.dig(:error) %>
+              <td class="<%= classes.join(' ') %>">
+                <%= cell ? cell[:display] : "" %>
+              </td>
+            <% end %>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+<% end %>
