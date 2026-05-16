@@ -60,6 +60,27 @@ class IdeasControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
   end
 
+  test "show hides agent access while idea work tokens are disabled" do
+    @user.update_idea_work_token_settings("enabled" => "0")
+
+    get idea_url(@idea)
+
+    assert_response :success
+    assert_select ".idea-agent-access", 0
+  end
+
+  test "show renders compact agent access while idea work tokens are enabled" do
+    @user.update_idea_work_token_settings("enabled" => "1")
+    IdeaAgentToken.generate(idea: @idea, name: "Existing")
+
+    get idea_url(@idea)
+
+    assert_response :success
+    assert_select ".idea-agent-access", 1
+    assert_select ".idea-agent-access__usage", 0
+    assert_select ".idea-agent-access__row", 1
+  end
+
   test "should get edit" do
     get edit_idea_url(@idea)
     assert_response :success

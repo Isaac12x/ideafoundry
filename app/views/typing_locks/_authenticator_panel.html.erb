@@ -1,0 +1,39 @@
+<section class="typing-lock-shell typing-authenticator-shell">
+  <div class="typing-lock-topline">
+    <span class="typing-lock-mark">Idea Foundry</span>
+    <span>Authenticator check</span>
+  </div>
+
+  <div class="typing-lock-heading">
+    <h2>Authenticator code</h2>
+    <p>Enter the six-digit code from your authenticator app before the workspace opens.</p>
+  </div>
+
+  <%= form_with url: verify_authenticator_typing_lock_path,
+        method: :post,
+        local: true,
+        class: "typing-authenticator-form",
+        data: { turbo: false } do %>
+    <%= hidden_field_tag :return_to, return_to %>
+    <%= hidden_field_tag :authenticator_challenge, challenge_token %>
+
+    <label class="typing-authenticator-label" for="authenticator_code">Authenticator code</label>
+    <%= text_field_tag :authenticator_code,
+          nil,
+          id: "authenticator_code",
+          class: "typing-authenticator-input",
+          inputmode: "numeric",
+          pattern: "[0-9]*",
+          maxlength: 6,
+          autocomplete: "one-time-code",
+          autofocus: true %>
+
+    <% if error.present? %>
+      <p class="typing-authenticator-error" role="alert"><%= error %></p>
+    <% end %>
+
+    <div class="typing-lock-actions">
+      <%= submit_tag "Verify Code", class: "btn btn-primary" %>
+    </div>
+  <% end %>
+</section>

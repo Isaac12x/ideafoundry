@@ -2,45 +2,82 @@
    KB — Knowledge Base Section
    ============================================ */
 
-/* Full-width override when on the KB page */
-body.kb-page .app-main {
-  max-width: none;
-  padding: 0;
-}
-
-/* ---- Outer page wrapper ---- */
-.kb-page {
-  display: flex;
-  flex-direction: column;
-  height: calc(100vh - 60px); /* subtract app-header height */
+/* KB owns the full viewport below the sticky app header. */
+html:has(body.kb-page) {
+  height: 100%;
   overflow: hidden;
 }
 
-/* ---- Tab header ---- */
-.kb-tab-header {
-  flex-shrink: 0;
-  border-bottom: 1px solid var(--border-default);
-  background: var(--bg-surface);
-  padding: 0 1.5rem;
+body.kb-page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+  overflow: hidden;
 }
 
-.kb-tab-nav {
+body.kb-page .app-main {
+  max-width: none;
+  padding: 0;
+  height: calc(100vh - 60px);
+  min-height: calc(100vh - 60px);
+  height: calc(100dvh - 60px);
+  min-height: calc(100dvh - 60px);
+  width: 100%;
+  overflow: hidden;
   display: flex;
-  gap: 0;
+  flex-direction: column; 
+  margin: 0 !important;
+}
+
+.kb-shell {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  width: 100%;
+}
+
+/* ---- Tab header — reuse shared .tabs-nav from idea_detail.css ---- */
+.kb-page .tabs-nav {
+  flex-shrink: 0;
+}
+
+/* SVG + label alignment inside KB tab buttons */
+.kb-page .tab-button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 /* ---- KB full panel (no container constraint) ---- */
 .kb-panel-full {
   flex: 1;
+  height: 100%;
+  min-height: 0;
   overflow: hidden;
   display: flex;
   flex-direction: column;
+}
+
+.kb-panel-full.hidden {
+  display: none;
+}
+
+/* ---- Facts panel: same full-page surface as KB ---- */
+.kb-facts-panel-full {
+  align-items: center;
+  background: var(--bg-base);
+  overflow-y: auto;
 }
 
 /* ---- Split layout ---- */
 .kb-layout {
   display: flex;
   flex: 1;
+  height: 100%;
+  min-height: 0;
   overflow: hidden;
 }
 
@@ -94,7 +131,8 @@ body.kb-page .app-main {
   flex-shrink: 0;
 }
 
-.kb-folder-group.is-collapsed .kb-folder-chevron {
+.kb-folder-group.is-collapsed .kb-folder-chevron,
+.kb-dir-group.is-collapsed .kb-folder-chevron {
   transform: rotate(-90deg);
 }
 
@@ -113,7 +151,55 @@ body.kb-page .app-main {
 
 /* File list */
 .kb-folder-files {
-  padding-left: 0.5rem;
+  padding-left: 0;
+}
+
+/* Subdirectory nodes */
+.kb-dir-group {
+  margin-bottom: 0.05rem;
+}
+
+.kb-dir-header {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  width: 100%;
+  padding: 0.3rem 0.75rem;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s;
+}
+
+.kb-dir-header:hover {
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+}
+
+.kb-dir-label {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.kb-dir-children {
+  padding-left: 0.85rem;
+}
+
+.kb-dir-group.is-collapsed .kb-dir-children {
+  display: none;
+}
+
+/* Empty tree state */
+.kb-folder-header--empty {
+  opacity: 0.45;
+  cursor: default;
+  pointer-events: none;
 }
 
 .kb-folder-group.is-collapsed .kb-folder-files {
@@ -132,7 +218,7 @@ body.kb-page .app-main {
   display: flex;
   align-items: center;
   gap: 0.4rem;
-  padding: 0.3rem 0.75rem 0.3rem 1rem;
+  padding: 0.3rem 0.75rem;
   font-size: 0.82rem;
   color: var(--text-secondary);
   text-decoration: none;
@@ -200,6 +286,7 @@ body.kb-page .app-main {
 /* ---- Content area ---- */
 .kb-content-area {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
   background: var(--bg-base);
 }
@@ -221,16 +308,18 @@ turbo-frame#kb-content {
   align-items: center;
   justify-content: center;
   gap: 1rem;
-  height: 60%;
+  height: 100%;
+  min-height: 300px;
   color: var(--text-muted);
   font-size: 0.9rem;
 }
 
 /* ---- IPFs/BPFs tab ---- */
 .kb-facts-container {
-  max-width: 800px;
+  width: 100%;
+  max-width: 820px;
   margin: 0 auto;
-  padding: 2rem;
+  padding: 2.5rem 2rem;
 }
 
 .kb-facts-subtitle {

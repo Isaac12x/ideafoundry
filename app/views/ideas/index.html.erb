@@ -2,12 +2,20 @@
   <div class="page-header">
     <h2>Ideas</h2>
     <div class="header-actions">
+      <div class="view-toggle-group">
+        <button class="btn btn-sm" data-view-toggle="grid" title="Grid view">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        </button>
+        <button class="btn btn-sm" data-view-toggle="list" title="List view">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+      </div>
       <%= link_to archived_ideas_path, class: "btn" do %>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4"/></svg>
         Archive
       <% end %>
       <%= link_to lists_path, class: "btn" do %>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
         Lists
       <% end %>
       <%= link_to new_idea_path, class: "btn btn-primary" do %>
@@ -43,3 +51,35 @@
     <% end %>
   <% end %>
 </div>
+
+<script>
+(function() {
+  function applyView() {
+    var container = document.querySelector('.ideas-container');
+    if (!container) return;
+    var view = localStorage.getItem('ideas-view') || 'grid';
+    container.dataset.view = view;
+    document.querySelectorAll('[data-view-toggle]').forEach(function(btn) {
+      btn.classList.toggle('active', btn.dataset.viewToggle === view);
+    });
+  }
+
+  applyView();
+  document.addEventListener('turbo:frame-render', applyView);
+
+  if (!document.__ideaViewToggle) {
+    document.__ideaViewToggle = true;
+    document.addEventListener('click', function(e) {
+      var btn = e.target.closest('[data-view-toggle]');
+      if (!btn) return;
+      var view = btn.dataset.viewToggle;
+      var container = document.querySelector('.ideas-container');
+      if (container) container.dataset.view = view;
+      localStorage.setItem('ideas-view', view);
+      document.querySelectorAll('[data-view-toggle]').forEach(function(b) {
+        b.classList.toggle('active', b.dataset.viewToggle === view);
+      });
+    });
+  }
+})();
+</script>

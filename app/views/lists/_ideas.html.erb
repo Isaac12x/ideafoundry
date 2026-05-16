@@ -27,14 +27,6 @@
       </div>
     <% end %>
 
-    <% enabled_entry_tabs = User::IDEA_ENTRY_TABS.select { |kind| @user&.idea_tab_enabled?(kind) } %>
-    <% if enabled_entry_tabs.any? %>
-      <div class="idea-card-entry-panel idea-card-entry-panel--list">
-        <% enabled_entry_tabs.each do |kind| %>
-          <%= render "idea_entries/card_summary", idea: idea, kind: kind %>
-        <% end %>
-      </div>
-    <% end %>
   </div>
 <% end %>
 

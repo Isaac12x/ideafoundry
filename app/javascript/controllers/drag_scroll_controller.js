@@ -14,10 +14,12 @@ export default class extends Controller {
     this._move = this.onMove.bind(this);
     this._up = this.onUp.bind(this);
     this._click = this.onClick.bind(this);
+    this._cancel = this.onCancel.bind(this);
 
     this.element.addEventListener("mousedown", this._down);
     window.addEventListener("mousemove", this._move);
     window.addEventListener("mouseup", this._up);
+    window.addEventListener("blur", this._cancel);
     this.element.addEventListener("click", this._click, true);
     this.element.classList.add("drag-scroll");
   }
@@ -26,6 +28,7 @@ export default class extends Controller {
     this.element.removeEventListener("mousedown", this._down);
     window.removeEventListener("mousemove", this._move);
     window.removeEventListener("mouseup", this._up);
+    window.removeEventListener("blur", this._cancel);
     this.element.removeEventListener("click", this._click, true);
   }
 
@@ -47,7 +50,16 @@ export default class extends Controller {
 
   onUp() {
     if (!this.isDown) return;
+    this.reset();
+  }
+
+  onCancel() {
+    if (this.isDown) this.reset();
+  }
+
+  reset() {
     this.isDown = false;
+    this.moved = false;
     this.element.classList.remove("is-dragging");
   }
 
