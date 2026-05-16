@@ -35,7 +35,7 @@ class IdeasController < ApplicationController
       update_kanban_list_membership
       update_named_list_memberships
 
-      redirect_to @idea, notice: 'Idea was successfully created.'
+      redirect_to idea_path(@idea, idea_draft_saved: 1), notice: 'Idea was successfully created.'
     else
       load_form_options
       render :new, status: :unprocessable_content
@@ -60,7 +60,7 @@ class IdeasController < ApplicationController
           update_named_list_memberships if params.key?(:named_list_ids)
         end
         
-        format.html { redirect_to @idea, notice: 'Idea was successfully updated.' }
+        format.html { redirect_to idea_path(@idea, idea_draft_saved: (was_draft ? 1 : nil)), notice: 'Idea was successfully updated.' }
         format.json { 
           render json: { 
             success: true, 

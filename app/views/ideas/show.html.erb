@@ -1,3 +1,9 @@
+<% if params[:idea_draft_saved].present? %>
+  <div data-controller="idea-draft-persist"
+       data-idea-draft-persist-clear-on-connect-value="true"
+       data-idea-draft-persist-storage-key-value="idea-draft:v1:user-<%= @user.id %>"></div>
+<% end %>
+
 <div class="idea-detail-container">
   <!-- Header Section -->
   <div class="idea-header">

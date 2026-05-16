@@ -47,12 +47,33 @@ class IdeasControllerTest < ActionDispatch::IntegrationTest
     assert_equal "Promoted", draft.title
   end
 
+  test "saving a draft redirects with client draft cleanup marker" do
+    draft = @user.ideas.create!(title: "Draft", state: :idea_new, draft: true)
+
+    patch idea_url(draft), params: { idea: { title: "Promoted" } }
+
+    assert_redirected_to idea_url(draft, idea_draft_saved: 1)
+  end
+
+  test "draft idea edit form enables encrypted client draft persistence" do
+    draft = @user.ideas.create!(title: "Draft", state: :idea_new, draft: true)
+
+    get edit_idea_url(draft, draft: 1)
+
+    assert_response :success
+    assert_select "form[data-controller~=?]", "idea-draft-persist", count: 1 do
+      assert_select "[data-idea-draft-persist-target=?]", "prompt", count: 1
+      assert_select "button[data-action*=?]", "idea-draft-persist#restore", count: 1
+      assert_select "button[data-action*=?]", "idea-draft-persist#discard", count: 1
+    end
+  end
+
   test "should create idea" do
     assert_difference("Idea.count") do
       post ideas_url, params: { idea: { title: "New Idea" } }
     end
 
-    assert_redirected_to idea_url(Idea.last)
+    assert_redirected_to idea_url(Idea.last, idea_draft_saved: 1)
   end
 
   test "should show idea" do
