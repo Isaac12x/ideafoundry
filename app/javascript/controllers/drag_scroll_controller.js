@@ -38,13 +38,15 @@ export default class extends Controller {
     this.moved = false;
     this.startX = e.pageX;
     this.scrollLeft = this.element.scrollLeft;
-    this.element.classList.add("is-dragging");
   }
 
   onMove(e) {
     if (!this.isDown) return;
     const walk = e.pageX - this.startX;
-    if (Math.abs(walk) > 4) this.moved = true;
+    if (Math.abs(walk) > 4) {
+      this.moved = true;
+      this.element.classList.add("is-dragging");
+    }
     this.element.scrollLeft = this.scrollLeft - walk;
   }
 
@@ -59,7 +61,6 @@ export default class extends Controller {
 
   reset() {
     this.isDown = false;
-    this.moved = false;
     this.element.classList.remove("is-dragging");
   }
 
