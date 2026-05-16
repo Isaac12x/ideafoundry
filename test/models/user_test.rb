@@ -59,6 +59,59 @@ class UserTest < ActiveSupport::TestCase
     assert_nil user.authenticator_app_secret
   end
 
+  test "voice id stores a derived fingerprint and can be disabled without raw audio" do
+    user = users(:one)
+    samples = [
+      { "transcript" => "By my will and power you will open. Open sesame", "duration_ms" => 1900, "rms" => 0.42 },
+      { "transcript" => "By my will and power, you will open. Open sesame!", "duration_ms" => 2050, "rms" => 0.39 },
+      { "transcript" => "By my will and power you will open open sesame", "duration_ms" => 1980, "rms" => 0.41 }
+    ]
+
+    assert user.store_voice_id_fingerprint!(VoiceFingerprint.build(samples: samples))
+
+    assert user.voice_id_enabled?
+    assert user.voice_id_configured?
+    assert_equal 3, user.voice_id_fingerprint["sample_count"]
+    assert_equal VoiceFingerprint::CANONICAL_PHRASE, user.voice_id_fingerprint["phrase"]
+    assert_nil user.voice_id_fingerprint["raw_audio"]
+
+    assert user.update_voice_id_settings("enabled" => "0")
+    refute user.reload.voice_id_enabled?
+    refute user.voice_id_configured?
+  end
+
+  test "voice id requires the canonical unlock phrase" do
+    user = users(:one)
+    fingerprint = VoiceFingerprint.build(samples: [
+      { "transcript" => "By my will and power you will open. Open sesame", "duration_ms" => 1900, "rms" => 0.42 },
+      { "transcript" => "By my will and power, you will open. Open sesame!", "duration_ms" => 2050, "rms" => 0.39 },
+      { "transcript" => "By my will and power you will open open sesame", "duration_ms" => 1980, "rms" => 0.41 }
+    ])
+    user.store_voice_id_fingerprint!(fingerprint)
+
+    assert VoiceFingerprint.match?(template: user.voice_id_fingerprint, transcript: "By my will and power you will open. Open sesame", sample: { "duration_ms" => 2000, "rms" => 0.40 })
+    refute VoiceFingerprint.match?(template: user.voice_id_fingerprint, transcript: "please open", sample: { "duration_ms" => 2000, "rms" => 0.40 })
+  end
+
+  test "security lock is enabled by any configured lock combination" do
+    user = users(:one)
+    user.update!(settings: {})
+    refute user.security_lock_enabled?
+
+    user.update_authenticator_app_settings("enabled" => "1")
+    assert user.security_lock_enabled?
+
+    user.update_authenticator_app_settings("enabled" => "0")
+    refute user.security_lock_enabled?
+
+    user.store_voice_id_fingerprint!(VoiceFingerprint.build(samples: [
+      { "transcript" => "By my will and power you will open. Open sesame", "duration_ms" => 1900, "rms" => 0.42 },
+      { "transcript" => "By my will and power, you will open. Open sesame!", "duration_ms" => 2050, "rms" => 0.39 },
+      { "transcript" => "By my will and power you will open open sesame", "duration_ms" => 1980, "rms" => 0.41 }
+    ]))
+    assert user.security_lock_enabled?
+  end
+
   test "idea work tokens default to disabled" do
     user = User.new(email: "fresh-agent@example.com", name: "Fresh Agent", settings: nil)
 

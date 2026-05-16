@@ -71,9 +71,25 @@ class SettingsControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
   end
 
-  test "GET settings/security renders page" do
+  test "GET settings/security renders settings for all local unlock checks" do
     get settings_security_path
     assert_response :success
+    assert_select "input[name=?]", "typing_lock[enabled]"
+    assert_select "input[name=?]", "authenticator_app[enabled]"
+    assert_select "input[name=?]", "voice_id[enabled]"
+    assert_match(/Voice ID/, response.body)
+  end
+
+  test "PATCH settings/security enabling voice id redirects to voice setup" do
+    patch settings_security_path, params: {
+      typing_lock: { enabled: "0", lock_after_minutes: "5" },
+      authenticator_app: { enabled: "0" },
+      voice_id: { enabled: "1" }
+    }
+
+    assert_redirected_to enroll_voice_id_path(return_to: settings_security_path)
+    assert @user.reload.voice_id_enabled?
+    refute @user.voice_id_configured?
   end
 
   test "GET settings/idea-work-tokens renders page" do

@@ -81,6 +81,7 @@ class SettingsController < ApplicationController
   def security
     @typing_lock_settings = @user.typing_lock_settings
     @authenticator_app_settings = @user.authenticator_app_settings
+    @voice_id_settings = @user.voice_id_settings
     @authenticator_app_qr_svg = AuthenticatorApp.qr_svg(@user.authenticator_app_provisioning_uri) if @user.authenticator_app_configured?
   end
 
@@ -99,19 +100,27 @@ class SettingsController < ApplicationController
   end
 
   def update_security
+    was_voice_id_configured = @user.voice_id_configured?
     typing_lock_updated = @user.update_typing_lock_settings(typing_lock_params)
     authenticator_app_updated = @user.update_authenticator_app_settings(authenticator_app_params)
+    voice_id_updated = @user.update_voice_id_settings(voice_id_params)
 
-    if typing_lock_updated && authenticator_app_updated
-      if @user.typing_lock_enabled?
+    if typing_lock_updated && authenticator_app_updated && voice_id_updated
+      if @user.security_lock_enabled?
         unlock_typing_session!
       else
         expire_typing_session!
       end
-      redirect_to settings_security_path, notice: "Security settings updated."
+
+      if @user.voice_id_requested? && !was_voice_id_configured && !@user.voice_id_configured?
+        redirect_to enroll_voice_id_path(return_to: settings_security_path), notice: "Say the Voice ID phrase three times to finish setup."
+      else
+        redirect_to settings_security_path, notice: "Security settings updated."
+      end
     else
       @typing_lock_settings = @user.typing_lock_settings
       @authenticator_app_settings = @user.authenticator_app_settings
+      @voice_id_settings = @user.voice_id_settings
       @authenticator_app_qr_svg = AuthenticatorApp.qr_svg(@user.authenticator_app_provisioning_uri) if @user.authenticator_app_configured?
       flash.now[:alert] = "Failed to update security settings."
       render :security, status: :unprocessable_content
@@ -347,6 +356,10 @@ class SettingsController < ApplicationController
 
   def authenticator_app_params
     params.fetch(:authenticator_app, {}).permit(:enabled)
+  end
+
+  def voice_id_params
+    params.fetch(:voice_id, {}).permit(:enabled)
   end
 
   def idea_work_token_params

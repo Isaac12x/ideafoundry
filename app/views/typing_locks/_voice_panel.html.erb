@@ -1,0 +1,92 @@
+<% mode = local_assigns.fetch(:mode, :unlock) %>
+<% phrase = local_assigns.fetch(:phrase, VoiceFingerprint::CANONICAL_PHRASE) %>
+<% variants = Array(local_assigns[:variants]).presence || VoiceFingerprint::SETUP_VARIANTS %>
+<% return_to = local_assigns[:return_to].presence || root_path %>
+<% error = local_assigns[:error] %>
+<% opening = local_assigns.fetch(:opening, false) %>
+<% redirect_url = local_assigns[:redirect_url].presence || return_to %>
+
+<section class="typing-lock-shell voice-id-shell<%= " voice-id-shell--opening" if opening %>"
+         data-controller="voice-id"
+         data-voice-id-mode-value="<%= mode %>"
+         data-voice-id-phrase-value="<%= phrase %>"
+         data-voice-id-redirect-url-value="<%= redirect_url %>">
+  <div class="typing-lock-topline">
+    <span class="typing-lock-mark">Idea Foundry</span>
+    <span>Voice ID</span>
+  </div>
+
+  <% if opening %>
+    <div class="voice-lock-fort voice-lock-fort--opening" aria-live="polite">
+      <div class="voice-lock-fort__panel voice-lock-fort__panel--top"></div>
+      <div class="voice-lock-fort__panel voice-lock-fort__panel--bottom"></div>
+      <div class="voice-lock-fort__lock" aria-label="Unlocked Voice ID lock"></div>
+      <div class="voice-lock-fort__reveal">
+        <h2>Voice ID matched</h2>
+        <p>The fort is opening.</p>
+      </div>
+    </div>
+  <% else %>
+    <div class="typing-lock-heading">
+      <h2><%= mode == :enroll ? "Set up Voice ID" : "Voice ID" %></h2>
+      <% if mode == :enroll %>
+        <p>Say the phrase three times, with small natural variations. Idea Foundry stores a derived fingerprint in the database, not raw audio.</p>
+      <% else %>
+        <p>Final lock. Say the exact phrase before the workspace opens.</p>
+      <% end %>
+    </div>
+
+    <blockquote class="voice-id-phrase">“<%= phrase %>”</blockquote>
+
+    <% if mode == :enroll %>
+      <ol class="voice-id-variants">
+        <% variants.each do |variant| %>
+          <li><%= variant %></li>
+        <% end %>
+      </ol>
+    <% end %>
+
+    <%= form_with url: (mode == :enroll ? voice_id_enrollment_path : verify_voice_id_typing_lock_path),
+          method: :post,
+          local: true,
+          class: "voice-id-form",
+          data: { turbo: false, voice_id_target: "form" } do %>
+      <%= hidden_field_tag :return_to, return_to %>
+      <%= hidden_field_tag :voice_payload, "{}", data: { voice_id_target: "payload" } %>
+
+      <% if mode == :enroll %>
+        <div data-voice-id-target="samples"></div>
+        <% variants.each_with_index do |variant, index| %>
+          <%= hidden_field_tag "voice_id_samples[][transcript]", "", data: { voice_id_target: "sampleTranscript", voice_id_variant: variant, voice_id_index: index } %>
+          <%= hidden_field_tag "voice_id_samples[][duration_ms]", "", data: { voice_id_target: "sampleDuration", voice_id_index: index } %>
+          <%= hidden_field_tag "voice_id_samples[][rms]", "", data: { voice_id_target: "sampleRms", voice_id_index: index } %>
+        <% end %>
+      <% else %>
+        <%= hidden_field_tag :voice_transcript, "", data: { voice_id_target: "transcript" } %>
+      <% end %>
+
+      <p class="voice-id-status" data-voice-id-target="status" aria-live="polite">
+        Press record and say the phrase.
+      </p>
+
+      <% if error.present? %>
+        <p class="typing-authenticator-error" role="alert"><%= error %></p>
+      <% end %>
+
+      <div class="typing-lock-actions">
+        <button type="button" class="btn btn-secondary" data-action="voice-id#record">
+          <%= mode == :enroll ? "Record next sample" : "Record phrase" %>
+        </button>
+        <%= submit_tag(mode == :enroll ? "Store Voice ID" : "Unlock with Voice ID", class: "btn btn-primary") %>
+      </div>
+
+      <p class="typing-lock-noscript">
+        If browser speech capture is unavailable, enter the spoken transcript manually for local development:
+        <%= text_field_tag mode == :enroll ? "voice_id_samples[][transcript]" : :voice_transcript,
+              "",
+              class: "typing-authenticator-input",
+              placeholder: phrase %>
+      </p>
+    <% end %>
+  <% end %>
+</section>

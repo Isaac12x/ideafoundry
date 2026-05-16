@@ -18,8 +18,7 @@
 
   <%
     body_class = content_for?(:body_class) ? yield(:body_class) : ""
-    typing_activity_enabled = @user&.typing_lock_enabled? &&
-      @user.typing_fingerprint_configured? &&
+    typing_activity_enabled = @user&.security_lock_enabled? &&
       !body_class.include?("typing-lock-page")
     typing_lock_shortcut = "Ctrl/Cmd+Shift+L"
     display_quote = @user&.display_quote.to_s.strip
@@ -31,7 +30,7 @@
           data-typing-activity-lock-url-value="<%= root_path %>"
           data-typing-activity-lock-action-url-value="<%= lock_typing_lock_path(return_to: request.fullpath) %>"
           data-typing-activity-shortcut-value="<%= typing_lock_shortcut %>"
-          data-typing-activity-timeout-seconds-value="<%= @user.typing_lock_timeout_seconds %>"
+          data-typing-activity-timeout-seconds-value="<%= @user.security_lock_timeout_seconds %>"
         <% end %>>
     <header class="app-header">
       <div class="header-brand">

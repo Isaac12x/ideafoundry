@@ -1,0 +1,10 @@
+<% content_for :body_class, "typing-lock-page" %>
+
+<%= render "typing_locks/voice_panel",
+      mode: :enroll,
+      phrase: @voice_id_phrase,
+      variants: @voice_id_variants,
+      return_to: @return_to,
+      error: flash.now[:alert],
+      opening: false,
+      redirect_url: nil %>
