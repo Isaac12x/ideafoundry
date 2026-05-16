@@ -419,6 +419,10 @@ class User < ApplicationRecord
     typing_lock_timeout_seconds
   end
 
+  def idea_draft_unlock_seed
+    Rails.application.key_generator.generate_key("idea-draft:user:#{id}:#{created_at.to_i}", 32).unpack1("H*")
+  end
+
   def idea_work_token_settings
     DEFAULT_IDEA_WORK_TOKEN_SETTINGS.merge(settings&.dig('idea_work_tokens') || {})
   end
