@@ -50,10 +50,23 @@ export async function stableDraftDigest(draft) {
 }
 
 export function hasMeaningfulDraft(draft) {
+  const defaultValues = {
+    "idea[state]": "idea_new",
+    "idea[trl]": "0",
+    "idea[difficulty]": "0",
+    "idea[opportunity]": "0",
+    "idea[timing]": "0",
+  };
+
   return Object.entries(draft || {}).some(([name, value]) => {
     if (["authenticity_token", "_method", "utf8"].includes(name)) return false;
     if (name.endsWith("[]") && Array.isArray(value)) return value.some((item) => String(item).trim() !== "");
-    return String(value ?? "").trim() !== "";
+
+    const normalizedValue = String(value ?? "").trim();
+    if (normalizedValue === "") return false;
+    if (Object.prototype.hasOwnProperty.call(defaultValues, name) && normalizedValue === defaultValues[name]) return false;
+
+    return true;
   });
 }
 

@@ -35,7 +35,7 @@ class IdeasController < ApplicationController
       update_kanban_list_membership
       update_named_list_memberships
 
-      redirect_to idea_path(@idea, idea_draft_saved: 1), notice: 'Idea was successfully created.'
+      redirect_to uncompleted_ideas_path(idea_draft_saved: 1), notice: 'Idea was successfully created.'
     else
       load_form_options
       render :new, status: :unprocessable_content
@@ -60,7 +60,12 @@ class IdeasController < ApplicationController
           update_named_list_memberships if params.key?(:named_list_ids)
         end
         
-        format.html { redirect_to idea_path(@idea, idea_draft_saved: (was_draft ? 1 : nil)), notice: 'Idea was successfully updated.' }
+        format.html do
+          redirect_to(
+            was_draft ? uncompleted_ideas_path(idea_draft_saved: 1) : idea_path(@idea),
+            notice: 'Idea was successfully updated.'
+          )
+        end
         format.json { 
           render json: { 
             success: true, 
@@ -172,6 +177,18 @@ class IdeasController < ApplicationController
     @ideas = @user.ideas.non_draft.where.not(discarded_at: nil)
                   .order(discarded_at: :desc)
                   .page(params[:page]).per(20)
+  end
+
+  # GET /ideas/uncompleted
+  # Gives users a calm place to resume abandoned auto-drafts and the idea they
+  # just started instead of interrupting the composition flow immediately.
+  def uncompleted
+    recent_cutoff = 15.minutes.ago
+    @draft_ideas = @user.ideas.drafts.where(discarded_at: nil).order(updated_at: :desc)
+    @recent_ideas = @user.ideas.non_draft
+                         .where(discarded_at: nil)
+                         .where("ideas.updated_at >= ?", recent_cutoff)
+                         .order(updated_at: :desc)
   end
 
   # POST /ideas/:id/archive

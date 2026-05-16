@@ -47,12 +47,36 @@ class IdeasControllerTest < ActionDispatch::IntegrationTest
     assert_equal "Promoted", draft.title
   end
 
-  test "saving a draft redirects with client draft cleanup marker" do
+  test "saving a draft redirects to uncompleted ideas with client draft cleanup marker" do
     draft = @user.ideas.create!(title: "Draft", state: :idea_new, draft: true)
 
     patch idea_url(draft), params: { idea: { title: "Promoted" } }
 
-    assert_redirected_to idea_url(draft, idea_draft_saved: 1)
+    assert_redirected_to uncompleted_ideas_url(idea_draft_saved: 1)
+  end
+
+  test "uncompleted ideas page lists unfinished drafts and recently started ideas" do
+    draft = @user.ideas.create!(title: "Draft", state: :idea_new, draft: true, updated_at: 2.minutes.ago)
+    promoted = @user.ideas.create!(title: "Promoted", state: :idea_new, draft: false, created_at: 1.minute.ago, updated_at: 1.minute.ago)
+    old = @user.ideas.create!(title: "Old Complete", state: :idea_new, draft: false, created_at: 2.days.ago, updated_at: 2.days.ago)
+
+    get uncompleted_ideas_url
+
+    assert_response :success
+    assert_match draft.title, response.body
+    assert_match promoted.title, response.body
+    assert_no_match old.title, response.body
+  end
+
+  test "draft idea edit form enables delayed bottom-right uncompleted prompt" do
+    draft = @user.ideas.create!(title: "Draft", state: :idea_new, draft: true)
+
+    get edit_idea_url(draft, draft: 1)
+
+    assert_response :success
+    assert_select ".idea-draft-resume.idea-draft-resume--toast", count: 1
+    assert_select "[data-idea-draft-persist-prompt-delay-value=?]", "6000", count: 1
+    assert_select "a[href=?]", uncompleted_ideas_path, text: /View Uncompleted/
   end
 
   test "draft idea edit form enables encrypted client draft persistence" do
@@ -73,7 +97,7 @@ class IdeasControllerTest < ActionDispatch::IntegrationTest
       post ideas_url, params: { idea: { title: "New Idea" } }
     end
 
-    assert_redirected_to idea_url(Idea.last, idea_draft_saved: 1)
+    assert_redirected_to uncompleted_ideas_url(idea_draft_saved: 1)
   end
 
   test "should show idea" do
