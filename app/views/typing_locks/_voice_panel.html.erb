@@ -12,8 +12,6 @@
          data-voice-id-phrase-value="<%= phrase %>"
          data-voice-id-redirect-url-value="<%= redirect_url %>">
   <div class="typing-lock-topline">
-    <span class="typing-lock-mark">Idea Foundry</span>
-    <span>Voice ID</span>
   </div>
 
   <% if opening %>
@@ -28,11 +26,11 @@
     </div>
   <% else %>
     <div class="typing-lock-heading">
-      <h2><%= mode == :enroll ? "Set up Voice ID" : "Voice ID" %></h2>
+      <h2><%= mode == :enroll ? "Set up Voice ID" : "Test Your Speech" %></h2>
       <% if mode == :enroll %>
         <p>Say each phrase below once. Press record, speak clearly, then record the next one.</p>
       <% else %>
-        <p>Press the button when you are ready, then say the phrase out loud.</p>
+        <p style="text-align: right;">Please say out loud the following sentence.</p>
       <% end %>
     </div>
 
@@ -66,15 +64,16 @@
       <% end %>
 
       <p class="voice-id-status" data-voice-id-target="status" aria-live="polite">
-        <%= mode == :enroll ? "Press record and say the phrase." : "Press I'm ready when you're ready to speak." %>
+        <%= mode == :enroll ? "Press record and say the phrase." : "Press the \"I'm ready\" button when you're ready to speak." %>
       </p>
 
       <% if error.present? %>
         <p class="typing-authenticator-error" role="alert"><%= error %></p>
       <% end %>
 
-      <% if mode == :enroll %>
-        <div class="typing-lock-actions">
+      <div class="typing-lock-actions">
+        <% if mode == :enroll %>
+
           <button type="button" class="btn btn-secondary" data-action="voice-id#record" data-voice-id-target="recordBtn">
             Record phrase
           </button>
@@ -82,20 +81,22 @@
                 class: "btn btn-primary",
                 disabled: true,
                 data: { voice_id_target: "submitBtn" } %>
-        </div>
-      <% else %>
-        <div class="typing-lock-actions">
+
+        <% else %>
+
+        <div>
           <button type="button" class="btn btn-primary" data-action="voice-id#record" data-voice-id-target="recordBtn">
             I'm ready
           </button>
         </div>
-      <% end %>
+        <% end %>
+      </div>
 
       <p class="typing-lock-noscript">
         <% if mode == :enroll %>
           Voice ID needs browser speech recording. If recording is not working, try again later and turn Voice ID off in <%= link_to "Security settings", settings_security_path %> for now.
         <% else %>
-          Voice ID needs browser speech recording to unlock.
+          Requires browser speech recording to hear you.
         <% end %>
       </p>
     <% end %>
