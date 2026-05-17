@@ -32,7 +32,7 @@
       <% if mode == :enroll %>
         <p>Say each phrase below once. Press record, speak clearly, then record the next one.</p>
       <% else %>
-        <p>Listening for Voice ID.</p>
+        <p>Press the button when you are ready, then say the phrase out loud.</p>
       <% end %>
     </div>
 
@@ -66,7 +66,7 @@
       <% end %>
 
       <p class="voice-id-status" data-voice-id-target="status" aria-live="polite">
-        <%= mode == :enroll ? "Press record and say the phrase." : "Listening for Voice ID..." %>
+        <%= mode == :enroll ? "Press record and say the phrase." : "Press I'm ready when you're ready to speak." %>
       </p>
 
       <% if error.present? %>
@@ -82,6 +82,12 @@
                 class: "btn btn-primary",
                 disabled: true,
                 data: { voice_id_target: "submitBtn" } %>
+        </div>
+      <% else %>
+        <div class="typing-lock-actions">
+          <button type="button" class="btn btn-primary" data-action="voice-id#record" data-voice-id-target="recordBtn">
+            I'm ready
+          </button>
         </div>
       <% end %>
 

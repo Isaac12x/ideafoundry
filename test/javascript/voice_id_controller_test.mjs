@@ -25,13 +25,21 @@ test("enrollment records a local microphone sample when speech recognition fails
   }
 });
 
-test("unlock starts listening on connect and submits after capture", async () => {
+test("unlock waits for the ready action before listening", async () => {
   const VoiceIdController = await loadVoiceIdController();
   const controller = buildUnlockController(new VoiceIdController());
   const restoreBrowser = installBrowserStubs();
 
   try {
     controller.connect();
+    await delay(300);
+
+    assert.equal(controller.formSubmitted, false);
+    assert.equal(controller.transcriptTarget.value, "");
+    assert.equal(controller.recordBtnTarget.disabled, false);
+    assert.equal(controller.recordBtnTarget.textContent, "I'm ready");
+
+    controller.record();
     await delay(500);
 
     assert.equal(controller.formSubmitted, true);
@@ -94,7 +102,12 @@ function buildUnlockController(controller) {
   controller.statusTarget = { textContent: "" };
   controller.transcriptTarget = { value: "" };
   controller.hasFormTarget = true;
-  controller.hasRecordBtnTarget = false;
+  controller.recordBtnTarget = {
+    dataset: {},
+    disabled: false,
+    textContent: "I'm ready",
+  };
+  controller.hasRecordBtnTarget = true;
   controller.hasSubmitBtnTarget = false;
   controller.hasVariantItemTarget = false;
   controller.sampleTranscriptTargets = [];
