@@ -40,9 +40,9 @@ class User < ApplicationRecord
 
   DEFAULT_TYPING_LOCK_SETTINGS = {
     'enabled' => false,
-    'lock_after_seconds' => 5.minutes.to_i
+    'lock_after_seconds' => 5.minutes.to_i,
+    'failed_unlock_cooldown_seconds' => 5.minutes.to_i
   }.freeze
-  TYPING_LOCK_FAILED_UNLOCK_COOLDOWN = 5.minutes
   DEFAULT_AUTHENTICATOR_APP_SETTINGS = {
     'enabled' => false
   }.freeze
@@ -54,6 +54,8 @@ class User < ApplicationRecord
   }.freeze
   MIN_TYPING_LOCK_SECONDS = 1.minute.to_i
   MAX_TYPING_LOCK_SECONDS = 24.hours.to_i
+  MIN_TYPING_LOCK_FAILED_UNLOCK_COOLDOWN_SECONDS = 1.minute.to_i
+  MAX_TYPING_LOCK_FAILED_UNLOCK_COOLDOWN_SECONDS = 24.hours.to_i
 
   ALLOWED_NOTIFICATION_TRIGGERS = %w[
     state_changed score_changed added_to_list created
@@ -240,6 +242,16 @@ class User < ApplicationRecord
     typing_lock_timeout_seconds / 60
   end
 
+  def typing_lock_failed_unlock_cooldown_seconds
+    raw_seconds = typing_lock_settings['failed_unlock_cooldown_seconds']
+    raw_seconds = typing_lock_settings['failed_unlock_cooldown_minutes'].to_f.minutes.to_i if raw_seconds.blank?
+    raw_seconds.to_i.clamp(MIN_TYPING_LOCK_FAILED_UNLOCK_COOLDOWN_SECONDS, MAX_TYPING_LOCK_FAILED_UNLOCK_COOLDOWN_SECONDS)
+  end
+
+  def typing_lock_failed_unlock_cooldown_minutes
+    typing_lock_failed_unlock_cooldown_seconds / 60
+  end
+
   def typing_fingerprint
     typing_lock_settings['fingerprint']
   end
@@ -275,7 +287,7 @@ class User < ApplicationRecord
       "compared_features" => match.compared_features.to_i,
       "challenge_id" => challenge_id.to_s,
       "created_at" => Time.current.iso8601,
-      "cooldown_until" => TYPING_LOCK_FAILED_UNLOCK_COOLDOWN.from_now.iso8601
+      "cooldown_until" => typing_lock_failed_unlock_cooldown_seconds.seconds.from_now.iso8601
     }
 
     self.settings ||= {}
@@ -300,10 +312,16 @@ class User < ApplicationRecord
     self.settings['typing_lock'] ||= {}
     lock_after_minutes = params['lock_after_minutes'].presence || typing_lock_timeout_minutes
     lock_after_seconds = (lock_after_minutes.to_f * 60).round.clamp(MIN_TYPING_LOCK_SECONDS, MAX_TYPING_LOCK_SECONDS)
+    failed_unlock_cooldown_minutes = params['failed_unlock_cooldown_minutes'].presence || typing_lock_failed_unlock_cooldown_minutes
+    failed_unlock_cooldown_seconds = (failed_unlock_cooldown_minutes.to_f * 60).round.clamp(
+      MIN_TYPING_LOCK_FAILED_UNLOCK_COOLDOWN_SECONDS,
+      MAX_TYPING_LOCK_FAILED_UNLOCK_COOLDOWN_SECONDS
+    )
 
     enabled = ActiveModel::Type::Boolean.new.cast(params.fetch('enabled', false)) == true
     self.settings['typing_lock']['enabled'] = enabled
     self.settings['typing_lock']['lock_after_seconds'] = lock_after_seconds
+    self.settings['typing_lock']['failed_unlock_cooldown_seconds'] = failed_unlock_cooldown_seconds
     self.settings['typing_lock'].delete('last_failed_unlock') unless enabled
     save
   end

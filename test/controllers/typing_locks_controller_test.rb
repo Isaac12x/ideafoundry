@@ -276,7 +276,8 @@ class TypingLocksControllerTest < ActionDispatch::IntegrationTest
     patch settings_security_path, params: {
       typing_lock: {
         enabled: "0",
-        lock_after_minutes: "12"
+        lock_after_minutes: "12",
+        failed_unlock_cooldown_minutes: "2"
       }
     }
 
@@ -284,6 +285,30 @@ class TypingLocksControllerTest < ActionDispatch::IntegrationTest
     @user.reload
     assert_equal false, @user.typing_lock_enabled?
     assert_equal 720, @user.typing_lock_timeout_seconds
+    assert_equal 120, @user.typing_lock_failed_unlock_cooldown_seconds
+  end
+
+  test "failed unlock cooldown uses the configured security setting" do
+    @user.update_typing_lock_settings(
+      "enabled" => "1",
+      "lock_after_minutes" => "5",
+      "failed_unlock_cooldown_minutes" => "2"
+    )
+    unlock_text = TypingTextLibrary.unlock_text("spark-gap")
+    @user.store_typing_fingerprint!(fingerprint_for(unlock_text, hold: 91, flight: 41))
+    failed_events = timing_events_for(unlock_text, hold: 190, flight: 120)
+    base_time = Time.zone.local(2026, 1, 1, 12, 0, 0)
+
+    travel_to base_time do
+      post verify_typing_lock_path, params: {
+        challenge_id: "spark-gap",
+        timing_payload: failed_events.to_json,
+        return_to: ideas_path
+      }
+    end
+
+    stored = @user.reload.settings.dig("typing_lock", "last_failed_unlock")
+    assert_in_delta (base_time + 2.minutes).to_i, Time.zone.parse(stored["cooldown_until"]).to_i, 1
   end
 
   test "settings update can enable authenticator app and show QR setup" do
@@ -349,6 +374,19 @@ class TypingLocksControllerTest < ActionDispatch::IntegrationTest
     assert_equal 3, @user.voice_id_fingerprint["sample_count"]
   end
 
+  test "voice id enrollment does not offer typed fallback when recording fails" do
+    @user.update!(settings: { "voice_id" => { "enabled" => true } })
+
+    get enroll_voice_id_path(return_to: settings_security_path)
+
+    assert_response :success
+    assert_match(/Voice ID needs browser speech recording/, response.body)
+    assert_match(/turn Voice ID off in/, response.body)
+    assert_select "a[href=?]", settings_security_path, text: "Security settings"
+    assert_select 'input[type="text"]', count: 0
+    assert_select 'input[type="submit"][disabled="disabled"]', count: 1
+  end
+
   test "voice id only lock protects pages and unlocks with fort animation" do
     @user.update!(settings: {})
     @user.store_voice_id_fingerprint!(VoiceFingerprint.build(samples: voice_samples))
@@ -359,8 +397,12 @@ class TypingLocksControllerTest < ActionDispatch::IntegrationTest
 
     follow_redirect!
     assert_response :success
-    assert_match(/Voice ID/, response.body)
     assert_match(/By my will and power you will open\. Open sesame/, response.body)
+    assert_select 'button[data-action="voice-id#record"]', text: "I'm ready", count: 1
+    assert_no_match(/Listening\.\.\.\./, response.body)
+    assert_no_match(/Press record/, response.body)
+    assert_no_match(/Record phrase/, response.body)
+    assert_no_match(/Unlock with Voice ID/, response.body)
 
     post verify_voice_id_typing_lock_path, params: {
       voice_transcript: VoiceFingerprint::CANONICAL_PHRASE,
@@ -406,7 +448,8 @@ class TypingLocksControllerTest < ActionDispatch::IntegrationTest
       }
 
       assert_response :success
-      assert_match(/Voice ID/, response.body)
+      assert_match(/By my will and power you will open\. Open sesame/, response.body)
+      assert_select 'button[data-action="voice-id#record"]', text: "I'm ready", count: 1
       assert_no_match(/typing-lock-animation--matched/, response.body)
 
       post verify_voice_id_typing_lock_path, params: {

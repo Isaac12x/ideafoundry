@@ -637,6 +637,20 @@ body.typing-lock-page .alert {
   color: var(--text-secondary);
 }
 
+.voice-id-variants li {
+  transition: opacity 0.2s, color 0.2s;
+}
+
+.voice-id-variant--active {
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.voice-id-variant--done {
+  opacity: 0.35;
+  text-decoration: line-through;
+}
+
 .voice-id-form {
   display: grid;
   gap: 1rem;
