@@ -372,8 +372,9 @@ class TypingLocksControllerTest < ActionDispatch::IntegrationTest
 
     follow_redirect!
     assert_response :success
-    assert_match(/Voice ID/, response.body)
     assert_match(/By my will and power you will open\. Open sesame/, response.body)
+    assert_select 'button[data-action="voice-id#record"]', text: "I'm ready", count: 1
+    assert_no_match(/Listening\.\.\.\./, response.body)
     assert_no_match(/Press record/, response.body)
     assert_no_match(/Record phrase/, response.body)
     assert_no_match(/Unlock with Voice ID/, response.body)
@@ -422,7 +423,8 @@ class TypingLocksControllerTest < ActionDispatch::IntegrationTest
       }
 
       assert_response :success
-      assert_match(/Voice ID/, response.body)
+      assert_match(/By my will and power you will open\. Open sesame/, response.body)
+      assert_select 'button[data-action="voice-id#record"]', text: "I'm ready", count: 1
       assert_no_match(/typing-lock-animation--matched/, response.body)
 
       post verify_voice_id_typing_lock_path, params: {

@@ -33,9 +33,6 @@ export default class extends Controller {
     if (this._isEnrollment() && !this._recordingSupported()) {
       this._blockEnrollment(this._enrollmentUnavailableMessage("Voice recording is not available in this browser."));
     }
-    if (!this._isEnrollment()) {
-      this._scheduleUnlockListening();
-    }
   }
 
   disconnect() {
@@ -63,8 +60,7 @@ export default class extends Controller {
       if (!sample.voice_detected) {
         this.statusTarget.textContent = this._isEnrollment()
           ? "No speech detected. Press record and say the phrase clearly."
-          : "No speech detected. Listening again.";
-        this._scheduleUnlockListening(1000);
+          : "No speech detected. Press I'm ready when you're ready to try again.";
         return;
       }
       delete sample.voice_detected;
@@ -110,8 +106,7 @@ export default class extends Controller {
       if (!transcript) {
         this.statusTarget.textContent = this._isEnrollment()
           ? "Couldn't hear that clearly. Press record and try again."
-          : "Couldn't hear that clearly. Listening again.";
-        this._scheduleUnlockListening(1000);
+          : "Couldn't hear that clearly. Press I'm ready when you're ready to try again.";
         return;
       }
       const durationMs = Math.round(performance.now() - startedAt);
@@ -140,8 +135,7 @@ export default class extends Controller {
       } else if (event.error === "no-speech") {
         this.statusTarget.textContent = this._isEnrollment()
           ? "No speech detected. Press record and say the phrase clearly."
-          : "No speech detected. Listening again.";
-        this._scheduleUnlockListening(1000);
+          : "No speech detected. Press I'm ready when you're ready to try again.";
       } else if (event.error === "aborted") {
         this.statusTarget.textContent = this._isEnrollment()
           ? "Recording stopped. Press record to try again."
@@ -161,8 +155,7 @@ export default class extends Controller {
       if (!captured) {
         this.statusTarget.textContent = this._isEnrollment()
           ? "No speech detected. Press record and say the phrase clearly."
-          : "No speech detected. Listening again.";
-        this._scheduleUnlockListening(1000);
+          : "No speech detected. Press I'm ready when you're ready to try again.";
       }
     };
 
@@ -277,7 +270,7 @@ export default class extends Controller {
       this.recordBtnTarget.textContent = "Listening...";
       this.recordBtnTarget.disabled = true;
     } else {
-      this.recordBtnTarget.textContent = this.recordBtnTarget.dataset.prevText || "Record phrase";
+      this.recordBtnTarget.textContent = this.recordBtnTarget.dataset.prevText || this._recordButtonIdleLabel();
       this.recordBtnTarget.disabled = false;
       this._updateEnrollProgress();
     }
@@ -408,10 +401,8 @@ export default class extends Controller {
     return this._audioSamplingSupported() || this._recognitionSupported();
   }
 
-  _scheduleUnlockListening(delay = 200) {
-    if (this._isEnrollment()) return;
-    if (this._unlockListenTimer) window.clearTimeout(this._unlockListenTimer);
-    this._unlockListenTimer = window.setTimeout(() => this.record(), delay);
+  _recordButtonIdleLabel() {
+    return this._isEnrollment() ? "Record phrase" : "I'm ready";
   }
 
   _sampleTranscript() {
