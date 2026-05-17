@@ -70,6 +70,20 @@
           </div>
         </div>
 
+        <div class="typing-settings-field">
+          <label for="typing_lock_failed_unlock_cooldown_minutes">Retry after no match</label>
+          <div class="typing-settings-number">
+            <%= number_field_tag "typing_lock[failed_unlock_cooldown_minutes]",
+                  @user.typing_lock_failed_unlock_cooldown_minutes,
+                  id: "typing_lock_failed_unlock_cooldown_minutes",
+                  min: 1,
+                  max: 1440,
+                  step: 1,
+                  class: "form-control" %>
+            <span>minutes</span>
+          </div>
+        </div>
+
         <div class="typing-settings-actions">
           <%= submit_tag "Save Settings", class: "btn btn-primary" %>
         </div>

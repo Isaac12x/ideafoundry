@@ -276,7 +276,8 @@ class TypingLocksControllerTest < ActionDispatch::IntegrationTest
     patch settings_security_path, params: {
       typing_lock: {
         enabled: "0",
-        lock_after_minutes: "12"
+        lock_after_minutes: "12",
+        failed_unlock_cooldown_minutes: "2"
       }
     }
 
@@ -284,6 +285,30 @@ class TypingLocksControllerTest < ActionDispatch::IntegrationTest
     @user.reload
     assert_equal false, @user.typing_lock_enabled?
     assert_equal 720, @user.typing_lock_timeout_seconds
+    assert_equal 120, @user.typing_lock_failed_unlock_cooldown_seconds
+  end
+
+  test "failed unlock cooldown uses the configured security setting" do
+    @user.update_typing_lock_settings(
+      "enabled" => "1",
+      "lock_after_minutes" => "5",
+      "failed_unlock_cooldown_minutes" => "2"
+    )
+    unlock_text = TypingTextLibrary.unlock_text("spark-gap")
+    @user.store_typing_fingerprint!(fingerprint_for(unlock_text, hold: 91, flight: 41))
+    failed_events = timing_events_for(unlock_text, hold: 190, flight: 120)
+    base_time = Time.zone.local(2026, 1, 1, 12, 0, 0)
+
+    travel_to base_time do
+      post verify_typing_lock_path, params: {
+        challenge_id: "spark-gap",
+        timing_payload: failed_events.to_json,
+        return_to: ideas_path
+      }
+    end
+
+    stored = @user.reload.settings.dig("typing_lock", "last_failed_unlock")
+    assert_in_delta (base_time + 2.minutes).to_i, Time.zone.parse(stored["cooldown_until"]).to_i, 1
   end
 
   test "settings update can enable authenticator app and show QR setup" do

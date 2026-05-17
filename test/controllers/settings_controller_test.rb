@@ -75,6 +75,7 @@ class SettingsControllerTest < ActionDispatch::IntegrationTest
     get settings_security_path
     assert_response :success
     assert_select "input[name=?]", "typing_lock[enabled]"
+    assert_select "input[name=?][value=?]", "typing_lock[failed_unlock_cooldown_minutes]", "5"
     assert_select "input[name=?]", "authenticator_app[enabled]"
     assert_select "input[name=?]", "voice_id[enabled]"
     assert_match(/Voice ID/, response.body)
