@@ -6,13 +6,36 @@ services:
     environment:
       - RAILS_ENV=production
       - PORT=3000
+      - VOICE_ID_SERVICE_URL=http://voice-id:8000
     volumes:
       - ./storage:/rails/storage
       - ./config/master.key:/rails/config/master.key:ro
+    depends_on:
+      voice-id:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000/up"]
       interval: 30s
       timeout: 10s
       start_period: 15s
       retries: 3
+    restart: unless-stopped
+
+  voice-id:
+    build:
+      context: ./services/voice_id
+      args:
+        WHISPER_MODEL: ${VOICE_ID_WHISPER_MODEL:-Systran/faster-whisper-base.en}
+    ports:
+      - "127.0.0.1:${VOICE_ID_PORT:-8000}:8000"
+    environment:
+      - VOICE_ID_MODEL_PATH=/models/whisper-base.en
+      - VOICE_ID_DEVICE=${VOICE_ID_DEVICE:-cpu}
+      - VOICE_ID_COMPUTE_TYPE=${VOICE_ID_COMPUTE_TYPE:-int8}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health').read()"]
+      interval: 30s
+      timeout: 10s
+      start_period: 30s
+      retries: 5
     restart: unless-stopped

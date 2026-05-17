@@ -10,7 +10,8 @@
          data-controller="voice-id"
          data-voice-id-mode-value="<%= mode %>"
          data-voice-id-phrase-value="<%= phrase %>"
-         data-voice-id-redirect-url-value="<%= redirect_url %>">
+         data-voice-id-redirect-url-value="<%= redirect_url %>"
+         data-voice-id-transcribe-url-value="<%= transcribe_voice_id_typing_lock_path %>">
   <div class="typing-lock-topline">
     <span class="typing-lock-mark">Idea Foundry</span>
     <span>Voice ID</span>
@@ -81,7 +82,7 @@
       </div>
 
       <p class="typing-lock-noscript">
-        If browser speech capture is unavailable, enter the spoken transcript manually for local development:
+        If local microphone capture is unavailable, enter the spoken transcript manually for local development:
         <%= text_field_tag mode == :enroll ? "voice_id_samples[][transcript]" : :voice_transcript,
               "",
               class: "typing-authenticator-input",
