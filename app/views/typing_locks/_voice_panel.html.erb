@@ -32,7 +32,7 @@
       <% if mode == :enroll %>
         <p>Say each phrase below once. Press record, speak clearly, then record the next one.</p>
       <% else %>
-        <p>Say the phrase below to open the workspace.</p>
+        <p>Listening for Voice ID.</p>
       <% end %>
     </div>
 
@@ -66,22 +66,24 @@
       <% end %>
 
       <p class="voice-id-status" data-voice-id-target="status" aria-live="polite">
-        Press record and say the phrase.
+        <%= mode == :enroll ? "Press record and say the phrase." : "Listening for Voice ID..." %>
       </p>
 
       <% if error.present? %>
         <p class="typing-authenticator-error" role="alert"><%= error %></p>
       <% end %>
 
-      <div class="typing-lock-actions">
-        <button type="button" class="btn btn-secondary" data-action="voice-id#record" data-voice-id-target="recordBtn">
-          Record phrase
-        </button>
-        <%= submit_tag(mode == :enroll ? "Save Voice ID" : "Unlock with Voice ID",
-              class: "btn btn-primary",
-              disabled: mode == :enroll,
-              data: { voice_id_target: "submitBtn" }) %>
-      </div>
+      <% if mode == :enroll %>
+        <div class="typing-lock-actions">
+          <button type="button" class="btn btn-secondary" data-action="voice-id#record" data-voice-id-target="recordBtn">
+            Record phrase
+          </button>
+          <%= submit_tag "Save Voice ID",
+                class: "btn btn-primary",
+                disabled: true,
+                data: { voice_id_target: "submitBtn" } %>
+        </div>
+      <% end %>
 
       <p class="typing-lock-noscript">
         <% if mode == :enroll %>
