@@ -332,6 +332,28 @@ class TypingLocksControllerTest < ActionDispatch::IntegrationTest
     assert_redirected_to root_path
   end
 
+  test "voice id posts audio to the bundled local transcription service" do
+    Tempfile.create(["voice-id", ".webm"]) do |file|
+      file.write("fake audio")
+      file.rewind
+      upload = Rack::Test::UploadedFile.new(file.path, "audio/webm")
+
+      LocalVoiceIdClient.stub(:transcribe, { transcript: VoiceFingerprint::CANONICAL_PHRASE, duration_ms: 2100, rms: 0.38 }) do
+        post transcribe_voice_id_typing_lock_path, params: {
+          audio: upload,
+          duration_ms: "2100",
+          rms: "0.38"
+        }
+      end
+    end
+
+    assert_response :success
+    body = JSON.parse(response.body)
+    assert_equal VoiceFingerprint::CANONICAL_PHRASE, body["transcript"]
+    assert_equal 2100, body["duration_ms"]
+    assert_equal 0.38, body["rms"]
+  end
+
   test "voice id enrollment stores fingerprint after multiple phrase variants" do
     @user.update!(settings: { "voice_id" => { "enabled" => true } })
 
