@@ -25,6 +25,24 @@ test("enrollment records a local microphone sample when speech recognition fails
   }
 });
 
+test("unlock starts listening on connect and submits after capture", async () => {
+  const VoiceIdController = await loadVoiceIdController();
+  const controller = buildUnlockController(new VoiceIdController());
+  const restoreBrowser = installBrowserStubs();
+
+  try {
+    controller.connect();
+    await delay(500);
+
+    assert.equal(controller.formSubmitted, true);
+    assert.equal(controller.transcriptTarget.value, CANONICAL_PHRASE);
+    assert.ok(Number(JSON.parse(controller.payloadTarget.value).duration_ms) > 0);
+    assert.match(controller.statusTarget.textContent, /captured/i);
+  } finally {
+    restoreBrowser();
+  }
+});
+
 async function loadVoiceIdController() {
   const source = await readFile(
     new URL("../../app/javascript/controllers/voice_id_controller.js", import.meta.url),
@@ -59,6 +77,30 @@ function buildEnrollmentController(controller) {
   controller.hasRecordBtnTarget = true;
   controller.hasSubmitBtnTarget = true;
   controller.hasVariantItemTarget = true;
+  return controller;
+}
+
+function buildUnlockController(controller) {
+  controller.modeValue = "unlock";
+  controller.phraseValue = CANONICAL_PHRASE;
+  controller.element = { classList: { contains: () => false } };
+  controller.formSubmitted = false;
+  controller.formTarget = {
+    requestSubmit: () => {
+      controller.formSubmitted = true;
+    },
+  };
+  controller.payloadTarget = { value: "{}" };
+  controller.statusTarget = { textContent: "" };
+  controller.transcriptTarget = { value: "" };
+  controller.hasFormTarget = true;
+  controller.hasRecordBtnTarget = false;
+  controller.hasSubmitBtnTarget = false;
+  controller.hasVariantItemTarget = false;
+  controller.sampleTranscriptTargets = [];
+  controller.sampleDurationTargets = [];
+  controller.sampleRmsTargets = [];
+  controller.variantItemTargets = [];
   return controller;
 }
 

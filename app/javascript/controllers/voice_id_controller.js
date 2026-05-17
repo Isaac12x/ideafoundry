@@ -27,11 +27,19 @@ export default class extends Controller {
       window.setTimeout(() => {
         window.location.assign(this.redirectUrlValue || "/");
       }, 1700);
+      return;
     }
     this._updateEnrollProgress();
     if (this._isEnrollment() && !this._recordingSupported()) {
       this._blockEnrollment(this._enrollmentUnavailableMessage("Voice recording is not available in this browser."));
     }
+    if (!this._isEnrollment()) {
+      this._scheduleUnlockListening();
+    }
+  }
+
+  disconnect() {
+    if (this._unlockListenTimer) window.clearTimeout(this._unlockListenTimer);
   }
 
   record() {
@@ -53,12 +61,16 @@ export default class extends Controller {
     try {
       const sample = await this._captureLocalAudioSample(this._sampleTranscript());
       if (!sample.voice_detected) {
-        this.statusTarget.textContent = "No speech detected. Press record and say the phrase clearly.";
+        this.statusTarget.textContent = this._isEnrollment()
+          ? "No speech detected. Press record and say the phrase clearly."
+          : "No speech detected. Listening again.";
+        this._scheduleUnlockListening(1000);
         return;
       }
       delete sample.voice_detected;
       this._storeSample(sample);
-      this.statusTarget.textContent = this._isEnrollment() ? "Voice sample captured." : "Voice sample captured. Submit to unlock.";
+      this.statusTarget.textContent = this._isEnrollment() ? "Voice sample captured." : "Voice ID captured.";
+      this._submitUnlockForm();
     } catch (error) {
       this._handleLocalAudioError(error);
     } finally {
@@ -96,7 +108,10 @@ export default class extends Controller {
       captured = true;
       const transcript = (event.results?.[0]?.[0]?.transcript || "").trim();
       if (!transcript) {
-        this.statusTarget.textContent = "Couldn't hear that clearly. Press record and try again.";
+        this.statusTarget.textContent = this._isEnrollment()
+          ? "Couldn't hear that clearly. Press record and try again."
+          : "Couldn't hear that clearly. Listening again.";
+        this._scheduleUnlockListening(1000);
         return;
       }
       const durationMs = Math.round(performance.now() - startedAt);
@@ -105,6 +120,7 @@ export default class extends Controller {
       this._storeSample(sample);
 
       this.statusTarget.textContent = `Captured: "${transcript}"`;
+      this._submitUnlockForm();
     };
 
     recognition.onerror = (event) => {
@@ -122,11 +138,18 @@ export default class extends Controller {
             : "Voice recording is not working right now. Try again later."
         );
       } else if (event.error === "no-speech") {
-        this.statusTarget.textContent = "No speech detected. Press record and say the phrase clearly.";
+        this.statusTarget.textContent = this._isEnrollment()
+          ? "No speech detected. Press record and say the phrase clearly."
+          : "No speech detected. Listening again.";
+        this._scheduleUnlockListening(1000);
       } else if (event.error === "aborted") {
-        this.statusTarget.textContent = "Recording stopped. Press record to try again.";
+        this.statusTarget.textContent = this._isEnrollment()
+          ? "Recording stopped. Press record to try again."
+          : "Recording stopped.";
       } else {
-        this.statusTarget.textContent = "Could not capture speech. Press record to try again.";
+        this.statusTarget.textContent = this._isEnrollment()
+          ? "Could not capture speech. Press record to try again."
+          : "Could not capture speech.";
       }
     };
 
@@ -136,7 +159,10 @@ export default class extends Controller {
         this._setRecordingState(false);
       }
       if (!captured) {
-        this.statusTarget.textContent = "No speech detected. Press record and say the phrase clearly.";
+        this.statusTarget.textContent = this._isEnrollment()
+          ? "No speech detected. Press record and say the phrase clearly."
+          : "No speech detected. Listening again.";
+        this._scheduleUnlockListening(1000);
       }
     };
 
@@ -266,6 +292,16 @@ export default class extends Controller {
     }
   }
 
+  _submitUnlockForm() {
+    if (this._isEnrollment() || !this.hasFormTarget) return;
+
+    if (this.formTarget.requestSubmit) {
+      this.formTarget.requestSubmit();
+    } else {
+      this.formTarget.submit();
+    }
+  }
+
   storeEnrollmentSample(sample) {
     const index = Math.min(this.sampleIndex, this.sampleTranscriptTargets.length - 1);
     if (index < 0) return;
@@ -370,6 +406,12 @@ export default class extends Controller {
 
   _recordingSupported() {
     return this._audioSamplingSupported() || this._recognitionSupported();
+  }
+
+  _scheduleUnlockListening(delay = 200) {
+    if (this._isEnrollment()) return;
+    if (this._unlockListenTimer) window.clearTimeout(this._unlockListenTimer);
+    this._unlockListenTimer = window.setTimeout(() => this.record(), delay);
   }
 
   _sampleTranscript() {

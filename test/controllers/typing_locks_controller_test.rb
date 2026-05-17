@@ -374,6 +374,9 @@ class TypingLocksControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_match(/Voice ID/, response.body)
     assert_match(/By my will and power you will open\. Open sesame/, response.body)
+    assert_no_match(/Press record/, response.body)
+    assert_no_match(/Record phrase/, response.body)
+    assert_no_match(/Unlock with Voice ID/, response.body)
 
     post verify_voice_id_typing_lock_path, params: {
       voice_transcript: VoiceFingerprint::CANONICAL_PHRASE,
