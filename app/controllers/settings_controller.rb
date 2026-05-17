@@ -371,7 +371,7 @@ class SettingsController < ApplicationController
   end
 
   def typing_lock_params
-    params.require(:typing_lock).permit(:enabled, :lock_after_minutes)
+    params.require(:typing_lock).permit(:enabled, :lock_after_minutes, :failed_unlock_cooldown_minutes)
   end
 
   def authenticator_app_params
