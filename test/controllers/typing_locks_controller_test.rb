@@ -443,6 +443,27 @@ class TypingLocksControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
   end
 
+  test "voice id unlock uses captured transcript when manual fallback field is blank" do
+    @user.update!(settings: {})
+    @user.store_voice_id_fingerprint!(VoiceFingerprint.build(samples: voice_samples))
+
+    get ideas_path
+    follow_redirect!
+
+    post verify_voice_id_typing_lock_path, params: {
+      captured_voice_transcript: VoiceFingerprint::CANONICAL_PHRASE,
+      voice_transcript: "",
+      voice_payload: { duration_ms: 2000, rms: 0.4 }.to_json,
+      return_to: ideas_path
+    }
+
+    assert_response :success
+    assert_match(/voice-lock-fort--opening/, response.body)
+
+    get ideas_path
+    assert_response :success
+  end
+
   test "voice id only lock rejects samples that do not match the stored fingerprint" do
     @user.update!(settings: {})
     @user.store_voice_id_fingerprint!(VoiceFingerprint.build(samples: voice_samples))
