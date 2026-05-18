@@ -127,6 +127,7 @@ Rails.application.routes.draw do
   patch 'settings/notifications', to: 'settings#update_notifications'
   get 'settings/security', to: 'settings#security'
   patch 'settings/security', to: 'settings#update_security'
+  post 'settings/security/encrypt-database', to: 'settings#encrypt_database', as: :settings_security_encrypt_database
   get 'settings/idea-work-tokens', to: 'settings#idea_work_tokens', as: :settings_idea_work_tokens
   patch 'settings/idea-work-tokens', to: 'settings#update_idea_work_tokens'
   get 'settings/topologies', to: 'settings#topologies'

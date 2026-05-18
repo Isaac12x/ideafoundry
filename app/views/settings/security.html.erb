@@ -8,87 +8,136 @@
   </div>
 
   <div class="typing-settings-layout">
-    <section class="tab-toggle-section">
-      <header class="tab-toggle-section__header">
-        <h3>Protection</h3>
-        <p>Use keyboard rhythm and an authenticator app as local unlock checks for this single-user app.</p>
-      </header>
+    <div class="typing-settings-main">
+      <section class="tab-toggle-section">
+        <header class="tab-toggle-section__header">
+          <h3>Protection</h3>
+          <p>Use keyboard rhythm and an authenticator app as local unlock checks for this single-user app.</p>
+        </header>
 
-      <%= form_with url: settings_security_path, method: :patch, local: true, class: "typing-settings-form", data: { controller: "settings-autosave" } do %>
-        <label class="tab-toggle" for="typing_lock_enabled">
-          <div class="tab-toggle__text">
-            <span class="tab-toggle__name">Require typing fingerprint</span>
-            <span class="tab-toggle__description">When enabled, the app locks after the inactivity window below.</span>
-          </div>
-          <span class="tab-toggle__switch">
-            <%= check_box_tag "typing_lock[enabled]", "1", @user.typing_lock_enabled?, id: "typing_lock_enabled", class: "tab-toggle__input", data: { action: "change->settings-autosave#toggleChanged" } %>
-            <span class="tab-toggle__track" aria-hidden="true">
-              <span class="tab-toggle__thumb"></span>
+        <%= form_with url: settings_security_path, method: :patch, local: true, class: "typing-settings-form", data: { controller: "settings-autosave" } do %>
+          <label class="tab-toggle" for="typing_lock_enabled">
+            <div class="tab-toggle__text">
+              <span class="tab-toggle__name">Require typing fingerprint</span>
+              <span class="tab-toggle__description">When enabled, the app locks after the inactivity window below.</span>
+            </div>
+            <span class="tab-toggle__switch">
+              <%= check_box_tag "typing_lock[enabled]", "1", @user.typing_lock_enabled?, id: "typing_lock_enabled", class: "tab-toggle__input", data: { action: "change->settings-autosave#toggleChanged" } %>
+              <span class="tab-toggle__track" aria-hidden="true">
+                <span class="tab-toggle__thumb"></span>
+              </span>
             </span>
-          </span>
-        </label>
+          </label>
 
-        <%= hidden_field_tag "authenticator_app[enabled]", "0" %>
-        <label class="tab-toggle" for="authenticator_app_enabled">
-          <div class="tab-toggle__text">
-            <span class="tab-toggle__name">Require authenticator app</span>
-            <span class="tab-toggle__description">Ask for a six-digit authenticator code. If typing lock is also enabled, this runs after typing.</span>
-          </div>
-          <span class="tab-toggle__switch">
-            <%= check_box_tag "authenticator_app[enabled]", "1", @user.authenticator_app_enabled?, id: "authenticator_app_enabled", class: "tab-toggle__input", data: { action: "change->settings-autosave#toggleChanged" } %>
-            <span class="tab-toggle__track" aria-hidden="true">
-              <span class="tab-toggle__thumb"></span>
+          <%= hidden_field_tag "authenticator_app[enabled]", "0" %>
+          <label class="tab-toggle" for="authenticator_app_enabled">
+            <div class="tab-toggle__text">
+              <span class="tab-toggle__name">Require authenticator app</span>
+              <span class="tab-toggle__description">Ask for a six-digit authenticator code. If typing lock is also enabled, this runs after typing.</span>
+            </div>
+            <span class="tab-toggle__switch">
+              <%= check_box_tag "authenticator_app[enabled]", "1", @user.authenticator_app_enabled?, id: "authenticator_app_enabled", class: "tab-toggle__input", data: { action: "change->settings-autosave#toggleChanged" } %>
+              <span class="tab-toggle__track" aria-hidden="true">
+                <span class="tab-toggle__thumb"></span>
+              </span>
             </span>
-          </span>
-        </label>
+          </label>
 
-        <%= hidden_field_tag "voice_id[enabled]", "0" %>
-        <label class="tab-toggle" for="voice_id_enabled">
-          <div class="tab-toggle__text">
-            <span class="tab-toggle__name">Require Voice ID</span>
-            <span class="tab-toggle__description">Unlock with your voice using a passphrase. Runs as the final check each time the workspace reopens.</span>
-          </div>
-          <span class="tab-toggle__switch">
-            <%= check_box_tag "voice_id[enabled]", "1", @user.voice_id_requested?, id: "voice_id_enabled", class: "tab-toggle__input", data: { action: "change->settings-autosave#toggleChanged" } %>
-            <span class="tab-toggle__track" aria-hidden="true">
-              <span class="tab-toggle__thumb"></span>
+          <%= hidden_field_tag "voice_id[enabled]", "0" %>
+          <label class="tab-toggle" for="voice_id_enabled">
+            <div class="tab-toggle__text">
+              <span class="tab-toggle__name">Require Voice ID</span>
+              <span class="tab-toggle__description">Unlock with your voice using a passphrase. Runs as the final check each time the workspace reopens.</span>
+            </div>
+            <span class="tab-toggle__switch">
+              <%= check_box_tag "voice_id[enabled]", "1", @user.voice_id_requested?, id: "voice_id_enabled", class: "tab-toggle__input", data: { action: "change->settings-autosave#toggleChanged" } %>
+              <span class="tab-toggle__track" aria-hidden="true">
+                <span class="tab-toggle__thumb"></span>
+              </span>
             </span>
-          </span>
-        </label>
+          </label>
 
-        <div class="typing-settings-field">
-          <label for="typing_lock_minutes">Lock after</label>
-          <div class="typing-settings-number">
-            <%= number_field_tag "typing_lock[lock_after_minutes]",
-                  @user.typing_lock_timeout_minutes,
-                  id: "typing_lock_minutes",
-                  min: 1,
-                  max: 1440,
-                  step: 1,
-                  class: "form-control" %>
-            <span>minutes</span>
+          <div class="typing-settings-field">
+            <label for="typing_lock_minutes">Lock after</label>
+            <div class="typing-settings-number">
+              <%= number_field_tag "typing_lock[lock_after_minutes]",
+                    @user.typing_lock_timeout_minutes,
+                    id: "typing_lock_minutes",
+                    min: 1,
+                    max: 1440,
+                    step: 1,
+                    class: "form-control" %>
+              <span>minutes</span>
+            </div>
           </div>
-        </div>
 
-        <div class="typing-settings-field">
-          <label for="typing_lock_failed_unlock_cooldown_minutes">Retry after no match</label>
-          <div class="typing-settings-number">
-            <%= number_field_tag "typing_lock[failed_unlock_cooldown_minutes]",
-                  @user.typing_lock_failed_unlock_cooldown_minutes,
-                  id: "typing_lock_failed_unlock_cooldown_minutes",
-                  min: 1,
-                  max: 1440,
-                  step: 1,
-                  class: "form-control" %>
-            <span>minutes</span>
+          <div class="typing-settings-field">
+            <label for="typing_lock_failed_unlock_cooldown_minutes">Retry after no match</label>
+            <div class="typing-settings-number">
+              <%= number_field_tag "typing_lock[failed_unlock_cooldown_minutes]",
+                    @user.typing_lock_failed_unlock_cooldown_minutes,
+                    id: "typing_lock_failed_unlock_cooldown_minutes",
+                    min: 1,
+                    max: 1440,
+                    step: 1,
+                    class: "form-control" %>
+              <span>minutes</span>
+            </div>
           </div>
-        </div>
 
-        <div class="typing-settings-actions">
-          <%= submit_tag "Save Settings", class: "btn btn-primary" %>
+          <div class="typing-settings-actions">
+            <%= submit_tag "Save Settings", class: "btn btn-primary" %>
+          </div>
+        <% end %>
+      </section>
+
+      <section class="tab-toggle-section security-database-encryption">
+        <header class="tab-toggle-section__header">
+          <h3>Database Encryption</h3>
+          <p>Encrypt the SQLCipher-configured SQLite databases used by this workspace.</p>
+        </header>
+
+        <div class="security-database-encryption__body">
+          <% if @database_encryption_error.present? %>
+            <div class="security-database-encryption__message security-database-encryption__message--error">
+              <strong>Encryption unavailable</strong>
+              <p><%= @database_encryption_error %></p>
+            </div>
+          <% elsif @database_encryption_results.blank? %>
+            <p class="security-database-encryption__empty">No SQLCipher-enabled SQLite databases are configured for this environment.</p>
+          <% else %>
+            <div class="security-database-encryption__list">
+              <% @database_encryption_results.each do |result| %>
+                <% status = result.status.to_sym %>
+                <% status_label = { plaintext: "Needs encryption", encrypted: "Encrypted", missing: "Missing", unreadable: "Needs attention" }.fetch(status, status.to_s.humanize) %>
+                <div class="security-database-encryption__row security-database-encryption__row--<%= status %>">
+                  <div class="security-database-encryption__path">
+                    <span><%= File.basename(result.path.to_s) %></span>
+                    <code><%= result.path %></code>
+                    <% if result.error.present? %>
+                      <small><%= result.error %></small>
+                    <% end %>
+                  </div>
+                  <strong><%= status_label %></strong>
+                </div>
+              <% end %>
+            </div>
+
+            <% if @database_encryption_results.any? { |result| result.status == :plaintext } %>
+              <div class="security-database-encryption__actions">
+                <%= button_to "Encrypt SQLite Databases",
+                      settings_security_encrypt_database_path,
+                      method: :post,
+                      class: "btn btn-primary",
+                      form: { data: { turbo_confirm: "Encrypt the configured SQLite databases now? The app will keep plaintext backups outside the checkout." } } %>
+              </div>
+            <% else %>
+              <p class="security-database-encryption__empty">No plaintext configured databases need encryption.</p>
+            <% end %>
+          <% end %>
         </div>
-      <% end %>
-    </section>
+      </section>
+    </div>
 
     <aside class="typing-settings-status">
       <section class="security-fingerprint-row security-fingerprint-row--typing">

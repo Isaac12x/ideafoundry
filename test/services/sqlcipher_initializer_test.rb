@@ -16,13 +16,25 @@ class SqlcipherInitializerTest < ActiveSupport::TestCase
     def plaintext?
       send(:plaintext_sqlite_database?)
     end
+
+    def apply_key!
+      send(:apply_sqlcipher_key!)
+    end
   end
 
-  FakeConnection = Struct.new(:cipher_version) do
+  FakeConnection = Struct.new(:cipher_version, :executed_sql) do
+    def initialize(cipher_version)
+      super(cipher_version, [])
+    end
+
     def get_first_value(sql)
       raise ArgumentError, sql unless sql == "PRAGMA cipher_version"
 
       cipher_version
+    end
+
+    def execute(sql)
+      executed_sql << sql
     end
   end
 
@@ -47,6 +59,22 @@ class SqlcipherInitializerTest < ActiveSupport::TestCase
     File.binwrite(path, "SQLite format 3\0")
 
     assert Probe.new(FakeConnection.new("4.14.0 community"), database: path.to_s).plaintext?
+  ensure
+    File.delete(path) if path&.exist?
+  end
+
+  test "plaintext SQLCipher databases stay open so security settings can encrypt them" do
+    path = Rails.root.join("tmp/plaintext_sqlite_initializer_test.sqlite3")
+    File.binwrite(path, "SQLite format 3\0")
+    connection = FakeConnection.new(nil)
+
+    SQLite3.stub(:sqlcipher?, false) do
+      assert_nothing_raised do
+        Probe.new(connection, database: path.to_s).apply_key!
+      end
+    end
+
+    assert_empty connection.executed_sql
   ensure
     File.delete(path) if path&.exist?
   end

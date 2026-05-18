@@ -10,12 +10,13 @@ module IdeaFoundrySqlcipherConnectionKey
   end
 
   def apply_sqlcipher_key!
-    unless sqlcipher_available?
-      raise "SQLite3 gem is not linked with SQLCipher. Rebuild the image/gem with libsqlcipher and --with-sqlcipher before opening encrypted databases."
+    if plaintext_sqlite_database?
+      Rails.logger.warn("SQLCipher database at #{database_path} is plaintext; open /settings/security to encrypt it from the UI.")
+      return
     end
 
-    if plaintext_sqlite_database?
-      raise "Encrypted SQLite database at #{database_path} is still plaintext. Run `RAILS_ENV=production bin/rails db:encrypt_sqlite` with the recovery passphrase configured before running production database tasks."
+    unless sqlcipher_available?
+      raise "SQLite3 gem is not linked with SQLCipher. Rebuild the image/gem with libsqlcipher and --with-sqlcipher before opening encrypted databases."
     end
 
     @raw_connection.execute(%(PRAGMA key = "x'#{RecoverySecret.sqlcipher_key_hex}'"))

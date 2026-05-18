@@ -2,7 +2,7 @@ require "test_helper"
 
 class SqlcipherDatabaseMigratorTest < ActiveSupport::TestCase
   setup do
-    @root = Rails.root.join("tmp/sqlcipher_migrator_test")
+    @root = Rails.root.join("tmp/sqlcipher_migrator_test_#{Process.pid}_#{SecureRandom.hex(6)}")
     FileUtils.rm_rf(@root)
     FileUtils.mkdir_p(@root)
     @database_path = @root.join("production.sqlite3")
@@ -36,5 +36,20 @@ class SqlcipherDatabaseMigratorTest < ActiveSupport::TestCase
     assert_equal "Encrypted from app", encrypted.get_first_value("SELECT title FROM ideas")
   ensure
     encrypted&.close
+  end
+
+  test "reports database encryption status before migrating from the UI" do
+    migrator = SqlcipherDatabaseMigrator.new(
+      key_hex: RecoverySecret.sqlcipher_key_hex,
+      backup_dir: @backup_dir,
+      timestamp: "20260518123045"
+    )
+
+    assert_equal :plaintext, migrator.status_for(@database_path).status
+    assert_equal :missing, migrator.status_for(@root.join("missing.sqlite3")).status
+
+    migrator.migrate!(@database_path)
+
+    assert_equal :encrypted, migrator.status_for(@database_path).status
   end
 end
