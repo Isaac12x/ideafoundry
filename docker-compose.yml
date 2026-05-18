@@ -1,5 +1,10 @@
 services:
+  # Keep the Rails app out of the default compose graph so production can run it
+  # directly under launchd/systemd while compose manages only sidecar services.
+  # Start it explicitly with: docker compose --profile app up web
   web:
+    profiles:
+      - app
     build: .
     ports:
       - "${PORT:-3333}:3000"
@@ -7,6 +12,7 @@ services:
       - RAILS_ENV=production
       - PORT=3000
       - VOICE_ID_SERVICE_URL=http://voice-id:8000
+      - OCR_SERVICE_URL=http://ocr:8000/extract
       # User-held recovery passphrase for SQLCipher and biometric-template encryption.
       # Prefer a file outside the repo/storage; compose mounts it as a secret.
       - IDEA_FOUNDRY_RECOVERY_PASSPHRASE_FILE=/run/secrets/idea_foundry_recovery_passphrase
@@ -17,6 +23,8 @@ services:
       - ./config/master.key:/rails/config/master.key:ro
     depends_on:
       voice-id:
+        condition: service_healthy
+      ocr:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000/up"]
@@ -43,6 +51,18 @@ services:
       timeout: 10s
       start_period: 30s
       retries: 5
+    restart: unless-stopped
+
+  ocr:
+    build: ./ocr_service
+    ports:
+      - "127.0.0.1:${OCR_SERVICE_PORT:-8001}:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health').read()"]
+      interval: 30s
+      timeout: 10s
+      start_period: 15s
+      retries: 3
     restart: unless-stopped
 
 secrets:
