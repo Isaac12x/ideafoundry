@@ -3,12 +3,13 @@
   "private": true,
   "scripts": {
     "build": "node esbuild.config.mjs",
-    "build:watch": "node esbuild.config.mjs --watch"
+    "build:watch": "node esbuild.config.mjs --watch",
+    "verify:excalidraw-local-only": "node scripts/check_excalidraw_bundle.mjs"
   },
   "dependencies": {
-    "@excalidraw/excalidraw": "^0.17.6",
-    "@rails/actioncable": "^7.0.0",
     "3d-force-graph": "^1.73.4",
+    "@excalidraw/excalidraw": "0.18.1",
+    "@rails/actioncable": "^7.0.0",
     "hyperformula": "^3.2.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
