@@ -166,22 +166,17 @@ The same recovery secret is also used to derive an app-level AES-GCM key for esp
 - Voice ID fingerprint templates
 - Authenticator app secrets
 
-Generate a strong passphrase/key and save it somewhere outside the app checkout, outside `storage/`, and outside `config/master.key`:
+Start Compose without a recovery passphrase environment variable; the passphrase is configured from the app UI, not from `.env` or Compose secrets:
 
 ```bash
-openssl rand -base64 32 > /path/outside/idea-foundry-recovery-passphrase.txt
-chmod 600 /path/outside/idea-foundry-recovery-passphrase.txt
+docker compose up --build
 ```
 
-Run Docker Compose with the file path, not the secret value:
+If you already have plaintext production SQLite files, open `/settings/security`, enter and confirm a strong database recovery passphrase, and confirm you saved that passphrase in two separate places before starting the Database Encryption action. When no explicit path is configured, the app writes the passphrase to `storage/recovery_passphrase.key`, then encrypts the SQLCipher-configured databases from `config/database.yml`, verifies the encrypted copies, replaces the plaintext files, and keeps plaintext backups outside the checkout by default in `../idea-app-sqlcipher-backups`.
 
-```bash
-IDEA_FOUNDRY_RECOVERY_PASSPHRASE_FILE=/path/outside/idea-foundry-recovery-passphrase.txt docker compose up --build
-```
+Use the same recovery passphrase when moving the encrypted database to another computer. Without it, the app cannot open the SQLCipher database and cannot decrypt protected security templates.
 
-Use the same recovery passphrase file when moving the encrypted database to another computer. Without it, the app cannot open the SQLCipher database and cannot decrypt protected security templates.
-
-If you already have plaintext production SQLite files, open `/settings/security`, enter and confirm a strong database recovery passphrase, and confirm you saved that passphrase in two separate places before starting the Database Encryption action. The app writes the passphrase to the configured `IDEA_FOUNDRY_RECOVERY_PASSPHRASE_FILE` path, or to `storage/recovery_passphrase.key` when no path is configured, then encrypts the SQLCipher-configured databases from `config/database.yml`, verifies the encrypted copies, replaces the plaintext files, and keeps plaintext backups outside the checkout by default in `../idea-app-sqlcipher-backups`.
+For advanced deployments that need the app to read/write the passphrase at a specific path, set `IDEA_FOUNDRY_RECOVERY_PASSPHRASE_FILE=/path/outside/idea-foundry-recovery-passphrase.txt` in the Rails process environment before using `/settings/security`; do not add a required interpolation to `docker-compose.yml`, because Podman Compose evaluates it even when the Rails app profile is not selected.
 
 Set `IDEA_FOUNDRY_SQLCIPHER_BACKUP_DIR=/path/outside/app` before starting the app to choose a different backup location. After you have verified your encrypted database, move long-term plaintext backups to secure offline storage or delete them according to your backup policy.
 
