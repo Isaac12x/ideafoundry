@@ -107,7 +107,7 @@ class TypingLocksController < ApplicationController
       return
     end
 
-    if VoiceFingerprint.match?(template: @user.voice_id_fingerprint, transcript: params[:voice_transcript], sample: voice_payload)
+    if VoiceFingerprint.match?(template: @user.voice_id_fingerprint, transcript: voice_transcript, sample: voice_payload)
       render_unlock_success(voice: true)
     else
       render_voice_id_unlock(return_to: @return_to, error: "Voice ID did not match. Say the exact phrase again.")
@@ -158,6 +158,10 @@ class TypingLocksController < ApplicationController
     JSON.parse(params[:voice_payload].presence || "{}")
   rescue JSON::ParserError
     {}
+  end
+
+  def voice_transcript
+    params[:captured_voice_transcript].presence || params[:voice_transcript].to_s
   end
 
   def voice_id_samples

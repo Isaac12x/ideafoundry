@@ -45,6 +45,7 @@ test("unlock waits for the ready action before listening", async () => {
 
     assert.equal(controller.formSubmitted, true);
     assert.equal(controller.transcriptTarget.value, CANONICAL_PHRASE);
+    assert.equal(controller.manualTranscriptTarget.disabled, true);
     assert.ok(Number(JSON.parse(controller.payloadTarget.value).duration_ms) > 0);
     assert.match(controller.statusTarget.textContent, /checking voice id/i);
     assert.doesNotMatch(controller.statusTarget.textContent, new RegExp(CANONICAL_PHRASE));
@@ -103,7 +104,9 @@ function buildUnlockController(controller) {
   controller.payloadTarget = { value: "{}" };
   controller.statusTarget = { textContent: "" };
   controller.transcriptTarget = { value: "" };
+  controller.manualTranscriptTarget = { disabled: false, value: "" };
   controller.hasFormTarget = true;
+  controller.hasManualTranscriptTarget = true;
   controller.recordBtnTarget = {
     dataset: {},
     disabled: false,
