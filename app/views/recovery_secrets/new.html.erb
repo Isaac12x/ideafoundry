@@ -1,0 +1,36 @@
+<% content_for :body_class, "typing-lock-page" %>
+
+<div class="recovery-secret-shell">
+  <div class="typing-lock-topline">
+    <span class="typing-lock-mark">Idea Foundry</span>
+    <span>Encrypted data</span>
+  </div>
+
+  <section class="recovery-secret-panel" aria-labelledby="recovery-secret-title">
+    <div class="recovery-secret-copy">
+      <span class="recovery-secret-kicker">Recovery required</span>
+      <h2 id="recovery-secret-title">Enter the recovery passphrase</h2>
+      <p>Your encrypted database and protected security settings need the user-held recovery passphrase before the workspace can open them.</p>
+    </div>
+
+    <%= form_with url: recovery_secret_path, method: :post, local: true, class: "recovery-secret-form" do %>
+      <%= hidden_field_tag :return_to, @return_to %>
+
+      <label for="recovery_passphrase">Recovery passphrase</label>
+      <%= password_field_tag :recovery_passphrase,
+            nil,
+            id: "recovery_passphrase",
+            class: "form-control recovery-secret-input",
+            autocomplete: "current-password",
+            autofocus: true %>
+
+      <% if @recovery_secret_error.present? %>
+        <p class="recovery-secret-error"><%= @recovery_secret_error %></p>
+      <% end %>
+
+      <div class="typing-lock-actions recovery-secret-actions">
+        <%= submit_tag "Unlock Encrypted Data", class: "btn btn-primary" %>
+      </div>
+    <% end %>
+  </section>
+</div>

@@ -39,6 +39,10 @@ Rails.application.routes.draw do
   # Can be used by load balancers and uptime monitors to verify that the app is live.
   get "up" => "rails/health#show", as: :rails_health_check
 
+  get "recovery-secret", to: "recovery_secrets#new", as: :recovery_secret
+  post "recovery-secret", to: "recovery_secrets#create"
+  delete "recovery-secret", to: "recovery_secrets#destroy"
+
   # Action Mailbox ingress routes
   mount ActionMailbox::Engine => "/rails/action_mailbox"
 

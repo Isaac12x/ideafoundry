@@ -101,6 +101,38 @@ class SettingsControllerTest < ActionDispatch::IntegrationTest
     FileUtils.rm_rf(root) if root&.exist?
   end
 
+  test "GET settings/security offers recovery passphrase UI when encryption key is missing" do
+    missing = RecoverySecret::Missing.new("Set IDEA_FOUNDRY_RECOVERY_PASSPHRASE before opening encrypted data")
+
+    RecoverySecret.stub(:sqlcipher_key_hex, -> { raise missing }) do
+      get settings_security_path
+    end
+
+    assert_response :success
+    assert_select ".security-database-encryption__message--recovery-secret" do
+      assert_select "strong", text: "Recovery passphrase required"
+      assert_select "a[href=?]", recovery_secret_path(return_to: settings_security_path), text: "Enter Recovery Passphrase"
+    end
+    refute_match(/IDEA_FOUNDRY_RECOVERY_PASSPHRASE/, response.body)
+  end
+
+  test "GET settings redirects to recovery prompt when protected settings cannot decrypt" do
+    @user.update!(settings: {
+      "authenticator_app" => {
+        "enabled" => true,
+        "secret_ciphertext" => SecureSettingsPayload.encrypt("JBSWY3DPEHPK3PXP")
+      }
+    })
+    missing = RecoverySecret::Missing.new("Set IDEA_FOUNDRY_RECOVERY_PASSPHRASE before opening encrypted data")
+
+    RecoverySecret.stub(:value, -> { raise missing }) do
+      get settings_path
+    end
+
+    assert_redirected_to recovery_secret_path(return_to: settings_path)
+    assert_equal "Enter the recovery passphrase to unlock encrypted data.", flash[:alert]
+  end
+
   test "POST settings/security/encrypt-database encrypts configured plaintext SQLite" do
     root = Rails.root.join("tmp/settings_sqlcipher_controller_test_#{SecureRandom.hex(6)}")
     database_path = root.join("production.sqlite3")

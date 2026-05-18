@@ -1,4 +1,5 @@
 class ApplicationController < ActionController::Base
+  RECOVERY_SECRET_SESSION_KEY = "idea_foundry_recovery_passphrase".freeze
   TYPING_ACTIVITY_SESSION_KEY = "typing_last_activity_at"
   TYPING_LOCK_RETURN_TO_SESSION_KEY = "typing_lock_return_to"
   LEGACY_TYPING_UNLOCK_SESSION_KEY = "typing_unlocked_at"
@@ -11,10 +12,29 @@ class ApplicationController < ActionController::Base
 
   helper_method :backlog_enabled?
 
+  prepend_around_action :with_recovery_secret_from_session
   prepend_before_action :set_user
   before_action :require_typing_unlock
+  rescue_from RecoverySecret::Missing, with: :require_recovery_secret
 
   private
+
+  def with_recovery_secret_from_session(&action)
+    RecoverySecret.with(session[RECOVERY_SECRET_SESSION_KEY], &action)
+  end
+
+  def require_recovery_secret(_exception = nil)
+    message = "Enter the recovery passphrase to unlock encrypted data."
+
+    if request.format.json?
+      render json: {
+        error: message,
+        recovery_secret_url: recovery_secret_path
+      }, status: :locked
+    else
+      redirect_to recovery_secret_path(return_to: safe_return_path(request.fullpath)), alert: message
+    end
+  end
 
   def set_user
     @user = User.first || User.create!(email: 'user@example.com', name: 'Default User')

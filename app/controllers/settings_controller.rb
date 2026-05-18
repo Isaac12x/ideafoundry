@@ -144,7 +144,9 @@ class SettingsController < ApplicationController
     results = migrator.migrate_configured!(env: Rails.env)
 
     redirect_with_database_encryption_results(results)
-  rescue RecoverySecret::Missing, SqlcipherDatabaseMigrator::Error, SQLite3::Exception => e
+  rescue RecoverySecret::Missing
+    redirect_to recovery_secret_path(return_to: settings_security_path), alert: "Enter the recovery passphrase before encrypting SQLite databases."
+  rescue SqlcipherDatabaseMigrator::Error, SQLite3::Exception => e
     Rails.logger.error "Failed to encrypt SQLite databases from settings: #{e.message}"
     redirect_to settings_security_path, alert: "Failed to encrypt SQLite databases: #{e.message}"
   ensure
@@ -380,9 +382,15 @@ class SettingsController < ApplicationController
   def load_database_encryption_status
     @database_encryption_results = sqlcipher_database_migrator.configured_statuses(env: Rails.env)
     @database_encryption_error = nil
-  rescue RecoverySecret::Missing, SqlcipherDatabaseMigrator::Error => e
+    @database_encryption_requires_recovery_secret = false
+  rescue RecoverySecret::Missing
+    @database_encryption_results = []
+    @database_encryption_error = nil
+    @database_encryption_requires_recovery_secret = true
+  rescue SqlcipherDatabaseMigrator::Error => e
     @database_encryption_results = []
     @database_encryption_error = e.message
+    @database_encryption_requires_recovery_secret = false
   end
 
   def sqlcipher_database_migrator
