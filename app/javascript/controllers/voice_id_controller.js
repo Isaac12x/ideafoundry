@@ -69,18 +69,19 @@ export default class extends Controller {
       const durationMs = Math.round(performance.now() - startedAt);
       const blob = new Blob(chunks, { type: recorder.mimeType || "audio/webm" });
       const rms = await this.calculateRms(blob);
-      const transcript = await this.transcribe(blob, durationMs, rms);
-      const sample = { transcript, duration_ms: durationMs, rms };
+      const transcription = await this.transcribe(blob, durationMs, rms);
+      const sample = {
+        transcript: transcription.transcript,
+        duration_ms: Number(transcription.duration_ms || durationMs),
+        rms: Number(transcription.rms || rms),
+      };
 
       if (this.modeValue === "enroll") {
         this.storeEnrollmentSample(sample);
+        this.statusTarget.textContent = "Captured locally. Record the next phrase when you're ready.";
       } else {
-        this.statusTarget.textContent = this._isEnrollment()
-          ? "Could not capture speech. Press record to try again."
-          : "Could not capture speech.";
+        this.submitUnlockSample(sample);
       }
-
-      this.statusTarget.textContent = `Captured locally: “${transcript}”`;
     } catch (error) {
       this.statusTarget.textContent = error.message || "Could not capture speech locally. Try again or type the transcript manually.";
     }
@@ -108,7 +109,11 @@ export default class extends Controller {
       throw new Error(data.error || "Local Voice ID transcription failed.");
     }
 
-    return data.transcript || "";
+    return {
+      transcript: data.transcript || "",
+      duration_ms: data.duration_ms || durationMs,
+      rms: data.rms || rms,
+    };
   }
 
   csrfHeaders() {
@@ -133,6 +138,16 @@ export default class extends Controller {
     } catch (_error) {
       return 0;
     }
+  }
+
+  submitUnlockSample(sample) {
+    this.transcriptTarget.value = sample.transcript || "";
+    this.payloadTarget.value = JSON.stringify({
+      duration_ms: sample.duration_ms,
+      rms: sample.rms,
+    });
+    this.statusTarget.textContent = "Checking Voice ID locally…";
+    this.formTarget.requestSubmit();
   }
 
   storeEnrollmentSample(sample) {
