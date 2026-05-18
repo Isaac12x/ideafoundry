@@ -1,6 +1,15 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { createRoot, Root } from "react-dom/client";
 import { Excalidraw, exportToBlob } from "@excalidraw/excalidraw";
+import "@excalidraw/excalidraw/index.css";
+
+const LOCAL_ONLY_UI_OPTIONS = {
+  canvasActions: {
+    export: false,
+    loadScene: false,
+    saveToActiveFile: false,
+  },
+} as const;
 
 type Scene = {
   elements: readonly any[];
@@ -209,6 +218,12 @@ function ExcalidrawApp({
         initialData={initialData as any}
         onChange={handleChange as any}
         theme="dark"
+        isCollaborating={false}
+        aiEnabled={false}
+        validateEmbeddable={false}
+        UIOptions={LOCAL_ONLY_UI_OPTIONS as any}
+        renderTopRightUI={() => null}
+        onLinkOpen={(_, event) => event.preventDefault()}
       />
     </div>
   );
