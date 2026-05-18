@@ -13,11 +13,6 @@ services:
       - PORT=3000
       - VOICE_ID_SERVICE_URL=http://voice-id:8000
       - OCR_SERVICE_URL=http://ocr:8000/extract
-      # User-held recovery passphrase for SQLCipher and biometric-template encryption.
-      # Prefer a file outside the repo/storage; compose mounts it as a secret.
-      - IDEA_FOUNDRY_RECOVERY_PASSPHRASE_FILE=/run/secrets/idea_foundry_recovery_passphrase
-    secrets:
-      - idea_foundry_recovery_passphrase
     volumes:
       - ./storage:/rails/storage
       - ./config/master.key:/rails/config/master.key:ro
@@ -64,7 +59,3 @@ services:
       start_period: 15s
       retries: 3
     restart: unless-stopped
-
-secrets:
-  idea_foundry_recovery_passphrase:
-    file: ${IDEA_FOUNDRY_RECOVERY_PASSPHRASE_FILE:?set path to a user-held recovery passphrase file outside the app checkout}
