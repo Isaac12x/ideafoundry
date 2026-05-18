@@ -6,12 +6,17 @@ services:
     environment:
       - RAILS_ENV=production
       - PORT=3000
-      - OCR_SERVICE_URL=http://ocr:8000/extract
+      - VOICE_ID_SERVICE_URL=http://voice-id:8000
+      # User-held recovery passphrase for SQLCipher and biometric-template encryption.
+      # Prefer a file outside the repo/storage; compose mounts it as a secret.
+      - IDEA_FOUNDRY_RECOVERY_PASSPHRASE_FILE=/run/secrets/idea_foundry_recovery_passphrase
+    secrets:
+      - idea_foundry_recovery_passphrase
     volumes:
       - ./storage:/rails/storage
       - ./config/master.key:/rails/config/master.key:ro
     depends_on:
-      ocr:
+      voice-id:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000/up"]
@@ -21,14 +26,25 @@ services:
       retries: 3
     restart: unless-stopped
 
-  ocr:
-    build: ./ocr_service
-    expose:
-      - "8000"
+  voice-id:
+    build:
+      context: ./services/voice_id
+      args:
+        WHISPER_MODEL: ${VOICE_ID_WHISPER_MODEL:-Systran/faster-whisper-base.en}
+    ports:
+      - "127.0.0.1:${VOICE_ID_PORT:-8000}:8000"
+    environment:
+      - VOICE_ID_MODEL_PATH=/models/whisper-base.en
+      - VOICE_ID_DEVICE=${VOICE_ID_DEVICE:-cpu}
+      - VOICE_ID_COMPUTE_TYPE=${VOICE_ID_COMPUTE_TYPE:-int8}
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health').read()"]
       interval: 30s
       timeout: 10s
-      start_period: 15s
-      retries: 3
+      start_period: 30s
+      retries: 5
     restart: unless-stopped
+
+secrets:
+  idea_foundry_recovery_passphrase:
+    file: ${IDEA_FOUNDRY_RECOVERY_PASSPHRASE_FILE:?set path to a user-held recovery passphrase file outside the app checkout}

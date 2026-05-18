@@ -114,6 +114,21 @@ class TypingLocksController < ApplicationController
     end
   end
 
+  def transcribe_voice
+    audio = params[:audio]
+    result = LocalVoiceIdClient.transcribe(
+      audio: audio&.tempfile,
+      filename: audio&.original_filename,
+      content_type: audio&.content_type,
+      duration_ms: params[:duration_ms],
+      rms: params[:rms]
+    )
+
+    render json: result
+  rescue LocalVoiceIdClient::Error => e
+    render json: { error: e.message }, status: :service_unavailable
+  end
+
   def create
     @challenge_id = params[:challenge_id].to_s
     @challenge_text = TypingTextLibrary.enrollment_text(@challenge_id)
