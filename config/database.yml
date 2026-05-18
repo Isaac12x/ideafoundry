@@ -45,10 +45,15 @@ production:
   primary:
     <<: *default
     database: storage/production.sqlite3
+    # Full-database encryption for the user data DB. The key is derived from
+    # the user-held recovery passphrase by config/initializers/sqlcipher.rb.
+    sqlcipher: true
   queue:
     <<: *default
     database: storage/queue.sqlite3
     migrations_paths: db/queue_migrate
+    # Solid Queue arguments may contain user context, so encrypt this DB too.
+    sqlcipher: true
     pragmas:
       journal_mode: wal
       busy_timeout: 10000

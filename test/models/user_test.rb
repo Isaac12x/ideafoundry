@@ -1,4 +1,6 @@
 require "test_helper"
+require "erb"
+require "yaml"
 
 class UserTest < ActiveSupport::TestCase
   test "typing lock defaults to disabled with five minute timeout" do
@@ -18,7 +20,15 @@ class UserTest < ActiveSupport::TestCase
     assert_equal 86_400, user.typing_lock_timeout_seconds
   end
 
-  test "typing fingerprint can be stored and cleared" do
+  test "production sqlite databases are configured for SQLCipher encryption" do
+    raw_config = ERB.new(Rails.root.join("config/database.yml").read).result
+    database_config = YAML.safe_load(raw_config, aliases: true)
+
+    assert_equal true, database_config.fetch("production").fetch("primary").fetch("sqlcipher")
+    assert_equal true, database_config.fetch("production").fetch("queue").fetch("sqlcipher")
+  end
+
+  test "typing fingerprint can be stored encrypted and cleared" do
     user = users(:one)
     fingerprint = { "version" => 1, "keys" => { "a" => { "mean" => 90 } } }
 
@@ -26,8 +36,22 @@ class UserTest < ActiveSupport::TestCase
     assert user.typing_fingerprint_configured?
     assert_equal fingerprint, user.typing_fingerprint
 
+    raw_settings = user.reload.settings.fetch("typing_lock")
+    assert raw_settings["fingerprint_ciphertext"].present?
+    assert_nil raw_settings["fingerprint"]
+    refute_includes raw_settings["fingerprint_ciphertext"], "mean"
+
     assert user.clear_typing_fingerprint!
     refute user.typing_fingerprint_configured?
+  end
+
+  test "typing fingerprint reader supports legacy plaintext templates" do
+    user = users(:one)
+    fingerprint = { "version" => 1, "keys" => { "a" => { "mean" => 90 } } }
+    user.update!(settings: { "typing_lock" => { "enabled" => true, "fingerprint" => fingerprint } })
+
+    assert_equal fingerprint, user.typing_fingerprint
+    assert user.typing_fingerprint_configured?
   end
 
   test "authenticator app settings default to disabled" do
@@ -47,6 +71,11 @@ class UserTest < ActiveSupport::TestCase
     assert user.authenticator_app_configured?
     assert_match(/\A[A-Z2-7]{32}\z/, user.authenticator_app_secret)
     assert_includes user.authenticator_app_provisioning_uri, "otpauth://totp/Idea%20Foundry:"
+
+    raw_settings = user.reload.settings.fetch("authenticator_app")
+    assert raw_settings["secret_ciphertext"].present?
+    assert_nil raw_settings["secret"]
+    refute_includes raw_settings["secret_ciphertext"], user.authenticator_app_secret
 
     secret = user.authenticator_app_secret
 
@@ -75,9 +104,27 @@ class UserTest < ActiveSupport::TestCase
     assert_equal VoiceFingerprint::CANONICAL_PHRASE, user.voice_id_fingerprint["phrase"]
     assert_nil user.voice_id_fingerprint["raw_audio"]
 
+    raw_settings = user.reload.settings.fetch("voice_id")
+    assert raw_settings["fingerprint_ciphertext"].present?
+    assert_nil raw_settings["fingerprint"]
+    refute_includes raw_settings["fingerprint_ciphertext"], VoiceFingerprint::CANONICAL_PHRASE
+
     assert user.update_voice_id_settings("enabled" => "0")
     refute user.reload.voice_id_enabled?
     refute user.voice_id_configured?
+  end
+
+  test "voice id reader supports legacy plaintext templates" do
+    user = users(:one)
+    fingerprint = VoiceFingerprint.build(samples: [
+      { "transcript" => "By my will and power you will open. Open sesame", "duration_ms" => 1900, "rms" => 0.42 },
+      { "transcript" => "By my will and power, you will open. Open sesame!", "duration_ms" => 2050, "rms" => 0.39 },
+      { "transcript" => "By my will and power you will open open sesame", "duration_ms" => 1980, "rms" => 0.41 }
+    ])
+    user.update!(settings: { "voice_id" => { "enabled" => true, "fingerprint" => fingerprint } })
+
+    assert user.voice_id_enabled?
+    assert_equal fingerprint, user.voice_id_fingerprint
   end
 
   test "voice id requires the canonical unlock phrase" do
