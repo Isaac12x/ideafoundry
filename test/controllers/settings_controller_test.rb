@@ -81,7 +81,7 @@ class SettingsControllerTest < ActionDispatch::IntegrationTest
     assert_match(/Voice ID/, response.body)
   end
 
-  test "GET settings/security renders database encryption action for plaintext SQLite" do
+  test "GET settings/security renders passphrase and backup acknowledgements for plaintext SQLite" do
     root = Rails.root.join("tmp/settings_sqlcipher_controller_test_#{SecureRandom.hex(6)}")
     database_path = root.join("production.sqlite3")
     FileUtils.mkdir_p(root)
@@ -95,27 +95,79 @@ class SettingsControllerTest < ActionDispatch::IntegrationTest
     assert_select ".security-database-encryption" do
       assert_select "strong", text: "Needs encryption"
       assert_select "form[action=?][method=?]", settings_security_encrypt_database_path, "post"
+      assert_select "input[name=?][type=?]", "database_encryption[passphrase]", "password"
+      assert_select "input[name=?][type=?]", "database_encryption[passphrase_confirmation]", "password"
+      assert_select "input[name=?][type=?]", "database_encryption[saved_primary]", "checkbox"
+      assert_select "input[name=?][type=?]", "database_encryption[saved_secondary]", "checkbox"
       assert_select "button", text: "Encrypt SQLite Databases"
     end
   ensure
     FileUtils.rm_rf(root) if root&.exist?
   end
 
-  test "POST settings/security/encrypt-database encrypts configured plaintext SQLite" do
+  test "POST settings/security/encrypt-database refuses to encrypt without a matching passphrase and two saved-copy acknowledgements" do
+    migrator = Minitest::Mock.new
+
+    SettingsController.any_instance.stub(:sqlcipher_database_migrator_for_passphrase, migrator) do
+      post settings_security_encrypt_database_path, params: {
+        database_encryption: {
+          passphrase: "one passphrase",
+          passphrase_confirmation: "different passphrase",
+          saved_primary: "1",
+          saved_secondary: "1"
+        }
+      }
+    end
+
+    assert_redirected_to settings_security_path
+    assert_match(/Passphrase confirmation does not match/, flash[:alert])
+    migrator.verify
+  end
+
+  test "POST settings/security/encrypt-database refuses to encrypt until the user confirms two saved passphrase copies" do
+    migrator = Minitest::Mock.new
+
+    SettingsController.any_instance.stub(:sqlcipher_database_migrator_for_passphrase, migrator) do
+      post settings_security_encrypt_database_path, params: {
+        database_encryption: {
+          passphrase: "correct horse battery staple",
+          passphrase_confirmation: "correct horse battery staple",
+          saved_primary: "1",
+          saved_secondary: "0"
+        }
+      }
+    end
+
+    assert_redirected_to settings_security_path
+    assert_match(/Save the passphrase in more than one place/, flash[:alert])
+    migrator.verify
+  end
+
+  test "POST settings/security/encrypt-database encrypts configured plaintext SQLite with the UI passphrase" do
     root = Rails.root.join("tmp/settings_sqlcipher_controller_test_#{SecureRandom.hex(6)}")
     database_path = root.join("production.sqlite3")
     backup_dir = root.join("backups")
     FileUtils.mkdir_p(root)
     create_plaintext_sqlite_database(database_path)
 
-    with_sqlcipher_backup_dir(backup_dir) do
-      SqlcipherDatabaseMigrator.stub(:configured_database_paths, [database_path.to_s]) do
-        post settings_security_encrypt_database_path
+    with_recovery_passphrase_file(root.join("recovery_passphrase.key")) do
+      with_sqlcipher_backup_dir(backup_dir) do
+        SqlcipherDatabaseMigrator.stub(:configured_database_paths, [database_path.to_s]) do
+          post settings_security_encrypt_database_path, params: {
+            database_encryption: {
+              passphrase: "correct horse battery staple",
+              passphrase_confirmation: "correct horse battery staple",
+              saved_primary: "1",
+              saved_secondary: "1"
+            }
+          }
+        end
       end
     end
 
     assert_redirected_to settings_security_path
     assert_match(/Encrypted 1 SQLite database/, flash[:notice])
+    assert_equal "correct horse battery staple", File.read(root.join("recovery_passphrase.key"))
     refute_equal "SQLite format 3\0", File.binread(database_path, 16)
     assert_equal "SQLite format 3\0", File.binread(Dir[backup_dir.join("production.sqlite3.*.plaintext").to_s].first, 16)
   ensure
@@ -290,6 +342,26 @@ class SettingsControllerTest < ActionDispatch::IntegrationTest
       ENV.delete("IDEA_FOUNDRY_SQLCIPHER_BACKUP_DIR")
     else
       ENV["IDEA_FOUNDRY_SQLCIPHER_BACKUP_DIR"] = original
+    end
+  end
+
+  def with_recovery_passphrase_file(path)
+    original_file = ENV[RecoverySecret::PASSPHRASE_FILE_ENV]
+    original_passphrase = ENV[RecoverySecret::PASSPHRASE_ENV]
+    ENV[RecoverySecret::PASSPHRASE_FILE_ENV] = path.to_s
+    ENV.delete(RecoverySecret::PASSPHRASE_ENV)
+    yield
+  ensure
+    if original_file.nil?
+      ENV.delete(RecoverySecret::PASSPHRASE_FILE_ENV)
+    else
+      ENV[RecoverySecret::PASSPHRASE_FILE_ENV] = original_file
+    end
+
+    if original_passphrase.nil?
+      ENV.delete(RecoverySecret::PASSPHRASE_ENV)
+    else
+      ENV[RecoverySecret::PASSPHRASE_ENV] = original_passphrase
     end
   end
 end

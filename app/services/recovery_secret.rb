@@ -1,5 +1,7 @@
 require "base64"
+require "fileutils"
 require "openssl"
+require "pathname"
 
 class RecoverySecret
   PASSPHRASE_ENV = "IDEA_FOUNDRY_RECOVERY_PASSPHRASE".freeze
@@ -40,11 +42,34 @@ class RecoverySecret
     end
 
     def sqlcipher_key_hex
-      derive_key(SQLCIPHER_SALT).unpack1("H*")
+      sqlcipher_key_hex_for(value)
+    end
+
+    def sqlcipher_key_hex_for(passphrase)
+      derive_key(SQLCIPHER_SALT, value: passphrase).unpack1("H*")
     end
 
     def settings_key(length)
       derive_key(SETTINGS_SALT, length: length)
+    end
+
+    def user_passphrase_file_path
+      configured_path = ENV[PASSPHRASE_FILE_ENV].presence
+      return Pathname.new(configured_path) if configured_path.present?
+
+      Rails.root.join("storage", "recovery_passphrase.key")
+    end
+
+    def persist_user_passphrase!(passphrase)
+      path = user_passphrase_file_path
+      FileUtils.mkdir_p(path.dirname)
+      File.write(path, passphrase.to_s)
+      File.chmod(0o600, path)
+
+      ENV[PASSPHRASE_FILE_ENV] = path.to_s
+      ENV[PASSPHRASE_ENV] = passphrase.to_s
+
+      path
     end
 
     private
@@ -56,7 +81,7 @@ class RecoverySecret
       ENV[PASSPHRASE_ENV].presence || ENV[LEGACY_ENV].presence
     end
 
-    def derive_key(salt, length: 32)
+    def derive_key(salt, length: 32, value: self.value)
       key_material = decode_key_material(value)
       OpenSSL::KDF.scrypt(key_material, salt: salt, N: SCRYPT_N, r: SCRYPT_R, p: SCRYPT_P, length: length)
     rescue NoMethodError
