@@ -81,6 +81,47 @@ class SettingsControllerTest < ActionDispatch::IntegrationTest
     assert_match(/Voice ID/, response.body)
   end
 
+  test "GET settings/security renders database encryption action for plaintext SQLite" do
+    root = Rails.root.join("tmp/settings_sqlcipher_controller_test_#{SecureRandom.hex(6)}")
+    database_path = root.join("production.sqlite3")
+    FileUtils.mkdir_p(root)
+    create_plaintext_sqlite_database(database_path)
+
+    SqlcipherDatabaseMigrator.stub(:configured_database_paths, [database_path.to_s]) do
+      get settings_security_path
+    end
+
+    assert_response :success
+    assert_select ".security-database-encryption" do
+      assert_select "strong", text: "Needs encryption"
+      assert_select "form[action=?][method=?]", settings_security_encrypt_database_path, "post"
+      assert_select "button", text: "Encrypt SQLite Databases"
+    end
+  ensure
+    FileUtils.rm_rf(root) if root&.exist?
+  end
+
+  test "POST settings/security/encrypt-database encrypts configured plaintext SQLite" do
+    root = Rails.root.join("tmp/settings_sqlcipher_controller_test_#{SecureRandom.hex(6)}")
+    database_path = root.join("production.sqlite3")
+    backup_dir = root.join("backups")
+    FileUtils.mkdir_p(root)
+    create_plaintext_sqlite_database(database_path)
+
+    with_sqlcipher_backup_dir(backup_dir) do
+      SqlcipherDatabaseMigrator.stub(:configured_database_paths, [database_path.to_s]) do
+        post settings_security_encrypt_database_path
+      end
+    end
+
+    assert_redirected_to settings_security_path
+    assert_match(/Encrypted 1 SQLite database/, flash[:notice])
+    refute_equal "SQLite format 3\0", File.binread(database_path, 16)
+    assert_equal "SQLite format 3\0", File.binread(Dir[backup_dir.join("production.sqlite3.*.plaintext").to_s].first, 16)
+  ensure
+    FileUtils.rm_rf(root) if root&.exist?
+  end
+
   test "GET settings/security renders redo actions on each fingerprint row" do
     original_settings = @user.settings.deep_dup
     @user.update!(settings: {
@@ -228,5 +269,27 @@ class SettingsControllerTest < ActionDispatch::IntegrationTest
     assert_redirected_to settings_idea_tabs_path
     @user.reload
     assert_equal User::DEFAULT_IDEA_TAB_SETTINGS, @user.idea_tab_settings
+  end
+
+  private
+
+  def create_plaintext_sqlite_database(path)
+    db = SQLite3::Database.new(path.to_s)
+    db.execute("CREATE TABLE ideas (id integer primary key, title text)")
+    db.execute("INSERT INTO ideas (title) VALUES (?)", ["Encrypted from settings"])
+  ensure
+    db&.close
+  end
+
+  def with_sqlcipher_backup_dir(path)
+    original = ENV["IDEA_FOUNDRY_SQLCIPHER_BACKUP_DIR"]
+    ENV["IDEA_FOUNDRY_SQLCIPHER_BACKUP_DIR"] = path.to_s
+    yield
+  ensure
+    if original.nil?
+      ENV.delete("IDEA_FOUNDRY_SQLCIPHER_BACKUP_DIR")
+    else
+      ENV["IDEA_FOUNDRY_SQLCIPHER_BACKUP_DIR"] = original
+    end
   end
 end

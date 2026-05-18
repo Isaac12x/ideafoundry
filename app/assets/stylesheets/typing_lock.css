@@ -483,6 +483,12 @@ body.typing-lock-page .alert {
   align-items: start;
 }
 
+.typing-settings-main {
+  display: grid;
+  gap: 1.5rem;
+  min-width: 0;
+}
+
 .typing-settings-form {
   display: grid;
   gap: 1.25rem;
@@ -579,6 +585,97 @@ body.typing-lock-page .alert {
   color: var(--text-muted);
   font-size: 0.84rem;
   line-height: 1.5;
+}
+
+.security-database-encryption__body {
+  display: grid;
+  gap: 1rem;
+  padding: 1.25rem 1.5rem 1.5rem;
+}
+
+.security-database-encryption__list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.security-database-encryption__row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  background: var(--bg-elevated);
+}
+
+.security-database-encryption__path {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.security-database-encryption__path span {
+  color: var(--text-primary);
+  font-weight: 600;
+  font-size: 0.92rem;
+}
+
+.security-database-encryption__path code {
+  color: var(--text-muted);
+  font-size: 0.74rem;
+  overflow-wrap: anywhere;
+}
+
+.security-database-encryption__path small {
+  color: var(--danger);
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+.security-database-encryption__row strong {
+  flex: 0 0 auto;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.security-database-encryption__row--plaintext strong,
+.security-database-encryption__row--unreadable strong {
+  color: var(--danger);
+}
+
+.security-database-encryption__row--encrypted strong {
+  color: var(--success);
+}
+
+.security-database-encryption__actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.security-database-encryption__actions form {
+  margin: 0;
+}
+
+.security-database-encryption__message,
+.security-database-encryption__empty {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.84rem;
+  line-height: 1.5;
+}
+
+.security-database-encryption__message strong {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--text-primary);
+  font-size: 0.95rem;
+}
+
+.security-database-encryption__message p {
+  margin: 0;
 }
 
 .typing-settings-status__label--secondary {
@@ -791,6 +888,12 @@ body.typing-lock-page .alert {
 
   .typing-settings-layout {
     grid-template-columns: 1fr;
+  }
+
+  .security-database-encryption__row,
+  .security-database-encryption__actions {
+    align-items: stretch;
+    flex-direction: column;
   }
 }
 

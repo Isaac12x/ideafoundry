@@ -79,10 +79,8 @@ class SettingsController < ApplicationController
   end
 
   def security
-    @typing_lock_settings = @user.typing_lock_settings
-    @authenticator_app_settings = @user.authenticator_app_settings
-    @voice_id_settings = @user.voice_id_settings
-    @authenticator_app_qr_svg = AuthenticatorApp.qr_svg(@user.authenticator_app_provisioning_uri) if @user.authenticator_app_configured?
+    load_security_settings
+    load_database_encryption_status
   end
 
   def idea_work_tokens
@@ -137,6 +135,20 @@ class SettingsController < ApplicationController
         format.json { render json: { saved: false }, status: :unprocessable_entity }
       end
     end
+  end
+
+  def encrypt_database
+    migrator = sqlcipher_database_migrator
+
+    disconnect_database_connections!
+    results = migrator.migrate_configured!(env: Rails.env)
+
+    redirect_with_database_encryption_results(results)
+  rescue RecoverySecret::Missing, SqlcipherDatabaseMigrator::Error, SQLite3::Exception => e
+    Rails.logger.error "Failed to encrypt SQLite databases from settings: #{e.message}"
+    redirect_to settings_security_path, alert: "Failed to encrypt SQLite databases: #{e.message}"
+  ensure
+    reconnect_primary_database!
   end
 
   def update_notifications
@@ -357,6 +369,64 @@ class SettingsController < ApplicationController
   end
 
   private
+
+  def load_security_settings
+    @typing_lock_settings = @user.typing_lock_settings
+    @authenticator_app_settings = @user.authenticator_app_settings
+    @voice_id_settings = @user.voice_id_settings
+    @authenticator_app_qr_svg = AuthenticatorApp.qr_svg(@user.authenticator_app_provisioning_uri) if @user.authenticator_app_configured?
+  end
+
+  def load_database_encryption_status
+    @database_encryption_results = sqlcipher_database_migrator.configured_statuses(env: Rails.env)
+    @database_encryption_error = nil
+  rescue RecoverySecret::Missing, SqlcipherDatabaseMigrator::Error => e
+    @database_encryption_results = []
+    @database_encryption_error = e.message
+  end
+
+  def sqlcipher_database_migrator
+    SqlcipherDatabaseMigrator.new(
+      key_hex: RecoverySecret.sqlcipher_key_hex,
+      backup_dir: sqlcipher_backup_dir
+    )
+  end
+
+  def sqlcipher_backup_dir
+    ENV["IDEA_FOUNDRY_SQLCIPHER_BACKUP_DIR"].presence || ENV["BACKUP_DIR"].presence
+  end
+
+  def disconnect_database_connections!
+    ActiveRecord::Base.connection_handler.connection_pool_list.each(&:disconnect!)
+  end
+
+  def reconnect_primary_database!
+    ActiveRecord::Base.establish_connection
+    ActiveRecord::Base.connection
+  rescue => e
+    Rails.logger.warn "Could not reconnect the primary database after SQLCipher migration: #{e.message}"
+  end
+
+  def redirect_with_database_encryption_results(results)
+    if results.empty?
+      redirect_to settings_security_path, alert: "No SQLCipher-enabled SQLite databases are configured for #{Rails.env}."
+      return
+    end
+
+    encrypted_count = results.count { |result| result.status == :encrypted }
+    if encrypted_count.positive?
+      backup_dirs = results.filter_map(&:backup_path).map { |path| File.dirname(path) }.uniq
+      message = "Encrypted #{encrypted_count} SQLite #{'database'.pluralize(encrypted_count)}."
+      message += " Plaintext backups: #{backup_dirs.to_sentence}." if backup_dirs.any?
+      redirect_to settings_security_path, notice: message
+    elsif results.all? { |result| result.status == :already_encrypted }
+      redirect_to settings_security_path, notice: "SQLite databases are already encrypted."
+    elsif results.all? { |result| result.status == :missing }
+      redirect_to settings_security_path, notice: "Configured SQLite databases are missing; Rails will create them encrypted."
+    else
+      redirect_to settings_security_path, notice: "SQLite database encryption check finished."
+    end
+  end
 
   def scoring_params
     params.require(:scoring_weights).permit(:trl, :difficulty, :opportunity, :timing)

@@ -6,7 +6,7 @@ class SqlcipherDatabaseMigrator
   SQLITE_HEADER = "SQLite format 3\0".b.freeze
   SIDECAR_SUFFIXES = ["-wal", "-shm"].freeze
 
-  Result = Struct.new(:path, :status, :backup_path, keyword_init: true)
+  Result = Struct.new(:path, :status, :backup_path, :error, keyword_init: true)
 
   class Error < StandardError; end
 
@@ -36,6 +36,24 @@ class SqlcipherDatabaseMigrator
 
   def migrate_configured!(env:)
     self.class.configured_database_paths(env: env).map { |path| migrate!(path) }
+  end
+
+  def configured_statuses(env:)
+    self.class.configured_database_paths(env: env).map { |path| status_for(path) }
+  end
+
+  def status_for(database)
+    path = Pathname.new(database.to_s)
+    path = Rails.root.join(path) unless path.absolute?
+
+    return Result.new(path: path.to_s, status: :missing) unless path.exist?
+    return Result.new(path: path.to_s, status: :plaintext) if plaintext_sqlite_database?(path)
+
+    ensure_sqlcipher_available!
+    verify_encrypted_database!(path)
+    Result.new(path: path.to_s, status: :encrypted)
+  rescue Error, SQLite3::SQLException, SQLite3::NotADatabaseException, SQLite3::IOException => e
+    Result.new(path: path.to_s, status: :unreadable, error: e.message)
   end
 
   def migrate!(database)
