@@ -46,6 +46,90 @@ body.typing-lock-page .alert {
   color: #262334;
 }
 
+.recovery-secret-shell {
+  width: min(900px, 100%);
+  min-width: 0;
+  color: #262334;
+}
+
+.recovery-secret-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 0.72fr);
+  gap: clamp(24px, 6vw, 72px);
+  align-items: end;
+}
+
+.recovery-secret-copy {
+  min-width: 0;
+}
+
+.recovery-secret-kicker {
+  display: block;
+  margin-bottom: 14px;
+  color: rgba(129, 52, 69, 0.78);
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.recovery-secret-copy h2 {
+  margin: 0;
+  color: #262334;
+  font-family: var(--font-display);
+  font-size: clamp(2.35rem, 7vw, 6rem);
+  font-style: italic;
+  font-weight: 400;
+  line-height: 0.94;
+}
+
+.recovery-secret-copy p {
+  max-width: 34rem;
+  margin: clamp(18px, 3vw, 30px) 0 0;
+  color: rgba(38, 35, 52, 0.68);
+  font-size: clamp(1rem, 2vw, 1.15rem);
+  line-height: 1.6;
+}
+
+.recovery-secret-form {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+
+.recovery-secret-form label {
+  color: rgba(38, 35, 52, 0.62);
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.recovery-secret-input.form-control {
+  min-height: 58px;
+  border-color: rgba(38, 35, 52, 0.18);
+  background: rgba(255, 252, 247, 0.92);
+  color: #262334;
+  font-family: var(--font-mono);
+  font-size: 1rem;
+  box-shadow: 0 18px 60px rgba(38, 35, 52, 0.08);
+}
+
+.recovery-secret-input.form-control:focus {
+  border-color: #9a612b;
+  box-shadow: 0 0 0 4px rgba(154, 97, 43, 0.14), 0 18px 60px rgba(38, 35, 52, 0.08);
+}
+
+.recovery-secret-error {
+  margin: 0;
+  color: #813445;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.recovery-secret-actions {
+  justify-content: flex-start;
+  margin-top: 8px;
+}
+
 .typing-lock-shell--transitioning {
   display: grid;
   width: 100%;
@@ -678,6 +762,14 @@ body.typing-lock-page .alert {
   margin: 0;
 }
 
+.security-database-encryption__message .btn {
+  margin-top: 0.85rem;
+}
+
+.security-database-encryption__message--recovery-secret strong {
+  color: var(--warning);
+}
+
 .typing-settings-status__label--secondary {
   margin-top: 1.5rem;
   padding-top: 1.5rem;
@@ -862,6 +954,11 @@ body.typing-lock-page .alert {
 
   .typing-lock-heading {
     grid-template-columns: 1fr;
+  }
+
+  .recovery-secret-panel {
+    grid-template-columns: 1fr;
+    align-items: stretch;
   }
 
   .typing-lock-animation {
