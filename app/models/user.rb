@@ -241,7 +241,7 @@ class User < ApplicationRecord
   end
 
   def typing_fingerprint
-    typing_lock_settings['fingerprint']
+    secure_settings_value(typing_lock_settings, 'fingerprint')
   end
 
   def typing_fingerprint_configured?
@@ -312,7 +312,8 @@ class User < ApplicationRecord
     self.settings ||= {}
     self.settings['typing_lock'] ||= {}
     self.settings['typing_lock']['enabled'] = true
-    self.settings['typing_lock']['fingerprint'] = fingerprint
+    self.settings['typing_lock']['fingerprint_ciphertext'] = SecureSettingsPayload.encrypt(fingerprint)
+    self.settings['typing_lock'].delete('fingerprint')
     self.settings['typing_lock'].delete('last_failed_unlock')
     save
   end
@@ -321,6 +322,7 @@ class User < ApplicationRecord
     self.settings ||= {}
     self.settings['typing_lock'] ||= {}
     self.settings['typing_lock'].delete('fingerprint')
+    self.settings['typing_lock'].delete('fingerprint_ciphertext')
     self.settings['typing_lock'].delete('last_failed_unlock')
     save
   end
@@ -338,7 +340,7 @@ class User < ApplicationRecord
   end
 
   def authenticator_app_secret
-    authenticator_app_settings['secret'].presence
+    secure_settings_value(authenticator_app_settings, 'secret').presence
   end
 
   def authenticator_app_provisioning_uri
@@ -354,7 +356,8 @@ class User < ApplicationRecord
 
     if enabled
       self.settings['authenticator_app']['enabled'] = true
-      self.settings['authenticator_app']['secret'] = authenticator_app_secret || AuthenticatorApp.generate_secret
+      self.settings['authenticator_app']['secret_ciphertext'] = SecureSettingsPayload.encrypt(authenticator_app_secret || AuthenticatorApp.generate_secret)
+      self.settings['authenticator_app'].delete('secret')
     else
       self.settings['authenticator_app'] = { 'enabled' => false }
     end
@@ -375,7 +378,7 @@ class User < ApplicationRecord
   end
 
   def voice_id_fingerprint
-    voice_id_settings['fingerprint']
+    secure_settings_value(voice_id_settings, 'fingerprint')
   end
 
   def voice_id_configured?
@@ -400,7 +403,8 @@ class User < ApplicationRecord
     self.settings ||= {}
     self.settings['voice_id'] ||= {}
     self.settings['voice_id']['enabled'] = true
-    self.settings['voice_id']['fingerprint'] = fingerprint.except('raw_audio', 'audio', 'blob', 'recording')
+    self.settings['voice_id']['fingerprint_ciphertext'] = SecureSettingsPayload.encrypt(fingerprint.except('raw_audio', 'audio', 'blob', 'recording'))
+    self.settings['voice_id'].delete('fingerprint')
     save
   end
 
@@ -408,6 +412,7 @@ class User < ApplicationRecord
     self.settings ||= {}
     self.settings['voice_id'] ||= {}
     self.settings['voice_id'].delete('fingerprint')
+    self.settings['voice_id'].delete('fingerprint_ciphertext')
     save
   end
 
@@ -592,5 +597,14 @@ class User < ApplicationRecord
       self.settings['topology_overrides'][topology_id.to_s] = filtered
     end
     save
+  end
+
+  private
+
+  def secure_settings_value(settings_hash, key)
+    ciphertext = settings_hash["#{key}_ciphertext"]
+    return SecureSettingsPayload.decrypt(ciphertext) if ciphertext.present?
+
+    settings_hash[key]
   end
 end

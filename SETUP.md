@@ -126,6 +126,35 @@ SQLite3 with four database files in `storage/`:
 
 Backups: The app has built-in scheduled backups (configurable in Settings). Manual backup is just copying the `storage/` directory.
 
+### Local encryption model
+
+Production uses SQLCipher for the primary and Solid Queue SQLite files. This is the protection that matters when the threat is “someone opens `storage/production.sqlite3` with plain `sqlite3`.” A normal SQLite CLI should see an unreadable encrypted file, not tables or user content.
+
+The encryption root is a user-held recovery passphrase/key, not Rails credentials, `secret_key_base`, `config/master.key`, or a fixed Docker secret. Typing lock and local Voice ID are only convenience/security gates after the app has been unlocked with the recovery secret; they are not the only cryptographic unlock.
+
+The same recovery secret is also used to derive an app-level AES-GCM key for especially sensitive settings stored inside the database:
+
+- Typing fingerprint templates
+- Voice ID fingerprint templates
+- Authenticator app secrets
+
+Generate a strong passphrase/key and save it somewhere outside the app checkout, outside `storage/`, and outside `config/master.key`:
+
+```bash
+openssl rand -base64 32 > /path/outside/idea-foundry-recovery-passphrase.txt
+chmod 600 /path/outside/idea-foundry-recovery-passphrase.txt
+```
+
+Run Docker Compose with the file path, not the secret value:
+
+```bash
+IDEA_FOUNDRY_RECOVERY_PASSPHRASE_FILE=/path/outside/idea-foundry-recovery-passphrase.txt docker compose up --build
+```
+
+Use the same recovery passphrase file when moving the encrypted database to another computer. Without it, the app cannot open the SQLCipher database and cannot decrypt protected security templates.
+
+If you already have a plaintext production SQLite file, back it up before enabling SQLCipher and migrate it with SQLCipher export tooling or start from a fresh encrypted production database. Do not keep plaintext backup copies next to the encrypted database.
+
 ## Email Setup (Optional)
 
 1. Create a [Resend](https://resend.com) account

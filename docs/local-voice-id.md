@@ -7,7 +7,7 @@ Idea Foundry's Voice ID flow does not depend on the browser's cloud speech-recog
 - Browser: records audio with `MediaRecorder` and calculates a local RMS volume metric.
 - Rails: receives `POST /typing-lock/voice-id/transcribe` and calls `LocalVoiceIdClient`.
 - `voice-id` service: runs FastAPI + faster-whisper against an on-image Whisper model and returns the transcript.
-- Rails: keeps storing only the derived Voice ID fingerprint; raw audio is not stored.
+- Rails: keeps storing only the derived Voice ID fingerprint; raw audio is not stored. The derived fingerprint is encrypted with the user recovery secret before it is persisted.
 
 ## Offline behavior
 
