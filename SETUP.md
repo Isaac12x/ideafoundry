@@ -62,27 +62,50 @@ Email features are optional — the app works fine without them.
 
 ## Docker
 
+By default, compose now runs only the associated sidecar services so the Rails app can be supervised separately by launchd/systemd:
+
 ```bash
-# Build and run
-docker-compose up --build
+# Build and run only sidecar services: voice-id and OCR
+docker compose up --build
 
 # Or in detached mode
-docker-compose up -d --build
+docker compose up -d --build
 ```
 
-The container:
+The sidecar services bind to localhost only:
+- Voice ID: `http://127.0.0.1:8000` (configurable via `VOICE_ID_PORT`)
+- OCR: `http://127.0.0.1:8001/extract` (configurable via `OCR_SERVICE_PORT`)
+
+When Rails runs directly under launchd/systemd, point it at those host-side services:
+
+```bash
+export VOICE_ID_SERVICE_URL=http://127.0.0.1:8000
+export OCR_SERVICE_URL=http://127.0.0.1:8001/extract
+```
+
+If you do want compose to run the Rails app too, opt into the `app` profile:
+
+```bash
+# Build and run sidecars plus the Rails app container
+docker compose --profile app up --build
+
+# Or in detached mode
+docker compose --profile app up -d --build
+```
+
+The app container:
 - Runs in production mode on port 3000 internally
 - Maps to port 3333 on the host (configurable via `PORT` env var)
 - Persists data via `./storage` volume mount
 - Requires `./config/master.key` to decrypt credentials
 
-Customize the port:
+Customize the app container port:
 
 ```bash
-PORT=8080 docker-compose up
+PORT=8080 docker compose --profile app up
 ```
 
-Health check endpoint: `http://localhost:3333/up`
+Health check endpoint when the app container is running: `http://localhost:3333/up`
 
 ## Production (Bare Metal)
 
