@@ -27,8 +27,7 @@ RUN apt-get update -qq && \
 # Install application gems. Force sqlite3-ruby to link against SQLCipher rather
 # than the bundled/plain SQLite library so production DB files are encrypted.
 COPY Gemfile Gemfile.lock ./
-RUN bundle config set force_ruby_platform true && \
-    bundle config set build.sqlite3 "--enable-system-libraries --with-sqlcipher" && \
+RUN bundle config set build.sqlite3 "--enable-system-libraries --with-sqlcipher" && \
     bundle install && \
     rm -rf ~/.bundle/ "${BUNDLE_PATH}"/ruby/*/cache "${BUNDLE_PATH}"/ruby/*/bundler/gems/*/.git && \
     bundle exec bootsnap precompile --gemfile

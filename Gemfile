@@ -8,8 +8,9 @@ gem 'rails', '~> 8.0.4', '>= 8.0.4.1'
 # The original asset pipeline for Rails [https://github.com/rails/sprockets-rails]
 gem "sprockets-rails"
 
-# Use sqlite3 as the database for Active Record
-gem "sqlite3", "~> 2.7", ">= 2.7.3"
+# Use sqlite3 as the database for Active Record. Production databases require
+# SQLCipher, so build sqlite3 from source with the Bundler flags in .bundle/config.
+gem "sqlite3", "~> 2.7", ">= 2.7.3", force_ruby_platform: true
 
 # Use the Puma web server [https://github.com/puma/puma]
 gem "puma", ">= 5.0"
