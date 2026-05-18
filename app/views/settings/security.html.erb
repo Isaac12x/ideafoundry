@@ -125,11 +125,46 @@
 
             <% if @database_encryption_results.any? { |result| result.status == :plaintext } %>
               <div class="security-database-encryption__actions">
-                <%= button_to "Encrypt SQLite Databases",
-                      settings_security_encrypt_database_path,
-                      method: :post,
-                      class: "btn btn-primary",
-                      form: { data: { turbo_confirm: "Encrypt the configured SQLite databases now? The app will keep plaintext backups outside the checkout." } } %>
+                <%= form_with url: settings_security_encrypt_database_path, method: :post, local: true, class: "security-database-encryption__form" do %>
+                  <div class="security-database-encryption__warning">
+                    <strong>This passphrase becomes the database recovery key.</strong>
+                    <p>Idea Foundry cannot recover it for you. Save it in at least two independent places before encrypting. The app will store a local copy for launchd/systemd at <code><%= @database_recovery_passphrase_file_path %></code>.</p>
+                  </div>
+
+                  <div class="typing-settings-field">
+                    <label for="database_encryption_passphrase">Database recovery passphrase</label>
+                    <%= password_field_tag "database_encryption[passphrase]", nil,
+                          id: "database_encryption_passphrase",
+                          class: "form-control",
+                          autocomplete: "new-password",
+                          minlength: 16,
+                          required: true %>
+                  </div>
+
+                  <div class="typing-settings-field">
+                    <label for="database_encryption_passphrase_confirmation">Confirm recovery passphrase</label>
+                    <%= password_field_tag "database_encryption[passphrase_confirmation]", nil,
+                          id: "database_encryption_passphrase_confirmation",
+                          class: "form-control",
+                          autocomplete: "new-password",
+                          minlength: 16,
+                          required: true %>
+                  </div>
+
+                  <label class="security-database-encryption__ack" for="database_encryption_saved_primary">
+                    <%= check_box_tag "database_encryption[saved_primary]", "1", false, id: "database_encryption_saved_primary", required: true %>
+                    <span>I saved this passphrase in my primary password manager or recovery vault.</span>
+                  </label>
+
+                  <label class="security-database-encryption__ack" for="database_encryption_saved_secondary">
+                    <%= check_box_tag "database_encryption[saved_secondary]", "1", false, id: "database_encryption_saved_secondary", required: true %>
+                    <span>I saved this passphrase in a second separate place before continuing.</span>
+                  </label>
+
+                  <%= submit_tag "Encrypt SQLite Databases",
+                        class: "btn btn-primary",
+                        data: { turbo_confirm: "Encrypt the configured SQLite databases now? Continue only if the passphrase is saved in more than one place." } %>
+                <% end %>
               </div>
             <% else %>
               <p class="security-database-encryption__empty">No plaintext configured databases need encryption.</p>

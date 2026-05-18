@@ -138,7 +138,15 @@ class SettingsController < ApplicationController
   end
 
   def encrypt_database
-    migrator = sqlcipher_database_migrator
+    passphrase_validation_error = database_encryption_passphrase_validation_error
+    if passphrase_validation_error.present?
+      redirect_to settings_security_path, alert: passphrase_validation_error
+      return
+    end
+
+    passphrase = database_encryption_params[:passphrase].to_s.strip
+    RecoverySecret.persist_user_passphrase!(passphrase)
+    migrator = sqlcipher_database_migrator_for_passphrase(passphrase)
 
     disconnect_database_connections!
     results = migrator.migrate_configured!(env: Rails.env)
@@ -378,6 +386,7 @@ class SettingsController < ApplicationController
   end
 
   def load_database_encryption_status
+    @database_recovery_passphrase_file_path = RecoverySecret.user_passphrase_file_path
     @database_encryption_results = sqlcipher_database_migrator.configured_statuses(env: Rails.env)
     @database_encryption_error = nil
   rescue RecoverySecret::Missing, SqlcipherDatabaseMigrator::Error => e
@@ -387,7 +396,14 @@ class SettingsController < ApplicationController
 
   def sqlcipher_database_migrator
     SqlcipherDatabaseMigrator.new(
-      key_hex: RecoverySecret.sqlcipher_key_hex,
+      key_hex: RecoverySecret.present? ? RecoverySecret.sqlcipher_key_hex : ("0" * 64),
+      backup_dir: sqlcipher_backup_dir
+    )
+  end
+
+  def sqlcipher_database_migrator_for_passphrase(passphrase)
+    SqlcipherDatabaseMigrator.new(
+      key_hex: RecoverySecret.sqlcipher_key_hex_for(passphrase),
       backup_dir: sqlcipher_backup_dir
     )
   end
@@ -450,6 +466,27 @@ class SettingsController < ApplicationController
 
   def voice_id_params
     params.fetch(:voice_id, {}).permit(:enabled)
+  end
+
+  def database_encryption_params
+    params.fetch(:database_encryption, {}).permit(:passphrase, :passphrase_confirmation, :saved_primary, :saved_secondary)
+  end
+
+  def database_encryption_passphrase_validation_error
+    encryption_params = database_encryption_params
+    passphrase = encryption_params[:passphrase].to_s.strip
+    confirmation = encryption_params[:passphrase_confirmation].to_s.strip
+
+    return "Enter a database recovery passphrase before encrypting SQLite databases." if passphrase.blank?
+    return "Database recovery passphrase must be at least 16 characters long." if passphrase.length < 16
+    passphrases_match = passphrase.bytesize == confirmation.bytesize && ActiveSupport::SecurityUtils.secure_compare(passphrase, confirmation)
+    return "Passphrase confirmation does not match." unless passphrases_match
+
+    saved_primary = ActiveModel::Type::Boolean.new.cast(encryption_params[:saved_primary])
+    saved_secondary = ActiveModel::Type::Boolean.new.cast(encryption_params[:saved_secondary])
+    return "Save the passphrase in more than one place before encrypting the database." unless saved_primary && saved_secondary
+
+    nil
   end
 
   def idea_work_token_params
