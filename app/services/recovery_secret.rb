@@ -91,10 +91,20 @@ class RecoverySecret
     end
 
     def configured_secret
-      file_path = ENV[PASSPHRASE_FILE_ENV].presence
-      return File.read(file_path).strip if file_path.present?
+      configured_file_path = ENV[PASSPHRASE_FILE_ENV].presence
+      return read_passphrase_file(configured_file_path) if configured_file_path.present?
 
-      ENV[PASSPHRASE_ENV].presence || ENV[LEGACY_ENV].presence
+      env_secret = ENV[PASSPHRASE_ENV].presence || ENV[LEGACY_ENV].presence
+      return env_secret if env_secret.present?
+
+      read_passphrase_file(user_passphrase_file_path)
+    end
+
+    def read_passphrase_file(path)
+      path = Pathname.new(path.to_s)
+      return unless path.file?
+
+      File.read(path).strip.presence
     end
 
     def derive_key(salt, length: 32, value: self.value)
