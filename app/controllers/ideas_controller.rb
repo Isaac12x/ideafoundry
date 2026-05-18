@@ -34,6 +34,7 @@ class IdeasController < ApplicationController
       @idea.create_version("Initial version")
       update_kanban_list_membership
       update_named_list_memberships
+      @idea.enqueue_attachment_ocr!
 
       redirect_to uncompleted_ideas_path(idea_draft_saved: 1), notice: 'Idea was successfully created.'
     else
@@ -53,6 +54,7 @@ class IdeasController < ApplicationController
     respond_to do |format|
       if @idea.update(attrs)
         @idea.create_version(was_draft ? "Initial version" : version_commit_message)
+        @idea.enqueue_attachment_ocr!
 
         # Update list association if provided (only for non-AJAX requests)
         unless request.xhr?
