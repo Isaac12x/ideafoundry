@@ -53,6 +53,10 @@
 .DS_Store
 Thumbs.db
 
+# Python cache files
+__pycache__/
+*.py[cod]
+
 # Editor/IDE
 .idea/
 .vscode/

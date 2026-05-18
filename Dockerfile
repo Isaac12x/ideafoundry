@@ -19,14 +19,17 @@ FROM base AS build
 
 # Install packages needed to build gems and compile JS assets
 RUN apt-get update -qq && \
-    apt-get install --no-install-recommends -y build-essential git libvips pkg-config libyaml-dev libsqlite3-dev curl && \
+    apt-get install --no-install-recommends -y build-essential git libvips pkg-config libyaml-dev libsqlcipher-dev sqlcipher curl && \
     curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
     apt-get install --no-install-recommends -y nodejs && \
     npm install -g yarn
 
-# Install application gems
+# Install application gems. Force sqlite3-ruby to link against SQLCipher rather
+# than the bundled/plain SQLite library so production DB files are encrypted.
 COPY Gemfile Gemfile.lock ./
-RUN bundle install && \
+RUN bundle config set force_ruby_platform true && \
+    bundle config set build.sqlite3 "--enable-system-libraries --with-sqlcipher" && \
+    bundle install && \
     rm -rf ~/.bundle/ "${BUNDLE_PATH}"/ruby/*/cache "${BUNDLE_PATH}"/ruby/*/bundler/gems/*/.git && \
     bundle exec bootsnap precompile --gemfile
 
@@ -48,7 +51,7 @@ FROM base
 
 # Install packages needed for deployment
 RUN apt-get update -qq && \
-    apt-get install --no-install-recommends -y curl libsqlite3-0 libvips && \
+    apt-get install --no-install-recommends -y curl libsqlcipher1 sqlcipher libvips && \
     rm -rf /var/lib/apt/lists /var/cache/apt/archives
 
 # Copy built artifacts: gems, application

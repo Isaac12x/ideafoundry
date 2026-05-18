@@ -157,6 +157,7 @@ Rails.application.routes.draw do
   post 'typing-lock/verify', to: 'typing_locks#verify', as: :verify_typing_lock
   post 'typing-lock/authenticator', to: 'typing_locks#verify_authenticator', as: :verify_authenticator_typing_lock
   post 'typing-lock/voice-id', to: 'typing_locks#verify_voice', as: :verify_voice_id_typing_lock
+  post 'typing-lock/voice-id/transcribe', to: 'typing_locks#transcribe_voice', as: :transcribe_voice_id_typing_lock
   patch 'typing-lock/activity', to: 'typing_locks#activity', as: :typing_lock_activity
   get 'typing-lock/enroll', to: 'typing_locks#enroll', as: :enroll_typing_lock
   post 'typing-lock/enroll', to: 'typing_locks#create', as: :typing_lock_enrollment
