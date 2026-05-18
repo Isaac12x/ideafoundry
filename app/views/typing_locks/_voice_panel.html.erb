@@ -61,7 +61,7 @@
           <%= hidden_field_tag "voice_id_samples[][rms]", "", data: { voice_id_target: "sampleRms", voice_id_index: index } %>
         <% end %>
       <% else %>
-        <%= hidden_field_tag :voice_transcript, "", data: { voice_id_target: "transcript" } %>
+        <%= hidden_field_tag :captured_voice_transcript, "", data: { voice_id_target: "transcript" } %>
       <% end %>
 
       <p class="voice-id-status" data-voice-id-target="status" aria-live="polite">
@@ -93,13 +93,16 @@
         <% end %>
       </div>
 
-      <p class="typing-lock-noscript">
-        If local microphone capture is unavailable, enter the spoken transcript manually for local development:
-        <%= text_field_tag mode == :enroll ? "voice_id_samples[][transcript]" : :voice_transcript,
-              "",
-              class: "typing-authenticator-input",
-              placeholder: phrase %>
-      </p>
+      <% unless mode == :enroll %>
+        <p class="typing-lock-noscript">
+          If local microphone capture is unavailable, enter the spoken transcript manually for local development:
+          <%= text_field_tag :voice_transcript,
+                "",
+                class: "typing-authenticator-input",
+                placeholder: phrase,
+                data: { voice_id_target: "manualTranscript" } %>
+        </p>
+      <% end %>
     <% end %>
   <% end %>
 </section>
