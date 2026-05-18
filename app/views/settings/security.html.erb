@@ -133,7 +133,7 @@
 
             <% if @database_encryption_results.any? { |result| result.status == :plaintext } %>
               <div class="security-database-encryption__actions">
-                <%= form_with url: settings_security_encrypt_database_path, method: :post, local: true, class: "security-database-encryption__form" do %>
+                <%= form_with url: settings_security_encrypt_database_path, method: :post, local: true, class: "security-database-encryption__form", data: { controller: "passphrase-download" } do %>
                   <div class="security-database-encryption__warning">
                     <strong>This passphrase becomes the database recovery key.</strong>
                     <p>Idea Foundry cannot recover it for you. Save it in at least two independent places before encrypting. The app will store a local copy for launchd/systemd at <code><%= @database_recovery_passphrase_file_path %></code>.</p>
@@ -146,7 +146,8 @@
                           class: "form-control",
                           autocomplete: "new-password",
                           minlength: 16,
-                          required: true %>
+                          required: true,
+                          data: { passphrase_download_target: "passphrase" } %>
                   </div>
 
                   <div class="typing-settings-field">
@@ -165,8 +166,8 @@
                   </label>
 
                   <label class="security-database-encryption__ack" for="database_encryption_saved_secondary">
-                    <%= check_box_tag "database_encryption[saved_secondary]", "1", false, id: "database_encryption_saved_secondary", required: true %>
-                    <span>I saved this passphrase in a second separate place before continuing.</span>
+                    <%= check_box_tag "database_encryption[saved_secondary]", "1", false, id: "database_encryption_saved_secondary", required: true, data: { action: "change->passphrase-download#download" } %>
+                    <span>I saved this passphrase in a second separate place — <strong>download a copy</strong> to confirm.</span>
                   </label>
 
                   <%= submit_tag "Encrypt SQLite Databases",
