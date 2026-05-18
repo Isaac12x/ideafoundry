@@ -181,7 +181,7 @@ IDEA_FOUNDRY_RECOVERY_PASSPHRASE_FILE=/path/outside/idea-foundry-recovery-passph
 
 Use the same recovery passphrase file when moving the encrypted database to another computer. Without it, the app cannot open the SQLCipher database and cannot decrypt protected security templates.
 
-If you already have plaintext production SQLite files, start the app with the recovery passphrase configured, open `/settings/security`, and use the Database Encryption action. The app encrypts the SQLCipher-configured databases from `config/database.yml`, verifies the encrypted copies, replaces the plaintext files, and keeps plaintext backups outside the checkout by default in `../idea-app-sqlcipher-backups`.
+If you already have plaintext production SQLite files, open `/settings/security`, enter and confirm a strong database recovery passphrase, and confirm you saved that passphrase in two separate places before starting the Database Encryption action. The app writes the passphrase to the configured `IDEA_FOUNDRY_RECOVERY_PASSPHRASE_FILE` path, or to `storage/recovery_passphrase.key` when no path is configured, then encrypts the SQLCipher-configured databases from `config/database.yml`, verifies the encrypted copies, replaces the plaintext files, and keeps plaintext backups outside the checkout by default in `../idea-app-sqlcipher-backups`.
 
 Set `IDEA_FOUNDRY_SQLCIPHER_BACKUP_DIR=/path/outside/app` before starting the app to choose a different backup location. After you have verified your encrypted database, move long-term plaintext backups to secure offline storage or delete them according to your backup policy.
 
