@@ -76,6 +76,30 @@ class Idea < ApplicationRecord
     drawings.general.ordered
   end
 
+  def ordered_attachments
+    attachments.attachments.order(Arel.sql("COALESCE(position, 2147483647) ASC"), :created_at)
+  end
+
+  def ocr_attachment_parts
+    ordered_attachments.each_with_object([]) do |attachment, parts|
+      next unless attachment.ocr_complete?
+
+      attachment.ocr_parts.each do |part|
+        parts << { attachment: attachment, text: part }
+      end
+    end
+  end
+
+  def enqueue_attachment_ocr!
+    ordered_attachments.each do |attachment|
+      next unless AttachmentOcrJob.ocr_supported?(attachment)
+      next if attachment.ocr_status.in?(["queued", "processing", "complete"])
+
+      attachment.update!(ocr_status: "queued", ocr_error: nil)
+      AttachmentOcrJob.perform_later(attachment.id)
+    end
+  end
+
   # State transition methods
   def transition_to_first_try!
     return false unless can_transition_to_first_try?
