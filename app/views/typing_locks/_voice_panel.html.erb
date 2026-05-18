@@ -93,13 +93,15 @@
         <% end %>
       </div>
 
-      <p class="typing-lock-noscript">
-        If local microphone capture is unavailable, enter the spoken transcript manually for local development:
-        <%= text_field_tag mode == :enroll ? "voice_id_samples[][transcript]" : :voice_transcript,
-              "",
-              class: "typing-authenticator-input",
-              placeholder: phrase %>
-      </p>
+      <% if Rails.env.development? %>
+        <p class="typing-lock-noscript">
+          If local microphone capture is unavailable, enter the spoken transcript manually for local development:
+          <%= text_field_tag mode == :enroll ? "voice_id_samples[][transcript]" : :voice_transcript,
+                "",
+                class: "typing-authenticator-input",
+                placeholder: phrase %>
+        </p>
+      <% end %>
     <% end %>
   <% end %>
 </section>
