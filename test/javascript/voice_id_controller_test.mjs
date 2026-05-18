@@ -20,6 +20,7 @@ test("enrollment records a local microphone sample when speech recognition fails
     assert.ok(Number(controller.sampleDurationTargets[0].value) > 0);
     assert.ok(Number(controller.sampleRmsTargets[0].value) > 0);
     assert.doesNotMatch(controller.statusTarget.textContent, /unavailable/i);
+    assert.doesNotMatch(controller.statusTarget.textContent, new RegExp(CANONICAL_PHRASE));
   } finally {
     restoreBrowser();
   }
@@ -45,7 +46,8 @@ test("unlock waits for the ready action before listening", async () => {
     assert.equal(controller.formSubmitted, true);
     assert.equal(controller.transcriptTarget.value, CANONICAL_PHRASE);
     assert.ok(Number(JSON.parse(controller.payloadTarget.value).duration_ms) > 0);
-    assert.match(controller.statusTarget.textContent, /captured/i);
+    assert.match(controller.statusTarget.textContent, /checking voice id/i);
+    assert.doesNotMatch(controller.statusTarget.textContent, new RegExp(CANONICAL_PHRASE));
   } finally {
     restoreBrowser();
   }
@@ -130,6 +132,9 @@ function installBrowserStubs() {
   const previousWindow = globalThis.window;
   const previousNavigator = globalThis.navigator;
   const previousPerformance = globalThis.performance;
+  const previousMediaRecorder = globalThis.MediaRecorder;
+  const previousFetch = globalThis.fetch;
+  const previousDocument = globalThis.document;
 
   let now = 1000;
 
@@ -162,12 +167,43 @@ function installBrowserStubs() {
       return { connect() {} };
     }
 
+    decodeAudioData() {
+      return Promise.resolve({
+        getChannelData: () => new Float32Array([0.4, -0.4, 0.4, -0.4]),
+      });
+    }
+
     close() {
       return Promise.resolve();
     }
 
     resume() {
       return Promise.resolve();
+    }
+  }
+
+  class FakeMediaRecorder {
+    constructor(_stream, options = {}) {
+      this.mimeType = options.mimeType || "audio/webm";
+      this.state = "inactive";
+    }
+
+    static isTypeSupported() {
+      return true;
+    }
+
+    start() {
+      this.state = "recording";
+      setTimeout(() => {
+        this.ondataavailable?.({ data: new Blob(["fake audio"], { type: this.mimeType }) });
+        this.stop();
+      }, 5);
+    }
+
+    stop() {
+      this.state = "inactive";
+      now += 2100;
+      setTimeout(() => this.onstop?.(), 5);
     }
   }
 
@@ -193,6 +229,7 @@ function installBrowserStubs() {
 
   globalThis.window = {
     AudioContext: FakeAudioContext,
+    MediaRecorder: FakeMediaRecorder,
     SpeechRecognition: undefined,
     webkitSpeechRecognition: FailingSpeechRecognition,
     cancelAnimationFrame: clearTimeout,
@@ -204,6 +241,14 @@ function installBrowserStubs() {
     }, 5),
     setTimeout,
   };
+  globalThis.MediaRecorder = FakeMediaRecorder;
+  globalThis.fetch = () => Promise.resolve({
+    ok: true,
+    json: () => Promise.resolve({ transcript: CANONICAL_PHRASE, duration_ms: 2100, rms: 0.38 }),
+  });
+  globalThis.document = {
+    querySelector: () => null,
+  };
   globalThis.performance = { now: () => now };
 
   return () => {
@@ -213,6 +258,9 @@ function installBrowserStubs() {
       value: previousNavigator,
     });
     globalThis.performance = previousPerformance;
+    globalThis.MediaRecorder = previousMediaRecorder;
+    globalThis.fetch = previousFetch;
+    globalThis.document = previousDocument;
   };
 }
 

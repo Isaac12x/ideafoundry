@@ -443,6 +443,28 @@ class TypingLocksControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
   end
 
+  test "voice id only lock rejects samples that do not match the stored fingerprint" do
+    @user.update!(settings: {})
+    @user.store_voice_id_fingerprint!(VoiceFingerprint.build(samples: voice_samples))
+
+    get ideas_path
+    assert_redirected_to root_path
+    follow_redirect!
+    assert_response :success
+
+    post verify_voice_id_typing_lock_path, params: {
+      voice_transcript: VoiceFingerprint::CANONICAL_PHRASE,
+      voice_payload: { duration_ms: 9000, rms: 0.4 }.to_json,
+      return_to: ideas_path
+    }
+
+    assert_response :unprocessable_content
+    assert_match(/Voice ID did not match/, response.body)
+
+    get ideas_path
+    assert_redirected_to root_path
+  end
+
   test "voice id is the last lock after typing and authenticator" do
     unlock_text = TypingTextLibrary.unlock_text("spark-gap")
     @user.store_typing_fingerprint!(fingerprint_for(unlock_text, hold: 91, flight: 41))
