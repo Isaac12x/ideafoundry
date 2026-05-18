@@ -4,7 +4,8 @@ class RecoverySecretTest < ActiveSupport::TestCase
   test "request scoped passphrase satisfies required secret in production" do
     with_recovery_env_cleared do
       Rails.env.stub(:production?, true) do
-        assert_raises(RecoverySecret::Missing) { RecoverySecret.required! }
+        error = assert_raises(RecoverySecret::Missing) { RecoverySecret.required! }
+        assert_equal "Enter the recovery passphrase in /settings/security before opening encrypted data", error.message
 
         RecoverySecret.with("typed in the UI") do
           assert_equal "typed in the UI", RecoverySecret.required!

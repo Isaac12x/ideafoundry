@@ -33,7 +33,7 @@ class RecoverySecret
     def required!
       secret = raw_secret.presence
       if secret.blank?
-        raise Missing, "Set #{PASSPHRASE_ENV} or #{PASSPHRASE_FILE_ENV} to the user-held recovery passphrase before opening encrypted data"
+        raise Missing, "Enter the recovery passphrase in /settings/security before opening encrypted data"
       end
 
       secret
