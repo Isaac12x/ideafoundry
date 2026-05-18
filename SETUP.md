@@ -5,6 +5,9 @@
 - **Ruby** 3.4.5 (use [rbenv](https://github.com/rbenv/rbenv) or [asdf](https://asdf-vm.com/))
 - **Node.js** 20+ and npm (for esbuild graph bundle)
 - **SQLite3** (usually pre-installed on macOS/Linux)
+- **SQLCipher** (required for production/encrypted SQLite databases)
+  - macOS: `brew install sqlcipher`
+  - Debian/Ubuntu: `apt-get install libsqlcipher-dev sqlcipher`
 - **libvips** (for image processing)
   - macOS: `brew install vips`
   - Debian/Ubuntu: `apt-get install libvips`
@@ -29,6 +32,8 @@ bin/rails db:seed
 # Start the dev server (Rails + esbuild watcher)
 bin/dev
 ```
+
+The repository includes Bundler config that builds the `sqlite3` gem against SQLCipher. If production database tasks fail with `SQLite3 gem is not linked with SQLCipher`, install SQLCipher and rerun `bundle install` so Bundler compiles the source gem instead of using a precompiled plain-SQLite gem.
 
 This runs two processes via `Procfile.dev`:
 - `web` — Rails server on port 3000
@@ -176,7 +181,15 @@ IDEA_FOUNDRY_RECOVERY_PASSPHRASE_FILE=/path/outside/idea-foundry-recovery-passph
 
 Use the same recovery passphrase file when moving the encrypted database to another computer. Without it, the app cannot open the SQLCipher database and cannot decrypt protected security templates.
 
-If you already have a plaintext production SQLite file, back it up before enabling SQLCipher and migrate it with SQLCipher export tooling or start from a fresh encrypted production database. Do not keep plaintext backup copies next to the encrypted database.
+If you already have plaintext production SQLite files, run the app-owned migration command before `db:prepare`:
+
+```bash
+RAILS_ENV=production \
+IDEA_FOUNDRY_RECOVERY_PASSPHRASE_FILE=/path/outside/idea-foundry-recovery-passphrase.txt \
+bin/rails db:encrypt_sqlite
+```
+
+The command encrypts the SQLCipher-configured databases from `config/database.yml`, verifies the encrypted copies, replaces the plaintext files, and keeps plaintext backups outside the checkout by default in `../idea-app-sqlcipher-backups`. Set `IDEA_FOUNDRY_SQLCIPHER_BACKUP_DIR=/path/outside/app` to choose a different backup location. After you have verified your encrypted database, move long-term plaintext backups to secure offline storage or delete them according to your backup policy.
 
 ## Email Setup (Optional)
 
