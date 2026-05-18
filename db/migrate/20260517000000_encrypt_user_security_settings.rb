@@ -21,6 +21,15 @@ class EncryptUserSecuritySettings < ActiveRecord::Migration[8.0]
   private
 
   def migrate_security_settings(encrypt:)
+    unless RecoverySecret.present?
+      if encrypt
+        say "Skipping security settings encryption until a recovery passphrase is entered in /settings/security", true
+        return
+      end
+
+      RecoverySecret.required!
+    end
+
     MigrationUser.find_each do |user|
       settings = user.settings || {}
       changed = false
