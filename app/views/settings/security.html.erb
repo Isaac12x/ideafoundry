@@ -98,7 +98,15 @@
         </header>
 
         <div class="security-database-encryption__body">
-          <% if @database_encryption_error.present? %>
+          <% if @database_encryption_requires_recovery_secret %>
+            <div class="security-database-encryption__message security-database-encryption__message--recovery-secret">
+              <strong>Recovery passphrase required</strong>
+              <p>Enter the user-held recovery passphrase to inspect or encrypt the configured SQLite databases.</p>
+              <%= link_to "Enter Recovery Passphrase",
+                    recovery_secret_path(return_to: settings_security_path),
+                    class: "btn btn-primary btn-sm" %>
+            </div>
+          <% elsif @database_encryption_error.present? %>
             <div class="security-database-encryption__message security-database-encryption__message--error">
               <strong>Encryption unavailable</strong>
               <p><%= @database_encryption_error %></p>

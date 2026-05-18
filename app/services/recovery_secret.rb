@@ -13,10 +13,19 @@ class RecoverySecret
   SCRYPT_R = 8
   SCRYPT_P = 1
   PBKDF2_ITERATIONS = 210_000
+  THREAD_SECRET_KEY = :idea_foundry_recovery_passphrase
 
   class Missing < KeyError; end
 
   class << self
+    def with(passphrase)
+      previous = Thread.current[THREAD_SECRET_KEY]
+      Thread.current[THREAD_SECRET_KEY] = passphrase.presence
+      yield
+    ensure
+      Thread.current[THREAD_SECRET_KEY] = previous
+    end
+
     def present?
       raw_secret.present?
     end
@@ -75,6 +84,13 @@ class RecoverySecret
     private
 
     def raw_secret
+      configured = configured_secret
+      return configured if configured.present?
+
+      Thread.current[THREAD_SECRET_KEY].presence
+    end
+
+    def configured_secret
       file_path = ENV[PASSPHRASE_FILE_ENV].presence
       return File.read(file_path).strip if file_path.present?
 
