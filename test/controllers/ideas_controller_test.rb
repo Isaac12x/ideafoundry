@@ -131,6 +131,23 @@ class IdeasControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
   end
 
+  test "edit form renders collapsible OCR sidebar for extracted attachment parts" do
+    @idea.attachments.attach(
+      io: StringIO.new("scanned data"),
+      filename: "scan.txt",
+      content_type: "text/plain"
+    )
+    attachment = @idea.attachments.last
+    attachment.update!(ocr_status: "complete", ocr_text: "Widget bracket\nM4 bolt", ocr_metadata: { "parts" => ["Widget bracket", "M4 bolt"] })
+
+    get edit_idea_url(@idea)
+
+    assert_response :success
+    assert_select ".idea-form-ocr-sidebar details[open]", 1
+    assert_select ".idea-form-ocr-sidebar li span", text: "Widget bracket"
+    assert_select ".idea-form-ocr-sidebar li span", text: "M4 bolt"
+  end
+
   test "should update idea" do
     patch idea_url(@idea), params: { idea: { title: "Updated Title" } }
     assert_redirected_to idea_url(@idea)
