@@ -29,7 +29,7 @@
     Every idea's detail page shows a set of tabs below the description. Toggle which tabs appear here &mdash; hidden tabs stay out of the UI but your data is preserved. The <strong>Description</strong> tab is always visible.
   </p>
 
-  <%= form_with url: settings_idea_tabs_path, method: :patch, local: true, class: "idea-tabs-form" do |form| %>
+  <%= form_with url: settings_idea_tabs_path, method: :patch, local: true, class: "idea-tabs-form", data: { controller: "settings-autosave" } do |form| %>
     <section class="tab-toggle-section">
       <header class="tab-toggle-section__header">
         <h3>Core tabs</h3>
@@ -44,7 +44,7 @@
               <span class="tab-toggle__description"><%= tab_descriptions[tab] %></span>
             </div>
             <span class="tab-toggle__switch">
-              <%= check_box_tag "idea_tabs[#{tab}]", "1", @idea_tab_settings[tab] == true, id: "idea_tab_#{tab}", class: "tab-toggle__input" %>
+              <%= check_box_tag "idea_tabs[#{tab}]", "1", @idea_tab_settings[tab] == true, id: "idea_tab_#{tab}", class: "tab-toggle__input", data: { action: "change->settings-autosave#toggleChanged" } %>
               <span class="tab-toggle__track" aria-hidden="true">
                 <span class="tab-toggle__thumb"></span>
               </span>
@@ -71,7 +71,7 @@
               <span class="tab-toggle__description"><%= tab_descriptions[tab] %></span>
             </div>
             <span class="tab-toggle__switch">
-              <%= check_box_tag "idea_tabs[#{tab}]", "1", @idea_tab_settings[tab] == true, id: "idea_tab_#{tab}", class: "tab-toggle__input" %>
+              <%= check_box_tag "idea_tabs[#{tab}]", "1", @idea_tab_settings[tab] == true, id: "idea_tab_#{tab}", class: "tab-toggle__input", data: { action: "change->settings-autosave#toggleChanged" } %>
               <span class="tab-toggle__track" aria-hidden="true">
                 <span class="tab-toggle__thumb"></span>
               </span>

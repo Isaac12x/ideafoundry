@@ -9,6 +9,9 @@ export default class extends Controller {
     "sampleTranscript",
     "sampleDuration",
     "sampleRms",
+    "recordBtn",
+    "submitBtn",
+    "variantItem",
   ];
   static values = {
     mode: String,
@@ -19,10 +22,17 @@ export default class extends Controller {
 
   connect() {
     this.sampleIndex = 0;
+    this._recording = false;
+    this._enrollmentBlocked = false;
     if (this.element.classList.contains("voice-id-shell--opening")) {
       window.setTimeout(() => {
         window.location.assign(this.redirectUrlValue || "/");
       }, 1700);
+      return;
+    }
+    this._updateEnrollProgress();
+    if (this._isEnrollment() && !this._recordingSupported()) {
+      this._blockEnrollment(this._enrollmentUnavailableMessage("Voice recording is not available in this browser."));
     }
   }
 
@@ -65,8 +75,9 @@ export default class extends Controller {
       if (this.modeValue === "enroll") {
         this.storeEnrollmentSample(sample);
       } else {
-        this.transcriptTarget.value = transcript;
-        this.payloadTarget.value = JSON.stringify(sample);
+        this.statusTarget.textContent = this._isEnrollment()
+          ? "Could not capture speech. Press record to try again."
+          : "Could not capture speech.";
       }
 
       this.statusTarget.textContent = `Captured locally: “${transcript}”`;
@@ -132,5 +143,129 @@ export default class extends Controller {
     this.sampleDurationTargets[index].value = sample.duration_ms;
     this.sampleRmsTargets[index].value = sample.rms;
     this.sampleIndex = Math.min(index + 1, this.sampleTranscriptTargets.length);
+    this._updateEnrollProgress();
+  }
+
+  _updateEnrollProgress() {
+    if (!this._isEnrollment() || this._enrollmentBlocked) return;
+    if (!this.hasRecordBtnTarget) return;
+
+    const total = this.sampleTranscriptTargets.length;
+    const done = this.sampleIndex;
+
+    if (done >= total) {
+      this.recordBtnTarget.textContent = "All phrases recorded";
+      this.recordBtnTarget.disabled = true;
+    } else {
+      this.recordBtnTarget.textContent = `Record phrase ${done + 1} of ${total}`;
+      this.recordBtnTarget.disabled = false;
+    }
+
+    if (this.hasSubmitBtnTarget) {
+      this.submitBtnTarget.disabled = done < total;
+    }
+
+    if (this.hasVariantItemTarget) {
+      this.variantItemTargets.forEach((item, i) => {
+        item.classList.toggle("voice-id-variant--active", i === done);
+        item.classList.toggle("voice-id-variant--done", i < done);
+      });
+    }
+  }
+
+  _handleLocalAudioError(error) {
+    if (error?.name === "NotAllowedError" || error?.name === "SecurityError") {
+      this._handleRecordingUnavailable(
+        this._isEnrollment()
+          ? this._enrollmentUnavailableMessage("Microphone access is blocked.")
+          : "Microphone access is blocked. Allow microphone access in your browser settings, then try again."
+      );
+    } else if (error?.name === "NotFoundError" || error?.name === "DevicesNotFoundError") {
+      this._handleRecordingUnavailable(
+        this._isEnrollment()
+          ? this._enrollmentUnavailableMessage("No microphone was found.")
+          : "No microphone was found. Connect a microphone, then try again."
+      );
+    } else {
+      this._handleRecordingUnavailable(
+        this._isEnrollment()
+          ? this._enrollmentUnavailableMessage("Voice recording is not working right now.")
+          : "Voice recording is not working right now. Try again later."
+      );
+    }
+  }
+
+  _handleRecordingUnavailable(message) {
+    if (this._isEnrollment()) {
+      this._blockEnrollment(message);
+    } else {
+      this.statusTarget.textContent = message;
+    }
+  }
+
+  _blockEnrollment(message) {
+    this._enrollmentBlocked = true;
+    this.statusTarget.textContent = message;
+    if (this.hasRecordBtnTarget) {
+      this.recordBtnTarget.textContent = "Recording unavailable";
+      this.recordBtnTarget.disabled = true;
+    }
+    if (this.hasSubmitBtnTarget) {
+      this.submitBtnTarget.disabled = true;
+    }
+    if (this.hasVariantItemTarget) {
+      this.variantItemTargets.forEach((item) => {
+        item.classList.remove("voice-id-variant--active", "voice-id-variant--done");
+      });
+    }
+  }
+
+  _recognitionSupported() {
+    return Boolean(this._recognitionConstructor());
+  }
+
+  _recognitionConstructor() {
+    return window.SpeechRecognition || window.webkitSpeechRecognition;
+  }
+
+  _audioSamplingSupported() {
+    return Boolean(
+      navigator.mediaDevices?.getUserMedia &&
+        (window.AudioContext || window.webkitAudioContext) &&
+        window.requestAnimationFrame &&
+        window.cancelAnimationFrame
+    );
+  }
+
+  _recordingSupported() {
+    return this._audioSamplingSupported() || this._recognitionSupported();
+  }
+
+  _recordButtonIdleLabel() {
+    return this._isEnrollment() ? "Record phrase" : "I'm ready";
+  }
+
+  _sampleTranscript() {
+    if (!this._isEnrollment()) return this.phraseValue;
+
+    const index = Math.min(this.sampleIndex, this.sampleTranscriptTargets.length - 1);
+    return this.sampleTranscriptTargets[index]?.dataset.voiceIdVariant || this.phraseValue;
+  }
+
+  _localAudioOptions() {
+    return {
+      maxDurationMs: 7000,
+      minDurationMs: 1200,
+      silenceDurationMs: 800,
+      voiceThreshold: 0.015,
+    };
+  }
+
+  _isEnrollment() {
+    return this.modeValue === "enroll";
+  }
+
+  _enrollmentUnavailableMessage(prefix) {
+    return `${prefix} Try again later and turn Voice ID off in Security settings for now.`;
   }
 }

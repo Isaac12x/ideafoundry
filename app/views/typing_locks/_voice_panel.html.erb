@@ -13,8 +13,6 @@
          data-voice-id-redirect-url-value="<%= redirect_url %>"
          data-voice-id-transcribe-url-value="<%= transcribe_voice_id_typing_lock_path %>">
   <div class="typing-lock-topline">
-    <span class="typing-lock-mark">Idea Foundry</span>
-    <span>Voice ID</span>
   </div>
 
   <% if opening %>
@@ -29,11 +27,11 @@
     </div>
   <% else %>
     <div class="typing-lock-heading">
-      <h2><%= mode == :enroll ? "Set up Voice ID" : "Voice ID" %></h2>
+      <h2><%= mode == :enroll ? "Set up Voice ID" : "Test Your Speech" %></h2>
       <% if mode == :enroll %>
-        <p>Say the phrase three times, with small natural variations. Idea Foundry stores a derived fingerprint in the database, not raw audio.</p>
+        <p>Say each phrase below once. Press record, speak clearly, then record the next one.</p>
       <% else %>
-        <p>Final lock. Say the exact phrase before the workspace opens.</p>
+        <p style="text-align: right;">Please say out loud the following sentence.</p>
       <% end %>
     </div>
 
@@ -42,7 +40,7 @@
     <% if mode == :enroll %>
       <ol class="voice-id-variants">
         <% variants.each do |variant| %>
-          <li><%= variant %></li>
+          <li data-voice-id-target="variantItem"><%= variant %></li>
         <% end %>
       </ol>
     <% end %>
@@ -67,7 +65,7 @@
       <% end %>
 
       <p class="voice-id-status" data-voice-id-target="status" aria-live="polite">
-        Press record and say the phrase.
+        <%= mode == :enroll ? "Press record and say the phrase." : "Press the \"I'm ready\" button when you're ready to speak." %>
       </p>
 
       <% if error.present? %>
@@ -75,10 +73,24 @@
       <% end %>
 
       <div class="typing-lock-actions">
-        <button type="button" class="btn btn-secondary" data-action="voice-id#record">
-          <%= mode == :enroll ? "Record next sample" : "Record phrase" %>
-        </button>
-        <%= submit_tag(mode == :enroll ? "Store Voice ID" : "Unlock with Voice ID", class: "btn btn-primary") %>
+        <% if mode == :enroll %>
+
+          <button type="button" class="btn btn-secondary" data-action="voice-id#record" data-voice-id-target="recordBtn">
+            Record phrase
+          </button>
+          <%= submit_tag "Save Voice ID",
+                class: "btn btn-primary",
+                disabled: true,
+                data: { voice_id_target: "submitBtn" } %>
+
+        <% else %>
+
+        <div>
+          <button type="button" class="btn btn-primary" data-action="voice-id#record" data-voice-id-target="recordBtn">
+            I'm ready
+          </button>
+        </div>
+        <% end %>
       </div>
 
       <p class="typing-lock-noscript">

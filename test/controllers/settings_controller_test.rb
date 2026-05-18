@@ -75,6 +75,7 @@ class SettingsControllerTest < ActionDispatch::IntegrationTest
     get settings_security_path
     assert_response :success
     assert_select "input[name=?]", "typing_lock[enabled]"
+    assert_select "input[name=?][value=?]", "typing_lock[failed_unlock_cooldown_minutes]", "5"
     assert_select "input[name=?]", "authenticator_app[enabled]"
     assert_select "input[name=?]", "voice_id[enabled]"
     assert_match(/Voice ID/, response.body)
@@ -117,6 +118,19 @@ class SettingsControllerTest < ActionDispatch::IntegrationTest
     assert_redirected_to enroll_voice_id_path(return_to: settings_security_path)
     assert @user.reload.voice_id_requested?
     refute @user.voice_id_configured?
+  end
+
+  test "PATCH settings/security as json returns voice id enrollment redirect" do
+    patch settings_security_path, as: :json, params: {
+      typing_lock: { enabled: "0", lock_after_minutes: "5" },
+      authenticator_app: { enabled: "0" },
+      voice_id: { enabled: "1" }
+    }
+
+    assert_response :success
+    body = JSON.parse(response.body)
+    assert_equal true, body["saved"]
+    assert_equal enroll_voice_id_path(return_to: settings_security_path), body["redirect_to"]
   end
 
   test "GET settings/idea-work-tokens renders page" do
@@ -184,6 +198,22 @@ class SettingsControllerTest < ActionDispatch::IntegrationTest
     }
 
     assert_redirected_to settings_idea_tabs_path
+    @user.reload
+    assert_equal true, @user.idea_tab_settings["scores"]
+    assert_equal true, @user.idea_tab_settings["tool"]
+    assert_equal false, @user.idea_tab_settings["competitor"]
+  end
+
+  test "PATCH settings/idea-tabs as json updates tab visibility" do
+    patch settings_idea_tabs_path, as: :json, params: {
+      idea_tabs: {
+        scores: "1",
+        tool: "1"
+      }
+    }
+
+    assert_response :success
+    assert_equal({ "saved" => true }, JSON.parse(response.body))
     @user.reload
     assert_equal true, @user.idea_tab_settings["scores"]
     assert_equal true, @user.idea_tab_settings["tool"]
