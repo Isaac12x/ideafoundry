@@ -29,6 +29,21 @@ class RecoverySecretTest < ActiveSupport::TestCase
     end
   end
 
+  test "persisted user passphrase file unlocks production without prompting every session" do
+    with_recovery_env_cleared do
+      path = Rails.root.join("tmp/recovery_secret_test_#{SecureRandom.hex(6)}.key")
+      File.write(path, "persisted passphrase\n")
+
+      RecoverySecret.stub(:user_passphrase_file_path, path) do
+        Rails.env.stub(:production?, true) do
+          assert_equal "persisted passphrase", RecoverySecret.required!
+        end
+      end
+    ensure
+      File.delete(path) if path && File.exist?(path)
+    end
+  end
+
   private
 
   def with_recovery_env_cleared
