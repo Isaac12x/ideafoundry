@@ -6,6 +6,7 @@ export default class extends Controller {
     "payload",
     "status",
     "transcript",
+    "manualTranscript",
     "sampleTranscript",
     "sampleDuration",
     "sampleRms",
@@ -146,6 +147,9 @@ export default class extends Controller {
       duration_ms: sample.duration_ms,
       rms: sample.rms,
     });
+    if (this.hasManualTranscriptTarget) {
+      this.manualTranscriptTarget.disabled = true;
+    }
     this.statusTarget.textContent = "Checking Voice ID locally…";
     this.formTarget.requestSubmit();
   }
