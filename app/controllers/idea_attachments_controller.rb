@@ -2,6 +2,34 @@ class IdeaAttachmentsController < ApplicationController
   before_action :set_user
   before_action :set_idea
 
+  def create
+    files = Array(params[:files]).compact_blank
+    return render json: { error: "No files provided" }, status: :bad_request if files.empty?
+
+    existing_ids = @idea.attachments_attachments.pluck(:id)
+    @idea.attachments.attach(files)
+    @idea.reload
+
+    new_attachments = @idea.attachments_attachments.where.not(id: existing_ids).order(:position, :created_at)
+    new_attachments.each do |a|
+      next unless AttachmentOcrJob.ocr_supported?(a)
+      a.update!(ocr_status: "queued")
+      AttachmentOcrJob.perform_later(a.id)
+    end
+
+    html = new_attachments.map { |attachment|
+      render_to_string(partial: "idea_attachments/item", locals: { attachment: attachment, idea: @idea })
+    }.join
+
+    render json: { success: true, html: html }
+  end
+
+  def destroy
+    attachment = @idea.attachments_attachments.find(params[:id])
+    attachment.purge_later
+    head :no_content
+  end
+
   def reorder
     ids = Array(params[:attachment_ids]).map(&:to_i)
     attachments = @idea.attachments.attachments.where(id: ids).index_by(&:id)

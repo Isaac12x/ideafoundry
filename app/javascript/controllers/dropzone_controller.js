@@ -5,7 +5,8 @@ export default class extends Controller {
   static outlets = ["image-editor"]
   static values = {
     multiple: { type: Boolean, default: false },
-    accept: { type: String, default: "*/*" }
+    accept: { type: String, default: "*/*" },
+    uploadUrl: { type: String, default: "" }
   }
 
   connect() {
@@ -79,12 +80,49 @@ export default class extends Controller {
       return
     }
 
-    this._processingFiles = true
-    this.inputTarget.files = this._buildFileList(processed)
-    this.inputTarget.dispatchEvent(new Event("change", { bubbles: true }))
-    this._processingFiles = false
+    if (this.uploadUrlValue) {
+      await this._ajaxUpload(processed)
+    } else {
+      this._processingFiles = true
+      this.inputTarget.files = this._buildFileList(processed)
+      this.inputTarget.dispatchEvent(new Event("change", { bubbles: true }))
+      this._processingFiles = false
+      this._renderPreviews(processed)
+    }
+  }
 
-    this._renderPreviews(processed)
+  async _ajaxUpload(files) {
+    const token = document.querySelector("meta[name='csrf-token']")?.content
+    const formData = new FormData()
+    files.forEach(file => formData.append("files[]", file))
+
+    this._setUploadStatus("Uploading…")
+    try {
+      const response = await fetch(this.uploadUrlValue, {
+        method: "POST",
+        headers: { "X-CSRF-Token": token, "Accept": "application/json" },
+        body: formData
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        this._setUploadStatus("")
+        this.dispatch("uploaded", { detail: { html: data.html } })
+        if (this.hasPreviewTarget) this.previewTarget.innerHTML = ""
+        if (this.hasPlaceholderTarget) this.placeholderTarget.style.display = ""
+      } else {
+        this._setUploadStatus("Upload failed. Please try again.")
+      }
+    } catch {
+      this._setUploadStatus("Upload failed. Please try again.")
+    }
+
+    if (this.hasInputTarget) this.inputTarget.value = ""
+  }
+
+  _setUploadStatus(message) {
+    const statusEl = this.element.querySelector("[data-dropzone-status]")
+    if (statusEl) statusEl.textContent = message
   }
 
   _acceptsFiles() {

@@ -9,49 +9,70 @@
     </div>
   </div>
 
-  <%= form_with url: settings_display_path, method: :patch, local: true do |form| %>
-    <div class="config-section">
-      <h3>Quote</h3>
-      <p class="config-description">Text shown at the top of every page.</p>
+  <div class="scoring-config-layout">
+    <div class="scoring-config-main">
+      <%= form_with url: settings_display_path, method: :patch, local: true do |form| %>
+        <div class="config-section">
+          <h3>Quote</h3>
+          <p class="config-description">Text shown at the top of every page.</p>
 
-      <div class="weight-grid">
-        <div class="weight-item">
-          <label class="weight-label" for="display_settings_quote">Page Quote</label>
-          <%= text_area_tag "display_settings[quote]",
-                            @display_quote,
-                            id: "display_settings_quote",
-                            rows: 2,
-                            class: "form-control",
-                            placeholder: "A useful reminder for the top of the page" %>
+          <div class="weight-grid">
+            <div class="weight-item">
+              <label class="weight-label" for="display_settings_quote">Page Quote</label>
+              <%= text_area_tag "display_settings[quote]",
+                                @display_quote,
+                                id: "display_settings_quote",
+                                rows: 2,
+                                class: "form-control",
+                                placeholder: "A useful reminder for the top of the page" %>
+            </div>
+          </div>
         </div>
+
+        <div class="config-section" data-controller="contrast">
+          <h3>Contrast</h3>
+          <p class="config-description">Adjust display contrast. Preview updates in real time.</p>
+
+          <div class="weight-grid">
+            <div class="weight-item">
+              <label class="weight-label">
+                Contrast level: <span data-contrast-target="output"><%= @display_contrast %>%</span>
+              </label>
+              <%= range_field_tag "display_settings[contrast]",
+                                  @display_contrast,
+                                  min: 70,
+                                  max: 150,
+                                  step: 1,
+                                  class: "form-control-range",
+                                  data: {
+                                    contrast_target: "input",
+                                    action: "input->contrast#sync"
+                                  } %>
+            </div>
+          </div>
+        </div>
+
+        <div class="config-actions">
+          <%= form.submit "Save Display", class: "btn btn-primary" %>
+        </div>
+      <% end %>
+    </div>
+
+    <div class="scoring-config-sidebar">
+      <div class="config-info-card">
+        <h4>Quote</h4>
+        <p>Shown at the top of every page as a persistent reminder. Leave blank to hide it.</p>
+      </div>
+
+      <div class="config-info-card">
+        <h4>Contrast</h4>
+        <ul>
+          <li><strong>100%</strong> is the default — no adjustment</li>
+          <li>Lower values (70–99%) soften the interface</li>
+          <li>Higher values (101–150%) sharpen it</li>
+        </ul>
+        <p>Applies to the entire page including the header.</p>
       </div>
     </div>
-
-    <div class="config-section" data-controller="contrast">
-      <h3>Contrast</h3>
-      <p class="config-description">Adjust display contrast. Preview updates in real time.</p>
-
-      <div class="weight-grid">
-        <div class="weight-item">
-          <label class="weight-label">
-            Contrast level: <span data-contrast-target="output"><%= @display_contrast %>%</span>
-          </label>
-          <%= range_field_tag "display_settings[contrast]",
-                              @display_contrast,
-                              min: 70,
-                              max: 150,
-                              step: 1,
-                              class: "form-control-range",
-                              data: {
-                                contrast_target: "input",
-                                action: "input->contrast#sync"
-                              } %>
-        </div>
-      </div>
-    </div>
-
-    <div class="config-actions">
-      <%= form.submit "Save Display", class: "btn btn-primary" %>
-    </div>
-  <% end %>
+  </div>
 </div>

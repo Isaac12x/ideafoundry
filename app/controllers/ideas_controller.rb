@@ -312,7 +312,6 @@ class IdeasController < ApplicationController
       :description,
       :hero_image,
       :napkin_calculations,
-      attachments: [],
       topology_ids: [],
       metadata: {}
     )

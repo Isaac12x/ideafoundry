@@ -1,7 +1,7 @@
 import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
-  static targets = ["item", "status"]
+  static targets = ["item", "status", "list"]
   static values = { url: String }
 
   connect() {
@@ -45,6 +45,25 @@ export default class extends Controller {
   drop(event) {
     event.preventDefault()
     this.persist()
+  }
+
+  appendItems(event) {
+    const { html } = event.detail
+    if (!html) return
+    const list = this.hasListTarget ? this.listTarget : this.element.querySelector(".current-attachments__list")
+    if (!list) return
+    list.insertAdjacentHTML("beforeend", html)
+  }
+
+  async destroyItem(event) {
+    const item = event.currentTarget.closest("[data-attachment-reorder-target='item']")
+    if (!item) return
+    const token = document.querySelector("meta[name='csrf-token']")?.content
+    const response = await fetch(item.dataset.destroyUrl, {
+      method: "DELETE",
+      headers: { "X-CSRF-Token": token, "Accept": "application/json" }
+    })
+    if (response.ok || response.status === 204) item.remove()
   }
 
   async persist() {
