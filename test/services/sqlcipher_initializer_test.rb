@@ -78,4 +78,40 @@ class SqlcipherInitializerTest < ActiveSupport::TestCase
   ensure
     File.delete(path) if path&.exist?
   end
+
+  test "encrypted SQLCipher database raises recovery prompt before Rails schema queries when no passphrase is loaded" do
+    path = Rails.root.join("tmp/encrypted_sqlcipher_initializer_test.sqlite3")
+    File.binwrite(path, "not a sqlite header")
+    connection = FakeConnection.new("4.14.0 community")
+
+    RecoverySecret.stub(:present?, false) do
+      error = assert_raises(RecoverySecret::Missing) do
+        Probe.new(connection, database: path.to_s).apply_key!
+      end
+
+      assert_equal "Enter the recovery passphrase in /settings/security before opening encrypted data", error.message
+    end
+
+    assert_empty connection.executed_sql
+  ensure
+    File.delete(path) if path&.exist?
+  end
+
+  test "missing SQLCipher databases are allowed to be created before UI encryption is enabled" do
+    path = Rails.root.join("tmp/missing_sqlcipher_initializer_test.sqlite3")
+    File.delete(path) if path.exist?
+    connection = FakeConnection.new(nil)
+
+    RecoverySecret.stub(:present?, false) do
+      SQLite3.stub(:sqlcipher?, false) do
+        assert_nothing_raised do
+          Probe.new(connection, database: path.to_s).apply_key!
+        end
+      end
+    end
+
+    assert_empty connection.executed_sql
+  ensure
+    File.delete(path) if path&.exist?
+  end
 end
