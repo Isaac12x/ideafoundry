@@ -29,18 +29,56 @@ class RecoverySecretTest < ActiveSupport::TestCase
     end
   end
 
-  test "persisted user passphrase file unlocks production without prompting every session" do
+  test "persisted user passphrase file unlocks production without prompting every session on same app node" do
     with_recovery_env_cleared do
       path = Rails.root.join("tmp/recovery_secret_test_#{SecureRandom.hex(6)}.key")
-      File.write(path, "persisted passphrase\n")
 
       RecoverySecret.stub(:user_passphrase_file_path, path) do
-        Rails.env.stub(:production?, true) do
-          assert_equal "persisted passphrase", RecoverySecret.required!
+        RecoverySecret.stub(:app_node_id, "this-node") do
+          RecoverySecret.persist_user_passphrase!("persisted passphrase")
+          ENV.delete(RecoverySecret::PASSPHRASE_ENV)
+
+          Rails.env.stub(:production?, true) do
+            assert_equal "persisted passphrase", RecoverySecret.required!
+          end
         end
       end
     ensure
       File.delete(path) if path && File.exist?(path)
+    end
+  end
+
+  test "persisted user passphrase is ignored after app node changes" do
+    with_recovery_env_cleared do
+      path = Rails.root.join("tmp/recovery_secret_test_#{SecureRandom.hex(6)}.key")
+
+      RecoverySecret.stub(:user_passphrase_file_path, path) do
+        RecoverySecret.stub(:app_node_id, "original-node") do
+          RecoverySecret.persist_user_passphrase!("persisted passphrase")
+        end
+
+        ENV.delete(RecoverySecret::PASSPHRASE_ENV)
+
+        RecoverySecret.stub(:app_node_id, "new-node") do
+          Rails.env.stub(:production?, true) do
+            assert_raises(RecoverySecret::Missing) { RecoverySecret.required! }
+          end
+        end
+      end
+    ensure
+      File.delete(path) if path && File.exist?(path)
+    end
+  end
+
+  test "missing configured passphrase file falls back to environment passphrase" do
+    with_recovery_env_cleared do
+      missing_path = Rails.root.join("tmp/missing_recovery_secret_test_#{SecureRandom.hex(6)}.key")
+      ENV[RecoverySecret::PASSPHRASE_FILE_ENV] = missing_path.to_s
+      ENV[RecoverySecret::PASSPHRASE_ENV] = "from env fallback"
+
+      Rails.env.stub(:production?, true) do
+        assert_equal "from env fallback", RecoverySecret.required!
+      end
     end
   end
 
