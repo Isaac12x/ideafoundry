@@ -3,6 +3,7 @@ class SettingsController < ApplicationController
 
   def index
     @display_quote = @user.display_quote
+    @display_contrast = @user.display_contrast
   end
 
   def update_display
@@ -461,7 +462,7 @@ class SettingsController < ApplicationController
   end
 
   def display_settings_params
-    params.require(:display_settings).permit(:quote)
+    params.require(:display_settings).permit(:quote, :contrast)
   end
 
   def typing_lock_params

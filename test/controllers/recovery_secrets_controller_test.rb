@@ -10,14 +10,36 @@ class RecoverySecretsControllerTest < ActionDispatch::IntegrationTest
     assert_select "input[type=?][name=?][value=?]", "hidden", "return_to", settings_security_path
   end
 
-  test "POST recovery secret redirects to safe return path" do
+  test "POST recovery secret redirects to safe return path without a success notice" do
     post recovery_secret_path, params: {
       recovery_passphrase: "typed in the UI",
       return_to: settings_security_path
     }
 
     assert_redirected_to settings_security_path
-    assert_equal "Encrypted data unlocked.", flash[:notice]
+    assert_nil flash[:notice]
+  end
+
+  test "POST recovery secret never shows success notice on the locked page" do
+    user = User.first
+    user.update!(settings: {
+      "typing_lock" => {
+        "enabled" => true,
+        "fingerprint" => "configured"
+      }
+    })
+
+    post recovery_secret_path, params: {
+      recovery_passphrase: "typed in the UI",
+      return_to: root_path
+    }
+
+    assert_redirected_to root_path
+    follow_redirect!
+    assert_response :success
+    assert_match(/Typing rhythm score/, response.body)
+    assert_no_match(/Encrypted data unlocked\./, response.body)
+    assert_select ".alert.alert-success", count: 0
   end
 
   test "POST recovery secret persists the verified passphrase for future app boots" do

@@ -866,6 +866,12 @@ select.form-control {
   margin-bottom: 2rem;
 }
 
+.filter-search-bar {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
 .filters-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -1881,4 +1887,21 @@ select.form-control {
   .form-layout {
     grid-template-columns: minmax(0, 1fr) minmax(260px, 340px);
   }
+}
+
+/* High contrast mode */
+body[data-contrast="high"] {
+  --bg-base: #000000;
+  --bg-surface: #0a0a0a;
+  --bg-elevated: #111111;
+  --bg-overlay: #1a1a1a;
+  --bg-input: #0d0d0d;
+  --border-default: #555566;
+  --border-subtle: #3a3a4a;
+  --border-emphasis: #7777aa;
+  --text-primary: #ffffff;
+  --text-secondary: #cccccc;
+  --text-muted: #888899;
+  --accent: #e8a83e;
+  --accent-hover: #f5bc50;
 }

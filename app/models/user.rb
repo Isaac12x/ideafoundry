@@ -117,6 +117,8 @@ class User < ApplicationRecord
     'text' => ''
   }.freeze
 
+  ALLOWED_CONTRAST_VALUES = %w[normal high].freeze
+
   ALLOWED_TOPOLOGY_OVERRIDE_KEYS = %w[
     dag_mode show_ideas node_size_topology node_size_idea
     bloom_strength fog_density auto_fit_on_load click_behavior
@@ -547,14 +549,27 @@ class User < ApplicationRecord
     display_quote_settings['text'].to_s
   end
 
+  def display_contrast
+    val = settings&.dig('display_contrast').to_s
+    ALLOWED_CONTRAST_VALUES.include?(val) ? val : 'normal'
+  end
+
   def update_display_quote(params)
-    quote = params.to_h.fetch('quote', '').to_s.strip
+    h = params.to_h
+    quote = h.fetch('quote', '').to_s.strip
+    contrast = h.fetch('contrast', 'normal').to_s.strip
     self.settings ||= {}
 
     if quote.present?
       self.settings['display_quote'] = { 'text' => quote }
     else
       self.settings.delete('display_quote')
+    end
+
+    if ALLOWED_CONTRAST_VALUES.include?(contrast) && contrast != 'normal'
+      self.settings['display_contrast'] = contrast
+    else
+      self.settings.delete('display_contrast')
     end
 
     save
