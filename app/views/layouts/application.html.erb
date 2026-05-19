@@ -26,6 +26,7 @@
   %>
   <body class="<%= body_class %>"
         data-contrast="<%= display_contrast.presence || 'normal' %>"
+        style="--contrast: <%= (@user&.display_contrast || 100) %>%"
         <% if typing_activity_enabled %>
           data-controller="typing-activity"
           data-typing-activity-url-value="<%= typing_lock_activity_path %>"
