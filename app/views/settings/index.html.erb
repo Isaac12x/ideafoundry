@@ -9,13 +9,13 @@
 
   <section class="display-quote-settings">
     <div class="display-quote-settings__copy">
-      <h3>Page Quote</h3>
-      <p>Shown below the navigation bar across the app.</p>
+      <h3>Display</h3>
+      <p>Quote and visual settings across the app.</p>
     </div>
 
     <%= form_with url: settings_path, method: :patch, local: true, class: "display-quote-settings__form" do %>
       <div class="form-group">
-        <label for="display_settings_quote">Quote</label>
+        <label for="display_settings_quote">Page Quote</label>
         <%= text_area_tag "display_settings[quote]",
                           @display_quote,
                           id: "display_settings_quote",
@@ -24,8 +24,19 @@
                           placeholder: "A useful reminder for the top of the page" %>
       </div>
 
+      <div class="form-group">
+        <label for="display_settings_contrast">Contrast</label>
+        <%= select_tag "display_settings[contrast]",
+                       options_for_select(
+                         [['Normal', 'normal'], ['High Contrast', 'high']],
+                         @display_contrast
+                       ),
+                       id: "display_settings_contrast",
+                       class: "form-control" %>
+      </div>
+
       <div class="display-quote-settings__actions">
-        <%= submit_tag "Save Quote", class: "btn btn-primary" %>
+        <%= submit_tag "Save Display", class: "btn btn-primary" %>
       </div>
     <% end %>
   </section>
