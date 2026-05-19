@@ -1,9 +1,7 @@
-<div class="filters-panel">
-  <%= form_with url: ideas_path, method: :get, data: { turbo_frame: "ideas_list" } do |form| %>
-    <!-- Search bar -->
-    <div class="filter-search-bar" style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
-      <%= form.search_field :search, value: params[:search], placeholder: "Search ideas...", class: "form-control", style: "flex: 1;" %>
-      <%= form.submit "Search", class: "btn btn-sm btn-primary" %>
+<div class="filters-panel" data-controller="auto-filter">
+  <%= form_with url: ideas_path, method: :get, data: { turbo_frame: "ideas_list", auto_filter_target: "form" } do |form| %>
+    <div class="filter-search-bar">
+      <%= form.search_field :search, value: params[:search], placeholder: "Search ideas...", class: "form-control", data: { auto_filter_target: "search", action: "input->auto-filter#debouncedSubmit" } %>
     </div>
 
     <div class="filters-grid">
@@ -15,7 +13,8 @@
               params[:state]
             ),
             {},
-            class: "form-control" %>
+            class: "form-control",
+            data: { action: "change->auto-filter#submit" } %>
       </div>
 
       <div class="filter-group">
@@ -26,7 +25,8 @@
               params[:topology_id]
             ),
             {},
-            class: "form-control" %>
+            class: "form-control",
+            data: { action: "change->auto-filter#submit" } %>
       </div>
 
       <div class="filter-group">
@@ -37,32 +37,33 @@
               params[:list_id]
             ),
             {},
-            class: "form-control" %>
+            class: "form-control",
+            data: { action: "change->auto-filter#submit" } %>
       </div>
 
       <div class="filter-group">
         <%= form.label :trl_min, "TRL Min" %>
-        <%= form.number_field :trl_min, value: params[:trl_min], min: 0, max: 10, class: "form-control", placeholder: "0" %>
+        <%= form.number_field :trl_min, value: params[:trl_min], min: 0, max: 10, class: "form-control", placeholder: "0", data: { action: "change->auto-filter#submit" } %>
       </div>
 
       <div class="filter-group">
         <%= form.label :trl_max, "TRL Max" %>
-        <%= form.number_field :trl_max, value: params[:trl_max], min: 0, max: 10, class: "form-control", placeholder: "10" %>
+        <%= form.number_field :trl_max, value: params[:trl_max], min: 0, max: 10, class: "form-control", placeholder: "10", data: { action: "change->auto-filter#submit" } %>
       </div>
 
       <div class="filter-group">
         <%= form.label :score_min, "Score Min" %>
-        <%= form.number_field :score_min, value: params[:score_min], step: 0.1, class: "form-control", placeholder: "0" %>
+        <%= form.number_field :score_min, value: params[:score_min], step: 0.1, class: "form-control", placeholder: "0", data: { action: "change->auto-filter#submit" } %>
       </div>
 
       <div class="filter-group">
-        <%= form.label :sort_by, "Sort" %>
+        <%= form.label :sort_by, "Sort by" %>
         <%= form.select :sort_by,
             options_for_select(
               [
-                ['Created', 'created_at'],
-                ['Updated', 'updated_at'],
-                ['Title', 'title'],
+                ['Newest', 'created_at'],
+                ['Recently Updated', 'updated_at'],
+                ['Title A–Z', 'title'],
                 ['State', 'state'],
                 ['Score', 'score'],
                 ['TRL', 'trl']
@@ -70,24 +71,25 @@
               params[:sort_by] || 'created_at'
             ),
             {},
-            class: "form-control" %>
+            class: "form-control",
+            data: { action: "change->auto-filter#submit" } %>
       </div>
 
       <div class="filter-group">
         <%= form.label :sort_order, "Order" %>
         <%= form.select :sort_order,
             options_for_select(
-              [['Desc', 'desc'], ['Asc', 'asc']],
+              [['Descending', 'desc'], ['Ascending', 'asc']],
               params[:sort_order] || 'desc'
             ),
             {},
-            class: "form-control" %>
+            class: "form-control",
+            data: { action: "change->auto-filter#submit" } %>
       </div>
     </div>
 
     <div class="filter-actions">
       <%= link_to "Clear", ideas_path, class: "btn btn-sm" %>
-      <%= form.submit "Apply", class: "btn btn-sm btn-primary" %>
     </div>
   <% end %>
 </div>

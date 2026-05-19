@@ -22,8 +22,10 @@
       !body_class.include?("typing-lock-page")
     typing_lock_shortcut = "Ctrl/Cmd+Shift+L"
     display_quote = @user&.display_quote.to_s.strip
+    display_contrast = @user&.display_contrast.to_s
   %>
   <body class="<%= body_class %>"
+        data-contrast="<%= display_contrast.presence || 'normal' %>"
         <% if typing_activity_enabled %>
           data-controller="typing-activity"
           data-typing-activity-url-value="<%= typing_lock_activity_path %>"
