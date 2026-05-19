@@ -1889,19 +1889,6 @@ select.form-control {
   }
 }
 
-/* High contrast mode */
-body[data-contrast="high"] {
-  --bg-base: #000000;
-  --bg-surface: #0a0a0a;
-  --bg-elevated: #111111;
-  --bg-overlay: #1a1a1a;
-  --bg-input: #0d0d0d;
-  --border-default: #555566;
-  --border-subtle: #3a3a4a;
-  --border-emphasis: #7777aa;
-  --text-primary: #ffffff;
-  --text-secondary: #cccccc;
-  --text-muted: #888899;
-  --accent: #e8a83e;
-  --accent-hover: #f5bc50;
+main.app-main {
+  filter: contrast(var(--contrast, 100%));
 }
