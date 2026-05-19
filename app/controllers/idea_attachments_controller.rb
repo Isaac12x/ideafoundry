@@ -26,8 +26,28 @@ class IdeaAttachmentsController < ApplicationController
 
   def destroy
     attachment = @idea.attachments_attachments.find(params[:id])
-    attachment.purge_later
+    attachment.purge
     head :no_content
+  end
+
+  def update
+    attachment = @idea.attachments_attachments.find(params[:id])
+
+    if params[:filename].present?
+      attachment.blob.update!(filename: params[:filename])
+    end
+
+    if params[:file].present?
+      position = attachment.position
+      attachment.purge
+      @idea.attachments.attach(params[:file])
+      @idea.reload
+      attachment = @idea.attachments_attachments.order(created_at: :desc).first
+      attachment.update!(position: position)
+    end
+
+    html = render_to_string(partial: "idea_attachments/item", locals: { attachment: attachment, idea: @idea })
+    render json: { success: true, html: html }
   end
 
   def reorder

@@ -62,12 +62,13 @@ Rails.application.routes.draw do
       get :uncompleted
       get :search
     end
-    resources :attachments, only: [:create, :destroy], controller: :idea_attachments do
+    resources :attachments, only: [:create, :destroy, :update], controller: :idea_attachments do
       collection do
         patch :reorder
       end
       member do
         post :ocr
+        patch :update
       end
     end
     resources :versions, only: [:index, :show] do
