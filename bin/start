@@ -12,16 +12,27 @@ export PORT="${PORT:-3333}"
 cd "$APP_DIR"
 
 echo "==> Preparing database..."
-bin/rails db:prepare
+DB_PREPARE_OUTPUT="$(bin/rails db:prepare_if_unlocked)"
+printf '%s\n' "$DB_PREPARE_OUTPUT"
+if [[ "$DB_PREPARE_OUTPUT" == *"Skipping db:prepare"* ]]; then
+  DB_LOCKED=1
+else
+  DB_LOCKED=0
+fi
 
 echo "==> Precompiling assets..."
 bin/rails assets:precompile
 
-echo "==> Starting SolidQueue in background..."
-bin/jobs &
-JOBS_PID=$!
-mkdir -p tmp/pids
-echo "$JOBS_PID" > tmp/pids/solid_queue.pid
+if [[ "$DB_LOCKED" == "1" ]]; then
+  echo "==> Database locked; skipping SolidQueue until the recovery passphrase unlocks encrypted data."
+  JOBS_PID=""
+else
+  echo "==> Starting SolidQueue in background..."
+  bin/jobs &
+  JOBS_PID=$!
+  mkdir -p tmp/pids
+  echo "$JOBS_PID" > tmp/pids/solid_queue.pid
+fi
 
 echo "==> Starting Caddy reverse proxy (HTTPS on ideas.local)..."
 caddy start --config "$APP_DIR/Caddyfile" --pidfile "$APP_DIR/tmp/pids/caddy.pid"
@@ -29,9 +40,11 @@ caddy start --config "$APP_DIR/Caddyfile" --pidfile "$APP_DIR/tmp/pids/caddy.pid
 cleanup() {
   echo "==> Shutting down Caddy..."
   caddy stop --config "$APP_DIR/Caddyfile" 2>/dev/null || true
-  echo "==> Shutting down SolidQueue (PID $JOBS_PID)..."
-  kill "$JOBS_PID" 2>/dev/null || true
-  wait "$JOBS_PID" 2>/dev/null || true
+  if [[ -n "$JOBS_PID" ]]; then
+    echo "==> Shutting down SolidQueue (PID $JOBS_PID)..."
+    kill "$JOBS_PID" 2>/dev/null || true
+    wait "$JOBS_PID" 2>/dev/null || true
+  fi
 }
 trap cleanup EXIT INT TERM
 
