@@ -1,7 +1,9 @@
 require "base64"
 require "fileutils"
+require "json"
 require "openssl"
 require "pathname"
+require "securerandom"
 
 class RecoverySecret
   PASSPHRASE_ENV = "IDEA_FOUNDRY_RECOVERY_PASSPHRASE".freeze
@@ -69,14 +71,38 @@ class RecoverySecret
       Rails.root.join("storage", "recovery_passphrase.key")
     end
 
+    def app_node_id
+      configured = ENV["IDEA_FOUNDRY_APP_NODE_ID"].presence
+      return configured if configured.present?
+
+      path = app_node_id_file_path
+      if path.file?
+        existing = File.read(path).strip.presence
+        return existing if existing.present?
+      end
+
+      FileUtils.mkdir_p(path.dirname)
+      SecureRandom.uuid.tap do |node_id|
+        File.write(path, node_id)
+        File.chmod(0o600, path)
+      end
+    end
+
+    def app_node_id_file_path
+      Rails.root.join("storage", "app_node_id")
+    end
+
     def persist_user_passphrase!(passphrase)
       path = user_passphrase_file_path
       FileUtils.mkdir_p(path.dirname)
-      File.write(path, passphrase.to_s)
+      File.write(path, JSON.generate({
+        "version" => 1,
+        "app_node_id" => app_node_id,
+        "passphrase" => passphrase.to_s
+      }))
       File.chmod(0o600, path)
 
       ENV[PASSPHRASE_FILE_ENV] = path.to_s
-      ENV[PASSPHRASE_ENV] = passphrase.to_s
 
       path
     end
@@ -92,7 +118,8 @@ class RecoverySecret
 
     def configured_secret
       configured_file_path = ENV[PASSPHRASE_FILE_ENV].presence
-      return read_passphrase_file(configured_file_path) if configured_file_path.present?
+      configured_file_secret = read_passphrase_file(configured_file_path) if configured_file_path.present?
+      return configured_file_secret if configured_file_secret.present?
 
       env_secret = ENV[PASSPHRASE_ENV].presence || ENV[LEGACY_ENV].presence
       return env_secret if env_secret.present?
@@ -104,7 +131,20 @@ class RecoverySecret
       path = Pathname.new(path.to_s)
       return unless path.file?
 
-      File.read(path).strip.presence
+      decode_persisted_passphrase(File.read(path))
+    end
+
+    def decode_persisted_passphrase(contents)
+      stripped = contents.to_s.strip
+      return if stripped.blank?
+
+      parsed = JSON.parse(stripped)
+      return stripped unless parsed.is_a?(Hash) && parsed.key?("passphrase")
+      return unless parsed["app_node_id"].to_s == app_node_id
+
+      parsed["passphrase"].to_s.presence
+    rescue JSON::ParserError
+      stripped.presence
     end
 
     def derive_key(salt, length: 32, value: self.value)
