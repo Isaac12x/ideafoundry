@@ -31,7 +31,9 @@ class RecoverySecretsControllerTest < ActionDispatch::IntegrationTest
       }
 
       assert_redirected_to root_path
-      assert_equal "typed once on this node", File.read(path)
+      persisted = JSON.parse(File.read(path))
+      assert_equal "typed once on this node", persisted.fetch("passphrase")
+      assert_equal RecoverySecret.app_node_id, persisted.fetch("app_node_id")
       assert_equal 0o600, File.stat(path).mode & 0o777
     end
   ensure
