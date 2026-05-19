@@ -29,7 +29,7 @@
 <% templates = @templates || [] %>
 <% show_template_step = idea.new_record? && templates.any? %>
 
-<div data-controller="template-step" data-template-step-selected-value="<%= idea.persisted? || idea.template_id.present? || idea.errors.any? %>">
+<div data-controller="template-step attachment-viewer" data-template-step-selected-value="<%= idea.persisted? || idea.template_id.present? || idea.errors.any? %>">
 
   <% if show_template_step %>
     <!-- ===== STEP 1: Template Selection ===== -->
@@ -547,6 +547,31 @@
       </details>
     </aside>
   </div>
+
+  <dialog class="attachment-viewer-modal"
+          data-action="click->attachment-viewer#backdropClose">
+    <div class="attachment-viewer-modal__inner">
+      <div class="attachment-viewer-modal__preview" data-attachment-viewer-target="preview"></div>
+
+      <div class="attachment-viewer-modal__fields">
+        <div class="form-group">
+          <label class="form-label">Filename</label>
+          <input type="text" class="form-control" data-attachment-viewer-target="filenameInput">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Replace file</label>
+          <input type="file" class="form-control" data-attachment-viewer-target="fileInput">
+        </div>
+      </div>
+
+      <div class="attachment-viewer-modal__actions">
+        <button type="button" class="btn btn-danger" data-attachment-viewer-target="deleteBtn" data-action="click->attachment-viewer#confirmDelete">Delete</button>
+        <button type="button" class="btn btn-primary" data-action="click->attachment-viewer#save">Save</button>
+        <button type="button" class="btn" data-action="click->attachment-viewer#close">Cancel</button>
+      </div>
+    </div>
+  </dialog>
 
 </div>
 

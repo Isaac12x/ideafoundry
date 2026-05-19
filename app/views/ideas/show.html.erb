@@ -342,21 +342,25 @@
             <% attachment_drawings = @idea.attachment_drawings %>
             <% if @idea.attachments.attached? || attachment_drawings.any? %>
               <div class="attachments-grid">
-                <% @idea.attachments.each do |attachment| %>
+                <% @idea.ordered_attachments.each do |attachment| %>
                   <div class="attachment-item">
                     <% if attachment.image? %>
-                      <%= image_tag attachment, class: "attachment-thumbnail" %>
+                      <%= link_to rails_blob_path(attachment, disposition: "inline"), target: "_blank", rel: "noopener" do %>
+                        <%= image_tag attachment, class: "attachment-thumbnail" %>
+                      <% end %>
                     <% else %>
-                      <div class="attachment-file">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                      </div>
+                      <%= link_to rails_blob_path(attachment, disposition: "inline"), target: "_blank", rel: "noopener" do %>
+                        <div class="attachment-file">
+                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                          </svg>
+                        </div>
+                      <% end %>
                     <% end %>
                     <div class="attachment-info">
                       <p class="attachment-name"><%= attachment.filename %></p>
                       <p class="attachment-size"><%= number_to_human_size(attachment.byte_size) %></p>
-                      <%= link_to "Download", rails_blob_path(attachment, disposition: "attachment"), class: "btn btn-sm" %>
+                      <%= link_to "Open", rails_blob_path(attachment, disposition: "inline"), target: "_blank", rel: "noopener", class: "btn btn-sm" %>
                     </div>
                   </div>
                 <% end %>
