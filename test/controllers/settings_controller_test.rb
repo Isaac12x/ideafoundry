@@ -323,6 +323,31 @@ class SettingsControllerTest < ActionDispatch::IntegrationTest
     assert_equal User::DEFAULT_IDEA_TAB_SETTINGS, @user.idea_tab_settings
   end
 
+  test "display_contrast returns 100 by default" do
+    @user.update!(settings: {})
+    assert_equal 100, @user.display_contrast
+  end
+
+  test "display_contrast migrates legacy 'high' to 130" do
+    @user.update!(settings: { 'display_contrast' => 'high' })
+    assert_equal 130, @user.display_contrast
+  end
+
+  test "display_contrast migrates legacy 'normal' to 100" do
+    @user.update!(settings: { 'display_contrast' => 'normal' })
+    assert_equal 100, @user.display_contrast
+  end
+
+  test "display_contrast returns stored integer value" do
+    @user.update!(settings: { 'display_contrast' => '120' })
+    assert_equal 120, @user.display_contrast
+  end
+
+  test "display_contrast clamps out-of-range value to 100" do
+    @user.update!(settings: { 'display_contrast' => '999' })
+    assert_equal 100, @user.display_contrast
+  end
+
   private
 
   def create_plaintext_sqlite_database(path)
