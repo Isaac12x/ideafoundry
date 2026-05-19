@@ -19,7 +19,7 @@ class RecoverySecretsController < ApplicationController
     RecoverySecret.with(passphrase) { verify_recovery_secret! }
     RecoverySecret.persist_user_passphrase!(passphrase)
     session[RECOVERY_SECRET_SESSION_KEY] = passphrase
-    redirect_to @return_to, notice: "Encrypted data unlocked."
+    redirect_to @return_to
   rescue ActiveRecord::StatementInvalid, ActiveSupport::MessageEncryptor::InvalidMessage, SQLite3::Exception => e
     reset_recovery_secret_database_connections!
     Rails.logger.warn "Recovery passphrase did not unlock encrypted data: #{e.class}: #{e.message}"
