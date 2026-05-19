@@ -5,6 +5,7 @@
     </div>
 
     <div class="idea-meta">
+      <span class="idea-state <%= idea.state %>"><%= idea.state == "idea_new" ? "New" : idea.state.humanize %></span>
       <% idea.topologies.each do |topology| %>
         <span class="topology-badge" style="--badge-color: <%= topology.color || 'var(--accent)' %>">
           <span class="topology-color-dot" style="background-color: <%= topology.color || 'var(--accent)' %>"></span>
@@ -14,15 +15,6 @@
       <span class="idea-score">
         <%= idea.computed_score ? number_with_precision(idea.computed_score, precision: 1) : "—" %>
       </span>
-    </div>
-  <% end %>
-
-  <% enabled_entry_tabs = User::IDEA_ENTRY_TABS.select { |kind| @user&.idea_tab_enabled?(kind) } %>
-  <% if enabled_entry_tabs.any? %>
-    <div class="idea-card-entry-panel">
-      <% enabled_entry_tabs.each do |kind| %>
-        <%= render "idea_entries/card_summary", idea: idea, kind: kind %>
-      <% end %>
     </div>
   <% end %>
 
