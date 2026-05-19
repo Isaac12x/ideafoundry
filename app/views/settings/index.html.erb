@@ -7,41 +7,15 @@
     <% end %>
   </div>
 
-  <section class="display-quote-settings">
-    <div class="display-quote-settings__copy">
-      <h3>Display</h3>
-      <p>Quote and visual settings across the app.</p>
-    </div>
-
-    <%= form_with url: settings_path, method: :patch, local: true, class: "display-quote-settings__form" do %>
-      <div class="form-group">
-        <label for="display_settings_quote">Page Quote</label>
-        <%= text_area_tag "display_settings[quote]",
-                          @display_quote,
-                          id: "display_settings_quote",
-                          rows: 2,
-                          class: "form-control display-quote-settings__textarea",
-                          placeholder: "A useful reminder for the top of the page" %>
-      </div>
-
-      <div class="form-group">
-        <label for="display_settings_contrast">Contrast</label>
-        <%= select_tag "display_settings[contrast]",
-                       options_for_select(
-                         [['Normal', 'normal'], ['High Contrast', 'high']],
-                         @display_contrast
-                       ),
-                       id: "display_settings_contrast",
-                       class: "form-control" %>
-      </div>
-
-      <div class="display-quote-settings__actions">
-        <%= submit_tag "Save Display", class: "btn btn-primary" %>
-      </div>
-    <% end %>
-  </section>
-
   <div class="settings-list">
+    <%= link_to settings_display_path, class: "settings-row" do %>
+      <div class="settings-row-info">
+        <h3>Display</h3>
+        <p>Quote and contrast settings</p>
+      </div>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+    <% end %>
+
     <%= link_to settings_scoring_path, class: "settings-row" do %>
       <div class="settings-row-info">
         <h3>Scoring System</h3>
