@@ -1,0 +1,18 @@
+<li class="current-attachments__item"
+    draggable="true"
+    data-attachment-reorder-target="item"
+    data-attachment-id="<%= attachment.id %>"
+    data-destroy-url="<%= idea_attachment_path(idea, attachment) %>"
+    data-action="dragstart->attachment-reorder#dragStart dragend->attachment-reorder#dragEnd dragover->attachment-reorder#dragOver drop->attachment-reorder#drop">
+  <span class="current-attachments__drag-handle" aria-hidden="true">⋮⋮</span>
+  <span class="current-attachments__filename"><%= attachment.filename %> (<%= number_to_human_size(attachment.byte_size) %>)</span>
+  <span class="current-attachments__ocr-status"><%= attachment.ocr_status.to_s.humanize %></span>
+  <span class="current-attachments__actions">
+    <button type="button" class="btn btn-sm" data-action="attachment-reorder#moveUp">↑</button>
+    <button type="button" class="btn btn-sm" data-action="attachment-reorder#moveDown">↓</button>
+    <% if AttachmentOcrJob.ocr_supported?(attachment) %>
+      <%= button_to "Run OCR", ocr_idea_attachment_path(idea, attachment), method: :post, class: "btn btn-sm", form: { style: "display:inline" } %>
+    <% end %>
+    <button type="button" class="btn btn-sm" data-action="attachment-reorder#destroyItem" title="Remove attachment">&times;</button>
+  </span>
+</li>
