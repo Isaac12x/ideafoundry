@@ -37,7 +37,7 @@ class SettingsControllerTest < ActionDispatch::IntegrationTest
       }
     }
 
-    assert_redirected_to settings_path
+    assert_redirected_to settings_display_path
     @user.reload
     assert_equal "Make the smallest thing that works.", @user.display_quote
   end
@@ -321,6 +321,21 @@ class SettingsControllerTest < ActionDispatch::IntegrationTest
     assert_redirected_to settings_idea_tabs_path
     @user.reload
     assert_equal User::DEFAULT_IDEA_TAB_SETTINGS, @user.idea_tab_settings
+  end
+
+  test "GET settings/display renders display page" do
+    get settings_display_path
+    assert_response :success
+  end
+
+  test "PATCH settings/display updates contrast and redirects to display page" do
+    patch settings_display_path, params: {
+      display_settings: { quote: "Keep it simple.", contrast: "120" }
+    }
+    assert_redirected_to settings_display_path
+    @user.reload
+    assert_equal 120, @user.display_contrast
+    assert_equal "Keep it simple.", @user.display_quote
   end
 
   test "display_contrast returns 100 by default" do
