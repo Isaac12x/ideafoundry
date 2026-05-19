@@ -117,7 +117,6 @@ class User < ApplicationRecord
     'text' => ''
   }.freeze
 
-  ALLOWED_CONTRAST_VALUES = %w[normal high].freeze
 
   ALLOWED_TOPOLOGY_OVERRIDE_KEYS = %w[
     dag_mode show_ideas node_size_topology node_size_idea
@@ -551,13 +550,16 @@ class User < ApplicationRecord
 
   def display_contrast
     val = settings&.dig('display_contrast').to_s
-    ALLOWED_CONTRAST_VALUES.include?(val) ? val : 'normal'
+    return 130 if val == 'high'
+    return 100 if val == 'normal' || val.empty?
+    int = val.to_i
+    int.between?(70, 150) ? int : 100
   end
 
   def update_display_quote(params)
     h = params.to_h
     quote = h.fetch('quote', '').to_s.strip
-    contrast = h.fetch('contrast', 'normal').to_s.strip
+    contrast = h.fetch('contrast', '100').to_s.strip
     self.settings ||= {}
 
     if quote.present?
@@ -566,10 +568,11 @@ class User < ApplicationRecord
       self.settings.delete('display_quote')
     end
 
-    if ALLOWED_CONTRAST_VALUES.include?(contrast) && contrast != 'normal'
-      self.settings['display_contrast'] = contrast
-    else
+    contrast_int = contrast.to_i.clamp(70, 150)
+    if contrast_int == 100
       self.settings.delete('display_contrast')
+    else
+      self.settings['display_contrast'] = contrast_int.to_s
     end
 
     save
