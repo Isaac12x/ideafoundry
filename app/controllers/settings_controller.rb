@@ -6,13 +6,19 @@ class SettingsController < ApplicationController
     @display_contrast = @user.display_contrast
   end
 
+  def display
+    @display_quote = @user.display_quote
+    @display_contrast = @user.display_contrast
+  end
+
   def update_display
     if @user.update_display_quote(display_settings_params)
-      redirect_to settings_path, notice: 'Display quote updated.'
+      redirect_to settings_display_path, notice: 'Display settings updated.'
     else
       @display_quote = @user.display_quote
-      flash.now[:alert] = 'Failed to update display quote.'
-      render :index, status: :unprocessable_content
+      @display_contrast = @user.display_contrast
+      flash.now[:alert] = 'Failed to update display settings.'
+      render :display, status: :unprocessable_content
     end
   end
 
