@@ -14,6 +14,7 @@ class ApplicationController < ActionController::Base
 
   prepend_around_action :with_recovery_secret_from_session
   prepend_before_action :set_user
+  prepend_before_action :require_database_recovery_unlock
   before_action :require_typing_unlock
   rescue_from RecoverySecret::Missing, with: :require_recovery_secret
 
@@ -21,6 +22,13 @@ class ApplicationController < ActionController::Base
 
   def with_recovery_secret_from_session(&action)
     RecoverySecret.with(session[RECOVERY_SECRET_SESSION_KEY], &action)
+  end
+
+  def require_database_recovery_unlock
+    locked_paths = SqlcipherDatabaseMigrator.locked_database_paths_without_recovery_secret(env: Rails.env)
+    return if locked_paths.blank?
+
+    require_recovery_secret
   end
 
   def require_recovery_secret(_exception = nil)

@@ -10,6 +10,19 @@ class RecoverySecretsControllerTest < ActionDispatch::IntegrationTest
     assert_select "input[type=?][name=?][value=?]", "hidden", "return_to", settings_security_path
   end
 
+  test "locked SQLCipher database asks for recovery before reading typing lock settings" do
+    locked_path = Rails.root.join("tmp/encrypted_sqlcipher_before_typing.sqlite3").to_s
+
+    SqlcipherDatabaseMigrator.stub(:locked_database_paths_without_recovery_secret, [locked_path]) do
+      User.stub(:first, -> { raise "typing lock should not read the database before recovery unlock" }) do
+        get root_path
+      end
+    end
+
+    assert_redirected_to recovery_secret_path(return_to: root_path)
+    assert_equal "Enter the recovery passphrase to unlock encrypted data.", flash[:alert]
+  end
+
   test "POST recovery secret redirects to safe return path without a success notice" do
     post recovery_secret_path, params: {
       recovery_passphrase: "typed in the UI",

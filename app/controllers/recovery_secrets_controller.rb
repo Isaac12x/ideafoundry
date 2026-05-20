@@ -1,5 +1,6 @@
 class RecoverySecretsController < ApplicationController
   skip_before_action :set_user
+  skip_before_action :require_database_recovery_unlock
   skip_before_action :require_typing_unlock
 
   def new
