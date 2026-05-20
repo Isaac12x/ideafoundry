@@ -29,6 +29,21 @@ class RecoverySecretTest < ActiveSupport::TestCase
     end
   end
 
+  test "request scoped passphrase can override stale configured secret during browser recovery" do
+    original = ENV[RecoverySecret::PASSPHRASE_ENV]
+    ENV[RecoverySecret::PASSPHRASE_ENV] = "stale cached passphrase"
+
+    RecoverySecret.with("actual typed passphrase", override_configured: true) do
+      assert_equal "actual typed passphrase", RecoverySecret.required!
+    end
+  ensure
+    if original.nil?
+      ENV.delete(RecoverySecret::PASSPHRASE_ENV)
+    else
+      ENV[RecoverySecret::PASSPHRASE_ENV] = original
+    end
+  end
+
   test "persisted user passphrase file unlocks production without prompting every session on same app node" do
     with_recovery_env_cleared do
       path = Rails.root.join("tmp/recovery_secret_test_#{SecureRandom.hex(6)}.key")
