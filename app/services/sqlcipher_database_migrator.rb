@@ -19,11 +19,24 @@ class SqlcipherDatabaseMigrator
     end.uniq
   end
 
+  def self.locked_database_paths_without_recovery_secret(env:)
+    return [] if RecoverySecret.present?
+
+    configured_database_paths(env: env).select do |path|
+      path = Pathname.new(path.to_s)
+      path.file? && path.size.positive? && !plaintext_sqlite_database?(path)
+    end
+  end
+
   def self.resolve_database_path(database)
     return if database.blank? || database == ":memory:"
 
     path = Pathname.new(database.to_s)
     path.absolute? ? path.to_s : Rails.root.join(path).to_s
+  end
+
+  def self.plaintext_sqlite_database?(path)
+    File.file?(path) && File.binread(path, SQLITE_HEADER.bytesize) == SQLITE_HEADER
   end
 
   def initialize(key_hex:, backup_dir: nil, timestamp: Time.now.utc.strftime("%Y%m%d%H%M%S"))
@@ -122,7 +135,7 @@ class SqlcipherDatabaseMigrator
   end
 
   def plaintext_sqlite_database?(path)
-    File.file?(path) && File.binread(path, SQLITE_HEADER.bytesize) == SQLITE_HEADER
+    self.class.plaintext_sqlite_database?(path)
   end
 
   def export_plaintext_to_sqlcipher!(source_path, encrypted_path)
