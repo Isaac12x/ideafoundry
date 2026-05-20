@@ -11,13 +11,14 @@ module IdeaFoundrySqlcipherConnectionKey
 
   def apply_sqlcipher_key!
     path = database_path
+    encrypted_database = encrypted_sqlcipher_database?(path)
 
     if plaintext_sqlite_database?(path)
       Rails.logger.warn("SQLCipher database at #{path} is plaintext; open /settings/security to encrypt it from the UI.")
       return
     end
 
-    if encrypted_sqlcipher_database?(path) && !RecoverySecret.present?
+    if encrypted_database && !RecoverySecret.present?
       raise RecoverySecret::Missing, "Enter the recovery passphrase in /settings/security before opening encrypted data"
     end
 
@@ -29,6 +30,14 @@ module IdeaFoundrySqlcipherConnectionKey
 
     @raw_connection.execute(%(PRAGMA key = "x'#{RecoverySecret.sqlcipher_key_hex}'"))
     @raw_connection.execute("PRAGMA cipher_memory_security = ON") rescue nil
+
+    verify_sqlcipher_database_unlock! if encrypted_database
+  rescue SQLite3::NotADatabaseException
+    raise RecoverySecret::Missing, "Enter the recovery passphrase in /settings/security before opening encrypted data"
+  end
+
+  def verify_sqlcipher_database_unlock!
+    @raw_connection.get_first_value("SELECT count(*) FROM sqlite_master")
   end
 
   def sqlcipher_available?

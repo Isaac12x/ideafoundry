@@ -64,13 +64,28 @@ class SqlcipherDatabaseMigratorTest < ActiveSupport::TestCase
     end
   end
 
-  test "locked database detection does not skip prepare once a recovery passphrase is present" do
+  test "locked database detection skips prepare when the loaded recovery passphrase cannot unlock the database" do
     encrypted_path = @root.join("encrypted.sqlite3")
     File.binwrite(encrypted_path, "not a sqlite header")
 
     RecoverySecret.stub(:present?, true) do
       SqlcipherDatabaseMigrator.stub(:configured_database_paths, [encrypted_path.to_s]) do
-        assert_empty SqlcipherDatabaseMigrator.locked_database_paths_without_recovery_secret(env: "production")
+        SqlcipherDatabaseMigrator.stub(:encrypted_database_openable_with_current_key?, false) do
+          assert_equal [encrypted_path.to_s], SqlcipherDatabaseMigrator.locked_database_paths_without_recovery_secret(env: "production")
+        end
+      end
+    end
+  end
+
+  test "locked database detection allows prepare when the loaded recovery passphrase opens the database" do
+    encrypted_path = @root.join("encrypted.sqlite3")
+    File.binwrite(encrypted_path, "not a sqlite header")
+
+    RecoverySecret.stub(:present?, true) do
+      SqlcipherDatabaseMigrator.stub(:configured_database_paths, [encrypted_path.to_s]) do
+        SqlcipherDatabaseMigrator.stub(:encrypted_database_openable_with_current_key?, true) do
+          assert_empty SqlcipherDatabaseMigrator.locked_database_paths_without_recovery_secret(env: "production")
+        end
       end
     end
   end

@@ -22,15 +22,16 @@ class SqlcipherInitializerTest < ActiveSupport::TestCase
     end
   end
 
-  FakeConnection = Struct.new(:cipher_version, :executed_sql) do
-    def initialize(cipher_version)
-      super(cipher_version, [])
+  FakeConnection = Struct.new(:cipher_version, :executed_sql, :raise_not_database_on_schema_read) do
+    def initialize(cipher_version, raise_not_database_on_schema_read: false)
+      super(cipher_version, [], raise_not_database_on_schema_read)
     end
 
     def get_first_value(sql)
-      raise ArgumentError, sql unless sql == "PRAGMA cipher_version"
+      return cipher_version if sql == "PRAGMA cipher_version"
+      raise SQLite3::NotADatabaseException if sql == "SELECT count(*) FROM sqlite_master" && raise_not_database_on_schema_read
 
-      cipher_version
+      raise ArgumentError, sql
     end
 
     def execute(sql)
@@ -111,6 +112,24 @@ class SqlcipherInitializerTest < ActiveSupport::TestCase
     end
 
     assert_empty connection.executed_sql
+  ensure
+    File.delete(path) if path&.exist?
+  end
+
+  test "encrypted SQLCipher database raises recovery prompt when the loaded passphrase cannot unlock it" do
+    path = Rails.root.join("tmp/encrypted_sqlcipher_bad_key_initializer_test.sqlite3")
+    File.binwrite(path, "not a sqlite header")
+    connection = FakeConnection.new("4.14.0 community", raise_not_database_on_schema_read: true)
+
+    RecoverySecret.stub(:present?, true) do
+      error = assert_raises(RecoverySecret::Missing) do
+        Probe.new(connection, database: path.to_s).apply_key!
+      end
+
+      assert_equal "Enter the recovery passphrase in /settings/security before opening encrypted data", error.message
+    end
+
+    assert_includes connection.executed_sql, %(PRAGMA key = "x'#{RecoverySecret.sqlcipher_key_hex}'")
   ensure
     File.delete(path) if path&.exist?
   end
