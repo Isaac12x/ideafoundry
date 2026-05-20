@@ -17,7 +17,8 @@ class RecoverySecretsController < ApplicationController
       return
     end
 
-    RecoverySecret.with(passphrase) { verify_recovery_secret! }
+    reset_recovery_secret_database_connections! if database_recovery_unlock_required?
+    RecoverySecret.with(passphrase, override_configured: true) { verify_recovery_secret! }
     RecoverySecret.persist_user_passphrase!(passphrase)
     session[RECOVERY_SECRET_SESSION_KEY] = passphrase
     redirect_to @return_to
@@ -39,6 +40,10 @@ class RecoverySecretsController < ApplicationController
   def verify_recovery_secret!
     User.first&.security_lock_enabled?
     true
+  end
+
+  def database_recovery_unlock_required?
+    SqlcipherDatabaseMigrator.locked_database_paths_without_recovery_secret(env: Rails.env).present?
   end
 
   def reset_recovery_secret_database_connections!
