@@ -10,10 +10,18 @@ module IdeaFoundrySqlcipherConnectionKey
   end
 
   def apply_sqlcipher_key!
-    if plaintext_sqlite_database?
-      Rails.logger.warn("SQLCipher database at #{database_path} is plaintext; open /settings/security to encrypt it from the UI.")
+    path = database_path
+
+    if plaintext_sqlite_database?(path)
+      Rails.logger.warn("SQLCipher database at #{path} is plaintext; open /settings/security to encrypt it from the UI.")
       return
     end
+
+    if encrypted_sqlcipher_database?(path) && !RecoverySecret.present?
+      raise RecoverySecret::Missing, "Enter the recovery passphrase in /settings/security before opening encrypted data"
+    end
+
+    return unless path.blank? || File.exist?(path) || RecoverySecret.present?
 
     unless sqlcipher_available?
       raise "SQLite3 gem is not linked with SQLCipher. Rebuild the image/gem with libsqlcipher and --with-sqlcipher before opening encrypted databases."
@@ -30,9 +38,14 @@ module IdeaFoundrySqlcipherConnectionKey
     ::SQLite3.respond_to?(:sqlcipher?) && ::SQLite3.sqlcipher?
   end
 
-  def plaintext_sqlite_database?
-    path = database_path
+  def plaintext_sqlite_database?(path = database_path)
     path.present? && File.file?(path) && File.binread(path, 16) == "SQLite format 3\0"
+  rescue SystemCallError
+    false
+  end
+
+  def encrypted_sqlcipher_database?(path = database_path)
+    path.present? && File.file?(path) && File.size(path).positive? && !plaintext_sqlite_database?(path)
   rescue SystemCallError
     false
   end
