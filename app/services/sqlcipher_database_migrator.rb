@@ -20,12 +20,25 @@ class SqlcipherDatabaseMigrator
   end
 
   def self.locked_database_paths_without_recovery_secret(env:)
-    return [] if RecoverySecret.present?
-
     configured_database_paths(env: env).select do |path|
-      path = Pathname.new(path.to_s)
-      path.file? && path.size.positive? && !plaintext_sqlite_database?(path)
+      locked_database_path_for_startup?(path)
     end
+  end
+
+  def self.locked_database_path_for_startup?(path)
+    path = Pathname.new(path.to_s)
+    return false unless path.file? && path.size.positive?
+    return false if plaintext_sqlite_database?(path)
+    return true unless RecoverySecret.present?
+
+    !encrypted_database_openable_with_current_key?(path)
+  end
+
+  def self.encrypted_database_openable_with_current_key?(path)
+    new(key_hex: RecoverySecret.sqlcipher_key_hex).send(:verify_encrypted_database!, Pathname.new(path.to_s))
+    true
+  rescue RecoverySecret::Missing, Error, SQLite3::SQLException, SQLite3::NotADatabaseException, SQLite3::IOException
+    false
   end
 
   def self.resolve_database_path(database)
