@@ -20,12 +20,15 @@ class RecoverySecret
   class Missing < KeyError; end
 
   class << self
-    def with(passphrase)
+    def with(passphrase, override_configured: false)
       previous = Thread.current[THREAD_SECRET_KEY]
+      previous_override = Thread.current[override_thread_secret_key]
       Thread.current[THREAD_SECRET_KEY] = passphrase.presence
+      Thread.current[override_thread_secret_key] = override_configured
       yield
     ensure
       Thread.current[THREAD_SECRET_KEY] = previous
+      Thread.current[override_thread_secret_key] = previous_override
     end
 
     def present?
@@ -110,10 +113,17 @@ class RecoverySecret
     private
 
     def raw_secret
+      request_secret = Thread.current[THREAD_SECRET_KEY].presence
+      return request_secret if request_secret.present? && Thread.current[override_thread_secret_key]
+
       configured = configured_secret
       return configured if configured.present?
 
-      Thread.current[THREAD_SECRET_KEY].presence
+      request_secret
+    end
+
+    def override_thread_secret_key
+      :idea_foundry_recovery_passphrase_overrides_configured_secret
     end
 
     def configured_secret
