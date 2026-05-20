@@ -1,6 +1,30 @@
 require "test_helper"
 
 class RecoverySecretsControllerTest < ActionDispatch::IntegrationTest
+  setup do
+    @original_recovery_passphrase_file = ENV[RecoverySecret::PASSPHRASE_FILE_ENV]
+    @original_recovery_passphrase = ENV[RecoverySecret::PASSPHRASE_ENV]
+    @recovery_secret_root = Rails.root.join("tmp/recovery_secret_controller_default_#{SecureRandom.hex(6)}")
+    ENV[RecoverySecret::PASSPHRASE_FILE_ENV] = @recovery_secret_root.join("recovery_passphrase.key").to_s
+    ENV.delete(RecoverySecret::PASSPHRASE_ENV)
+  end
+
+  teardown do
+    if @original_recovery_passphrase_file.nil?
+      ENV.delete(RecoverySecret::PASSPHRASE_FILE_ENV)
+    else
+      ENV[RecoverySecret::PASSPHRASE_FILE_ENV] = @original_recovery_passphrase_file
+    end
+
+    if @original_recovery_passphrase.nil?
+      ENV.delete(RecoverySecret::PASSPHRASE_ENV)
+    else
+      ENV[RecoverySecret::PASSPHRASE_ENV] = @original_recovery_passphrase
+    end
+
+    FileUtils.rm_rf(@recovery_secret_root) if @recovery_secret_root
+  end
+
   test "GET recovery secret renders passphrase form" do
     get recovery_secret_path(return_to: settings_security_path)
 
