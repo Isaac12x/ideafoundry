@@ -4,7 +4,9 @@ class Idea < ApplicationRecord
   belongs_to :user
   belongs_to :template, optional: true
   has_many :idea_topologies, dependent: :destroy
-  has_many :topologies, through: :idea_topologies
+  has_many :topologies, through: :idea_topologies,
+                         after_add: :track_github_repository_after_topology_change,
+                         after_remove: :track_github_repository_after_topology_change
   has_many :idea_lists, dependent: :destroy
   has_many :lists, through: :idea_lists
   has_many :versions, -> { order(created_at: :desc) }, dependent: :destroy
@@ -13,6 +15,7 @@ class Idea < ApplicationRecord
   has_many :notes, dependent: :destroy
   has_many :idea_entries, dependent: :destroy
   has_many :drawings, dependent: :destroy
+  has_one :github_repository, dependent: :destroy
   has_one_attached :hero_image
   has_many_attached :attachments
   has_rich_text :description
@@ -50,6 +53,7 @@ class Idea < ApplicationRecord
   around_destroy :suppress_history_tracking_during_destroy
   after_update_commit :record_automatic_history_version, if: :automatic_history_version_needed?
   after_commit :broadcast_graph_updated, on: :update, if: :title_previously_changed?
+  after_commit :track_github_repository_later, on: [:create, :update], unless: :draft?
 
   # Scopes
   scope :active, -> { where.not(state: [:rejected, :shipped]).where(discarded_at: nil, draft: false) }
@@ -347,8 +351,72 @@ class Idea < ApplicationRecord
   end
 
   def validate_against_template
-    return [] unless template
-    template.validate_idea_against_template(self)
+    effective_field_definitions.select { |field| field['required'] == true }.filter_map do |field|
+      key = field['instance_id'] || field['name']
+      value = respond_to?(key) ? public_send(key) : metadata&.dig(key)
+      "#{field['label'] || field['name'].humanize} is required" if value.blank?
+    end
+  end
+
+  def effective_field_definitions
+    merge_field_definitions(
+      template&.field_definitions || [],
+      topologies.flat_map(&:effective_default_field_definitions)
+    )
+  end
+
+  def effective_tab_definitions
+    tabs = template&.effective_tab_definitions || [{ 'name' => 'general', 'label' => 'General', 'position' => 0 }]
+    existing = tabs.index_by { |tab| tab['name'] }
+
+    effective_field_definitions.each do |field|
+      tab_name = field['tab'].presence || tabs.first['name']
+      next if existing.key?(tab_name)
+
+      existing[tab_name] = {
+        'name' => tab_name,
+        'label' => tab_name.humanize,
+        'position' => existing.length
+      }
+    end
+
+    existing.values.sort_by { |tab| tab['position'].to_i }
+  end
+
+  def effective_fields_by_tab
+    tabs = effective_tab_definitions
+    default_tab = tabs.first&.dig('name') || 'general'
+
+    grouped = {}
+    tabs.each { |tab| grouped[tab['name']] = [] }
+
+    effective_field_definitions.each do |field|
+      tab = field['tab'].presence || default_tab
+      grouped[tab] ||= []
+      grouped[tab] << field
+    end
+
+    grouped.each { |_, fields| fields.sort_by! { |field| field['position'].to_i } }
+    grouped
+  end
+
+  def effective_field_by_instance_id(instance_id)
+    effective_field_definitions.find { |field| field['instance_id'] == instance_id }
+  end
+
+  def software_topology?
+    topologies.any? { |topology| topology.name.to_s.casecmp("software").zero? }
+  end
+
+  def github_repository_url
+    values = metadata.is_a?(Hash) ? metadata : {}
+    preferred_key = values.keys.find { |key| key.to_s.match?(/\Agithub(_repository)?_url\z/i) }
+    return values[preferred_key].to_s.strip if preferred_key && values[preferred_key].present?
+
+    repo_key = values.keys.find { |key| key.to_s.match?(/github|repository|repo/i) && values[key].to_s.include?("github.com") }
+    return values[repo_key].to_s.strip if repo_key
+
+    values.values.find { |value| value.to_s.include?("github.com") }.to_s.strip.presence
   end
 
   # SHA3 integrity hashing (email-ingested ideas only)
@@ -519,6 +587,23 @@ class Idea < ApplicationRecord
     })
   end
 
+  def track_github_repository_later
+    TrackGithubRepositoryJob.perform_later(id)
+  end
+
+  def track_github_repository_after_topology_change(_topology)
+    track_github_repository_later if persisted? && !draft?
+  end
+
+  def merge_field_definitions(*definition_sets)
+    definition_sets.flatten.compact.each_with_object({}) do |field, merged|
+      key = field['instance_id'].presence || field['name']
+      next if key.blank?
+
+      merged[key] = field
+    end.values
+  end
+
   def set_defaults
     self.state ||= :idea_new
     self.attempt_count ||= 0
@@ -549,7 +634,7 @@ class Idea < ApplicationRecord
   end
 
   def template_required_fields_present
-    return unless template
+    return if effective_field_definitions.blank?
 
     validation_errors = validate_against_template
     validation_errors.each do |error|

@@ -1,0 +1,48 @@
+<div class="settings-container">
+  <div class="page-header">
+    <h2>GitHub</h2>
+    <%= link_to settings_path, class: "btn btn-sm" do %>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      Back
+    <% end %>
+  </div>
+
+  <div class="settings-section">
+    <h3>Repository Tracking</h3>
+    <p class="config-description">
+      Software ideas with a GitHub URL are checked for repository metadata and release availability.
+    </p>
+
+    <%= form_with url: settings_github_path, method: :patch, local: true do |form| %>
+      <div class="form-group">
+        <%= label_tag "github_settings_token", "GitHub Token" %>
+        <%= password_field_tag "github_settings[token]",
+            nil,
+            id: "github_settings_token",
+            class: "form-control",
+            placeholder: @github_settings["token_configured"] ? "Token saved" : "ghp_..." %>
+        <small class="form-text">Use a fine-grained token with read-only repository metadata access.</small>
+      </div>
+
+      <% if @github_settings["token_configured"] %>
+        <div class="tpl-form__check-row" style="margin-bottom: 1rem;">
+          <%= check_box_tag "github_settings[clear_token]", "1", false, id: "github_settings_clear_token" %>
+          <label for="github_settings_clear_token">Remove saved token</label>
+        </div>
+      <% end %>
+
+      <div class="form-group">
+        <%= label_tag "github_settings_api_base_url", "API Base URL" %>
+        <%= url_field_tag "github_settings[api_base_url]",
+            @github_settings["api_base_url"],
+            id: "github_settings_api_base_url",
+            class: "form-control",
+            placeholder: "https://api.github.com" %>
+      </div>
+
+      <div class="config-actions">
+        <%= form.submit "Save GitHub Settings", class: "btn btn-primary" %>
+      </div>
+    <% end %>
+  </div>
+</div>

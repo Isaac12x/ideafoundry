@@ -178,6 +178,24 @@ class UserTest < ActiveSupport::TestCase
     refute user.reload.idea_work_tokens_enabled?
   end
 
+  test "github token can be stored encrypted and cleared" do
+    user = users(:one)
+
+    assert user.update_github_settings("token" => "ghp_secret_token")
+
+    assert user.github_configured?
+    assert_equal "ghp_secret_token", user.github_token
+
+    raw_settings = user.reload.settings.fetch("github")
+    assert raw_settings["token_ciphertext"].present?
+    assert_nil raw_settings["token"]
+    refute_includes raw_settings["token_ciphertext"], "ghp_secret_token"
+
+    assert user.update_github_settings("clear_token" => "1")
+    refute user.reload.github_configured?
+    assert_nil user.github_token
+  end
+
   def setup
     @user = User.new(email: "test@example.com", name: "Test User")
   end

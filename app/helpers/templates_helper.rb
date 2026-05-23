@@ -13,6 +13,8 @@ module TemplatesHelper
       end
     when 'textarea'
       simple_format(value.to_s)
+    when 'url'
+      link_to value.to_s, value.to_s, target: "_blank", rel: "noopener"
     else
       value.to_s
     end

@@ -139,6 +139,8 @@ Rails.application.routes.draw do
   post 'settings/security/encrypt-database', to: 'settings#encrypt_database', as: :settings_security_encrypt_database
   get 'settings/idea-work-tokens', to: 'settings#idea_work_tokens', as: :settings_idea_work_tokens
   patch 'settings/idea-work-tokens', to: 'settings#update_idea_work_tokens'
+  get 'settings/github', to: 'settings#github', as: :settings_github
+  patch 'settings/github', to: 'settings#update_github'
   get 'settings/topologies', to: 'settings#topologies'
   patch 'settings/topologies', to: 'settings#update_topologies'
   get 'settings/lists', to: 'settings#lists'
