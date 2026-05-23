@@ -25,6 +25,15 @@
       </div>
     </div>
 
+    <% if @list.kanban? && @list.kanban_board %>
+      <div class="form-group">
+        <label>Kanban Board</label>
+        <div class="form-control" style="background: var(--bg-elevated);">
+          <%= @list.kanban_board.name %>
+        </div>
+      </div>
+    <% end %>
+
     <div class="form-actions">
       <%= form.submit "Update List", class: "btn btn-primary" %>
       <%= link_to "Cancel", lists_path, class: "btn btn-secondary" %>

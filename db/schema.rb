@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_05_18_000000) do
+ActiveRecord::Schema[8.0].define(version: 2026_05_23_090000) do
   create_table "action_mailbox_inbound_emails", force: :cascade do |t|
     t.integer "status", default: 0, null: false
     t.string "message_id", null: false
@@ -210,6 +210,16 @@ ActiveRecord::Schema[8.0].define(version: 2026_05_18_000000) do
     t.index ["user_id"], name: "index_ideas_on_user_id"
   end
 
+  create_table "kanban_boards", force: :cascade do |t|
+    t.integer "user_id", null: false
+    t.string "name", null: false
+    t.integer "position", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["user_id", "position"], name: "index_kanban_boards_on_user_id_and_position", unique: true
+    t.index ["user_id"], name: "index_kanban_boards_on_user_id"
+  end
+
   create_table "lists", force: :cascade do |t|
     t.integer "user_id", null: false
     t.string "name"
@@ -217,7 +227,10 @@ ActiveRecord::Schema[8.0].define(version: 2026_05_18_000000) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.string "kind", default: "kanban", null: false
-    t.index ["user_id", "kind", "position"], name: "index_lists_on_user_id_and_kind_and_position", unique: true
+    t.integer "kanban_board_id"
+    t.index ["kanban_board_id", "position"], name: "index_lists_on_kanban_board_id_and_position", unique: true, where: "kind = 'kanban'"
+    t.index ["kanban_board_id"], name: "index_lists_on_kanban_board_id"
+    t.index ["user_id", "kind", "position"], name: "index_lists_on_user_kind_position_named", unique: true, where: "kind = 'named'"
     t.index ["user_id"], name: "index_lists_on_user_id"
   end
 
@@ -335,6 +348,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_05_18_000000) do
   add_foreign_key "idea_topologies", "topologies"
   add_foreign_key "ideas", "templates"
   add_foreign_key "ideas", "users"
+  add_foreign_key "kanban_boards", "users"
+  add_foreign_key "lists", "kanban_boards"
   add_foreign_key "lists", "users"
   add_foreign_key "notes", "ideas"
   add_foreign_key "notes", "notes", column: "parent_note_id"

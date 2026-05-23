@@ -17,7 +17,7 @@
           idea_draft_persist_prompt_with_existing_content_value: prompt_with_existing_content,
           idea_draft_persist_prompt_delay_value: 6000
         }.compact do |form| %>
-    <%= render 'form', form: form, idea: @idea, lists: @lists, named_lists: @named_lists, topologies: @topologies %>
+    <%= render 'form', form: form, idea: @idea, lists: @lists, kanban_boards: @kanban_boards, named_lists: @named_lists, topologies: @topologies %>
   <% end %>
 </div>
 

@@ -19,7 +19,7 @@ class SubmissionsController < ApplicationController
 
   def show
     @topologies = @user.topologies.ordered
-    @lists = @user.lists.ordered
+    @lists = @user.lists.kanban.includes(:kanban_board).order(:kanban_board_id, :position)
   end
 
   def approve

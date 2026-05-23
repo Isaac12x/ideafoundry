@@ -36,6 +36,7 @@ export default class extends Controller {
     // Store the data we need for the drop
     const ideaId = event.target.dataset.ideaId;
     const currentListId = event.target.dataset.listId;
+    const currentBoardId = event.target.dataset.kanbanBoardId;
     const currentPosition = event.target.dataset.position;
 
     event.dataTransfer.setData(
@@ -43,6 +44,7 @@ export default class extends Controller {
       JSON.stringify({
         ideaId: ideaId,
         currentListId: currentListId,
+        currentBoardId: currentBoardId,
         currentPosition: currentPosition,
       })
     );
@@ -89,7 +91,13 @@ export default class extends Controller {
     try {
       const dragData = JSON.parse(event.dataTransfer.getData("text/plain"));
       const newListId = dropZone.dataset.listId;
+      const newBoardId = dropZone.dataset.kanbanBoardId;
       const newPosition = this.calculateNewPosition(dropZone, event.clientY);
+
+      if (dragData.currentBoardId && newBoardId && dragData.currentBoardId !== newBoardId) {
+        this.showError("Move ideas within the same board.");
+        return;
+      }
 
       // Don't do anything if dropped in the same position
       if (

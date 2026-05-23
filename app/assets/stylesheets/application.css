@@ -1159,6 +1159,69 @@ select.form-control {
   margin: 0 auto;
 }
 
+.kanban-board-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 1rem;
+}
+
+.kanban-board-form .form-control {
+  width: min(320px, 50vw);
+}
+
+.kanban-boards {
+  display: grid;
+  gap: 2rem;
+}
+
+.kanban-board {
+  border-top: 1px solid var(--border-subtle);
+  padding-top: 1rem;
+}
+
+.kanban-board:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.kanban-board-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.kanban-board-header h3,
+.kanban-board-picker h4 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.kanban-board-header p {
+  margin: 3px 0 0;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
+.kanban-board-pickers {
+  display: grid;
+  gap: 1rem;
+}
+
+.kanban-board-picker {
+  padding: 1rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  background: var(--bg-input);
+}
+
+.kanban-board-picker h4 {
+  margin-bottom: 0.75rem;
+}
+
 /* ---- List Container (Kanban) ---- */
 .list-container {
   background: var(--bg-surface);
@@ -1254,6 +1317,15 @@ select.form-control {
   gap: 1rem;
   align-items: center;
   padding: 0.9rem 1rem;
+}
+
+.idea-card-timestamps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  margin-top: 6px;
+  color: var(--text-muted);
+  font-size: 0.72rem;
 }
 
 /* ---- Empty States ---- */
