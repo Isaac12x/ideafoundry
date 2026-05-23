@@ -369,6 +369,31 @@
 
 .backlog-link-label-input::placeholder { color: var(--text-muted); }
 
+.backlog-form-images {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+}
+
+.backlog-form-images-header {
+  margin-bottom: 8px;
+}
+
+.backlog-image-dropzone {
+  padding: 14px 12px;
+  border-width: 1px;
+}
+
+.backlog-image-dropzone .dropzone__label {
+  gap: 4px;
+  font-size: 0.8rem;
+}
+
+.backlog-image-dropzone .dropzone__preview-grid {
+  grid-template-columns: repeat(auto-fill, minmax(58px, 1fr));
+}
+
 /* ---- Item List ---- */
 .backlog-list {
   display: flex;
@@ -647,6 +672,36 @@
   font-size: 0.7rem;
   color: var(--text-muted);
   font-family: var(--font-mono);
+}
+
+.backlog-image-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 5px;
+}
+
+.backlog-image-link {
+  display: block;
+  width: 58px;
+  height: 58px;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  border: 1px solid var(--border-default);
+  background: var(--bg-overlay);
+  transition: border-color 0.15s, transform 0.15s;
+}
+
+.backlog-image-link:hover {
+  border-color: var(--accent);
+  transform: translateY(-1px);
+}
+
+.backlog-image-thumb {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
 }
 
 /* ---- Actions ---- */

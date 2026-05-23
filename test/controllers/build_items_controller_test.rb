@@ -27,6 +27,20 @@ class BuildItemsControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
   end
 
+  test "POST create attaches uploaded images" do
+    assert_difference("BuildItem.count", 1) do
+      post build_items_path,
+           params: { build_item: { title: "New item", images: [uploaded_image("mockup.png")] } },
+           as: :turbo_stream
+    end
+
+    item = BuildItem.order(:created_at).last
+    assert_response :success
+    assert_equal 1, item.images.count
+    assert_equal "mockup.png", item.images.first.filename.to_s
+    assert_includes @response.body, "backlog-image-thumb"
+  end
+
   test "POST create with blank title" do
     assert_no_difference("BuildItem.count") do
       post build_items_path, params: { build_item: { title: "" } }, as: :turbo_stream
@@ -39,6 +53,20 @@ class BuildItemsControllerTest < ActionDispatch::IntegrationTest
     patch build_item_path(item), params: { build_item: { title: "New" } }, as: :turbo_stream
     assert_response :success
     assert_equal "New", item.reload.title
+  end
+
+  test "PATCH update appends uploaded images" do
+    item = BuildItem.create!(user: @user, title: "With images")
+    item.images.attach(io: StringIO.new("\x89PNG\r\n\x1a\n"), filename: "existing.png", content_type: "image/png")
+
+    patch build_item_path(item),
+          params: { build_item: { images: [uploaded_image("wireframe.png")] } },
+          as: :turbo_stream
+
+    assert_response :success
+    assert_equal 2, item.reload.images.count
+    assert_equal ["existing.png", "wireframe.png"], item.images.map { |image| image.filename.to_s }
+    assert_includes @response.body, "backlog-image-thumb"
   end
 
   test "PATCH update keeps the rendered item at its current backlog index" do
@@ -132,5 +160,15 @@ class BuildItemsControllerTest < ActionDispatch::IntegrationTest
 
     assert_redirected_to root_path
     assert_equal "Backlog is not enabled.", flash[:alert]
+  end
+
+  private
+
+  def uploaded_image(filename)
+    file = Tempfile.new([File.basename(filename, ".*"), File.extname(filename)])
+    file.binmode
+    file.write("\x89PNG\r\n\x1a\n")
+    file.rewind
+    Rack::Test::UploadedFile.new(file.path, "image/png", true, original_filename: filename)
   end
 end

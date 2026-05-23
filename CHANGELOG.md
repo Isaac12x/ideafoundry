@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Right-click idea cards can add ideas to Kanban board columns or named lists.
+- Backlog items can include multiple uploaded images with inline thumbnails.
 - Static GitHub Pages project overview site and deployment workflow.
 - Configurable page quote shown below the navigation bar.
 - Backlog markdown checklist subitems with per-item toggles and remaining/total counts.
