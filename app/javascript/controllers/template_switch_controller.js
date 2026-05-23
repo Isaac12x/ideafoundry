@@ -1,7 +1,7 @@
 import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
-  static targets = ["selector", "tabCustomFields", "tabPanelsContainer", "orphanedPanel", "orphanedList"]
+  static targets = ["selector", "tabCustomFields", "tabPanelsContainer", "orphanedPanel", "orphanedList", "topologyCheckbox"]
   static values = {
     currentFields: { type: Array, default: [] },
     fieldValues: { type: Object, default: {} }
@@ -42,9 +42,13 @@ export default class extends Controller {
     this.captureCurrentValues()
 
     if (!templateId) {
-      // No template — remove all dynamic tab panels and existing server-rendered ones
       this.removeAllTabPanels()
-      this.hideOrphaned()
+      const topologyFields = this.selectedTopologyFields()
+      if (topologyFields.length > 0) {
+        this.renderTabPanels(this.withTopologyFields({ field_definitions: [], tab_definitions: this.defaultTabDefinitions() }))
+      } else {
+        this.hideOrphaned()
+      }
       return
     }
 
@@ -54,11 +58,62 @@ export default class extends Controller {
       const template = await response.json()
 
       this.removeAllTabPanels()
-      this.renderTabPanels(template)
-      this.currentFieldsValue = template.field_definitions
+      const effectiveTemplate = this.withTopologyFields(template)
+      this.renderTabPanels(effectiveTemplate)
+      this.currentFieldsValue = effectiveTemplate.field_definitions
     } catch (e) {
       console.error("Template switch error:", e)
     }
+  }
+
+  topologiesChanged() {
+    if (this.hasSelectorTarget) {
+      this.selectorTarget.dispatchEvent(new Event("change", { bubbles: true }))
+    }
+  }
+
+  selectedTopologyFields() {
+    if (!this.hasTopologyCheckboxTarget) return []
+
+    return this.topologyCheckboxTargets
+      .filter(checkbox => checkbox.checked)
+      .flatMap(checkbox => {
+        try {
+          return JSON.parse(checkbox.dataset.topologyFields || "[]")
+        } catch (_e) {
+          return []
+        }
+      })
+  }
+
+  withTopologyFields(template) {
+    const topologyFields = this.selectedTopologyFields()
+    if (topologyFields.length === 0) return template
+
+    const tabDefs = [...(template.tab_definitions || this.defaultTabDefinitions())]
+    const knownTabs = new Set(tabDefs.map(tab => tab.name))
+    const fields = [...(template.field_definitions || [])]
+    const knownFields = new Set(fields.map(field => field.instance_id || field.name).filter(Boolean))
+
+    topologyFields.forEach(field => {
+      const tabName = field.tab || tabDefs[0]?.name || "general"
+      if (!knownTabs.has(tabName)) {
+        tabDefs.push({ name: tabName, label: this.humanize(tabName), position: tabDefs.length })
+        knownTabs.add(tabName)
+      }
+
+      const key = field.instance_id || field.name
+      if (!key || knownFields.has(key)) return
+
+      fields.push(field)
+      knownFields.add(key)
+    })
+
+    return { ...template, field_definitions: fields, tab_definitions: tabDefs }
+  }
+
+  defaultTabDefinitions() {
+    return [{ name: "general", label: "General", position: 0 }]
   }
 
   removeAllTabPanels() {
@@ -178,6 +233,9 @@ export default class extends Controller {
       case "date":
         inputHtml = `<input type="date" name="${name}" value="${escapedValue}" class="weight-input" ${required}>`
         break
+      case "url":
+        inputHtml = `<input type="url" name="${name}" value="${escapedValue}" class="weight-input" style="text-align:left;" placeholder="${field.placeholder || ""}" ${required}>`
+        break
       default: // text
         inputHtml = `<input type="text" name="${name}" value="${escapedValue}" class="weight-input" style="text-align:left;" placeholder="${field.placeholder || ""}" ${required}>`
     }
@@ -286,5 +344,9 @@ export default class extends Controller {
     const div = document.createElement("div")
     div.textContent = str
     return div.innerHTML
+  }
+
+  humanize(value) {
+    return value.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase())
   }
 }

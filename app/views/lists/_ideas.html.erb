@@ -14,6 +14,21 @@
       </div>
     </div>
 
+    <% if idea.github_repository %>
+      <div class="idea-github"
+           data-github-repository-id="<%= idea.github_repository.id %>"
+           data-github-has-releases="<%= idea.github_repository.has_releases? %>">
+        <%= link_to "#{idea.github_repository.owner}/#{idea.github_repository.name}",
+            idea.github_repository.repository_url,
+            target: "_blank",
+            rel: "noopener",
+            class: "idea-github__repo" %>
+        <span class="idea-github__release <%= idea.github_repository.has_releases? ? 'has-releases' : 'no-releases' %>">
+          <%= idea.github_repository.has_releases? ? "Releases" : "No releases" %>
+        </span>
+      </div>
+    <% end %>
+
     <div class="idea-meta">
       <span class="idea-state <%= idea.state %>"><%= idea.state.humanize %></span>
       <% if idea.computed_score %>

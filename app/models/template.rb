@@ -1,4 +1,6 @@
 class Template < ApplicationRecord
+  FIELD_TYPES = %w[text textarea number select boolean date url].freeze
+
   belongs_to :user
   has_many :ideas, dependent: :nullify
 
@@ -136,7 +138,7 @@ class Template < ApplicationRecord
         errors.add(:field_definitions, "field at index #{index} must have a type")
       end
       
-      unless %w[text textarea number select boolean date].include?(field['type'])
+      unless FIELD_TYPES.include?(field['type'])
         errors.add(:field_definitions, "field at index #{index} has invalid type")
       end
     end

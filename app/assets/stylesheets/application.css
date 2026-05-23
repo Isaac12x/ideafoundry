@@ -2088,3 +2088,32 @@ main.app-main,
 header.app-header {
   filter: contrast(var(--contrast, 100%));
 }
+
+.idea-github {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  font-size: 0.78rem;
+}
+
+.idea-github__repo {
+  color: var(--text-secondary);
+  text-decoration: none;
+}
+
+.idea-github__repo:hover {
+  color: var(--accent);
+}
+
+.idea-github__release {
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  padding: 1px 6px;
+}
+
+.idea-github__release.has-releases {
+  border-color: var(--accent-emphasis);
+  color: var(--accent);
+}

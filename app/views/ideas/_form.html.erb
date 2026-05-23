@@ -291,7 +291,12 @@
               <div class="checkbox-item">
                 <%= check_box_tag 'idea[topology_ids][]', topology.id,
                     idea.topologies.include?(topology),
-                    id: "topology_#{topology.id}" %>
+                    id: "topology_#{topology.id}",
+                    data: {
+                      template_switch_target: "topologyCheckbox",
+                      topology_fields: topology.effective_default_field_definitions.to_json,
+                      action: "change->template-switch#topologiesChanged"
+                    } %>
                 <label for="topology_<%= topology.id %>">
                   <% if topology.color.present? %>
                     <span class="topology-color-dot" style="background-color: <%= topology.color %>;"></span>
@@ -359,11 +364,12 @@
       </div>
 
       <!-- Custom Fields from Template (flat, sorted by position) -->
-      <% if idea.template && idea.template.field_definitions.present? %>
+      <% effective_fields = idea.effective_field_definitions %>
+      <% if effective_fields.present? %>
         <div class="form-panel" data-template-switch-target="customFieldsPanel">
           <h3 class="form-panel-title">Custom Fields</h3>
           <div class="weight-grid">
-            <% idea.template.field_definitions.sort_by { |f| f['position'].to_i }.each do |field| %>
+            <% effective_fields.sort_by { |f| f['position'].to_i }.each do |field| %>
               <% meta_key = field['instance_id'] || field['name'] %>
               <% field_value = idea.metadata&.dig(meta_key) || field['default_value'] || '' %>
               <div class="weight-item" data-custom-field="<%= meta_key %>" data-field-instance-id="<%= field['instance_id'] %>">
@@ -399,6 +405,11 @@
                   <% when 'date' %>
                     <input type="date" name="idea[metadata][<%= meta_key %>]"
                            value="<%= field_value %>" class="weight-input"
+                           <%= 'required' if field['required'] %>>
+                  <% when 'url' %>
+                    <input type="url" name="idea[metadata][<%= meta_key %>]"
+                           value="<%= field_value %>" class="weight-input" style="text-align:left;"
+                           placeholder="<%= field['placeholder'] %>"
                            <%= 'required' if field['required'] %>>
                   <% else %>
                     <input type="text" name="idea[metadata][<%= meta_key %>]"

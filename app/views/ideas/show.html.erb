@@ -219,9 +219,9 @@
             Metadata
           </button>
         <% end %>
-        <% if @idea.template && @idea.template.field_definitions.present? %>
-          <% @idea.template.effective_tab_definitions.sort_by { |t| t['position'].to_i }.each do |tab| %>
-            <% tab_fields = @idea.template.fields_by_tab[tab['name']] || [] %>
+        <% if @idea.effective_field_definitions.present? %>
+          <% @idea.effective_tab_definitions.sort_by { |t| t['position'].to_i }.each do |tab| %>
+            <% tab_fields = @idea.effective_fields_by_tab[tab['name']] || [] %>
             <% next if tab_fields.empty? %>
             <button data-tabs-target="tab" data-tab-name="custom-<%= tab['name'] %>" data-action="click->tabs#switch" class="tab-button">
               <%= tab['label'] || tab['name'].humanize %>
@@ -518,9 +518,9 @@
         <% end %>
 
         <!-- Custom Field Tabs -->
-        <% if @idea.template && @idea.template.field_definitions.present? %>
-          <% @idea.template.effective_tab_definitions.sort_by { |t| t['position'].to_i }.each do |tab| %>
-            <% tab_fields = @idea.template.fields_by_tab[tab['name']] || [] %>
+        <% if @idea.effective_field_definitions.present? %>
+          <% @idea.effective_tab_definitions.sort_by { |t| t['position'].to_i }.each do |tab| %>
+            <% tab_fields = @idea.effective_fields_by_tab[tab['name']] || [] %>
             <% next if tab_fields.empty? %>
             <div data-tabs-target="panel" data-tab-panel="custom-<%= tab['name'] %>" class="tab-panel hidden">
               <div class="metadata-grid">

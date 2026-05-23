@@ -72,6 +72,45 @@ class IdeaTest < ActiveSupport::TestCase
     assert_respond_to @idea, :lists
   end
 
+  test "effective field definitions include selected topology defaults" do
+    template = Template.create!(
+      user: @user,
+      name: "Product Template #{SecureRandom.hex(4)}",
+      field_definitions: [
+        {
+          "name" => "priority",
+          "label" => "Priority",
+          "type" => "text",
+          "instance_id" => "priority",
+          "required" => false
+        }
+      ],
+      section_order: [],
+      tab_definitions: [{ "name" => "general", "label" => "General", "position" => 0 }]
+    )
+    software = @user.topologies.create!(name: "Software", topology_type: :custom)
+    idea = Idea.create!(user: @user, title: "Repository-backed project", template: template)
+    idea.topologies << software
+
+    field_names = idea.reload.effective_field_definitions.map { |field| field["name"] }
+
+    assert_includes field_names, "priority"
+    assert_includes field_names, "github_url"
+  ensure
+    software&.destroy
+    template&.destroy
+  end
+
+  test "github repository url reads github metadata values" do
+    idea = Idea.new(
+      user: @user,
+      title: "Repository-backed project",
+      metadata: { "github_url" => "https://github.com/acme/widgets" }
+    )
+
+    assert_equal "https://github.com/acme/widgets", idea.github_repository_url
+  end
+
   test "should have active scope" do
     active_idea = Idea.create!(user: @user, title: "Active", state: :idea_new)
     rejected_idea = Idea.create!(user: @user, title: "Rejected", state: :rejected)

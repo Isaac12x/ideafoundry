@@ -186,6 +186,7 @@ class SettingsController < ApplicationController
 
   def topologies
     @topology_settings = @user.topology_settings
+    @topologies = @user.topologies.ordered
   end
 
   def lists
@@ -216,10 +217,11 @@ class SettingsController < ApplicationController
               end
     end
 
-    if @user.update_topology_settings(coerced)
+    if @user.update_topology_settings(coerced) && update_topology_template_fields
       redirect_to settings_topologies_path, notice: 'Topology & graph settings updated.'
     else
       @topology_settings = @user.topology_settings
+      @topologies = @user.topologies.ordered
       flash.now[:alert] = 'Failed to update settings.'
       render :topologies, status: :unprocessable_content
     end
@@ -256,6 +258,21 @@ class SettingsController < ApplicationController
   def templates
     @templates = @user.templates.order(:name)
     @default_template = @templates.find_by(is_default: true)
+    @topologies = @user.topologies.ordered
+  end
+
+  def github
+    @github_settings = @user.github_settings
+  end
+
+  def update_github
+    if @user.update_github_settings(github_params)
+      redirect_to settings_github_path, notice: "GitHub settings updated."
+    else
+      @github_settings = @user.github_settings
+      flash.now[:alert] = "Failed to update GitHub settings."
+      render :github, status: :unprocessable_content
+    end
   end
 
   def exports
@@ -506,6 +523,22 @@ class SettingsController < ApplicationController
 
   def idea_work_token_params
     params.fetch(:idea_work_tokens, {}).permit(:enabled)
+  end
+
+  def github_params
+    params.require(:github_settings).permit(:token, :clear_token, :api_base_url)
+  end
+
+  def update_topology_template_fields
+    raw_fields = params[:topology_template_fields]
+    return true if raw_fields.blank?
+
+    field_sets = raw_fields.to_unsafe_h
+    @user.topologies.where(id: field_sets.keys).all? do |topology|
+      raw_for_topology = field_sets[topology.id.to_s] || {}
+      fields = raw_for_topology.values
+      topology.update(default_field_definitions: fields)
+    end
   end
 
   def valid_scoring_weights?(weights)

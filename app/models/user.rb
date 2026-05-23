@@ -53,6 +53,9 @@ class User < ApplicationRecord
   DEFAULT_IDEA_WORK_TOKEN_SETTINGS = {
     'enabled' => false
   }.freeze
+  DEFAULT_GITHUB_SETTINGS = {
+    'api_base_url' => 'https://api.github.com'
+  }.freeze
   MIN_TYPING_LOCK_SECONDS = 1.minute.to_i
   MAX_TYPING_LOCK_SECONDS = 24.hours.to_i
   MIN_TYPING_LOCK_FAILED_UNLOCK_COOLDOWN_SECONDS = 1.minute.to_i
@@ -464,6 +467,39 @@ class User < ApplicationRecord
     enabled = ActiveModel::Type::Boolean.new.cast(params.fetch('enabled', false)) == true
     self.settings ||= {}
     self.settings['idea_work_tokens'] = { 'enabled' => enabled }
+    save
+  end
+
+  def github_settings
+    stored = settings&.dig('github') || {}
+    DEFAULT_GITHUB_SETTINGS.merge(stored.slice('api_base_url')).merge(
+      'token_configured' => github_configured?
+    )
+  end
+
+  def github_token
+    secure_settings_value(settings&.dig('github') || {}, 'token').presence
+  end
+
+  def github_configured?
+    github_token.present?
+  end
+
+  def update_github_settings(params)
+    values = params.to_h.stringify_keys
+    self.settings ||= {}
+    self.settings['github'] ||= {}
+
+    if ActiveModel::Type::Boolean.new.cast(values['clear_token']) == true
+      self.settings['github'].delete('token')
+      self.settings['github'].delete('token_ciphertext')
+    elsif values['token'].present?
+      self.settings['github']['token_ciphertext'] = SecureSettingsPayload.encrypt(values['token'].to_s.strip)
+      self.settings['github'].delete('token')
+    end
+
+    api_base_url = values['api_base_url'].presence || settings['github']['api_base_url'].presence || DEFAULT_GITHUB_SETTINGS['api_base_url']
+    self.settings['github']['api_base_url'] = api_base_url
     save
   end
 

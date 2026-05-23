@@ -13,6 +13,14 @@
     </div>
   </div>
 
+  <div class="template-topology-fields">
+    <div>
+      <h3>Topology-triggered fields</h3>
+      <p>Default fields can be attached to topologies and will appear on ideas when those topologies are selected.</p>
+    </div>
+    <%= link_to "Manage in Topologies", settings_topologies_path(anchor: "topology-template-fields"), class: "btn btn-sm" %>
+  </div>
+
   <% if @templates.any? %>
     <div class="templates-list">
       <% @templates.each do |template| %>
@@ -54,6 +62,29 @@
     border: 1px solid var(--border-default);
     border-radius: var(--radius-md);
     overflow: hidden;
+  }
+
+  .template-topology-fields {
+    margin-top: 1.25rem;
+    padding: 1rem 1.25rem;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .template-topology-fields h3 {
+    margin: 0 0 0.25rem;
+    font-size: 1rem;
+  }
+
+  .template-topology-fields p {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 0.85rem;
   }
 
   .template-settings-row {

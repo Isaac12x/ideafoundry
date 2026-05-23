@@ -78,6 +78,52 @@ class SettingsControllerTest < ActionDispatch::IntegrationTest
     assert_nil @user.settings&.dig('topology_settings', 'hacker')
   end
 
+  test "PATCH settings/topologies stores topology default template fields" do
+    topology = @user.topologies.create!(name: "Software #{SecureRandom.hex(4)}", topology_type: :custom)
+
+    patch settings_topologies_path, params: {
+      topology_settings: { show_ideas: "true" },
+      topology_template_fields: {
+        topology.id.to_s => {
+          "0" => {
+            name: "github_url",
+            label: "GitHub URL",
+            type: "url",
+            required: "0",
+            placeholder: "https://github.com/acme/project"
+          }
+        }
+      }
+    }
+
+    assert_redirected_to settings_topologies_path
+    field = topology.reload.default_field_definitions.first
+    assert_equal "github_url", field["name"]
+    assert_equal "url", field["type"]
+    assert_equal "https://github.com/acme/project", field["placeholder"]
+  ensure
+    topology&.destroy
+  end
+
+  test "GET settings/github renders github credentials page" do
+    get settings_github_path
+
+    assert_response :success
+    assert_select "input[name=?]", "github_settings[token]"
+  end
+
+  test "PATCH settings/github stores github token" do
+    patch settings_github_path, params: {
+      github_settings: {
+        token: "ghp_secret_token"
+      }
+    }
+
+    assert_redirected_to settings_github_path
+    assert @user.reload.github_configured?
+    assert_equal "ghp_secret_token", @user.github_token
+  end
+
   test "GET settings/email renders page" do
     get settings_email_path
     assert_response :success

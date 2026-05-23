@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_05_23_090000) do
+ActiveRecord::Schema[8.0].define(version: 2026_05_23_110100) do
   create_table "action_mailbox_inbound_emails", force: :cascade do |t|
     t.integer "status", default: 0, null: false
     t.string "message_id", null: false
@@ -126,6 +126,25 @@ ActiveRecord::Schema[8.0].define(version: 2026_05_23_090000) do
     t.integer "user_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+  end
+
+  create_table "github_repositories", force: :cascade do |t|
+    t.integer "idea_id", null: false
+    t.string "repository_url", null: false
+    t.string "owner", null: false
+    t.string "name", null: false
+    t.string "default_branch"
+    t.boolean "private", default: false, null: false
+    t.boolean "has_releases", default: false, null: false
+    t.string "latest_release_tag"
+    t.string "latest_release_url"
+    t.datetime "last_checked_at"
+    t.text "last_error"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["has_releases"], name: "index_github_repositories_on_has_releases"
+    t.index ["idea_id"], name: "index_github_repositories_on_idea_id", unique: true
+    t.index ["owner", "name"], name: "index_github_repositories_on_owner_and_name"
   end
 
   create_table "idea_agent_tokens", force: :cascade do |t|
@@ -306,6 +325,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_05_23_090000) do
     t.integer "position"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.text "default_field_definitions", default: "[]", null: false
     t.index ["parent_id"], name: "index_topologies_on_parent_id"
     t.index ["user_id", "parent_id", "name"], name: "index_topologies_on_user_id_and_parent_id_and_name", unique: true
     t.index ["user_id", "parent_id"], name: "index_topologies_on_user_id_and_parent_id"
@@ -340,6 +360,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_05_23_090000) do
   add_foreign_key "build_items", "users"
   add_foreign_key "drawings", "ideas"
   add_foreign_key "export_jobs", "users"
+  add_foreign_key "github_repositories", "ideas"
   add_foreign_key "idea_agent_tokens", "ideas"
   add_foreign_key "idea_entries", "ideas"
   add_foreign_key "idea_lists", "ideas"
