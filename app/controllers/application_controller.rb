@@ -16,9 +16,19 @@ class ApplicationController < ActionController::Base
   prepend_before_action :set_user
   prepend_before_action :require_database_recovery_unlock
   before_action :require_typing_unlock
+  before_action :set_upgrade_info
   rescue_from RecoverySecret::Missing, with: :require_recovery_secret
 
   private
+
+  def set_upgrade_info
+    info = @user&.settings&.dig("upgrade")
+    return unless info.present?
+
+    current = Rails.application.config.app_version
+    latest  = info["latest_version"].to_s
+    @upgrade_info = (latest.present? && latest != current) ? info : nil
+  end
 
   def with_recovery_secret_from_session(&action)
     RecoverySecret.with(session[RECOVERY_SECRET_SESSION_KEY], &action)
