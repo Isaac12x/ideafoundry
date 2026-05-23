@@ -106,6 +106,7 @@ body.kb-page .app-main {
 .kb-folder-header {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 0.4rem;
   width: 100%;
   padding: 0.4rem 0.75rem;
@@ -143,10 +144,15 @@ body.kb-page .app-main {
   white-space: nowrap;
 }
 
-.kb-folder-missing {
+.kb-folder-status {
+  flex-basis: 100%;
   color: var(--state-orange, #e0834a);
-  font-weight: 700;
-  font-size: 0.85rem;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  margin-left: 2rem;
+  text-transform: none;
+  white-space: normal;
 }
 
 /* File list */
@@ -436,6 +442,11 @@ turbo-frame#kb-content {
   margin-bottom: 0.75rem;
 }
 
+.kb-folder-entry {
+  display: flex;
+  flex-direction: column;
+}
+
 .kb-folder-row {
   display: flex;
   gap: 0.5rem;
@@ -457,6 +468,12 @@ turbo-frame#kb-content {
 .kb-folder-input:focus {
   outline: none;
   border-color: var(--accent);
+}
+
+.kb-folder-unavailable {
+  color: var(--state-orange, #e0834a);
+  font-size: 0.78rem;
+  margin: 0.25rem 0 0;
 }
 
 .kb-folder-add-btn {

@@ -1,4 +1,7 @@
 class KbController < ApplicationController
+  NATIVE_KB_PATH = Rails.root.join("docs", "kb").to_s.freeze
+  NATIVE_KB_LABEL = "App KB".freeze
+
   before_action :set_user
 
   def index
@@ -30,7 +33,8 @@ class KbController < ApplicationController
   private
 
   def build_folder_tree
-    @user.kb_folders.each_with_index.map do |path, idx|
+    kb_sources.each_with_index.map do |source, idx|
+      path = source[:path]
       expanded = File.expand_path(path)
       files = []
       if Dir.exist?(expanded)
@@ -39,8 +43,33 @@ class KbController < ApplicationController
                    .map { |f| { rel: f.sub("#{expanded}/", ""), abs: f } }
       end
       tree = build_nested_tree(files)
-      { index: idx, path: path, label: File.basename(path), files: files, tree: tree, exists: Dir.exist?(expanded) }
+      {
+        index: idx,
+        path: path,
+        label: source[:label] || folder_label(path),
+        files: files,
+        tree: tree,
+        exists: Dir.exist?(expanded),
+        native: source[:native]
+      }
     end
+  end
+
+  def kb_sources
+    native_kb_sources + @user.kb_folders.map do |path|
+      { path: path, label: folder_label(path), native: false }
+    end
+  end
+
+  def native_kb_sources
+    return [] unless Dir.exist?(NATIVE_KB_PATH)
+    return [] if Dir.glob(File.join(NATIVE_KB_PATH, "**", "*.md")).empty?
+
+    [{ path: NATIVE_KB_PATH, label: NATIVE_KB_LABEL, native: true }]
+  end
+
+  def folder_label(path)
+    File.basename(path.to_s.chomp(File::SEPARATOR)).presence || path.to_s
   end
 
   def build_nested_tree(files)
@@ -60,10 +89,10 @@ class KbController < ApplicationController
   def render_file(folder_index, rel_path)
     return nil if rel_path.blank?
 
-    folders = @user.kb_folders
-    return nil if folder_index >= folders.size
+    sources = kb_sources
+    return nil if folder_index.negative? || folder_index >= sources.size
 
-    base = File.expand_path(folders[folder_index])
+    base = File.expand_path(sources[folder_index][:path])
     abs = File.expand_path(File.join(base, rel_path))
 
     # Security: ensure the resolved path is within the configured folder

@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Downloadable per-idea agent skill markdown for sharing idea document API instructions with agents.
 - Comprehensive idea history snapshots and restore support for calculations, drawings, enrichment metadata, todos, notes, tools, competitors, media, scores, and list/topology memberships.
 - Multiple Kanban boards with board-scoped columns, idea placement, and drag-and-drop moves.
+- Native `docs/kb/` markdown files are automatically included in the KB.
 
 ### Changed
 
@@ -32,6 +33,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Unsaved edits on existing ideas are now encrypted locally and can be restored after the app locks.
 - Idea index and topology cards once again expose enabled structured-entry quick add summaries.
 - Multi-file media uploads from the idea edit page now create one history entry per upload batch instead of one per file.
+- Missing saved KB folders remain listed as unavailable so the path can be updated.
 
 ## [1.4.0] - 2026-05-12
 
