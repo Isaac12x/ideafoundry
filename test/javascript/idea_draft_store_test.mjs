@@ -4,6 +4,7 @@ import {
   decryptDraft,
   encryptDraft,
   hasMeaningfulDraft,
+  shouldShowResumePrompt,
   stableDraftDigest,
 } from "../../app/javascript/lib/idea_draft_store.mjs";
 
@@ -43,4 +44,13 @@ test("meaningful draft detection ignores empty scaffolding and default idea fiel
   assert.equal(hasMeaningfulDraft({ "idea[title]": "  ", authenticity_token: "token" }), false);
   assert.equal(hasMeaningfulDraft({ "idea[state]": "idea_new", "idea[template_id]": "", "idea[title]": "" }), false);
   assert.equal(hasMeaningfulDraft({ "idea[title]": "Something worth saving" }), true);
+});
+
+test("resume prompt can appear over existing idea content when an edit draft is stored", () => {
+  const currentDraft = { "idea[title]": "Saved title already on the server" };
+  const storedRecord = { savedAt: "2026-05-23T10:00:00.000Z" };
+
+  assert.equal(shouldShowResumePrompt({ record: storedRecord, currentDraft }), false);
+  assert.equal(shouldShowResumePrompt({ record: storedRecord, currentDraft, promptWithExistingContent: true }), true);
+  assert.equal(shouldShowResumePrompt({ record: null, currentDraft, promptWithExistingContent: true }), false);
 });

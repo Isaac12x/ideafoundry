@@ -131,6 +131,17 @@ class IdeasControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
   end
 
+  test "persisted idea edit form enables encrypted edit persistence with idea scoped storage" do
+    get edit_idea_url(@idea)
+
+    assert_response :success
+    assert_select "form[data-controller~=?]", "idea-draft-persist", count: 1 do
+      assert_select "[data-idea-draft-persist-storage-key-value=?]", "idea-edit-draft:v1:user-#{@user.id}:idea-#{@idea.id}", count: 1
+      assert_select "[data-idea-draft-persist-prompt-with-existing-content-value=?]", "true", count: 1
+      assert_select "button[data-action*=?]", "idea-draft-persist#restore", count: 1
+    end
+  end
+
   test "edit form renders collapsible OCR sidebar for extracted attachment parts" do
     @idea.attachments.attach(
       io: StringIO.new("scanned data"),
@@ -150,7 +161,7 @@ class IdeasControllerTest < ActionDispatch::IntegrationTest
 
   test "should update idea" do
     patch idea_url(@idea), params: { idea: { title: "Updated Title" } }
-    assert_redirected_to idea_url(@idea)
+    assert_redirected_to idea_url(@idea, idea_edit_saved: 1)
     
     @idea.reload
     assert_equal "Updated Title", @idea.title

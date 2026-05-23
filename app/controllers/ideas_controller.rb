@@ -64,7 +64,7 @@ class IdeasController < ApplicationController
         
         format.html do
           redirect_to(
-            was_draft ? uncompleted_ideas_path(idea_draft_saved: 1) : idea_path(@idea),
+            was_draft ? uncompleted_ideas_path(idea_draft_saved: 1) : idea_path(@idea, idea_edit_saved: 1),
             notice: 'Idea was successfully updated.'
           )
         end
