@@ -47,10 +47,17 @@
           <%= build_item.links.size %>
         </span>
       <% end %>
+      <% if build_item.images.attached? %>
+        <span class="backlog-link-count" title="<%= build_item.images.size %> image<%= build_item.images.size == 1 ? '' : 's' %>">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+          <%= build_item.images.size %>
+        </span>
+      <% end %>
     </div>
     <% if build_item.description.present? %>
       <div class="backlog-desc"><%= format_backlog_description(build_item) %></div>
     <% end %>
+    <%= render "build_items/image_strip", build_item: build_item %>
     <% if build_item.links.any? %>
       <div class="backlog-links-row">
         <% build_item.links.first(3).each do |link| %>

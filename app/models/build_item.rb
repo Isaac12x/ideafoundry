@@ -2,8 +2,10 @@ class BuildItem < ApplicationRecord
   CHECKLIST_LINE_PATTERN = /\A(?<indent>\s*)(?<marker>[-*])\s+\[(?<state>[ xX])\]\s+(?<title>.*)\z/
 
   belongs_to :user
+  has_many_attached :images
 
   validates :title, presence: true
+  validate :images_are_images
   validate :completed_requires_complete_checklist
 
   # Store links as JSON array of {url, label} objects
@@ -90,5 +92,13 @@ class BuildItem < ApplicationRecord
     return unless completed? && checklist_blocking_completion?
 
     errors.add(:completed, "requires all checklist items to be complete")
+  end
+
+  def images_are_images
+    images.each do |image|
+      next if image.content_type.to_s.start_with?("image/")
+
+      errors.add(:images, "must be image files")
+    end
   end
 end

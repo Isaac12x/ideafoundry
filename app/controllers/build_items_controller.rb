@@ -4,8 +4,8 @@ class BuildItemsController < ApplicationController
   before_action :set_build_item, only: [:edit, :cancel_edit, :update, :destroy, :toggle, :toggle_checklist_item]
 
   def index
-    @build_items = @user.build_items.pending
-    @completed_items = @user.build_items.done
+    @build_items = @user.build_items.pending.with_attached_images
+    @completed_items = @user.build_items.done.with_attached_images
     @build_item = @user.build_items.build
   end
 
@@ -44,7 +44,13 @@ class BuildItemsController < ApplicationController
   end
 
   def update
-    if @build_item.update(build_item_params)
+    attributes = build_item_params
+    images = attributes.delete(:images)
+
+    @build_item.assign_attributes(attributes)
+    @build_item.images.attach(images) if images.present?
+
+    if @build_item.save
       @pending_index = pending_index(@build_item)
       respond_to do |format|
         format.turbo_stream
@@ -139,7 +145,7 @@ class BuildItemsController < ApplicationController
   end
 
   def build_item_params
-    permitted = params.require(:build_item).permit(:title, :description, :links_json)
+    permitted = params.require(:build_item).permit(:title, :description, :links_json, images: [])
     if permitted[:links_json].present?
       permitted[:links] = JSON.parse(permitted[:links_json]) rescue []
     end
