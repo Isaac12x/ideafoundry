@@ -16,6 +16,20 @@ class IdeasControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
   end
 
+  test "index renders right click list assignment hooks for idea cards" do
+    @user.lists.create!(name: "Launch Candidates", kind: :named)
+
+    get ideas_url
+
+    assert_response :success
+    assert_select ".ideas-container[data-controller~=?]", "idea-context-menu" do
+      assert_select "[data-idea-context-menu-add-url-template-value=?]", "/ideas/__IDEA_ID__/add_to_list"
+      assert_select "[data-idea-context-menu-named-lists-value*=?]", "Launch Candidates"
+      assert_select "[data-idea-context-menu-kanban-boards-value*=?]", "Main Board"
+    end
+    assert_select ".idea-card[data-action*=?][data-idea-id=?]", "contextmenu->idea-context-menu#open", @idea.id.to_s
+  end
+
   test "should get new (auto-drafts and redirects to edit)" do
     assert_difference("Idea.where(draft: true).count", 1) do
       get new_idea_url
@@ -165,6 +179,35 @@ class IdeasControllerTest < ActionDispatch::IntegrationTest
     
     @idea.reload
     assert_equal "Updated Title", @idea.title
+  end
+
+  test "adds idea to named list through context menu endpoint" do
+    named_list = @user.lists.create!(name: "Launch Candidates", kind: :named)
+
+    assert_difference -> { named_list.idea_lists.count }, 1 do
+      post "/ideas/#{@idea.id}/add_to_list", params: { list_id: named_list.id }, as: :json
+    end
+
+    assert_response :success
+    payload = JSON.parse(response.body)
+    assert_equal named_list.id, payload.dig("list", "id")
+    assert_equal "named", payload.dig("list", "kind")
+  end
+
+  test "adds idea to one kanban column on the selected board through context menu endpoint" do
+    board = @user.kanban_boards.create!(name: "Validation")
+    queued = @user.lists.create!(name: "Queued", kind: :kanban, kanban_board: board)
+    active = @user.lists.create!(name: "Active", kind: :kanban, kanban_board: board)
+    @idea.idea_lists.create!(list: queued)
+
+    assert_no_difference -> { @idea.idea_lists.joins(:list).where(lists: { kind: "kanban", kanban_board_id: board.id }).count } do
+      post "/ideas/#{@idea.id}/add_to_list", params: { list_id: active.id }, as: :json
+    end
+
+    assert_response :success
+    @idea.reload
+    assert_equal active, @idea.idea_lists.joins(:list).find_by(lists: { kanban_board_id: board.id }).list
+    refute @idea.lists.exists?(queued.id)
   end
 
   test "should destroy idea" do
