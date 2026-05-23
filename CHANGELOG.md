@@ -22,12 +22,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Inbound email now enters the submission intake queue by default, while explicit `[IDEA-id]` subjects still update existing ideas directly.
 - Kanban idea cards no longer show tools or competitor summaries.
 - Idea work tokens are now gated by a settings toggle and the idea page shows only one compact token control.
 - Backlog is now disabled by default and requires `BACKLOG_ENABLED=true` when building or running the app.
 
 ### Fixed
 
+- Resend inbound email setup now uses the mounted `/rails/action_mailbox/resend/inbound_emails` webhook route.
 - Backlog edit, delete, and completion streams now preserve item context and refresh counts/empty states.
 - KB now fills the viewport below the app header and IPFs/BPFs content is centered within its panel
 - Typing lock failed attempts now persist the real score in the database, hide the retry box during cooldown, and keep prompt words intact when wrapping.

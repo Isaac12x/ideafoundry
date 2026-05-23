@@ -44,6 +44,7 @@ Rails.application.routes.draw do
   delete "recovery-secret", to: "recovery_secrets#destroy"
 
   # Action Mailbox ingress routes
+  mount ActionMailbox::Resend::Engine, at: "/rails/action_mailbox/resend"
   mount ActionMailbox::Engine => "/rails/action_mailbox"
 
   # Ideas management

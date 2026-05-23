@@ -193,7 +193,7 @@ bin/rails db:encrypt_sqlite
 1. Create a [Resend](https://resend.com) account
 2. Add your API key to credentials (see above)
 3. Configure an inbound email address in Resend
-4. Set up Resend webhook to point to `https://your-domain/rails/action_mailbox/ingresses/resend/inbound_emails`
+4. Set up Resend webhook to point to `https://your-domain/rails/action_mailbox/resend/inbound_emails`
 5. Configure notification preferences in the app's Settings page
 
 ## Background Jobs
