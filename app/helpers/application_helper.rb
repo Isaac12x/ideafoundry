@@ -54,6 +54,34 @@ module ApplicationHelper
     safe_join(content)
   end
 
+  def idea_context_kanban_boards_json(kanban_boards)
+    Array(kanban_boards).map do |board|
+      {
+        id: board.id,
+        name: board.name,
+        lists: board.lists.map do |list|
+          {
+            id: list.id,
+            name: list.name
+          }
+        end
+      }
+    end.to_json
+  end
+
+  def idea_context_named_lists_json(named_lists)
+    Array(named_lists).map do |list|
+      {
+        id: list.id,
+        name: list.name
+      }
+    end.to_json
+  end
+
+  def idea_context_list_ids(idea)
+    idea.idea_lists.map(&:list_id).join(",")
+  end
+
   private
 
   def backlog_description_list_item(build_item, item)

@@ -1,4 +1,8 @@
-<div class="ideas-container">
+<div class="ideas-container"
+     data-controller="idea-context-menu"
+     data-idea-context-menu-add-url-template-value="/ideas/__IDEA_ID__/add_to_list"
+     data-idea-context-menu-kanban-boards-value="<%= idea_context_kanban_boards_json(@kanban_boards) %>"
+     data-idea-context-menu-named-lists-value="<%= idea_context_named_lists_json(@named_lists) %>">
   <div class="page-header">
     <h2>Ideas</h2>
     <div class="header-actions">

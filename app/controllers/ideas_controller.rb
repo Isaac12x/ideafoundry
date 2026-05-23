@@ -1,10 +1,13 @@
 class IdeasController < ApplicationController
   before_action :set_user
-  before_action :set_idea, only: [:show, :edit, :update, :destroy, :send_email, :approve_pending_email, :discard_pending_email, :enrich, :enrichment_status, :archive, :restore]
+  before_action :set_idea, only: [:show, :edit, :update, :destroy, :send_email, :approve_pending_email, :discard_pending_email, :enrich, :enrichment_status, :archive, :restore, :add_to_list]
   before_action :check_cool_off_period, only: [:edit, :update]
 
   def index
     @ideas = @user.ideas.non_draft.includes(:lists, :idea_lists, :topologies, :idea_entries)
+    @user.default_kanban_board if @user.kanban_boards.none?
+    @kanban_boards = @user.kanban_boards.ordered.includes(:lists)
+    @named_lists = @user.lists.named.ordered
 
     # Apply filters
     @ideas = apply_filters(@ideas)
@@ -215,6 +218,30 @@ class IdeasController < ApplicationController
     end
   end
 
+  def add_to_list
+    list = @user.lists.find(params[:list_id])
+    result = add_idea_to_list(@idea, list)
+
+    respond_to do |format|
+      format.html do
+        redirect_back fallback_location: ideas_path, notice: "Idea added to #{list.name}."
+      end
+      format.json do
+        render json: idea_list_membership_payload(@idea, list, result)
+      end
+    end
+  rescue ActiveRecord::RecordNotFound
+    respond_to do |format|
+      format.html { redirect_back fallback_location: ideas_path, alert: "List not found." }
+      format.json { render json: { error: "List not found." }, status: :not_found }
+    end
+  rescue ActiveRecord::RecordInvalid => e
+    respond_to do |format|
+      format.html { redirect_back fallback_location: ideas_path, alert: e.record.errors.full_messages.to_sentence }
+      format.json { render json: { error: e.record.errors.full_messages.to_sentence }, status: :unprocessable_content }
+    end
+  end
+
   # GET /ideas/search?q=...
   # Quick search endpoint returning JSON results.
   def search
@@ -308,6 +335,63 @@ class IdeasController < ApplicationController
     selected_lists.find_each do |list|
       @idea.idea_lists.find_or_create_by!(list: list)
     end
+  end
+
+  def add_idea_to_list(idea, list)
+    return { membership: idea.idea_lists.find_or_create_by!(list: list), removed_list: nil } if list.named?
+
+    add_idea_to_kanban_list(idea, list)
+  end
+
+  def add_idea_to_kanban_list(idea, new_list)
+    removed_list = nil
+    membership = nil
+
+    ActiveRecord::Base.transaction do
+      existing = idea.idea_lists.joins(:list)
+        .where(lists: { kind: "kanban", kanban_board_id: new_list.kanban_board_id })
+        .includes(:list)
+        .first
+
+      if existing&.list_id == new_list.id
+        membership = existing
+      elsif existing
+        removed_list = existing.list
+        removed_list.idea_lists.where("position > ?", existing.position).update_all("position = position - 1")
+        membership = existing
+        membership.update!(list: new_list, position: new_list.idea_lists.maximum(:position).to_i + 1)
+      else
+        membership = idea.idea_lists.create!(list: new_list)
+      end
+    end
+
+    { membership: membership, removed_list: removed_list }
+  end
+
+  def idea_list_membership_payload(idea, list, result)
+    membership = result[:membership]
+    board = list.kanban_board
+
+    {
+      success: true,
+      message: "Added to #{list.name}.",
+      idea: {
+        id: idea.id
+      },
+      list: {
+        id: list.id,
+        name: list.name,
+        kind: list.kind,
+        kanban_board_id: list.kanban_board_id,
+        board_name: board&.name
+      },
+      membership: {
+        id: membership.id,
+        position: membership.position
+      },
+      removed_list_id: result[:removed_list]&.id,
+      board_list_ids: board ? board.lists.pluck(:id) : []
+    }
   end
 
   def check_cool_off_period

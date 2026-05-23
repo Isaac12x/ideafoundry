@@ -1,7 +1,10 @@
 <div class="lists-container"
-     data-controller="tabs drag"
+     data-controller="tabs drag idea-context-menu"
      data-tabs-default-tab-value="<%= @default_view %>"
-     data-drag-url-value="<%= update_idea_position_lists_path %>">
+     data-drag-url-value="<%= update_idea_position_lists_path %>"
+     data-idea-context-menu-add-url-template-value="/ideas/__IDEA_ID__/add_to_list"
+     data-idea-context-menu-kanban-boards-value="<%= idea_context_kanban_boards_json(@kanban_boards) %>"
+     data-idea-context-menu-named-lists-value="<%= idea_context_named_lists_json(@named_lists) %>">
 
   <div class="page-header">
     <div class="header-left">

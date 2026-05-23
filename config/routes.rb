@@ -57,6 +57,7 @@ Rails.application.routes.draw do
       get :enrichment_status
       post :archive
       post :restore
+      post :add_to_list
     end
     collection do
       get :archived

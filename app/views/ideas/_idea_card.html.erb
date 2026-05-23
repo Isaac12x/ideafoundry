@@ -1,4 +1,9 @@
-<div class="idea-card">
+<div class="idea-card"
+     data-idea-context-menu-target="idea"
+     data-action="contextmenu->idea-context-menu#open"
+     data-idea-id="<%= idea.id %>"
+     data-idea-title="<%= idea.title %>"
+     data-idea-list-ids="<%= idea_context_list_ids(idea) %>">
   <%= link_to idea_path(idea), class: "idea-card-link", data: { turbo_frame: "_top" } do %>
     <div class="idea-card-header">
       <h3 class="idea-title"><%= idea.title %></h3>
