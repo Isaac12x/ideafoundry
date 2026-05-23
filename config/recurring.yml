@@ -49,3 +49,9 @@ production:
     class: CleanOrphanedDraftsJob
     queue: default
     schedule: at 4am every day
+
+  # App self-upgrade check
+  check_app_upgrade:
+    class: CheckAppUpgradeJob
+    queue: default
+    schedule: every hour at minute 30
