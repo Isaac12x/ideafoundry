@@ -18,6 +18,15 @@
     </div>
   <% end %>
 
+  <% entry_tabs = User::IDEA_ENTRY_TABS.select { |tab| @user&.idea_tab_enabled?(tab) } %>
+  <% if entry_tabs.any? %>
+    <div class="idea-card-entry-panel idea-card-entry-panel--list">
+      <% entry_tabs.each do |kind| %>
+        <%= render "idea_entries/card_summary", idea: idea, kind: kind %>
+      <% end %>
+    </div>
+  <% end %>
+
   <div class="idea-actions">
     <%= link_to edit_idea_path(idea), class: "btn btn-sm", data: { turbo_frame: "_top" } do %>
       Edit

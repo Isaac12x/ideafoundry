@@ -30,6 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - KB now fills the viewport below the app header and IPFs/BPFs content is centered within its panel
 - Typing lock failed attempts now persist the real score in the database, hide the retry box during cooldown, and keep prompt words intact when wrapping.
 - Unsaved edits on existing ideas are now encrypted locally and can be restored after the app locks.
+- Idea index and topology cards once again expose enabled structured-entry quick add summaries.
 
 ## [1.4.0] - 2026-05-12
 
