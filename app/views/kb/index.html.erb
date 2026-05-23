@@ -1,5 +1,6 @@
 <% content_for :body_class, "kb-page" %>
-<div class="kb-shell" data-controller="tabs" data-tabs-default-tab-value="kb">
+<% kb_default_tab = %w[kb facts maxims].include?(params[:tab].to_s) ? params[:tab] : "kb" %>
+<div class="kb-shell" data-controller="tabs" data-tabs-default-tab-value="<%= kb_default_tab %>">
   <div class="tabs-nav">
     <button data-tabs-target="tab" data-tab-name="kb" data-action="click->tabs#switch" class="tab-button active">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>
@@ -8,6 +9,10 @@
     <button data-tabs-target="tab" data-tab-name="facts" data-action="click->tabs#switch" class="tab-button">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
       IPFs/BPFs
+    </button>
+    <button data-tabs-target="tab" data-tab-name="maxims" data-action="click->tabs#switch" class="tab-button">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V4s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
+      Maxims
     </button>
   </div>
 
@@ -94,6 +99,30 @@
         <div class="kb-facts-empty" id="facts-empty-state">
           <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
           <p>No facts yet. Add the first one above.</p>
+        </div>
+      <% end %>
+    </div>
+  </div>
+
+  <div data-tabs-target="panel" data-tab-panel="maxims" class="kb-panel-full kb-maxims-panel-full hidden">
+    <div class="kb-maxims-container">
+      <div class="page-header">
+        <div>
+          <h2>Maxims</h2>
+          <p class="kb-maxims-subtitle">High-importance things to remember</p>
+        </div>
+      </div>
+
+      <%= render "maxims/form" %>
+
+      <div id="maxims-list" class="kb-maxims-list">
+        <%= render @maxims %>
+      </div>
+
+      <% if @maxims.empty? %>
+        <div class="kb-maxims-empty" id="maxims-empty-state">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V4s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
+          <p>No maxims yet. Add the first one above.</p>
         </div>
       <% end %>
     </div>

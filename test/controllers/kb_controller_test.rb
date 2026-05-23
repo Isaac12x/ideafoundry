@@ -47,4 +47,15 @@ class KbControllerTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "<h1>Native KB Doc</h1>"
     assert_includes response.body, "Native body"
   end
+
+  test "knowledge base includes a maxims panel for high importance reminders" do
+    get kb_path(tab: "maxims")
+
+    assert_response :success
+    assert_select ".kb-shell[data-tabs-default-tab-value=?]", "maxims"
+    assert_select ".tab-button[data-tab-name=?]", "maxims", text: /Maxims/
+    assert_select '[data-tab-panel="maxims"] .page-header h2', text: "Maxims"
+    assert_select ".kb-maxims-subtitle", text: "High-importance things to remember"
+    assert_select 'form[action="/maxims"]'
+  end
 end

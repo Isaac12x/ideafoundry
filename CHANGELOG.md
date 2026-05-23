@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Multiple Kanban boards with board-scoped columns, idea placement, and drag-and-drop moves.
 - Native `docs/kb/` markdown files are automatically included in the KB.
 - Topology-triggered template fields, GitHub credential settings, and GitHub repository release tracking for software ideas.
+- KB Maxims section for high-importance reminders alongside IPFs/BPFs.
 
 ### Changed
 

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_05_23_110100) do
+ActiveRecord::Schema[8.0].define(version: 2026_05_23_120000) do
   create_table "action_mailbox_inbound_emails", force: :cascade do |t|
     t.integer "status", default: 0, null: false
     t.string "message_id", null: false
@@ -251,6 +251,13 @@ ActiveRecord::Schema[8.0].define(version: 2026_05_23_110100) do
     t.index ["kanban_board_id"], name: "index_lists_on_kanban_board_id"
     t.index ["user_id", "kind", "position"], name: "index_lists_on_user_kind_position_named", unique: true, where: "kind = 'named'"
     t.index ["user_id"], name: "index_lists_on_user_id"
+  end
+
+  create_table "maxims", force: :cascade do |t|
+    t.text "body"
+    t.integer "user_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
   end
 
   create_table "notes", force: :cascade do |t|
