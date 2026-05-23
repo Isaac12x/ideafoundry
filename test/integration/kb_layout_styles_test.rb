@@ -1,12 +1,13 @@
 require "test_helper"
 
 class KbLayoutStylesTest < ActiveSupport::TestCase
-  test "kb and facts tabs share the full-height page layout" do
+  test "kb facts and maxims tabs share the full-height page layout" do
     view = Rails.root.join("app/views/kb/index.html.erb").read
     css = Rails.root.join("app/assets/stylesheets/kb.css").read
 
-    assert_includes view, '<div class="kb-shell" data-controller="tabs" data-tabs-default-tab-value="kb">'
+    assert_includes view, '<div class="kb-shell" data-controller="tabs" data-tabs-default-tab-value="<%= kb_default_tab %>">'
     assert_includes view, 'data-tab-panel="facts" class="kb-panel-full kb-facts-panel-full hidden"'
+    assert_includes view, 'data-tab-panel="maxims" class="kb-panel-full kb-maxims-panel-full hidden"'
 
     body_rule = css_rule(css, "body.kb-page")
     assert_includes body_rule, "min-height: 100dvh;"
@@ -35,11 +36,23 @@ class KbLayoutStylesTest < ActiveSupport::TestCase
     facts_container_rule = css_rule(css, ".kb-facts-container")
     assert_includes facts_container_rule, "max-width: 820px;"
     assert_includes facts_container_rule, "padding: 2.5rem 2rem;"
+
+    maxims_panel_rule = css_rule(css, ".kb-maxims-panel-full")
+    assert_includes maxims_panel_rule, "align-items: center;"
+    assert_includes maxims_panel_rule, "overflow-y: auto;"
+
+    maxims_container_rule = css_rule(css, ".kb-maxims-container")
+    assert_includes maxims_container_rule, "max-width: 820px;"
+    assert_includes maxims_container_rule, "padding: 2.5rem 2rem;"
   end
 
   private
 
   def css_rule(css, selector)
-    css[/#{Regexp.escape(selector)}\s*\{(?<body>[^}]*)\}/m, :body].to_s
+    css = css.gsub(%r{/\*.*?\*/}m, "")
+    css.scan(/(?<selectors>[^{}]+)\{(?<body>[^}]*)\}/m).each do |selectors, body|
+      return body if selectors.split(",").map(&:strip).include?(selector)
+    end
+    ""
   end
 end

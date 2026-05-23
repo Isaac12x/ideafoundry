@@ -184,6 +184,7 @@ Rails.application.routes.draw do
   get 'knowledge-base/file', to: 'kb#file', as: :kb_file
   get 'kb/file', to: redirect('/knowledge-base/file')
   resources :facts, only: [:create, :destroy]
+  resources :maxims, only: [:create, :destroy]
 
   # Settings - KB folders
   get 'settings/kb', to: 'settings#kb', as: :settings_kb

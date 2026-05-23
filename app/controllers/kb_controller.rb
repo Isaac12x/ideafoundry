@@ -20,6 +20,7 @@ class KbController < ApplicationController
 
     @content_html = render_file(@selected_folder_index, @selected_file)
     @facts = @user.facts.recent
+    @maxims = @user.maxims.recent
   end
 
   def file

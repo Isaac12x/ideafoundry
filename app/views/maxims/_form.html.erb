@@ -1,0 +1,19 @@
+<div class="kb-maxim-form-wrap" id="maxim_form">
+  <% error ||= nil %>
+  <%= form_with url: maxims_path, scope: :maxim, data: { controller: "fact-form", action: "turbo:submit-end->fact-form#afterSubmit" } do |f| %>
+    <% if error %>
+      <div class="alert alert-error" style="margin-bottom: 0.75rem; padding: 0.5rem 0.75rem; font-size: 0.85rem;"><%= error %></div>
+    <% end %>
+    <div class="kb-maxim-input-row">
+      <%= f.text_area :body,
+            placeholder: "e.g. Keep the highest-leverage constraint visible until the work changes it.",
+            class: "kb-maxim-textarea",
+            rows: 3,
+            required: true,
+            data: { action: "keydown->fact-form#submitOnEnter" } %>
+      <div class="kb-maxim-actions">
+        <%= f.submit "Add maxim", class: "btn btn-primary btn-sm" %>
+      </div>
+    </div>
+  <% end %>
+</div>

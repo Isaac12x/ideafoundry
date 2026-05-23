@@ -9,6 +9,7 @@ class User < ApplicationRecord
   has_many :submissions, dependent: :destroy
   has_many :api_keys, dependent: :destroy
   has_many :facts, dependent: :destroy
+  has_many :maxims, dependent: :destroy
 
   # Single-user application - one user per instance
   validates :email, presence: true, uniqueness: true
