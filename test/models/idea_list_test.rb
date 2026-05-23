@@ -35,7 +35,7 @@ class IdeaListTest < ActiveSupport::TestCase
     assert_equal 2, second_idea_list.position
   end
 
-  test "should not allow idea in multiple kanban lists by default" do
+  test "should not allow idea in multiple kanban lists on the same board by default" do
     @idea_list.save!
 
     other_list = List.create!(user: @user, name: "Other List")
@@ -55,7 +55,7 @@ class IdeaListTest < ActiveSupport::TestCase
     end
   end
 
-  test "should not allow idea in multiple kanban lists" do
+  test "should not allow idea in multiple kanban lists on the same board" do
     @idea_list.save!
     other_column = List.create!(user: @user, name: "Other Column", kind: :kanban)
 
@@ -63,6 +63,16 @@ class IdeaListTest < ActiveSupport::TestCase
 
     assert_not duplicate.valid?
     assert_includes duplicate.errors[:idea_id], "already has a kanban list"
+  end
+
+  test "should allow idea in one kanban list per board" do
+    @idea_list.save!
+    other_board = @user.kanban_boards.create!(name: "Validation")
+    other_column = List.create!(user: @user, name: "Validation Backlog", kind: :kanban, kanban_board: other_board)
+
+    assert_difference -> { @idea.idea_lists.count }, 1 do
+      IdeaList.create!(idea: @idea, list: other_column)
+    end
   end
 
   test "should not allow duplicate idea in same named list" do

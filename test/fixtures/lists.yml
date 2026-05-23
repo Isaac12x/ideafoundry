@@ -2,15 +2,18 @@
 
 one:
   user: one
+  kanban_board: main
   name: "Backlog"
   position: 1
 
 two:
   user: one
+  kanban_board: main
   name: "In Progress"
   position: 2
 
 three:
   user: two
+  kanban_board: other_user_main
   name: "Ideas"
   position: 1

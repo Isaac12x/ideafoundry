@@ -94,6 +94,8 @@ Rails.application.routes.draw do
   end
 
   # Lists and drag-and-drop functionality
+  resources :kanban_boards, only: [:create]
+
   resources :lists do
     member do
       post :send_email

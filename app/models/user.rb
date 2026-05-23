@@ -1,5 +1,6 @@
 class User < ApplicationRecord
   has_many :lists, dependent: :destroy
+  has_many :kanban_boards, dependent: :destroy
   has_many :ideas, dependent: :destroy
   has_many :templates, dependent: :destroy
   has_many :export_jobs, dependent: :destroy
@@ -208,6 +209,10 @@ class User < ApplicationRecord
     self.settings ||= {}
     self.settings['scoring_weights'] = weights.slice('trl', 'difficulty', 'opportunity', 'timing')
     save!
+  end
+
+  def default_kanban_board
+    kanban_boards.ordered.first || kanban_boards.create!(name: "Main Board")
   end
 
   def scoring_formula_display

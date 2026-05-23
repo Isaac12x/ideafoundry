@@ -32,7 +32,7 @@ class IdeasController < ApplicationController
 
     if @idea.save
       @idea.create_version("Initial version")
-      update_kanban_list_membership
+      update_kanban_list_memberships
       update_named_list_memberships
       @idea.enqueue_attachment_ocr!
 
@@ -58,7 +58,7 @@ class IdeasController < ApplicationController
 
         # Update list association if provided (only for non-AJAX requests)
         unless request.xhr?
-          update_kanban_list_membership if params.key?(:list_id)
+          update_kanban_list_memberships if params.key?(:kanban_list_ids) || params.key?(:list_id)
           update_named_list_memberships if params.key?(:named_list_ids)
         end
         
@@ -255,13 +255,42 @@ class IdeasController < ApplicationController
   end
 
   def load_form_options
-    @lists = @user.lists.kanban.ordered
+    @user.default_kanban_board if @user.kanban_boards.none?
+    @kanban_boards = @user.kanban_boards.ordered.includes(:lists)
+    @lists = @user.lists.kanban.includes(:kanban_board).order(:kanban_board_id, :position)
     @named_lists = @user.lists.named.ordered
     @topologies = @user.topologies.ordered
     @templates = @user.templates.order(:name)
   end
 
-  def update_kanban_list_membership
+  def update_kanban_list_memberships
+    if params.key?(:kanban_list_ids)
+      update_board_scoped_kanban_memberships
+    else
+      update_legacy_kanban_membership
+    end
+  end
+
+  def update_board_scoped_kanban_memberships
+    selected_by_board = params.fetch(:kanban_list_ids, {}).to_unsafe_h
+
+    selected_by_board.each do |board_id, list_id|
+      board = @user.kanban_boards.find(board_id)
+      current_memberships = @idea.idea_lists.joins(:list)
+        .where(lists: { kind: "kanban", kanban_board_id: board.id })
+
+      if list_id.blank?
+        current_memberships.destroy_all
+        next
+      end
+
+      list = board.lists.find(list_id)
+      current_memberships.where.not(list_id: list.id).destroy_all
+      @idea.idea_lists.find_or_create_by!(list: list)
+    end
+  end
+
+  def update_legacy_kanban_membership
     @idea.idea_lists.joins(:list).where(lists: { kind: "kanban" }).destroy_all
     return if params[:list_id].blank?
 

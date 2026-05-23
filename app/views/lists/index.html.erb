@@ -22,47 +22,79 @@
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
         All Ideas
       <% end %>
-      <%= link_to new_list_path, class: "btn btn-primary" do %>
+      <%= link_to new_list_path(kind: "named"), class: "btn" do %>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
-        New List
+        New Named List
       <% end %>
     </div>
   </div>
 
   <div data-tabs-target="panel" data-tab-panel="kanban">
-    <div class="lists-grid">
-      <% @kanban_lists.each do |list| %>
-        <div class="list-container" data-list-kind="kanban">
-          <div class="list-header">
-            <h3><%= list.name %></h3>
-            <div class="list-actions">
-              <% if @user.email_configured? %>
-                <%= button_to send_email_list_path(list), method: :post, class: "btn btn-sm btn-email", form: { style: "display: inline" }, data: { turbo_confirm: "Email this list to #{@user.email_recipients.join(', ')}?" } do %>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-                  Email
-                <% end %>
-              <% end %>
-              <%= link_to "Edit", edit_list_path(list), class: "btn btn-sm" %>
-              <%= link_to "Delete", list_path(list), method: :delete,
-                          data: { turbo_method: :delete, turbo_confirm: "Delete this list?" },
-                          class: "btn btn-sm btn-danger" %>
+    <div class="kanban-board-toolbar">
+      <%= form_with model: @kanban_board, url: kanban_boards_path, local: true, class: "inline-list-form kanban-board-form" do |form| %>
+        <%= form.text_field :name, class: "form-control", placeholder: "New board name" %>
+        <%= form.submit "Create Board", class: "btn btn-primary" %>
+      <% end %>
+    </div>
+
+    <div class="kanban-boards">
+      <% @kanban_boards.each do |board| %>
+        <section class="kanban-board" data-kanban-board-id="<%= board.id %>">
+          <div class="kanban-board-header">
+            <div>
+              <h3><%= board.name %></h3>
+              <p><%= pluralize(board.lists.size, "column") %></p>
             </div>
+            <%= link_to new_list_path(kind: "kanban", kanban_board_id: board.id), class: "btn btn-sm btn-primary" do %>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+              New Column
+            <% end %>
           </div>
 
-          <div class="drop-zone"
-               data-drag-target="container"
-               data-list-id="<%= list.id %>"
-               id="list_<%= list.id %>_ideas">
-            <%= render 'ideas', list: list, ideas: list.ideas.includes(:idea_lists, :idea_entries).order('idea_lists.position') %>
+          <div class="lists-grid">
+            <% board.lists.each do |list| %>
+              <div class="list-container" data-list-kind="kanban">
+                <div class="list-header">
+                  <h3><%= list.name %></h3>
+                  <div class="list-actions">
+                    <% if @user.email_configured? %>
+                      <%= button_to send_email_list_path(list), method: :post, class: "btn btn-sm btn-email", form: { style: "display: inline" }, data: { turbo_confirm: "Email this list to #{@user.email_recipients.join(', ')}?" } do %>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                        Email
+                      <% end %>
+                    <% end %>
+                    <%= link_to "Edit", edit_list_path(list), class: "btn btn-sm" %>
+                    <%= link_to "Delete", list_path(list), method: :delete,
+                                data: { turbo_method: :delete, turbo_confirm: "Delete this list?" },
+                                class: "btn btn-sm btn-danger" %>
+                  </div>
+                </div>
+
+                <div class="drop-zone"
+                     data-drag-target="container"
+                     data-list-id="<%= list.id %>"
+                     data-kanban-board-id="<%= board.id %>"
+                     id="list_<%= list.id %>_ideas">
+                  <%= render 'ideas', list: list, ideas: list.ideas.includes(:idea_lists, :idea_entries).order('idea_lists.position') %>
+                </div>
+              </div>
+            <% end %>
+
+            <% if board.lists.empty? %>
+              <div class="empty-state" style="grid-column: 1 / -1;">
+                <h3>No columns yet</h3>
+                <p>Create a column to start organizing ideas on this board.</p>
+                <%= link_to "Create Column", new_list_path(kind: "kanban", kanban_board_id: board.id), class: "btn btn-primary" %>
+              </div>
+            <% end %>
           </div>
-        </div>
+        </section>
       <% end %>
 
-      <% if @kanban_lists.empty? %>
-        <div class="empty-state" style="grid-column: 1 / -1;">
-          <h3>No kanban columns yet</h3>
-          <p>Create a column to start organizing ideas on the board.</p>
-          <%= link_to "Create Kanban Column", new_list_path(kind: "kanban"), class: "btn btn-primary" %>
+      <% if @kanban_boards.empty? %>
+        <div class="empty-state">
+          <h3>No kanban boards yet</h3>
+          <p>Create a board to start organizing ideas.</p>
         </div>
       <% end %>
     </div>

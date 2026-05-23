@@ -306,25 +306,39 @@
           </div>
         </div>
 
+        <% kanban_boards ||= [] %>
         <% named_lists ||= [] %>
 
         <div class="form-group">
-          <label>Kanban Column</label>
-          <div class="checkbox-group">
-            <div class="checkbox-item">
-              <%= radio_button_tag 'list_id', '', idea.lists.kanban.empty?, id: "list_none" %>
-              <%= label_tag "list_none", "None" %>
+          <label>Kanban Boards</label>
+          <% if kanban_boards.any? %>
+            <div class="kanban-board-pickers">
+              <% kanban_boards.each do |board| %>
+                <% board_lists = board.lists.to_a %>
+                <% current_board_list = idea.idea_lists.joins(:list).find_by(lists: { kind: "kanban", kanban_board_id: board.id })&.list %>
+                <div class="kanban-board-picker">
+                  <h4><%= board.name %></h4>
+                  <div class="checkbox-group">
+                    <div class="checkbox-item">
+                      <%= radio_button_tag "kanban_list_ids[#{board.id}]", "", current_board_list.nil?, id: "kanban_board_#{board.id}_none" %>
+                      <%= label_tag "kanban_board_#{board.id}_none", "None" %>
+                    </div>
+                    <% board_lists.each do |list| %>
+                      <div class="checkbox-item">
+                        <%= radio_button_tag "kanban_list_ids[#{board.id}]", list.id, current_board_list == list, id: "kanban_board_#{board.id}_list_#{list.id}" %>
+                        <%= label_tag "kanban_board_#{board.id}_list_#{list.id}", list.name %>
+                      </div>
+                    <% end %>
+                    <% if board_lists.empty? %>
+                      <p class="text-muted" style="font-size: 0.85rem;">No columns on this board yet. Create one from the Lists page.</p>
+                    <% end %>
+                  </div>
+                </div>
+              <% end %>
             </div>
-            <% lists.each do |list| %>
-              <div class="checkbox-item">
-                <%= radio_button_tag 'list_id', list.id, idea.lists.include?(list), id: "list_#{list.id}" %>
-                <%= label_tag "list_#{list.id}", list.name %>
-              </div>
-            <% end %>
-            <% if lists.empty? %>
-              <p class="text-muted" style="font-size: 0.85rem;">No kanban columns yet. Create one from the Lists page.</p>
-            <% end %>
-          </div>
+          <% else %>
+            <p class="text-muted" style="font-size: 0.85rem;">No kanban boards yet. Create one from the Lists page.</p>
+          <% end %>
         </div>
 
         <div class="form-group">

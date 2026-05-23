@@ -22,10 +22,10 @@ class IdeaList < ApplicationRecord
   private
 
   def single_kanban_list_per_idea
-    return unless idea_id.present? && list&.kanban?
+    return unless idea_id.present? && list&.kanban? && list.kanban_board_id.present?
 
     existing_kanban_memberships = IdeaList.joins(:list)
-      .where(idea_id: idea_id, lists: { kind: "kanban" })
+      .where(idea_id: idea_id, lists: { kind: "kanban", kanban_board_id: list.kanban_board_id })
     existing_kanban_memberships = existing_kanban_memberships.where.not(id: id) if id.present?
     return unless existing_kanban_memberships.where.not(list_id: list_id).exists?
 

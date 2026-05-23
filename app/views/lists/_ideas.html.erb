@@ -4,6 +4,7 @@
        data-drag-target="item"
        data-idea-id="<%= idea.id %>"
        data-list-id="<%= list.id %>"
+       data-kanban-board-id="<%= list.kanban_board_id %>"
        data-position="<%= idea_list&.position || 0 %>">
 
     <div class="idea-card-header">
@@ -18,7 +19,14 @@
       <% if idea.computed_score %>
         <span class="idea-score"><%= number_with_precision(idea.computed_score, precision: 1) %></span>
       <% end %>
-      <span class="idea-date"><%= time_ago_in_words(idea.created_at) %> ago</span>
+      <span class="idea-date">Created <%= time_ago_in_words(idea.created_at) %> ago</span>
+    </div>
+
+    <div class="idea-card-timestamps">
+      <span>Updated <%= time_ago_in_words(idea.updated_at) %> ago</span>
+      <% if idea_list %>
+        <span>Moved <%= time_ago_in_words(idea_list.updated_at) %> ago</span>
+      <% end %>
     </div>
 
     <% if idea.description.present? %>

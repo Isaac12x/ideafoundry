@@ -4,7 +4,10 @@ class ListsController < ApplicationController
 
   def index
     @default_view = normalized_list_view(params[:view].presence || @user.list_settings['default_view'])
-    @kanban_lists = @user.lists.kanban.ordered.includes(ideas: [:idea_lists, :idea_entries])
+    @user.default_kanban_board if @user.kanban_boards.none?
+    @kanban_boards = @user.kanban_boards.ordered.includes(lists: { ideas: [:idea_lists, :idea_entries] })
+    @kanban_board = @user.kanban_boards.build
+    @kanban_lists = @user.lists.kanban.includes(:kanban_board, ideas: [:idea_lists, :idea_entries]).order(:kanban_board_id, :position)
     @named_lists = @user.lists.named.ordered.includes(:ideas)
     @lists = @kanban_lists
   end
@@ -16,6 +19,8 @@ class ListsController < ApplicationController
 
   def new
     @list = @user.lists.build(kind: normalized_list_kind(params[:kind]))
+    @list.kanban_board_id = normalized_kanban_board_id(params[:kanban_board_id]) if @list.kanban?
+    load_kanban_boards
   end
 
   def create
@@ -24,17 +29,20 @@ class ListsController < ApplicationController
     if @list.save
       redirect_to lists_path(view: @list.kind), notice: 'List was successfully created.'
     else
+      load_kanban_boards
       render :new, status: :unprocessable_content
     end
   end
 
   def edit
+    load_kanban_boards
   end
 
   def update
     if @list.update(list_params)
       redirect_to @list, notice: 'List was successfully updated.'
     else
+      load_kanban_boards
       render :edit, status: :unprocessable_content
     end
   end
@@ -95,7 +103,10 @@ class ListsController < ApplicationController
     old_list = nil
 
     ActiveRecord::Base.transaction do
-      existing = idea.idea_lists.joins(:list).where(lists: { kind: "kanban" }).includes(:list).first
+      existing = idea.idea_lists.joins(:list)
+        .where(lists: { kind: "kanban", kanban_board_id: new_list.kanban_board_id })
+        .includes(:list)
+        .first
 
       if existing && existing.list == new_list
         # Reordering within same list
@@ -108,11 +119,14 @@ class ListsController < ApplicationController
         if existing
           old_list = existing.list
           old_list.idea_lists.where('position > ?', existing.position).update_all('position = position - 1')
-          existing.destroy!
         end
 
         new_list.idea_lists.where('position >= ?', new_position).update_all('position = position + 1')
-        idea.idea_lists.create!(list: new_list, position: new_position)
+        if existing
+          existing.update!(list: new_list, position: new_position)
+        else
+          idea.idea_lists.create!(list: new_list, position: new_position)
+        end
       end
     end
 
@@ -156,7 +170,7 @@ class ListsController < ApplicationController
 
   def list_params
     permitted = [:name]
-    permitted << :kind if action_name == "create"
+    permitted += [:kind, :kanban_board_id] if action_name == "create"
     params.require(:list).permit(*permitted)
   end
 
@@ -166,5 +180,13 @@ class ListsController < ApplicationController
 
   def normalized_list_view(view)
     User::ALLOWED_LIST_DEFAULT_VIEWS.include?(view.to_s) ? view.to_s : User::DEFAULT_LIST_SETTINGS['default_view']
+  end
+
+  def normalized_kanban_board_id(id)
+    @user.kanban_boards.exists?(id: id) ? id : @user.default_kanban_board.id
+  end
+
+  def load_kanban_boards
+    @kanban_boards = @user.kanban_boards.ordered
   end
 end
