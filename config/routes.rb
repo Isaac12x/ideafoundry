@@ -202,6 +202,10 @@ Rails.application.routes.draw do
     end
   end
 
+  # App self-upgrade
+  post "upgrade", to: "upgrades#create", as: :upgrades
+  get  "upgrade/status", to: "upgrades#status", as: :upgrade_status
+
   # Defines the root path route ("/")
   root "lists#index"
 

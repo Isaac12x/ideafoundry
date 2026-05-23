@@ -104,9 +104,14 @@
       </div>
     <% end %>
 
+    <%= render 'upgrades/toast' %>
+
     <main class="app-main">
       <% if notice %>
         <div class="alert alert-success"><%= notice %></div>
+      <% end %>
+      <% if notice == nil && params[:upgraded].present? %>
+        <div class="alert alert-success">App upgraded successfully.</div>
       <% end %>
       <% if alert %>
         <div class="alert alert-error"><%= alert %></div>
