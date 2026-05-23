@@ -28,6 +28,23 @@ class IdeaAttachmentsControllerTest < ActionDispatch::IntegrationTest
     assert_equal "queued", @first.reload.ocr_status
   end
 
+  test "creates one history version for a multi-file upload" do
+    initial_count = @idea.versions.count
+    initial_attachment_count = @idea.attachments.count
+
+    post idea_attachments_url(@idea), params: {
+      files: [
+        fixture_file_upload("welcome.eml", "message/rfc822"),
+        fixture_file_upload("update_with_attachment.eml", "message/rfc822")
+      ]
+    }
+
+    assert_response :success
+    assert_equal initial_count + 1, @idea.versions.count
+    assert_equal "Updated media", @idea.latest_version.commit_message
+    assert_equal initial_attachment_count + 2, @idea.attachments.count
+  end
+
   private
 
   def attach_file(filename, body)

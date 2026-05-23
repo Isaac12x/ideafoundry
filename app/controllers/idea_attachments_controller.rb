@@ -7,15 +7,20 @@ class IdeaAttachmentsController < ApplicationController
     return render json: { error: "No files provided" }, status: :bad_request if files.empty?
 
     existing_ids = @idea.attachments_attachments.pluck(:id)
-    @idea.attachments.attach(files)
-    @idea.reload
+    new_attachments = []
 
-    new_attachments = @idea.attachments_attachments.where.not(id: existing_ids).order(:position, :created_at)
-    new_attachments.each do |a|
-      next unless AttachmentOcrJob.ocr_supported?(a)
-      a.update!(ocr_status: "queued")
-      AttachmentOcrJob.perform_later(a.id)
+    Idea.without_history_tracking do
+      @idea.attachments.attach(files)
+      @idea.reload
+
+      new_attachments = @idea.attachments_attachments.where.not(id: existing_ids).order(:position, :created_at).to_a
+      new_attachments.each do |a|
+        next unless AttachmentOcrJob.ocr_supported?(a)
+        a.update!(ocr_status: "queued")
+        AttachmentOcrJob.perform_later(a.id)
+      end
     end
+    @idea.record_history!("Updated media", automatic: true) if new_attachments.any?
 
     html = new_attachments.map { |attachment|
       render_to_string(partial: "idea_attachments/item", locals: { attachment: attachment, idea: @idea })
