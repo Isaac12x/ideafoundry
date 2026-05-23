@@ -70,6 +70,14 @@ export function hasMeaningfulDraft(draft) {
   });
 }
 
+export function shouldShowResumePrompt({ record, currentDraft, promptWithExistingContent = false } = {}) {
+  const currentDraftIsMeaningful = hasMeaningfulDraft(currentDraft);
+
+  if (currentDraftIsMeaningful && (!record || !promptWithExistingContent)) return false;
+
+  return Boolean(record) || !currentDraftIsMeaningful;
+}
+
 async function deriveKey({ storageKey, unlockSeed }) {
   const subtle = subtleCrypto();
   if (!subtle) throw new Error("Web Crypto is required to protect idea drafts");

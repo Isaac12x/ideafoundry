@@ -5,6 +5,7 @@ import {
   encryptDraft,
   hasMeaningfulDraft,
   restoreDraftFields,
+  shouldShowResumePrompt,
 } from "../lib/idea_draft_store.mjs";
 
 export default class extends Controller {
@@ -14,6 +15,7 @@ export default class extends Controller {
     storageKey: String,
     unlockSeed: String,
     clearOnConnect: { type: Boolean, default: false },
+    promptWithExistingContent: { type: Boolean, default: false },
     promptDelay: { type: Number, default: 6000 },
   };
 
@@ -93,7 +95,11 @@ export default class extends Controller {
   async showResumePromptIfNeeded() {
     const record = this.readStoredRecord();
     const currentDraft = collectDraftFields(this.element);
-    if (hasMeaningfulDraft(currentDraft)) return;
+    if (!shouldShowResumePrompt({
+      record,
+      currentDraft,
+      promptWithExistingContent: this.promptWithExistingContentValue,
+    })) return;
 
     this.toggleStoredDraftMode(Boolean(record));
 
