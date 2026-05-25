@@ -5,7 +5,13 @@ module Api
       before_action :ensure_token_matches_idea
 
       def show
-        render json: serialize_document
+        if request.format == Mime[:md]
+          report_document_event("idea_document.read", format: "md")
+          render markdown: document_markdown
+        else
+          report_document_event("idea_document.read", format: "json")
+          render json: serialize_document
+        end
       end
 
       def update
@@ -19,6 +25,7 @@ module Api
 
         next_description = next_document_text(operation)
         if next_description == current_document_text
+          report_document_event("idea_document.updated", operation: operation.first, changed: false)
           render json: serialize_document.merge(changed: false)
           return
         end
@@ -29,6 +36,12 @@ module Api
           @idea.create_version(agent_commit_message(operation))
         end
 
+        report_document_event(
+          "idea_document.updated",
+          operation: operation.first,
+          changed: true,
+          version_id: @idea.latest_version&.id
+        )
         render json: serialize_document.merge(changed: true, version_id: @idea.latest_version&.id)
       rescue ActiveRecord::RecordInvalid => e
         render json: { errors: e.record.errors.full_messages }, status: :unprocessable_content
@@ -62,6 +75,32 @@ module Api
           updated_at: @idea.updated_at,
           latest_version_id: @idea.latest_version&.id
         }
+      end
+
+      def document_markdown
+        lines = [
+          "# #{@idea.title}",
+          "",
+          "Idea ID: #{@idea.id}",
+          "Latest version: #{@idea.latest_version&.id || "none"}",
+          "Updated: #{@idea.updated_at.iso8601}",
+          "",
+          "## Document",
+          "",
+          current_document_text.presence || "_No document content yet._"
+        ]
+
+        lines.join("\n")
+      end
+
+      def report_document_event(name, payload = {})
+        Rails.event.tagged(:idea_work_token) do
+          Rails.event.notify(name, {
+            idea_id: @idea.id,
+            user_id: @idea.user_id,
+            credential_id: @idea_agent_token.id
+          }.merge(payload))
+        end
       end
 
       def document_operation
