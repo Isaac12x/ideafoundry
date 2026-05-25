@@ -1,0 +1,143 @@
+<%= render 'settings/upgrade_bar' %>
+<div class="settings-container">
+  <div class="page-header">
+    <h2>Local Agent</h2>
+    <%= link_to settings_path, class: "btn btn-sm" do %>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      Back to Settings
+    <% end %>
+  </div>
+
+  <div class="local-agent-grid">
+    <section class="settings-section local-agent-panel">
+      <header class="tab-toggle-section__header">
+        <h3>Control Plane</h3>
+        <p>Rails owns settings, app-domain tools, audit events, and recommendation review.</p>
+      </header>
+
+      <div class="local-agent-status">
+        <div>
+          <span class="local-agent-status__label">Status</span>
+          <strong><%= @local_agent_status.to_s.humanize %></strong>
+        </div>
+        <div>
+          <span class="local-agent-status__label">Heartbeat</span>
+          <strong><%= @latest_agent_run&.last_heartbeat_at ? time_ago_in_words(@latest_agent_run.last_heartbeat_at) + " ago" : "None" %></strong>
+        </div>
+        <div>
+          <span class="local-agent-status__label">Last action</span>
+          <strong><%= @latest_agent_event&.summary.presence || "None" %></strong>
+        </div>
+      </div>
+
+      <%= form_with url: settings_local_agent_path, method: :patch, local: true, class: "idea-tabs-form" do %>
+        <section class="tab-toggle-section">
+          <%= hidden_field_tag "local_agent[enabled]", "0" %>
+          <label class="tab-toggle" for="local_agent_enabled">
+            <div class="tab-toggle__text">
+              <span class="tab-toggle__name">Enable local agent</span>
+              <span class="tab-toggle__description">Allows the local worker to run cycles and use constructive app tools.</span>
+            </div>
+            <span class="tab-toggle__switch">
+              <%= check_box_tag "local_agent[enabled]", "1", @local_agent_settings["enabled"], id: "local_agent_enabled", class: "tab-toggle__input" %>
+              <span class="tab-toggle__track" aria-hidden="true">
+                <span class="tab-toggle__thumb"></span>
+              </span>
+            </span>
+          </label>
+
+          <%= hidden_field_tag "local_agent[destructive_actions_enabled]", "0" %>
+          <label class="tab-toggle" for="local_agent_destructive_actions_enabled">
+            <div class="tab-toggle__text">
+              <span class="tab-toggle__name">Allow destructive actions</span>
+              <span class="tab-toggle__description">When off, terminal or destructive choices are saved as recommendations.</span>
+            </div>
+            <span class="tab-toggle__switch">
+              <%= check_box_tag "local_agent[destructive_actions_enabled]", "1", @local_agent_settings["destructive_actions_enabled"], id: "local_agent_destructive_actions_enabled", class: "tab-toggle__input" %>
+              <span class="tab-toggle__track" aria-hidden="true">
+                <span class="tab-toggle__thumb"></span>
+              </span>
+            </span>
+          </label>
+        </section>
+
+        <div class="local-agent-fields">
+          <div class="form-group">
+            <%= label_tag "local_agent_sleep_seconds", "Sleep seconds" %>
+            <%= number_field_tag "local_agent[sleep_seconds]", @local_agent_settings["sleep_seconds"], id: "local_agent_sleep_seconds", min: 1, class: "form-control" %>
+          </div>
+
+          <div class="form-group">
+            <%= label_tag "local_agent_max_actions_per_cycle", "Max actions per cycle" %>
+            <%= number_field_tag "local_agent[max_actions_per_cycle]", @local_agent_settings["max_actions_per_cycle"], id: "local_agent_max_actions_per_cycle", min: 1, class: "form-control" %>
+          </div>
+
+          <div class="form-group">
+            <%= label_tag "local_agent_model", "Model override" %>
+            <%= text_field_tag "local_agent[model]", @local_agent_settings["model"], id: "local_agent_model", class: "form-control", placeholder: "Default local model" %>
+          </div>
+
+          <div class="form-group">
+            <%= label_tag "local_agent_base_url", "Inference base URL" %>
+            <%= url_field_tag "local_agent[base_url]", @local_agent_settings["base_url"], id: "local_agent_base_url", class: "form-control", placeholder: "http://localhost:11434/v1" %>
+          </div>
+        </div>
+
+        <div class="tab-toggle-actions local-agent-actions">
+          <%= submit_tag "Save Settings", class: "btn btn-primary" %>
+        </div>
+      <% end %>
+
+      <%= button_to "Run Now", settings_local_agent_run_now_path, method: :post, class: "btn btn-secondary", form: { class: "local-agent-run-now" } %>
+    </section>
+
+    <section class="settings-section local-agent-panel">
+      <header class="tab-toggle-section__header">
+        <h3>Pending Recommendations</h3>
+        <p>Review actions that require approval before Rails applies them.</p>
+      </header>
+
+      <% if @pending_agent_recommendations.any? %>
+        <div class="local-agent-recommendations">
+          <% @pending_agent_recommendations.each do |recommendation| %>
+            <article class="local-agent-recommendation" data-agent-recommendation-id="<%= recommendation.id %>">
+              <div class="local-agent-recommendation__header">
+                <strong><%= recommendation.action.humanize %></strong>
+                <span><%= recommendation.risk_level.humanize %> risk</span>
+              </div>
+              <p><%= recommendation.reasoning.presence || "No reasoning recorded." %></p>
+              <pre><%= JSON.pretty_generate(recommendation.payload || {}) %></pre>
+              <div class="local-agent-recommendation__actions">
+                <%= button_to "Approve", settings_local_agent_recommendation_approve_path(recommendation), method: :post, class: "btn btn-primary btn-sm" %>
+                <%= button_to "Dismiss", settings_local_agent_recommendation_dismiss_path(recommendation), method: :post, class: "btn btn-sm" %>
+              </div>
+            </article>
+          <% end %>
+        </div>
+      <% else %>
+        <p class="empty-state-text">No pending recommendations.</p>
+      <% end %>
+    </section>
+  </div>
+
+  <section class="settings-section local-agent-panel local-agent-events">
+    <header class="tab-toggle-section__header">
+      <h3>Audit Trail</h3>
+      <p>Recent local-agent events, actions, heartbeats, recommendations, and errors.</p>
+    </header>
+
+    <% if @recent_agent_events.any? %>
+      <div class="local-agent-event-list">
+        <% @recent_agent_events.each do |event| %>
+          <div class="local-agent-event">
+            <span><%= event.event_type.humanize %></span>
+            <strong><%= event.summary.presence || "No summary" %></strong>
+            <time><%= time_ago_in_words(event.created_at) %> ago</time>
+          </div>
+        <% end %>
+      </div>
+    <% else %>
+      <p class="empty-state-text">No local agent events recorded.</p>
+    <% end %>
+  </section>
+</div>

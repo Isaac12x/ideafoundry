@@ -26,6 +26,10 @@ Rails.application.routes.draw do
     end
   end
 
+  namespace :local_agent, path: "local-agent" do
+    post "tools/:tool_name", to: "tools#create", as: :tool
+  end
+
   # Submission review queue
   resources :submissions, only: [:index, :show, :destroy] do
     member do
@@ -141,6 +145,15 @@ Rails.application.routes.draw do
   post 'settings/security/encrypt-database', to: 'settings#encrypt_database', as: :settings_security_encrypt_database
   get 'settings/idea-work-tokens', to: 'settings#idea_work_tokens', as: :settings_idea_work_tokens
   patch 'settings/idea-work-tokens', to: 'settings#update_idea_work_tokens'
+  get 'settings/local-agent', to: 'settings#local_agent', as: :settings_local_agent
+  patch 'settings/local-agent', to: 'settings#update_local_agent'
+  post 'settings/local-agent/run-now', to: 'settings#run_local_agent_now', as: :settings_local_agent_run_now
+  post 'settings/local-agent/recommendations/:id/approve',
+       to: 'settings#approve_local_agent_recommendation',
+       as: :settings_local_agent_recommendation_approve
+  post 'settings/local-agent/recommendations/:id/dismiss',
+       to: 'settings#dismiss_local_agent_recommendation',
+       as: :settings_local_agent_recommendation_dismiss
   get 'settings/github', to: 'settings#github', as: :settings_github
   patch 'settings/github', to: 'settings#update_github'
   get 'settings/topologies', to: 'settings#topologies'

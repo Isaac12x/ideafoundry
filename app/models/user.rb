@@ -10,6 +10,9 @@ class User < ApplicationRecord
   has_many :api_keys, dependent: :destroy
   has_many :facts, dependent: :destroy
   has_many :maxims, dependent: :destroy
+  has_many :agent_runs, dependent: :destroy
+  has_many :agent_events, dependent: :destroy
+  has_many :agent_recommendations, dependent: :destroy
 
   # Single-user application - one user per instance
   validates :email, presence: true, uniqueness: true
@@ -54,6 +57,13 @@ class User < ApplicationRecord
   DEFAULT_IDEA_WORK_TOKEN_SETTINGS = {
     'enabled' => false
   }.freeze
+  DEFAULT_LOCAL_AGENT_SETTINGS = {
+    'enabled' => false,
+    'destructive_actions_enabled' => false,
+    'sleep_seconds' => 30,
+    'max_actions_per_cycle' => 20
+  }.freeze
+  ALLOWED_LOCAL_AGENT_SETTING_KEYS = (DEFAULT_LOCAL_AGENT_SETTINGS.keys + %w[model base_url]).freeze
   DEFAULT_GITHUB_SETTINGS = {
     'api_base_url' => 'https://api.github.com'
   }.freeze
@@ -471,6 +481,64 @@ class User < ApplicationRecord
     save
   end
 
+  def local_agent_settings
+    stored = (settings&.dig('local_agent') || {}).slice(*ALLOWED_LOCAL_AGENT_SETTING_KEYS)
+    resolved = DEFAULT_LOCAL_AGENT_SETTINGS.merge(stored.slice(*DEFAULT_LOCAL_AGENT_SETTINGS.keys))
+
+    boolean = ActiveModel::Type::Boolean.new
+    resolved['enabled'] = boolean.cast(resolved['enabled']) == true
+    resolved['destructive_actions_enabled'] = boolean.cast(resolved['destructive_actions_enabled']) == true
+    resolved['sleep_seconds'] = positive_integer_or_default(resolved['sleep_seconds'], DEFAULT_LOCAL_AGENT_SETTINGS['sleep_seconds'])
+    resolved['max_actions_per_cycle'] = positive_integer_or_default(
+      resolved['max_actions_per_cycle'],
+      DEFAULT_LOCAL_AGENT_SETTINGS['max_actions_per_cycle']
+    )
+
+    %w[model base_url].each do |key|
+      value = stored[key].to_s.strip
+      resolved[key] = value if value.present?
+    end
+
+    resolved
+  end
+
+  def local_agent_enabled?
+    local_agent_settings['enabled'] == true
+  end
+
+  def local_agent_destructive_actions_enabled?
+    local_agent_settings['destructive_actions_enabled'] == true
+  end
+
+  def update_local_agent_settings(params)
+    values = params.to_h.stringify_keys
+    cleaned = {
+      'enabled' => ActiveModel::Type::Boolean.new.cast(values.fetch('enabled', false)) == true,
+      'destructive_actions_enabled' => ActiveModel::Type::Boolean.new.cast(values.fetch('destructive_actions_enabled', false)) == true,
+      'sleep_seconds' => positive_integer_or_default(values['sleep_seconds'], DEFAULT_LOCAL_AGENT_SETTINGS['sleep_seconds']),
+      'max_actions_per_cycle' => positive_integer_or_default(values['max_actions_per_cycle'], DEFAULT_LOCAL_AGENT_SETTINGS['max_actions_per_cycle'])
+    }
+
+    %w[model base_url].each do |key|
+      value = values[key].to_s.strip
+      cleaned[key] = value if value.present?
+    end
+
+    self.settings ||= {}
+    self.settings['local_agent'] = cleaned
+    save
+  end
+
+  def local_agent_status
+    return 'disabled' unless local_agent_enabled?
+
+    latest = agent_runs.recent.first
+    return 'stopped' unless latest
+    return 'stale' if latest.heartbeat_stale?
+
+    latest.status
+  end
+
   def github_settings
     stored = settings&.dig('github') || {}
     DEFAULT_GITHUB_SETTINGS.merge(stored.slice('api_base_url')).merge(
@@ -678,6 +746,11 @@ class User < ApplicationRecord
   end
 
   private
+
+  def positive_integer_or_default(value, default)
+    integer = value.to_i
+    integer.positive? ? integer : default
+  end
 
   def secure_settings_value(settings_hash, key)
     ciphertext = settings_hash["#{key}_ciphertext"]

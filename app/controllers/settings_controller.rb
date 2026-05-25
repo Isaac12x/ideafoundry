@@ -104,6 +104,47 @@ class SettingsController < ApplicationController
     end
   end
 
+  def local_agent
+    load_local_agent_settings
+  end
+
+  def update_local_agent
+    if @user.update_local_agent_settings(local_agent_params)
+      LocalAgentSupervisorJob.perform_later(@user.id)
+      redirect_to settings_local_agent_path, notice: "Local agent settings updated."
+    else
+      load_local_agent_settings
+      flash.now[:alert] = "Failed to update local agent settings."
+      render :local_agent, status: :unprocessable_content
+    end
+  end
+
+  def run_local_agent_now
+    unless @user.local_agent_enabled?
+      redirect_to settings_local_agent_path, alert: "Enable the local agent before running a cycle."
+      return
+    end
+
+    LocalAgentSupervisorJob.perform_later(@user.id, run_once: true)
+    redirect_to settings_local_agent_path, notice: "Local agent cycle requested."
+  end
+
+  def approve_local_agent_recommendation
+    recommendation = @user.agent_recommendations.pending.find(params[:id])
+
+    if recommendation.approve!
+      redirect_to settings_local_agent_path, notice: "Recommendation applied."
+    else
+      redirect_to settings_local_agent_path, alert: "Recommendation could not be applied."
+    end
+  end
+
+  def dismiss_local_agent_recommendation
+    recommendation = @user.agent_recommendations.pending.find(params[:id])
+    recommendation.dismiss!
+    redirect_to settings_local_agent_path, notice: "Recommendation dismissed."
+  end
+
   def update_security
     was_voice_id_configured = @user.voice_id_configured?
     typing_lock_updated = @user.update_typing_lock_settings(typing_lock_params)
@@ -411,6 +452,15 @@ class SettingsController < ApplicationController
     @authenticator_app_qr_svg = AuthenticatorApp.qr_svg(@user.authenticator_app_provisioning_uri) if @user.authenticator_app_configured?
   end
 
+  def load_local_agent_settings
+    @local_agent_settings = @user.local_agent_settings
+    @local_agent_status = @user.local_agent_status
+    @latest_agent_run = @user.agent_runs.recent.first
+    @latest_agent_event = @user.agent_events.recent.first
+    @pending_agent_recommendations = @user.agent_recommendations.pending.recent.limit(25)
+    @recent_agent_events = @user.agent_events.recent.limit(20)
+  end
+
   def load_database_encryption_status
     @database_recovery_passphrase_file_path = RecoverySecret.user_passphrase_file_path
     @database_encryption_results = sqlcipher_database_migrator.configured_statuses(env: Rails.env)
@@ -523,6 +573,10 @@ class SettingsController < ApplicationController
 
   def idea_work_token_params
     params.fetch(:idea_work_tokens, {}).permit(:enabled)
+  end
+
+  def local_agent_params
+    params.fetch(:local_agent, {}).permit(*User::ALLOWED_LOCAL_AGENT_SETTING_KEYS)
   end
 
   def github_params

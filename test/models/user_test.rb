@@ -165,6 +165,37 @@ class UserTest < ActiveSupport::TestCase
     refute user.idea_work_tokens_enabled?
   end
 
+  test "local agent settings default to disabled" do
+    user = User.new(email: "fresh-local-agent@example.com", name: "Fresh Local Agent", settings: nil)
+
+    assert_equal User::DEFAULT_LOCAL_AGENT_SETTINGS, user.local_agent_settings
+    refute user.local_agent_enabled?
+    refute user.local_agent_destructive_actions_enabled?
+  end
+
+  test "local agent settings persist only allowed keys" do
+    user = users(:one)
+
+    assert user.update_local_agent_settings(
+      "enabled" => "1",
+      "destructive_actions_enabled" => "0",
+      "sleep_seconds" => "12",
+      "max_actions_per_cycle" => "7",
+      "model" => "  qwen2.5-coder  ",
+      "base_url" => "  http://localhost:11434/v1  ",
+      "hacker" => "bad"
+    )
+
+    settings = user.reload.local_agent_settings
+    assert_equal true, settings["enabled"]
+    assert_equal false, settings["destructive_actions_enabled"]
+    assert_equal 12, settings["sleep_seconds"]
+    assert_equal 7, settings["max_actions_per_cycle"]
+    assert_equal "qwen2.5-coder", settings["model"]
+    assert_equal "http://localhost:11434/v1", settings["base_url"]
+    assert_nil user.settings.dig("local_agent", "hacker")
+  end
+
   test "idea work token settings can be toggled" do
     user = users(:one)
 

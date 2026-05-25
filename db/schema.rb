@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_05_23_120000) do
+ActiveRecord::Schema[8.0].define(version: 2026_05_25_090000) do
   create_table "action_mailbox_inbound_emails", force: :cascade do |t|
     t.integer "status", default: 0, null: false
     t.string "message_id", null: false
@@ -63,6 +63,57 @@ ActiveRecord::Schema[8.0].define(version: 2026_05_23_120000) do
     t.bigint "blob_id", null: false
     t.string "variation_digest", null: false
     t.index ["blob_id", "variation_digest"], name: "index_active_storage_variant_records_uniqueness", unique: true
+  end
+
+  create_table "agent_events", force: :cascade do |t|
+    t.integer "user_id", null: false
+    t.integer "agent_run_id"
+    t.string "event_type", null: false
+    t.string "target_type"
+    t.integer "target_id"
+    t.text "summary"
+    t.text "payload"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["agent_run_id"], name: "index_agent_events_on_agent_run_id"
+    t.index ["target_type", "target_id"], name: "index_agent_events_on_target_type_and_target_id"
+    t.index ["user_id", "event_type"], name: "index_agent_events_on_user_id_and_event_type"
+    t.index ["user_id"], name: "index_agent_events_on_user_id"
+  end
+
+  create_table "agent_recommendations", force: :cascade do |t|
+    t.integer "user_id", null: false
+    t.integer "agent_event_id"
+    t.string "target_type"
+    t.integer "target_id"
+    t.string "action", null: false
+    t.string "risk_level", default: "medium", null: false
+    t.text "reasoning"
+    t.text "payload"
+    t.integer "status", default: 0, null: false
+    t.datetime "reviewed_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["action"], name: "index_agent_recommendations_on_action"
+    t.index ["agent_event_id"], name: "index_agent_recommendations_on_agent_event_id"
+    t.index ["target_type", "target_id"], name: "index_agent_recommendations_on_target_type_and_target_id"
+    t.index ["user_id", "status"], name: "index_agent_recommendations_on_user_id_and_status"
+    t.index ["user_id"], name: "index_agent_recommendations_on_user_id"
+  end
+
+  create_table "agent_runs", force: :cascade do |t|
+    t.integer "user_id", null: false
+    t.integer "status", default: 0, null: false
+    t.integer "pid"
+    t.datetime "started_at"
+    t.datetime "stopped_at"
+    t.datetime "last_heartbeat_at"
+    t.text "metadata"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["user_id", "last_heartbeat_at"], name: "index_agent_runs_on_user_id_and_last_heartbeat_at"
+    t.index ["user_id", "status"], name: "index_agent_runs_on_user_id_and_status"
+    t.index ["user_id"], name: "index_agent_runs_on_user_id"
   end
 
   create_table "api_keys", force: :cascade do |t|
@@ -363,6 +414,11 @@ ActiveRecord::Schema[8.0].define(version: 2026_05_23_120000) do
 
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
+  add_foreign_key "agent_events", "agent_runs"
+  add_foreign_key "agent_events", "users"
+  add_foreign_key "agent_recommendations", "agent_events"
+  add_foreign_key "agent_recommendations", "users"
+  add_foreign_key "agent_runs", "users"
   add_foreign_key "api_keys", "users"
   add_foreign_key "build_items", "users"
   add_foreign_key "drawings", "ideas"
