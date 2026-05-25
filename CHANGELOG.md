@@ -23,6 +23,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Native `docs/kb/` markdown files are automatically included in the KB.
 - Topology-triggered template fields, GitHub credential settings, and GitHub repository release tracking for software ideas.
 - KB Maxims section for high-importance reminders alongside IPFs/BPFs.
+- Markdown responses for scoped idea document API reads via Rails 8.1's native markdown renderer.
+- Structured Rails event reporting for scoped idea document reads and updates.
 
 ### Changed
 
