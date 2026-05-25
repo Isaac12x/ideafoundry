@@ -22,6 +22,13 @@ class SettingsControllerTest < ActionDispatch::IntegrationTest
     assert_select "a[href=?]", settings_display_path
   end
 
+  test "GET settings renders Local Agent link" do
+    get settings_path
+
+    assert_response :success
+    assert_select "a[href=?]", settings_local_agent_path
+  end
+
   test "GET settings/display renders display quote field with current quote" do
     @user.update!(settings: (@user.settings || {}).merge("display_quote" => { "text" => "Focus on the next useful thing." }))
 
@@ -300,6 +307,61 @@ class SettingsControllerTest < ActionDispatch::IntegrationTest
 
     assert_redirected_to "/settings/idea-work-tokens"
     assert @user.reload.idea_work_tokens_enabled?
+  end
+
+  test "GET settings/local-agent renders local agent controls" do
+    get settings_local_agent_path
+
+    assert_response :success
+    assert_select "input[name=?]", "local_agent[enabled]"
+    assert_select "input[name=?]", "local_agent[destructive_actions_enabled]"
+    assert_select "input[name=?]", "local_agent[sleep_seconds]"
+    assert_select "input[name=?]", "local_agent[max_actions_per_cycle]"
+    assert_select "input[name=?]", "local_agent[model]"
+    assert_select "input[name=?]", "local_agent[base_url]"
+    assert_select "form[action=?]", settings_local_agent_run_now_path
+  end
+
+  test "PATCH settings/local-agent updates local agent settings" do
+    patch settings_local_agent_path, params: {
+      local_agent: {
+        enabled: "1",
+        destructive_actions_enabled: "0",
+        sleep_seconds: "9",
+        max_actions_per_cycle: "4",
+        model: "local-model",
+        base_url: "http://localhost:1234/v1",
+        hacker: "bad"
+      }
+    }
+
+    assert_redirected_to settings_local_agent_path
+    settings = @user.reload.local_agent_settings
+    assert_equal true, settings["enabled"]
+    assert_equal false, settings["destructive_actions_enabled"]
+    assert_equal 9, settings["sleep_seconds"]
+    assert_equal 4, settings["max_actions_per_cycle"]
+    assert_equal "local-model", settings["model"]
+    assert_equal "http://localhost:1234/v1", settings["base_url"]
+    assert_nil @user.settings.dig("local_agent", "hacker")
+  end
+
+  test "GET settings/local-agent renders pending recommendations" do
+    idea = @user.ideas.create!(title: "Recommendation target", state: :triage)
+    recommendation = @user.agent_recommendations.create!(
+      target: idea,
+      action: "transition_idea",
+      risk_level: "high",
+      reasoning: "Ready to ship",
+      payload: { "idea_id" => idea.id, "state" => "shipped" }
+    )
+
+    get settings_local_agent_path
+
+    assert_response :success
+    assert_select "[data-agent-recommendation-id=?]", recommendation.id.to_s
+    assert_select "form[action=?]", settings_local_agent_recommendation_approve_path(recommendation)
+    assert_select "form[action=?]", settings_local_agent_recommendation_dismiss_path(recommendation)
   end
 
   test "GET settings/lists renders page" do
