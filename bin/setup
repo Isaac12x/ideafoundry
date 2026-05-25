@@ -9,6 +9,8 @@ def system!(*args)
 end
 
 FileUtils.chdir APP_ROOT do
+  skip_server = ARGV.include?("--skip-server")
+
   # This script is a way to set up or update your development environment automatically.
   # This script is idempotent, so that you can run it at any time and get an expectable outcome.
   # Add necessary setup steps to this file.
@@ -28,6 +30,8 @@ FileUtils.chdir APP_ROOT do
   puts "\n== Removing old logs and tempfiles =="
   system! "bin/rails log:clear tmp:clear"
 
-  puts "\n== Restarting application server =="
-  system! "bin/rails restart"
+  unless skip_server
+    puts "\n== Restarting application server =="
+    system! "bin/rails restart"
+  end
 end
