@@ -34,6 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Kanban idea cards no longer show tools or competitor summaries.
 - Idea work tokens are now gated by a settings toggle and the idea page shows only one compact token control.
 - Backlog is now disabled by default and requires `BACKLOG_ENABLED=true` when building or running the app.
+- AI agent settings now live at `/settings/ai-agents` and no longer expose model or inference URL overrides.
 
 ### Fixed
 

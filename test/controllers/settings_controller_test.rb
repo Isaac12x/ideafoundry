@@ -26,6 +26,7 @@ class SettingsControllerTest < ActionDispatch::IntegrationTest
     get settings_path
 
     assert_response :success
+    assert_equal "/settings/ai-agents", settings_local_agent_path
     assert_select "a[href=?]", settings_local_agent_path
   end
 
@@ -309,7 +310,7 @@ class SettingsControllerTest < ActionDispatch::IntegrationTest
     assert @user.reload.idea_work_tokens_enabled?
   end
 
-  test "GET settings/local-agent renders local agent controls" do
+  test "GET settings/ai-agents renders local agent controls" do
     get settings_local_agent_path
 
     assert_response :success
@@ -317,12 +318,18 @@ class SettingsControllerTest < ActionDispatch::IntegrationTest
     assert_select "input[name=?]", "local_agent[destructive_actions_enabled]"
     assert_select "input[name=?]", "local_agent[sleep_seconds]"
     assert_select "input[name=?]", "local_agent[max_actions_per_cycle]"
-    assert_select "input[name=?]", "local_agent[model]"
-    assert_select "input[name=?]", "local_agent[base_url]"
+    assert_select "input[name=?]", "local_agent[model]", count: 0
+    assert_select "input[name=?]", "local_agent[base_url]", count: 0
     assert_select "form[action=?]", settings_local_agent_run_now_path
   end
 
-  test "PATCH settings/local-agent updates local agent settings" do
+  test "GET settings/local-agent redirects to ai agents settings" do
+    get "/settings/local-agent"
+
+    assert_redirected_to settings_local_agent_path
+  end
+
+  test "PATCH settings/ai-agents updates local agent settings" do
     patch settings_local_agent_path, params: {
       local_agent: {
         enabled: "1",
@@ -341,12 +348,14 @@ class SettingsControllerTest < ActionDispatch::IntegrationTest
     assert_equal false, settings["destructive_actions_enabled"]
     assert_equal 9, settings["sleep_seconds"]
     assert_equal 4, settings["max_actions_per_cycle"]
-    assert_equal "local-model", settings["model"]
-    assert_equal "http://localhost:1234/v1", settings["base_url"]
+    refute_includes settings, "model"
+    refute_includes settings, "base_url"
+    assert_nil @user.settings.dig("local_agent", "model")
+    assert_nil @user.settings.dig("local_agent", "base_url")
     assert_nil @user.settings.dig("local_agent", "hacker")
   end
 
-  test "GET settings/local-agent renders pending recommendations" do
+  test "GET settings/ai-agents renders pending recommendations" do
     idea = @user.ideas.create!(title: "Recommendation target", state: :triage)
     recommendation = @user.agent_recommendations.create!(
       target: idea,
