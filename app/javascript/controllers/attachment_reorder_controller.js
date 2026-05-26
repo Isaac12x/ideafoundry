@@ -6,6 +6,7 @@ export default class extends Controller {
 
   connect() {
     this.dragged = null
+    this.sync()
   }
 
   dragStart(event) {
@@ -50,9 +51,19 @@ export default class extends Controller {
   appendItems(event) {
     const { html } = event.detail
     if (!html) return
-    const list = this.hasListTarget ? this.listTarget : this.element.querySelector(".current-attachments__list")
-    if (!list) return
-    list.insertAdjacentHTML("beforeend", html)
+    const template = document.createElement("template")
+    template.innerHTML = html.trim()
+    Array.from(template.content.children).forEach(item => {
+      const list = this._listForKind(this._kindForItem(item))
+      if (list) list.appendChild(item)
+    })
+    this.sync()
+  }
+
+  sync() {
+    this._moveItemsToMatchingSections()
+    this._syncSectionCounts()
+    this._syncEmptyStates()
   }
 
   async destroyItem(event) {
@@ -89,5 +100,37 @@ export default class extends Controller {
 
   _setStatus(message) {
     if (this.hasStatusTarget) this.statusTarget.textContent = message
+  }
+
+  _moveItemsToMatchingSections() {
+    this.itemTargets.forEach(item => {
+      const kind = this._kindForItem(item)
+      const list = this._listForKind(kind)
+      if (list && item.parentElement !== list) list.appendChild(item)
+    })
+  }
+
+  _syncSectionCounts() {
+    this.element.querySelectorAll("[data-attachment-list]").forEach(list => {
+      const count = list.querySelectorAll("[data-attachment-id]").length
+      const headerCount = list.closest(".current-attachments__section")?.querySelector(".current-attachments__section-header span")
+      if (headerCount) headerCount.textContent = count
+    })
+  }
+
+  _syncEmptyStates() {
+    this.element.querySelectorAll("[data-attachment-empty]").forEach(empty => {
+      const list = this._listForKind(empty.dataset.attachmentEmpty)
+      empty.hidden = !!list?.querySelector("[data-attachment-id]")
+    })
+  }
+
+  _listForKind(kind) {
+    return this.element.querySelector(`[data-attachment-list="${kind}"]`)
+  }
+
+  _kindForItem(item) {
+    if (item.dataset.attachmentKind) return item.dataset.attachmentKind
+    return item.dataset.contentType?.startsWith("image/") ? "image" : "document"
   }
 }

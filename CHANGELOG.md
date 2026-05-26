@@ -49,6 +49,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Idea index and topology cards once again expose enabled structured-entry quick add summaries.
 - Multi-file media uploads from the idea edit page now create one history entry per upload batch instead of one per file.
 - Missing saved KB folders remain listed as unavailable so the path can be updated.
+- Idea media controls now keep Ask Agent out of navigation, show extracted attachment parts in the form sidebar, and separate image thumbnails from document attachments.
 
 ## [1.4.0] - 2026-05-12
 

@@ -345,47 +345,74 @@
           <div class="media-section">
             <h3>Attachments</h3>
             <% attachment_drawings = @idea.attachment_drawings %>
-            <% if @idea.attachments.attached? || attachment_drawings.any? %>
-              <div class="attachments-grid">
-                <% @idea.ordered_attachments.each do |attachment| %>
-                  <div class="attachment-item">
-                    <% if attachment.image? %>
-                      <%= link_to rails_blob_path(attachment, disposition: "inline"), target: "_blank", rel: "noopener" do %>
-                        <%= image_tag attachment, class: "attachment-thumbnail" %>
-                      <% end %>
-                    <% else %>
-                      <%= link_to rails_blob_path(attachment, disposition: "inline"), target: "_blank", rel: "noopener" do %>
-                        <div class="attachment-file">
-                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                          </svg>
-                        </div>
-                      <% end %>
-                    <% end %>
-                    <div class="attachment-info">
-                      <p class="attachment-name"><%= attachment.filename %></p>
-                      <p class="attachment-size"><%= number_to_human_size(attachment.byte_size) %></p>
-                      <%= link_to "Open", rails_blob_path(attachment, disposition: "inline"), target: "_blank", rel: "noopener", class: "btn btn-sm" %>
-                    </div>
+            <% image_attachments = @idea.image_attachments %>
+            <% document_attachments = @idea.document_attachments %>
+            <% if image_attachments.any? || document_attachments.any? || attachment_drawings.any? %>
+              <% if image_attachments.any? || attachment_drawings.any? %>
+                <div class="media-section__group media-section__group--images">
+                  <div class="media-section__group-header">
+                    <h4>Images</h4>
+                    <span><%= image_attachments.size + attachment_drawings.size %></span>
                   </div>
-                <% end %>
-                <% attachment_drawings.each do |drawing| %>
-                  <div class="attachment-item attachment-item--drawing">
-                    <% if drawing.rendered_png.attached? %>
-                      <%= image_tag drawing.rendered_png, class: "attachment-thumbnail" %>
-                    <% else %>
-                      <div class="attachment-file">
-                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                  <div class="attachments-grid">
+                    <% image_attachments.each do |attachment| %>
+                      <div class="attachment-item">
+                        <%= link_to rails_blob_path(attachment, disposition: "inline"), target: "_blank", rel: "noopener" do %>
+                          <%= image_tag rails_blob_path(attachment, disposition: "inline"), class: "attachment-thumbnail", alt: attachment.filename.to_s %>
+                        <% end %>
+                        <div class="attachment-info">
+                          <p class="attachment-name"><%= attachment.filename %></p>
+                          <p class="attachment-size"><%= number_to_human_size(attachment.byte_size) %></p>
+                          <%= link_to "Open", rails_blob_path(attachment, disposition: "inline"), target: "_blank", rel: "noopener", class: "btn btn-sm" %>
+                        </div>
                       </div>
                     <% end %>
-                    <div class="attachment-info">
-                      <p class="attachment-name"><%= drawing.title %></p>
-                      <p class="attachment-size">drawing</p>
-                      <%= link_to "Open", idea_drawing_path(@idea, drawing), class: "btn btn-sm" %>
-                    </div>
+                    <% attachment_drawings.each do |drawing| %>
+                      <div class="attachment-item attachment-item--drawing">
+                        <% if drawing.rendered_png.attached? %>
+                          <%= image_tag drawing.rendered_png, class: "attachment-thumbnail", alt: drawing.title %>
+                        <% else %>
+                          <div class="attachment-file">
+                            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                          </div>
+                        <% end %>
+                        <div class="attachment-info">
+                          <p class="attachment-name"><%= drawing.title %></p>
+                          <p class="attachment-size">drawing</p>
+                          <%= link_to "Open", idea_drawing_path(@idea, drawing), class: "btn btn-sm" %>
+                        </div>
+                      </div>
+                    <% end %>
                   </div>
-                <% end %>
-              </div>
+                </div>
+              <% end %>
+
+              <% if document_attachments.any? %>
+                <div class="media-section__group media-section__group--documents">
+                  <div class="media-section__group-header">
+                    <h4>Documents</h4>
+                    <span><%= document_attachments.size %></span>
+                  </div>
+                  <div class="attachments-grid">
+                    <% document_attachments.each do |attachment| %>
+                      <div class="attachment-item">
+                        <%= link_to rails_blob_path(attachment, disposition: "inline"), target: "_blank", rel: "noopener" do %>
+                          <div class="attachment-file">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                          </div>
+                        <% end %>
+                        <div class="attachment-info">
+                          <p class="attachment-name"><%= attachment.filename %></p>
+                          <p class="attachment-size"><%= number_to_human_size(attachment.byte_size) %></p>
+                          <%= link_to "Open", rails_blob_path(attachment, disposition: "inline"), target: "_blank", rel: "noopener", class: "btn btn-sm" %>
+                        </div>
+                      </div>
+                    <% end %>
+                  </div>
+                </div>
+              <% end %>
             <% else %>
               <div class="empty-state-small">
                 <p>No attachments yet.</p>
