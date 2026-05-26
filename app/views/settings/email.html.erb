@@ -74,7 +74,7 @@
               Choose which events trigger email notifications. Emails are sent to the recipients configured above.
             </p>
 
-            <%= form_with url: settings_notifications_path, method: :patch, local: true do |f| %>
+            <%= form_with url: settings_notifications_path, method: :patch, local: true, data: { controller: "settings-autosave" } do |f| %>
               <div class="email-trigger-list">
                 <% User::ALLOWED_NOTIFICATION_TRIGGERS.each do |trigger| %>
                   <div class="email-trigger-item">
@@ -83,7 +83,8 @@
                            value="<%= trigger %>"
                            id="trigger_<%= trigger %>"
                            <%= 'checked' if @notification_triggers.include?(trigger) %>
-                           class="email-checkbox">
+                           class="email-checkbox"
+                           data-action="change->settings-autosave#toggleChanged">
                     <label for="trigger_<%= trigger %>" class="email-trigger-label">
                       <%= trigger.humanize %>
                     </label>
@@ -121,7 +122,8 @@
                                name="notification_content[<%= evt %>][include_scores]"
                                value="true"
                                <%= 'checked' if (@notification_content.dig(evt, 'include_scores') != false) %>
-                               class="email-checkbox">
+                               class="email-checkbox"
+                               data-action="change->settings-autosave#toggleChanged">
                         Scores
                       </label>
                       <label class="email-event-toggle">
@@ -130,7 +132,8 @@
                                name="notification_content[<%= evt %>][include_description]"
                                value="true"
                                <%= 'checked' if (@notification_content.dig(evt, 'include_description') != false) %>
-                               class="email-checkbox">
+                               class="email-checkbox"
+                               data-action="change->settings-autosave#toggleChanged">
                         Description
                       </label>
                       <% if evt == "webhook_triggered" %>
@@ -140,7 +143,8 @@
                                  name="notification_content[<%= evt %>][include_external_content]"
                                  value="true"
                                  <%= 'checked' if (@notification_content.dig(evt, 'include_external_content') != false) %>
-                                 class="email-checkbox">
+                                 class="email-checkbox"
+                                 data-action="change->settings-autosave#toggleChanged">
                           External content
                         </label>
                       <% end %>

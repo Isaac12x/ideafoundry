@@ -30,7 +30,7 @@
         </div>
       </div>
 
-      <%= form_with url: settings_local_agent_path, method: :patch, local: true, class: "idea-tabs-form" do %>
+      <%= form_with url: settings_local_agent_path, method: :patch, local: true, class: "idea-tabs-form", data: { controller: "settings-autosave" } do %>
         <section class="tab-toggle-section">
           <%= hidden_field_tag "local_agent[enabled]", "0" %>
           <label class="tab-toggle" for="local_agent_enabled">
@@ -39,7 +39,7 @@
               <span class="tab-toggle__description">Allows the local worker to run cycles and use constructive app tools.</span>
             </div>
             <span class="tab-toggle__switch">
-              <%= check_box_tag "local_agent[enabled]", "1", @local_agent_settings["enabled"], id: "local_agent_enabled", class: "tab-toggle__input" %>
+              <%= check_box_tag "local_agent[enabled]", "1", @local_agent_settings["enabled"], id: "local_agent_enabled", class: "tab-toggle__input", data: { action: "change->settings-autosave#toggleChanged" } %>
               <span class="tab-toggle__track" aria-hidden="true">
                 <span class="tab-toggle__thumb"></span>
               </span>
@@ -53,7 +53,7 @@
               <span class="tab-toggle__description">When off, terminal or destructive choices are saved as recommendations.</span>
             </div>
             <span class="tab-toggle__switch">
-              <%= check_box_tag "local_agent[destructive_actions_enabled]", "1", @local_agent_settings["destructive_actions_enabled"], id: "local_agent_destructive_actions_enabled", class: "tab-toggle__input" %>
+              <%= check_box_tag "local_agent[destructive_actions_enabled]", "1", @local_agent_settings["destructive_actions_enabled"], id: "local_agent_destructive_actions_enabled", class: "tab-toggle__input", data: { action: "change->settings-autosave#toggleChanged" } %>
               <span class="tab-toggle__track" aria-hidden="true">
                 <span class="tab-toggle__thumb"></span>
               </span>

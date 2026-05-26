@@ -791,6 +791,21 @@
   border: 1px solid rgba(248, 113, 113, 0.2);
 }
 
+.backup-toggle-item {
+  padding: 0;
+}
+
+.backup-settings-toggle {
+  min-height: 100%;
+  border-bottom: 0;
+  border-radius: var(--radius-sm);
+  background: var(--bg-input);
+}
+
+.backup-settings-toggle:hover {
+  background: var(--bg-overlay);
+}
+
 /* ============================================
    API Keys — inline form alignment
    ============================================ */

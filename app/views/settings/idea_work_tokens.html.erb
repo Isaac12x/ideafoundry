@@ -8,7 +8,7 @@
     <% end %>
   </div>
 
-  <%= form_with url: settings_idea_work_tokens_path, method: :patch, local: true, class: "idea-tabs-form" do %>
+  <%= form_with url: settings_idea_work_tokens_path, method: :patch, local: true, class: "idea-tabs-form", data: { controller: "settings-autosave" } do %>
     <section class="tab-toggle-section">
       <header class="tab-toggle-section__header">
         <h3>Access</h3>
@@ -22,7 +22,7 @@
           <span class="tab-toggle__description">When off, existing idea work tokens cannot read or update idea documents.</span>
         </div>
         <span class="tab-toggle__switch">
-          <%= check_box_tag "idea_work_tokens[enabled]", "1", @user.idea_work_tokens_enabled?, id: "idea_work_tokens_enabled", class: "tab-toggle__input" %>
+          <%= check_box_tag "idea_work_tokens[enabled]", "1", @user.idea_work_tokens_enabled?, id: "idea_work_tokens_enabled", class: "tab-toggle__input", data: { action: "change->settings-autosave#toggleChanged" } %>
           <span class="tab-toggle__track" aria-hidden="true">
             <span class="tab-toggle__thumb"></span>
           </span>
@@ -30,8 +30,5 @@
       </label>
     </section>
 
-    <div class="tab-toggle-actions">
-      <%= submit_tag "Save Settings", class: "btn btn-primary" %>
-    </div>
   <% end %>
 </div>
