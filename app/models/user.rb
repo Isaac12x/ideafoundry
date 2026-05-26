@@ -63,7 +63,7 @@ class User < ApplicationRecord
     'sleep_seconds' => 30,
     'max_actions_per_cycle' => 20
   }.freeze
-  ALLOWED_LOCAL_AGENT_SETTING_KEYS = (DEFAULT_LOCAL_AGENT_SETTINGS.keys + %w[model base_url]).freeze
+  ALLOWED_LOCAL_AGENT_SETTING_KEYS = DEFAULT_LOCAL_AGENT_SETTINGS.keys.freeze
   DEFAULT_GITHUB_SETTINGS = {
     'api_base_url' => 'https://api.github.com'
   }.freeze
@@ -494,11 +494,6 @@ class User < ApplicationRecord
       DEFAULT_LOCAL_AGENT_SETTINGS['max_actions_per_cycle']
     )
 
-    %w[model base_url].each do |key|
-      value = stored[key].to_s.strip
-      resolved[key] = value if value.present?
-    end
-
     resolved
   end
 
@@ -518,11 +513,6 @@ class User < ApplicationRecord
       'sleep_seconds' => positive_integer_or_default(values['sleep_seconds'], DEFAULT_LOCAL_AGENT_SETTINGS['sleep_seconds']),
       'max_actions_per_cycle' => positive_integer_or_default(values['max_actions_per_cycle'], DEFAULT_LOCAL_AGENT_SETTINGS['max_actions_per_cycle'])
     }
-
-    %w[model base_url].each do |key|
-      value = values[key].to_s.strip
-      cleaned[key] = value if value.present?
-    end
 
     self.settings ||= {}
     self.settings['local_agent'] = cleaned

@@ -191,8 +191,10 @@ class UserTest < ActiveSupport::TestCase
     assert_equal false, settings["destructive_actions_enabled"]
     assert_equal 12, settings["sleep_seconds"]
     assert_equal 7, settings["max_actions_per_cycle"]
-    assert_equal "qwen2.5-coder", settings["model"]
-    assert_equal "http://localhost:11434/v1", settings["base_url"]
+    refute_includes settings, "model"
+    refute_includes settings, "base_url"
+    assert_nil user.settings.dig("local_agent", "model")
+    assert_nil user.settings.dig("local_agent", "base_url")
     assert_nil user.settings.dig("local_agent", "hacker")
   end
 
