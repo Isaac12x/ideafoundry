@@ -102,6 +102,65 @@ class LocalAgent::ToolboxTest < ActiveSupport::TestCase
     assert work.any? { |item| item[:target_type] == "BuildItem" && item[:target_id] == build_item.id }
   end
 
+  test "list work prioritizes unanswered local agent questions" do
+    @user.update_local_agent_settings("enabled" => "1")
+    question = @user.agent_events.create!(
+      event_type: "question",
+      summary: "What should I focus on next?",
+      payload: { "question" => "What should I focus on next?" }
+    )
+
+    result = toolbox.call("list_work", { "limit" => 1 })
+
+    assert_equal true, result.fetch(:ok)
+    work = result.fetch(:work)
+    assert_equal "AgentEvent", work.first[:target_type]
+    assert_equal question.id, work.first[:target_id]
+    assert_equal "User", work.first.dig(:payload, :context_record, :record_type)
+    assert_equal @user.id, work.first.dig(:payload, :context_record, :record_id)
+  end
+
+  test "read record supports user database context" do
+    @user.update_local_agent_settings("enabled" => "1")
+    @user.facts.create!(body: "Focus follows validated demand.")
+
+    result = toolbox.call("read_record", {
+      "record_type" => "User",
+      "record_id" => @user.id
+    })
+
+    assert_equal true, result.fetch(:ok)
+    record = result.fetch(:record)
+    assert_equal "User", record[:target_type]
+    assert record[:ideas].any? { |idea| idea[:id] == @idea.id }
+    assert record[:facts].any? { |fact| fact[:body] == "Focus follows validated demand." }
+  end
+
+  test "record event stores answers against agent questions" do
+    @user.update_local_agent_settings("enabled" => "1")
+    question = @user.agent_events.create!(
+      event_type: "question",
+      summary: "What needs attention?",
+      payload: { "question" => "What needs attention?" }
+    )
+
+    assert_difference "AgentEvent.where(event_type: 'answer').count", 1 do
+      result = toolbox.call("record_event", {
+        "event_type" => "answer",
+        "target_type" => "AgentEvent",
+        "target_id" => question.id,
+        "summary" => "The active idea needs a clearer next todo.",
+        "payload" => {}
+      })
+
+      assert_equal true, result.fetch(:ok)
+    end
+
+    answer = AgentEvent.where(event_type: "answer").recent.first
+    assert_equal question, answer.target
+    assert_equal "The active idea needs a clearer next todo.", answer.payload["answer"]
+  end
+
   private
 
   def toolbox

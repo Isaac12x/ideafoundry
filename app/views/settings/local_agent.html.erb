@@ -110,6 +110,55 @@
     </section>
   </div>
 
+  <% if @local_agent_settings["enabled"] %>
+    <section class="settings-section local-agent-panel local-agent-questions" id="ask-agent">
+      <header class="tab-toggle-section__header">
+        <h3>Ask Agent</h3>
+        <p>Questions are answered from the current Idea Foundry database context.</p>
+      </header>
+
+      <%= form_with url: settings_local_agent_questions_path, method: :post, local: true, class: "local-agent-question-form" do %>
+        <div class="form-group">
+          <%= label_tag "agent_question_body", "Question" %>
+          <%= text_area_tag "agent_question[body]", nil, id: "agent_question_body", rows: 4, class: "form-control", placeholder: "What should I focus on next?" %>
+        </div>
+        <%= submit_tag "Ask Agent", class: "btn btn-primary" %>
+      <% end %>
+
+      <% if @agent_question_threads.any? %>
+        <div class="local-agent-question-list">
+          <% @agent_question_threads.each do |thread| %>
+            <% question = thread[:question] %>
+            <% answer = thread[:answer] %>
+            <article class="local-agent-question" data-agent-question-id="<%= question.id %>">
+              <div class="local-agent-question__entry local-agent-question__entry--question">
+                <div class="local-agent-question__meta">
+                  <span>Question</span>
+                  <time><%= time_ago_in_words(question.created_at) %> ago</time>
+                </div>
+                <p><%= question.payload&.dig("question").presence || question.summary %></p>
+              </div>
+
+              <% if answer %>
+                <div class="local-agent-question__entry local-agent-question__entry--answer">
+                  <div class="local-agent-question__meta">
+                    <span>Answer</span>
+                    <time><%= time_ago_in_words(answer.created_at) %> ago</time>
+                  </div>
+                  <p><%= answer.payload&.dig("answer").presence || answer.summary %></p>
+                </div>
+              <% else %>
+                <p class="local-agent-question__pending">Waiting for an answer.</p>
+              <% end %>
+            </article>
+          <% end %>
+        </div>
+      <% else %>
+        <p class="empty-state-text">No questions yet.</p>
+      <% end %>
+    </section>
+  <% end %>
+
   <section class="settings-section local-agent-panel local-agent-events">
     <header class="tab-toggle-section__header">
       <h3>Audit Trail</h3>
