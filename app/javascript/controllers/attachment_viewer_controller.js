@@ -47,7 +47,11 @@ export default class extends Controller {
       .then(data => {
         if (!data.success) return
         const item = document.querySelector(`[data-attachment-id="${this.attachmentIdValue}"]`)
-        if (item) item.outerHTML = data.html
+        if (item) {
+          item.outerHTML = data.html
+          const updated = document.querySelector(`[data-attachment-id="${this.attachmentIdValue}"]`)
+          updated?.dispatchEvent(new CustomEvent("attachment:updated", { bubbles: true }))
+        }
         this.close()
       })
   }
@@ -60,7 +64,11 @@ export default class extends Controller {
     })
     if (response.ok || response.status === 204) {
       const item = document.querySelector(`[data-attachment-id="${this.attachmentIdValue}"]`)
-      if (item) item.remove()
+      if (item) {
+        const container = item.closest("[data-controller~='attachment-reorder']")
+        item.remove()
+        container?.dispatchEvent(new CustomEvent("attachment:removed", { bubbles: true }))
+      }
       this.close()
     }
   }

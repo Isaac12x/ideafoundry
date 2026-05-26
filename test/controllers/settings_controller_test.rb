@@ -34,6 +34,7 @@ class SettingsControllerTest < ActionDispatch::IntegrationTest
     get ideas_path
 
     assert_response :success
+    assert_select "nav.header-nav .ask-agent-shell", count: 0
     assert_select ".ask-agent-shell form[action=?]", settings_local_agent_questions_path, count: 1
     assert_select ".ask-agent-shell textarea[name=?]", "agent_question[body]"
     assert_select ".ask-agent-shell input[name=?][value=?]", "return_to", ideas_path

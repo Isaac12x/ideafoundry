@@ -168,9 +168,51 @@ class IdeasControllerTest < ActionDispatch::IntegrationTest
     get edit_idea_url(@idea)
 
     assert_response :success
+    assert_select ".form-sidebar .idea-form-ocr-sidebar", 1
     assert_select ".idea-form-ocr-sidebar details[open]", 1
     assert_select ".idea-form-ocr-sidebar li span", text: "Widget bracket"
     assert_select ".idea-form-ocr-sidebar li span", text: "M4 bolt"
+  end
+
+  test "edit form separates image and document attachments" do
+    @idea.attachments.attach(
+      io: StringIO.new("image data"),
+      filename: "mockup.png",
+      content_type: "image/png"
+    )
+    @idea.attachments.attach(
+      io: StringIO.new("document data"),
+      filename: "brief.pdf",
+      content_type: "application/pdf"
+    )
+
+    get edit_idea_url(@idea)
+
+    assert_response :success
+    assert_select ".current-attachments__section--images [data-attachment-kind=?]", "image", 1
+    assert_select ".current-attachments__section--images img.current-attachments__thumb", 1
+    assert_select ".current-attachments__section--documents [data-attachment-kind=?]", "document", 1
+    assert_select ".current-attachments__section--documents [data-filename=?]", "brief.pdf", 1
+  end
+
+  test "show media tab separates images and documents" do
+    @idea.attachments.attach(
+      io: StringIO.new("image data"),
+      filename: "mockup.png",
+      content_type: "image/png"
+    )
+    @idea.attachments.attach(
+      io: StringIO.new("document data"),
+      filename: "brief.pdf",
+      content_type: "application/pdf"
+    )
+
+    get idea_url(@idea)
+
+    assert_response :success
+    assert_select ".media-section__group--images img.attachment-thumbnail", 1
+    assert_select ".media-section__group--documents .attachment-file", 1
+    assert_select ".media-section__group--documents .attachment-name", text: "brief.pdf"
   end
 
   test "should update idea" do
