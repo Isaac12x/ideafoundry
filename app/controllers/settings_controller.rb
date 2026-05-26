@@ -129,6 +129,31 @@ class SettingsController < ApplicationController
     redirect_to settings_local_agent_path, notice: "Local agent cycle requested."
   end
 
+  def create_local_agent_question
+    unless @user.local_agent_enabled?
+      redirect_to settings_local_agent_path, alert: "Enable the local agent before asking a question."
+      return
+    end
+
+    question = local_agent_question_params[:body].to_s.strip
+    if question.blank?
+      redirect_to settings_local_agent_path(anchor: "ask-agent"), alert: "Enter a question for the local agent."
+      return
+    end
+
+    @user.agent_events.create!(
+      event_type: "question",
+      summary: question.truncate(160),
+      payload: {
+        "question" => question,
+        "status" => "pending"
+      }
+    )
+    LocalAgentSupervisorJob.perform_later(@user.id, run_once: true)
+
+    redirect_to settings_local_agent_path(anchor: "ask-agent"), notice: "Question queued for the local agent."
+  end
+
   def approve_local_agent_recommendation
     recommendation = @user.agent_recommendations.pending.find(params[:id])
 
@@ -459,6 +484,23 @@ class SettingsController < ApplicationController
     @latest_agent_event = @user.agent_events.recent.first
     @pending_agent_recommendations = @user.agent_recommendations.pending.recent.limit(25)
     @recent_agent_events = @user.agent_events.recent.limit(20)
+    @agent_question_threads = local_agent_question_threads
+  end
+
+  def local_agent_question_threads
+    questions = @user.agent_events.where(event_type: "question").recent.limit(10).to_a
+    answers_by_question_id =
+      @user.agent_events
+           .where(event_type: "answer", target_type: "AgentEvent", target_id: questions.map(&:id))
+           .recent
+           .group_by(&:target_id)
+
+    questions.map do |question|
+      {
+        question: question,
+        answer: answers_by_question_id[question.id]&.first
+      }
+    end
   end
 
   def load_database_encryption_status
@@ -577,6 +619,10 @@ class SettingsController < ApplicationController
 
   def local_agent_params
     params.fetch(:local_agent, {}).permit(*User::ALLOWED_LOCAL_AGENT_SETTING_KEYS)
+  end
+
+  def local_agent_question_params
+    params.fetch(:agent_question, {}).permit(:body)
   end
 
   def github_params

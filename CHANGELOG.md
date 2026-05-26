@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Scoped idea document tokens for agents, LLMs, and harnesses to update an idea's working document with history-tracked API changes.
 - Downloadable per-idea agent skill markdown for sharing idea document API instructions with agents.
 - Local Agent settings, audit records, app-domain tools, recommendations, and supervisor hooks for the app-owned Idea Foundry worker.
+- Local Agent questions on the AI Agents settings page, with queued answers linked into the audit trail and app-wide database context available through the Rails tool bridge.
 - Comprehensive idea history snapshots and restore support for calculations, drawings, enrichment metadata, todos, notes, tools, competitors, media, scores, and list/topology memberships.
 - Multiple Kanban boards with board-scoped columns, idea placement, and drag-and-drop moves.
 - Native `docs/kb/` markdown files are automatically included in the KB.

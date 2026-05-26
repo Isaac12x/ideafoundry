@@ -148,6 +148,7 @@ Rails.application.routes.draw do
   get 'settings/ai-agents', to: 'settings#local_agent', as: :settings_local_agent
   patch 'settings/ai-agents', to: 'settings#update_local_agent'
   post 'settings/ai-agents/run-now', to: 'settings#run_local_agent_now', as: :settings_local_agent_run_now
+  post 'settings/ai-agents/questions', to: 'settings#create_local_agent_question', as: :settings_local_agent_questions
   post 'settings/ai-agents/recommendations/:id/approve',
        to: 'settings#approve_local_agent_recommendation',
        as: :settings_local_agent_recommendation_approve

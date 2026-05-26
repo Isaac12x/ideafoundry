@@ -8,6 +8,7 @@ module LocalAgent
 
     def list(limit: 25)
       candidates = []
+      candidates.concat(question_candidates)
       candidates.concat(submission_candidates)
       candidates.concat(idea_candidates)
       candidates.concat(todo_candidates)
@@ -25,6 +26,31 @@ module LocalAgent
     private
 
     attr_reader :user
+
+    def question_candidates
+      answered_question_ids =
+        user.agent_events
+            .where(event_type: "answer", target_type: "AgentEvent")
+            .where.not(target_id: nil)
+            .select(:target_id)
+
+      user.agent_events
+          .where(event_type: "question")
+          .where.not(id: answered_question_ids)
+          .recent
+          .limit(10)
+          .map do |question|
+        candidate(question, 95, "Answer user question to the local agent", {
+          question: question.payload&.dig("question").presence || question.summary,
+          asked_at: question.created_at,
+          context_record: {
+            record_type: "User",
+            record_id: user.id
+          },
+          response_instructions: "Read the User context record before answering. Record the answer with record_event event_type=answer, target_type=AgentEvent, target_id=#{question.id}. Put the answer in summary and payload.answer."
+        })
+      end
+    end
 
     def submission_candidates
       user.submissions.pending.recent.limit(20).map do |submission|

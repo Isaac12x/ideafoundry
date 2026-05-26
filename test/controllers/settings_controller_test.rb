@@ -323,6 +323,57 @@ class SettingsControllerTest < ActionDispatch::IntegrationTest
     assert_select "form[action=?]", settings_local_agent_run_now_path
   end
 
+  test "GET settings/ai-agents renders question form when local agent is enabled" do
+    @user.update_local_agent_settings("enabled" => "1")
+
+    get settings_local_agent_path
+
+    assert_response :success
+    assert_select "form[action=?]", settings_local_agent_questions_path
+    assert_select "textarea[name=?]", "agent_question[body]"
+  end
+
+  test "GET settings/ai-agents hides question form when local agent is disabled" do
+    @user.update_local_agent_settings("enabled" => "0")
+
+    get settings_local_agent_path
+
+    assert_response :success
+    assert_select "form[action=?]", settings_local_agent_questions_path, count: 0
+    assert_select "textarea[name=?]", "agent_question[body]", count: 0
+  end
+
+  test "POST settings/ai-agents/questions queues a local agent question" do
+    @user.update_local_agent_settings("enabled" => "1")
+
+    assert_difference -> { @user.agent_events.where(event_type: "question").count }, 1 do
+      post settings_local_agent_questions_path, params: {
+        agent_question: {
+          body: "Which idea should I focus on next?"
+        }
+      }
+    end
+
+    assert_redirected_to "#{settings_local_agent_path}#ask-agent"
+    event = @user.agent_events.where(event_type: "question").recent.first
+    assert_equal "Which idea should I focus on next?", event.payload["question"]
+    assert_equal "pending", event.payload["status"]
+  end
+
+  test "POST settings/ai-agents/questions rejects questions while local agent is disabled" do
+    @user.update_local_agent_settings("enabled" => "0")
+
+    assert_no_difference -> { @user.agent_events.where(event_type: "question").count } do
+      post settings_local_agent_questions_path, params: {
+        agent_question: {
+          body: "What changed recently?"
+        }
+      }
+    end
+
+    assert_redirected_to settings_local_agent_path
+  end
+
   test "GET settings/local-agent redirects to ai agents settings" do
     get "/settings/local-agent"
 

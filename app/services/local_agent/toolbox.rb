@@ -84,7 +84,10 @@ module LocalAgent
     end
 
     def tool_read_record(args)
-      record = find_target!(args.fetch("target_type", args["record_type"]), args.fetch("target_id", args["id"]))
+      record = find_target!(
+        args["target_type"].presence || args["record_type"],
+        args["target_id"].presence || args["record_id"] || args["id"]
+      )
       ok(record: serialize_record(record))
     end
 
@@ -332,6 +335,10 @@ module LocalAgent
       raise ArgumentError, "target_id is required" if id.blank?
 
       case type
+      when "User"
+        raise ActiveRecord::RecordNotFound, "User not found" unless id == user.id.to_s
+
+        user
       when "Idea"
         user.ideas.find(id)
       when "Submission"
@@ -352,6 +359,8 @@ module LocalAgent
         user.topologies.find(id)
       when "AgentRecommendation"
         user.agent_recommendations.find(id)
+      when "AgentEvent"
+        user.agent_events.find(id)
       else
         raise ArgumentError, "Unsupported target type: #{type}"
       end
@@ -392,6 +401,11 @@ module LocalAgent
     end
 
     def record_event!(event_type:, target:, summary:, payload:)
+      payload ||= {}
+      if event_type.to_s == "answer" && target.is_a?(AgentEvent) && target.event_type == "question"
+        payload = payload.merge("answer" => summary) if payload["answer"].blank?
+      end
+
       user.agent_events.create!(
         agent_run: agent_run,
         event_type: event_type,
@@ -403,6 +417,8 @@ module LocalAgent
 
     def serialize_record(record)
       case record
+      when User
+        serialize_user_context(record)
       when Idea
         serialize_idea(record)
       when Submission
@@ -506,6 +522,34 @@ module LocalAgent
       else
         { id: record.id, target_type: record.class.name }
       end
+    end
+
+    def serialize_user_context(record)
+      {
+        id: record.id,
+        target_type: "User",
+        name: record.name,
+        email: record.email,
+        counts: {
+          ideas: record.ideas.count,
+          submissions: record.submissions.count,
+          todo_items: TodoItem.joins(:idea).where(ideas: { user_id: record.id }).count,
+          build_items: record.build_items.count,
+          facts: record.facts.count,
+          maxims: record.maxims.count,
+          lists: record.lists.count,
+          topologies: record.topologies.count
+        },
+        ideas: record.ideas.non_draft.order(updated_at: :desc).limit(200).map { |idea| serialize_idea(idea) },
+        submissions: record.submissions.recent.limit(100).map { |submission| serialize_record(submission) },
+        build_items: record.build_items.order(updated_at: :desc).limit(100).map { |item| serialize_record(item) },
+        facts: record.facts.recent.limit(100).map { |fact| serialize_record(fact) },
+        maxims: record.maxims.recent.limit(100).map { |maxim| serialize_record(maxim) },
+        lists: record.lists.ordered.limit(100).map { |list| serialize_record(list) },
+        topologies: record.topologies.ordered.limit(100).map { |topology| serialize_record(topology) },
+        pending_recommendations: record.agent_recommendations.pending.recent.limit(50).map { |recommendation| serialize_record(recommendation) },
+        recent_agent_events: record.agent_events.where.not(event_type: "heartbeat").recent.limit(50).map { |event| serialize_record(event) }
+      }
     end
 
     def serialize_idea(idea)
