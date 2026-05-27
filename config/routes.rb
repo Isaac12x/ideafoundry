@@ -31,6 +31,10 @@ Rails.application.routes.draw do
   end
 
   # Submission review queue
+  get "submissions/import", to: "submission_imports#new", as: :new_submission_import
+  post "submissions/import/preview", to: "submission_imports#preview", as: :preview_submission_import
+  post "submissions/import", to: "submission_imports#create", as: :submission_import
+
   resources :submissions, only: [:index, :show, :destroy] do
     member do
       post :approve
