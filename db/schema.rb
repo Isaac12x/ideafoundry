@@ -267,6 +267,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_27_180000) do
     t.integer "timing"
     t.text "timing_explanation"
     t.string "title"
+    t.string "tldr"
     t.integer "trl"
     t.datetime "updated_at", null: false
     t.integer "user_id", null: false

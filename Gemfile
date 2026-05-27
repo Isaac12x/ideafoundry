@@ -107,3 +107,5 @@ group :test do
 end
 
 gem "redcarpet", "~> 3.6"
+
+gem "rack-attack"
