@@ -20,6 +20,28 @@ class UserTest < ActiveSupport::TestCase
     assert_equal 86_400, user.typing_lock_timeout_seconds
   end
 
+  test "double encoded settings are normalized on read" do
+    user = users(:one)
+    original_settings = user.settings.deep_dup
+    encoded_settings = {
+      "typing_lock" => {
+        "enabled" => false,
+        "lock_after_seconds" => 300
+      }
+    }.to_json
+
+    User.connection.execute(
+      "UPDATE users SET settings = #{User.connection.quote(encoded_settings.to_json)} WHERE id = #{user.id}"
+    )
+
+    user = User.find(user.id)
+
+    assert_kind_of Hash, user.settings
+    refute user.typing_lock_enabled?
+  ensure
+    users(:one).update!(settings: original_settings) if defined?(original_settings)
+  end
+
   test "production sqlite databases are configured for SQLCipher encryption" do
     raw_config = ERB.new(Rails.root.join("config/database.yml").read).result
     database_config = YAML.safe_load(raw_config, aliases: true)

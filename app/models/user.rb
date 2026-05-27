@@ -20,6 +20,8 @@ class User < ApplicationRecord
 
   # Settings stored as JSON
   serialize :settings, coder: JSON
+  after_find :normalize_settings_attribute
+  before_validation :normalize_settings_attribute
 
   # Default scoring weights
   DEFAULT_SCORING_WEIGHTS = {
@@ -118,6 +120,22 @@ class User < ApplicationRecord
     'default_view' => 'tree',
     'sort_order' => 'position'
   }.freeze
+
+  def self.normalize_settings_value(value)
+    current = value
+
+    3.times do
+      return current if current.is_a?(Hash)
+      return {} if current.blank?
+      return {} unless current.is_a?(String)
+
+      current = JSON.parse(current)
+    rescue JSON::ParserError
+      return {}
+    end
+
+    current.is_a?(Hash) ? current : {}
+  end
 
   ALLOWED_TOPOLOGY_SETTING_KEYS = DEFAULT_TOPOLOGY_SETTINGS.keys.freeze
 
@@ -752,6 +770,11 @@ class User < ApplicationRecord
   end
 
   private
+
+  def normalize_settings_attribute
+    normalized = self.class.normalize_settings_value(read_attribute(:settings))
+    self.settings = normalized unless read_attribute(:settings) == normalized
+  end
 
   def positive_integer_or_default(value, default)
     integer = value.to_i
