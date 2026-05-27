@@ -28,7 +28,7 @@ module LocalAgent
 
     def tool_arguments
       raw = params[:arguments].presence || params.except(:controller, :action, :tool_name, :agent_run_id)
-      raw.respond_to?(:permit!) ? raw.permit!.to_h : raw.to_h
+      raw.respond_to?(:to_unsafe_h) ? raw.to_unsafe_h : raw.to_h
     end
   end
 end

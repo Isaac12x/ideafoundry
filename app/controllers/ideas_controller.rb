@@ -419,7 +419,7 @@ class IdeasController < ApplicationController
 
   def idea_params
     permitted = params.require(:idea).permit(
-      :title, :state, :template_id,
+      :title, :tldr, :state, :template_id,
       :trl, :difficulty, :opportunity, :timing,
       :difficulty_explanation, :opportunity_explanation, :timing_explanation,
       :description,

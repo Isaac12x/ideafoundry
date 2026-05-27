@@ -49,6 +49,9 @@
 .env.*
 .secret_key_base
 
+# Compiled keychain helper (built by bin/setup on macOS)
+/libexec/keychain-helper
+
 # OS files
 .DS_Store
 Thumbs.db

@@ -245,9 +245,9 @@ class SettingsControllerTest < ActionDispatch::IntegrationTest
 
     assert_redirected_to settings_security_path
     assert_match(/Encrypted 1 SQLite database/, flash[:notice])
-    assert_equal "correct horse battery staple", File.read(root.join("recovery_passphrase.key"))
+    assert_equal "correct horse battery staple", JSON.parse(File.read(root.join("recovery_passphrase.key")))["passphrase"]
     refute_equal "SQLite format 3\0", File.binread(database_path, 16)
-    assert_equal "SQLite format 3\0", File.binread(Dir[backup_dir.join("production.sqlite3.*.plaintext").to_s].first, 16)
+    assert_nil Dir[backup_dir.join("production.sqlite3.*.plaintext").to_s].first, "plaintext backup must be deleted after successful migration"
   ensure
     FileUtils.rm_rf(root) if root&.exist?
   end

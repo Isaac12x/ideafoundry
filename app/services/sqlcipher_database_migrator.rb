@@ -48,6 +48,12 @@ class SqlcipherDatabaseMigrator
     path.absolute? ? path.to_s : Rails.root.join(path).to_s
   end
 
+  def self.rekey_configured!(env:, old_key_hex:, new_key_hex:)
+    configured_database_paths(env: env).each do |path|
+      new(key_hex: old_key_hex).rekey!(path, new_key_hex: new_key_hex)
+    end
+  end
+
   def self.plaintext_sqlite_database?(path)
     File.file?(path) && File.binread(path, SQLITE_HEADER.bytesize) == SQLITE_HEADER
   end
@@ -95,6 +101,9 @@ class SqlcipherDatabaseMigrator
       raise Error, "#{path} is neither plaintext SQLite nor an openable SQLCipher database"
     end
 
+    temp_path = nil
+    backup_path = nil
+
     temp_path = temporary_path(path)
     export_plaintext_to_sqlcipher!(path, temp_path)
     verify_encrypted_database!(temp_path)
@@ -102,9 +111,30 @@ class SqlcipherDatabaseMigrator
     backup_path = backup_plaintext_database!(path)
     replace_database!(path, temp_path)
 
-    Result.new(path: path.to_s, status: :encrypted, backup_path: backup_path.to_s)
+    # Replacement succeeded — remove plaintext backup and clear pointer so ensure skips.
+    delete_plaintext_backup!(path, backup_path)
+    backup_path = nil
+
+    Result.new(path: path.to_s, status: :encrypted, backup_path: nil)
   ensure
     FileUtils.rm_f(temp_path) if temp_path&.exist?
+    # Guard: replacement succeeded but backup deletion was interrupted (e.g. SIGTERM).
+    delete_plaintext_backup!(path, backup_path) if backup_path
+  end
+
+  def rekey!(database, new_key_hex:)
+    raise Error, "New key must be a 64-character hex string" unless new_key_hex.to_s.match?(/\A[0-9a-f]{64}\z/i)
+
+    path = Pathname.new(database.to_s)
+    path = Rails.root.join(path) unless path.absolute?
+    return unless path.exist? && !plaintext_sqlite_database?(path)
+
+    new_literal = %("x'#{new_key_hex}'")
+    db = SQLite3::Database.new(path.to_s)
+    db.execute(%(PRAGMA key = #{key_literal}))
+    db.execute(%(PRAGMA rekey = #{new_literal}))
+  ensure
+    db&.close
   end
 
   private
@@ -162,6 +192,13 @@ class SqlcipherDatabaseMigrator
     source.execute("DETACH DATABASE encrypted")
   ensure
     source&.close
+  end
+
+  def delete_plaintext_backup!(original_path, backup_path)
+    FileUtils.rm_f(backup_path)
+    sidecar_paths(original_path).each do |sidecar|
+      FileUtils.rm_f(@backup_dir.join("#{sidecar.basename}.#{@timestamp}.plaintext"))
+    end
   end
 
   def backup_plaintext_database!(path)

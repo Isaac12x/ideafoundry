@@ -27,8 +27,8 @@ class SqlcipherDatabaseMigratorTest < ActiveSupport::TestCase
 
     assert_equal :encrypted, result.status
     assert_equal @database_path.to_s, result.path
-    assert_equal @backup_dir.join("production.sqlite3.20260518123045.plaintext").to_s, result.backup_path
-    assert_equal "SQLite format 3\0", File.binread(result.backup_path, 16)
+    assert_nil result.backup_path, "Plaintext backup must be deleted after encryption"
+    refute File.exist?(@backup_dir.join("production.sqlite3.20260518123045.plaintext")), "Plaintext backup file must not remain on disk"
     refute_equal "SQLite format 3\0", File.binread(@database_path, 16)
 
     encrypted = SQLite3::Database.new(@database_path.to_s)

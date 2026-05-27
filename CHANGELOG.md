@@ -28,6 +28,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Structured Rails event reporting for scoped idea document reads and updates.
 - App-wide Ask Agent chat sidebar for queuing local-agent questions from any page.
 - Intake batch imports for Apple Notes, Notion, Google Keep, and Evernote exports with selectable folders before import.
+- OS keychain-backed recovery passphrase storage with an external file fallback and legacy storage migration.
+- Rack::Attack throttling for recovery secret and local upgrade endpoints.
+- Active Storage upgrade migrations and idea TLDR persistence.
+- Static 400 and unsupported-browser error pages with app icons.
 
 ### Changed
 
@@ -40,6 +44,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - AI agent settings now live at `/settings/ai-agents` and no longer expose model or inference URL overrides.
 - Ask Agent moved out of `/settings/ai-agents` into a bottom-right resizable overlay.
 - On/off settings toggles now autosave without requiring an extra settings form submission.
+- SQLCipher recovery keys can rekey to stronger scrypt defaults and plaintext migration backups are removed after encryption.
+- Setup, development, production, and CI configuration now target the Rails 8.1 and SQLCipher app runtime.
 
 ### Fixed
 
@@ -54,6 +60,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Idea media controls now keep Ask Agent out of navigation, show extracted attachment parts in the form sidebar, and separate image thumbnails from document attachments.
 - Development now uses its own Solid Queue database so encrypted production queue data does not break local page loads.
 - User settings are normalized after security-settings encryption so local security lock checks do not crash on double-encoded settings.
+
+### Security
+
+- Persisted recovery passphrases are moved out of app-local storage into platform secure storage when available.
+- SQLCipher and recovery-secret configuration values are filtered from logs.
 
 ## [1.4.0] - 2026-05-12
 
