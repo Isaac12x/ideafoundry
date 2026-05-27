@@ -37,7 +37,9 @@ class SettingsControllerTest < ActionDispatch::IntegrationTest
     assert_select "nav.header-nav .ask-agent-shell", count: 0
     assert_select ".ask-agent-shell form[action=?]", settings_local_agent_questions_path, count: 1
     assert_select ".ask-agent-shell textarea[name=?]", "agent_question[body]"
-    assert_select ".ask-agent-shell input[name=?][value=?]", "return_to", ideas_path
+    assert_select ".ask-agent-shell input[name=?][value=?]", "return_to", "#{ideas_path}?ask_agent=open"
+    assert_select ".ask-agent-launcher[aria-controls=?]", "ask_agent_sidebar"
+    assert_select ".ask-agent-sidebar[role=?]", "dialog"
   end
 
   test "GET settings/display renders display quote field with current quote" do
@@ -345,24 +347,24 @@ class SettingsControllerTest < ActionDispatch::IntegrationTest
     assert_select "form[action=?]", settings_local_agent_run_now_path
   end
 
-  test "GET settings/ai-agents renders question form when local agent is enabled" do
+  test "GET settings/ai-agents omits the local question form when local agent is enabled" do
     @user.update_local_agent_settings("enabled" => "1")
 
     get settings_local_agent_path
 
     assert_response :success
-    assert_select "form[action=?]", settings_local_agent_questions_path
-    assert_select "textarea[name=?]", "agent_question[body]"
+    assert_select ".local-agent-questions", count: 0
+    assert_select ".ask-agent-shell form[action=?]", settings_local_agent_questions_path, count: 1
+    assert_select ".ask-agent-shell textarea[name=?]", "agent_question[body]"
   end
 
-  test "GET settings/ai-agents hides question form when local agent is disabled" do
+  test "GET settings/ai-agents omits the local question form when local agent is disabled" do
     @user.update_local_agent_settings("enabled" => "0")
 
     get settings_local_agent_path
 
     assert_response :success
-    assert_select ".local-agent-questions form[action=?]", settings_local_agent_questions_path, count: 0
-    assert_select ".local-agent-questions textarea[name=?]", "agent_question[body]", count: 0
+    assert_select ".local-agent-questions", count: 0
     assert_select ".ask-agent-shell form[action=?]", settings_local_agent_questions_path, count: 1
   end
 
@@ -377,7 +379,7 @@ class SettingsControllerTest < ActionDispatch::IntegrationTest
       }
     end
 
-    assert_redirected_to "#{settings_local_agent_path}#ask-agent"
+    assert_redirected_to settings_local_agent_path(ask_agent: "open")
     event = @user.agent_events.where(event_type: "question").recent.first
     assert_equal "Which idea should I focus on next?", event.payload["question"]
     assert_equal "pending", event.payload["status"]

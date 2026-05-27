@@ -26,7 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - KB Maxims section for high-importance reminders alongside IPFs/BPFs.
 - Markdown responses for scoped idea document API reads via Rails 8.1's native markdown renderer.
 - Structured Rails event reporting for scoped idea document reads and updates.
-- App-wide Ask Agent dialog for queuing local-agent questions from any page.
+- App-wide Ask Agent chat sidebar for queuing local-agent questions from any page.
 - Intake batch imports for Apple Notes, Notion, Google Keep, and Evernote exports with selectable folders before import.
 
 ### Changed
@@ -38,6 +38,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Idea work tokens are now gated by a settings toggle and the idea page shows only one compact token control.
 - Backlog is now disabled by default and requires `BACKLOG_ENABLED=true` when building or running the app.
 - AI agent settings now live at `/settings/ai-agents` and no longer expose model or inference URL overrides.
+- Ask Agent moved out of `/settings/ai-agents` into a bottom-right resizable overlay.
 - On/off settings toggles now autosave without requiring an extra settings form submission.
 
 ### Fixed

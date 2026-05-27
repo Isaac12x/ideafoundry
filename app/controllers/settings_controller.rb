@@ -509,23 +509,6 @@ class SettingsController < ApplicationController
     @latest_agent_event = @user.agent_events.recent.first
     @pending_agent_recommendations = @user.agent_recommendations.pending.recent.limit(25)
     @recent_agent_events = @user.agent_events.recent.limit(20)
-    @agent_question_threads = local_agent_question_threads
-  end
-
-  def local_agent_question_threads
-    questions = @user.agent_events.where(event_type: "question").recent.limit(10).to_a
-    answers_by_question_id =
-      @user.agent_events
-           .where(event_type: "answer", target_type: "AgentEvent", target_id: questions.map(&:id))
-           .recent
-           .group_by(&:target_id)
-
-    questions.map do |question|
-      {
-        question: question,
-        answer: answers_by_question_id[question.id]&.first
-      }
-    end
   end
 
   def load_database_encryption_status
@@ -653,7 +636,7 @@ class SettingsController < ApplicationController
   def local_agent_question_return_path(anchor: true)
     return safe_return_path(params[:return_to]) if params[:return_to].present?
 
-    anchor ? settings_local_agent_path(anchor: "ask-agent") : settings_local_agent_path
+    anchor ? settings_local_agent_path(ask_agent: "open") : settings_local_agent_path
   end
 
   def github_params

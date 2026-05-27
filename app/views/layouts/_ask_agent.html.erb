@@ -1,50 +1,125 @@
-<div class="ask-agent-shell" data-controller="ask-agent">
+<% agent_enabled = @user&.local_agent_enabled? %>
+<% agent_threads = ask_agent_question_threads %>
+
+<div class="ask-agent-shell"
+     id="ask-agent"
+     data-controller="ask-agent"
+     data-action="pointermove@window->ask-agent#resize pointerup@window->ask-agent#stopResize keydown@window->ask-agent#closeOnEscape">
   <button type="button"
-          class="btn btn-sm header-agent-button"
+          class="ask-agent-launcher"
           data-action="click->ask-agent#open"
-          aria-haspopup="dialog">
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          data-ask-agent-target="launcher"
+          aria-controls="ask_agent_sidebar"
+          aria-expanded="false"
+          aria-haspopup="dialog"
+          aria-label="Open Ask Agent">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
       <path d="M12 3a6 6 0 016 6v2a6 6 0 01-12 0V9a6 6 0 016-6z"/>
       <path d="M8 15v2a4 4 0 008 0v-2"/>
       <path d="M9 9h.01M15 9h.01M10 12h4"/>
     </svg>
-    Ask Agent
+    <span class="sr-only">Ask Agent</span>
   </button>
 
-  <dialog class="ask-agent-modal"
-          data-ask-agent-target="dialog"
-          data-action="click->ask-agent#closeOnBackdrop cancel->ask-agent#close"
-          aria-labelledby="ask_agent_title">
-    <div class="ask-agent-modal__inner">
-      <header class="ask-agent-modal__header">
-        <h2 id="ask_agent_title">Ask Agent</h2>
-        <button type="button"
-                class="ask-agent-modal__close"
-                data-action="click->ask-agent#close"
-                aria-label="Close Ask Agent">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M18 6L6 18M6 6l12 12"/>
-          </svg>
-        </button>
-      </header>
+  <div class="ask-agent-backdrop"
+       data-ask-agent-target="backdrop"
+       data-action="click->ask-agent#close"
+       hidden></div>
 
-      <%= form_with url: settings_local_agent_questions_path, method: :post, local: true, class: "ask-agent-modal__form" do %>
-        <%= hidden_field_tag :return_to, request.fullpath %>
-        <div class="form-group">
-          <%= label_tag "global_agent_question_body", "Question" %>
-          <%= text_area_tag "agent_question[body]",
-                nil,
-                id: "global_agent_question_body",
-                rows: 5,
-                class: "form-control",
-                placeholder: "What should I focus on next?",
-                required: true,
-                data: { ask_agent_target: "body" } %>
-        </div>
-        <div class="ask-agent-modal__actions">
-          <%= submit_tag "Ask Agent", class: "btn btn-primary" %>
-        </div>
+  <aside class="ask-agent-sidebar"
+         id="ask_agent_sidebar"
+         data-ask-agent-target="panel"
+         role="dialog"
+         aria-modal="false"
+         aria-labelledby="ask_agent_title"
+         hidden>
+    <button type="button"
+            class="ask-agent-sidebar__resize"
+            data-action="pointerdown->ask-agent#startResize keydown->ask-agent#resizeWithKeyboard"
+            aria-label="Resize Ask Agent sidebar"
+            aria-orientation="vertical"
+            role="separator"
+            tabindex="0"></button>
+
+    <header class="ask-agent-sidebar__header">
+      <div>
+        <h2 id="ask_agent_title">Ask Agent</h2>
+        <span class="ask-agent-sidebar__status <%= agent_enabled ? 'ask-agent-sidebar__status--enabled' : 'ask-agent-sidebar__status--disabled' %>">
+          <%= agent_enabled ? "Ready" : "Disabled" %>
+        </span>
+      </div>
+
+      <button type="button"
+              class="ask-agent-sidebar__close"
+              data-action="click->ask-agent#close"
+              aria-label="Close Ask Agent">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path d="M18 6L6 18M6 6l12 12"/>
+        </svg>
+      </button>
+    </header>
+
+    <div class="ask-agent-sidebar__messages" data-ask-agent-target="messages">
+      <% if agent_threads.any? %>
+        <% agent_threads.each do |thread| %>
+          <% question = thread[:question] %>
+          <% answer = thread[:answer] %>
+          <article class="ask-agent-thread">
+            <div class="ask-agent-message ask-agent-message--user">
+              <div class="ask-agent-message__meta">
+                <span>You</span>
+                <time><%= time_ago_in_words(question.created_at) %> ago</time>
+              </div>
+              <p><%= question.payload&.dig("question").presence || question.summary %></p>
+            </div>
+
+            <% if answer %>
+              <div class="ask-agent-message ask-agent-message--agent">
+                <div class="ask-agent-message__meta">
+                  <span>Agent</span>
+                  <time><%= time_ago_in_words(answer.created_at) %> ago</time>
+                </div>
+                <p><%= answer.payload&.dig("answer").presence || answer.summary %></p>
+              </div>
+            <% else %>
+              <div class="ask-agent-message ask-agent-message--pending">
+                <div class="ask-agent-message__meta">
+                  <span>Agent</span>
+                  <time>Pending</time>
+                </div>
+                <p>Waiting for an answer.</p>
+              </div>
+            <% end %>
+          </article>
+        <% end %>
+      <% else %>
+        <p class="ask-agent-sidebar__empty">No questions yet.</p>
       <% end %>
     </div>
-  </dialog>
+
+    <%= form_with url: settings_local_agent_questions_path, method: :post, local: true, class: "ask-agent-sidebar__form" do %>
+      <%= hidden_field_tag :return_to, ask_agent_return_path %>
+      <% unless agent_enabled %>
+        <p class="ask-agent-sidebar__notice">
+          Enable the local agent in <%= link_to "AI Agents", settings_local_agent_path %> before sending questions.
+        </p>
+      <% end %>
+
+      <div class="form-group">
+        <%= label_tag "global_agent_question_body", "Question" %>
+        <%= text_area_tag "agent_question[body]",
+              nil,
+              id: "global_agent_question_body",
+              rows: 4,
+              class: "form-control",
+              placeholder: "What should I focus on next?",
+              required: true,
+              data: { ask_agent_target: "body" } %>
+      </div>
+
+      <div class="ask-agent-sidebar__actions">
+        <%= submit_tag "Send", class: "btn btn-primary" %>
+      </div>
+    <% end %>
+  </aside>
 </div>
