@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Markdown responses for scoped idea document API reads via Rails 8.1's native markdown renderer.
 - Structured Rails event reporting for scoped idea document reads and updates.
 - App-wide Ask Agent dialog for queuing local-agent questions from any page.
+- Intake batch imports for Apple Notes, Notion, Google Keep, and Evernote exports with selectable folders before import.
 
 ### Changed
 

@@ -1,0 +1,39 @@
+<div class="submission-detail-container submission-import-container">
+  <div class="submission-header">
+    <div class="submission-header-top">
+      <%= link_to new_submission_import_path, class: "btn btn-sm" do %>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        Back
+      <% end %>
+    </div>
+
+    <div class="submission-header-content">
+      <h1 class="submission-detail-title">Select Folders</h1>
+      <div class="submission-header-meta">
+        <span class="source-badge"><%= @preview.source_label %></span>
+        <span class="submission-timestamp"><%= pluralize(@preview.total_notes, "note") %> detected</span>
+      </div>
+    </div>
+  </div>
+
+  <%= form_with url: submission_import_path, method: :post, class: "submission-import-form" do %>
+    <%= hidden_field_tag :import_payload, @preview.encoded_payload %>
+
+    <div class="submission-import-panel">
+      <div class="submission-import-folder-list">
+        <% @preview.folders.each do |folder| %>
+          <label class="submission-import-folder">
+            <%= check_box_tag "folder_keys[]", folder.key, true %>
+            <span class="submission-import-folder-name"><%= folder.name %></span>
+            <span class="submission-import-folder-count"><%= pluralize(folder.count, "note") %></span>
+          </label>
+        <% end %>
+      </div>
+    </div>
+
+    <div class="submission-import-actions">
+      <%= link_to "Cancel", submissions_path, class: "btn" %>
+      <%= submit_tag "Import Selected", class: "btn btn-primary" %>
+    </div>
+  <% end %>
+</div>
