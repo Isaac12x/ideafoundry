@@ -529,6 +529,22 @@ class User < ApplicationRecord
     latest.status
   end
 
+  def local_agent_question_threads(limit: 10)
+    questions = agent_events.where(event_type: "question").recent.limit(limit).to_a
+    answers_by_question_id =
+      agent_events
+        .where(event_type: "answer", target_type: "AgentEvent", target_id: questions.map(&:id))
+        .recent
+        .group_by(&:target_id)
+
+    questions.map do |question|
+      {
+        question: question,
+        answer: answers_by_question_id[question.id]&.first
+      }
+    end
+  end
+
   def github_settings
     stored = settings&.dig('github') || {}
     DEFAULT_GITHUB_SETTINGS.merge(stored.slice('api_base_url')).merge(
