@@ -9,6 +9,40 @@ module LocalAgent
 
     READ_TOOLS = %w[get_settings list_work read_record].freeze
     TERMINAL_IDEA_STATES = %w[rejected shipped].freeze
+    TOOL_DESCRIPTIONS = {
+      "get_settings" => "Read current Rails local-agent settings and status.",
+      "list_work" => "List prioritized Idea Foundry work candidates.",
+      "read_record" => "Read fresh context for an Idea Foundry record.",
+      "update_idea" => "Constructively update an idea through Rails history hooks.",
+      "create_note" => "Create a note for an idea.",
+      "create_todo" => "Create a todo item for an idea.",
+      "update_todo" => "Update a todo item through Rails validation.",
+      "update_build_item" => "Update a build item through Rails validation.",
+      "approve_submission" => "Approve a submission when Rails policy allows it.",
+      "reject_submission" => "Reject a submission, or create a recommendation if destructive actions are disabled.",
+      "transition_idea" => "Transition an idea lifecycle state through Rails policy.",
+      "assign_list" => "Assign an idea to an Idea Foundry list.",
+      "assign_topology" => "Assign an idea to an Idea Foundry topology.",
+      "create_fact" => "Create a knowledge-base fact.",
+      "create_maxim" => "Create a knowledge-base maxim.",
+      "run_enrichment" => "Request Rails enrichment for an idea.",
+      "create_recommendation" => "Create a reviewable AgentRecommendation.",
+      "record_event" => "Record an AgentEvent summary, heartbeat, skip, recommendation, error, or action."
+    }.freeze
+
+    def self.supported_tool_names
+      (READ_TOOLS + MUTATING_TOOLS).freeze
+    end
+
+    def self.tool_definitions
+      supported_tool_names.map do |name|
+        {
+          name: name,
+          kind: READ_TOOLS.include?(name) ? "read" : "write",
+          description: TOOL_DESCRIPTIONS.fetch(name)
+        }
+      end
+    end
 
     def initialize(user:, agent_run: nil, review_override: false)
       @user = user
@@ -37,7 +71,7 @@ module LocalAgent
     attr_reader :user, :agent_run
 
     def supported_tool?(tool)
-      MUTATING_TOOLS.include?(tool) || READ_TOOLS.include?(tool)
+      self.class.supported_tool_names.include?(tool)
     end
 
     def local_agent_enabled?

@@ -27,6 +27,7 @@ Rails.application.routes.draw do
   end
 
   namespace :local_agent, path: "local-agent" do
+    match "tools", to: "tools#index", via: [:get, :post], as: :tools
     post "tools/:tool_name", to: "tools#create", as: :tool
   end
 
