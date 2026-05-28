@@ -35,6 +35,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Idea creation no longer asks for Kanban board or named-list placement; placement remains available after the idea exists.
 - Updated the app to resolve Rails 8.1.3 and Puma 8, with Rails 8.1 local CI and framework-default upgrade prep.
 - Adopted Rails 8.1 framework defaults and regenerated schema dumps with Rails 8.1 alphabetized column ordering.
 - Inbound email now enters the submission intake queue by default, while explicit `[IDEA-id]` subjects still update existing ideas directly.
