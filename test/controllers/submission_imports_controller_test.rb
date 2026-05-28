@@ -28,9 +28,16 @@ class SubmissionImportsControllerTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_select "form input[name=?][value=?]", "source", "apple_notes"
+    assert_select "select[name=?]", "source" do
+      assert_select "option[value=?]", "apple_notes"
+      assert_select "option[value=?]", "notion"
+      assert_select "option[value=?]", "google_keep"
+      assert_select "option[value=?]", "evernote"
+    end
+    assert_select "input[type=file][name=?]", "files[]", minimum: 2
     assert_select "a[href=?]", oauth_submission_import_path(source: "notion")
-    assert_select "a[href=?]", oauth_submission_import_path(source: "google_keep")
-    assert_select "a[href=?]", oauth_submission_import_path(source: "evernote")
+    assert_select "a[href=?]", oauth_submission_import_path(source: "google_keep"), count: 0
+    assert_select "a[href=?]", oauth_submission_import_path(source: "evernote"), count: 0
   end
 
   test "create imports selected preview folder" do

@@ -35,7 +35,7 @@
       <div class="submission-import-folder-list">
         <% @preview.notes.each do |note| %>
           <label class="submission-import-folder">
-            <%= check_box_tag "note_keys[]", note["note_key"], true %>
+            <%= check_box_tag "note_keys[]", note["note_key"], false %>
             <span class="submission-import-folder-name"><%= note["title"] %></span>
             <span class="submission-import-folder-count"><%= Array(note["folders"]).first || "Unfiled" %></span>
           </label>

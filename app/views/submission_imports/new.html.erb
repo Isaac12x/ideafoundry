@@ -31,17 +31,55 @@
   </div>
 
   <div class="submission-import-panel submission-import-panel-spaced">
-    <div class="submission-import-cloud-list">
-      <% @source_options.except("apple_notes").each do |source, label| %>
-        <div class="submission-import-source-row">
-          <div>
-            <h2><%= label %></h2>
-            <p>Connect with OAuth, then choose the pages or notes to import.</p>
-          </div>
+    <%= form_with url: preview_submission_import_path, method: :post, multipart: true, class: "submission-import-form" do %>
+      <div class="form-group">
+        <%= label_tag :source, "Import an export file" %>
+        <%= select_tag :source,
+                       options_for_select(@source_options.map { |value, label| [label, value] }),
+                       class: "form-control" %>
+      </div>
 
-          <%= link_to "Connect", oauth_submission_import_path(source: source), class: "btn" %>
+      <div class="submission-import-upload-grid">
+        <div class="form-group">
+          <%= label_tag :import_files, "Export files" %>
+          <%= file_field_tag "files[]",
+                             multiple: true,
+                             id: "import_files",
+                             class: "form-control",
+                             accept: ".enex,.htm,.html,.json,.markdown,.md,.txt,.zip" %>
         </div>
-      <% end %>
-    </div>
+
+        <div class="form-group">
+          <%= label_tag :import_folder_files, "Export folder" %>
+          <%= file_field_tag "files[]",
+                             multiple: true,
+                             id: "import_folder_files",
+                             class: "form-control",
+                             webkitdirectory: true,
+                             directory: true %>
+        </div>
+      </div>
+
+      <div class="submission-import-actions">
+        <%= submit_tag "Preview Export", class: "btn btn-primary" %>
+      </div>
+    <% end %>
   </div>
+
+  <% if @oauth_source_options.present? %>
+    <div class="submission-import-panel submission-import-panel-spaced">
+      <div class="submission-import-cloud-list">
+        <% @oauth_source_options.each do |source, label| %>
+          <div class="submission-import-source-row">
+            <div>
+              <h2><%= label %></h2>
+              <p>Connect with OAuth, then choose the pages or notes to import.</p>
+            </div>
+
+            <%= link_to "Connect", oauth_submission_import_path(source: source), class: "btn" %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  <% end %>
 </div>
