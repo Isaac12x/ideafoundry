@@ -89,6 +89,36 @@ class NoteImportServiceTest < ActiveSupport::TestCase
     assert_equal "Shade idea", @user.submissions.recent.first.title
   end
 
+  test "imports selected folders plus explicitly selected notes" do
+    preview = NoteImportService.new(
+      source: "evernote",
+      files: [
+        MemoryUpload.new("Inventions/Clamp idea.txt", "Adjustable clamp"),
+        MemoryUpload.new("Personal/Shade idea.txt", "Clip-on shade"),
+        MemoryUpload.new("Personal/Grocery list.txt", "Milk")
+      ]
+    ).preview
+
+    inventions = preview.folders.find { |folder| folder.name == "Inventions" }
+    shade = preview.notes.find { |note| note["title"] == "Shade idea" }
+
+    assert_difference -> { @user.submissions.count }, 2 do
+      result = NoteImportService.import!(
+        user: @user,
+        payload: preview.encoded_payload,
+        selected_folder_keys: [inventions.key],
+        selected_note_keys: [shade["note_key"]]
+      )
+
+      assert_equal 2, result.imported_count
+      assert_equal 2, result.folder_count
+    end
+
+    titles = @user.submissions.recent.limit(2).map(&:title)
+    assert_includes titles, "Clamp idea"
+    assert_includes titles, "Shade idea"
+  end
+
   test "uses Google Keep labels as selectable folders" do
     keep_note = {
       title: "Foldable shade",

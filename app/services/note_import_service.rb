@@ -56,9 +56,7 @@ class NoteImportService
       raise ImportError, "No notes matched the selected folders or notes." if notes.empty?
 
       batch_id = data["batch_id"].presence || SecureRandom.uuid
-      matched_folder_count = notes.flat_map do |note|
-        selected_keys.present? ? (Array(note["folder_keys"]) & selected_keys) : Array(note["folder_keys"])
-      end.uniq.size
+      matched_folder_count = notes.flat_map { |note| Array(note["folder_keys"]) }.uniq.size
 
       ActiveRecord::Base.transaction do
         notes.each do |note|
@@ -138,9 +136,10 @@ class NoteImportService
     end
 
     def selected_notes(notes, selected_folder_keys:, selected_note_keys:)
-      return notes.select { |note| selected_note_keys.include?(note["note_key"].to_s) } if selected_note_keys.present?
-
-      notes.select { |note| (Array(note["folder_keys"]) & selected_folder_keys).any? }
+      notes.select do |note|
+        (Array(note["folder_keys"]) & selected_folder_keys).any? ||
+          selected_note_keys.include?(note["note_key"].to_s)
+      end
     end
 
     def note_key(note, index)

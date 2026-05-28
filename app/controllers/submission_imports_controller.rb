@@ -1,6 +1,7 @@
 class SubmissionImportsController < ApplicationController
   def new
     @source_options = NoteImportService.source_options
+    @oauth_source_options = NoteImportService.source_options.slice(*NoteOauthImportService::PROVIDERS.keys)
   end
 
   def preview
