@@ -35,6 +35,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Batch imports now discover local Apple Notes databases directly, preview folders and individual notes, and route cloud note apps through OAuth-oriented connection flows.
 - Idea creation no longer asks for Kanban board or named-list placement; placement remains available after the idea exists.
 - Updated the app to resolve Rails 8.1.3 and Puma 8, with Rails 8.1 local CI and framework-default upgrade prep.
 - Adopted Rails 8.1 framework defaults and regenerated schema dumps with Rails 8.1 alphabetized column ordering.
