@@ -96,12 +96,94 @@ class SettingsController < ApplicationController
 
   def update_idea_work_tokens
     if @user.update_idea_work_token_settings(idea_work_token_params)
-      redirect_to settings_idea_work_tokens_path, notice: "Idea work token settings updated."
+      respond_to do |format|
+        format.html { redirect_to settings_idea_work_tokens_path, notice: "Idea work token settings updated." }
+        format.json { render json: { saved: true } }
+      end
     else
       @idea_work_token_settings = @user.idea_work_token_settings
-      flash.now[:alert] = "Failed to update idea work token settings."
-      render :idea_work_tokens, status: :unprocessable_content
+      respond_to do |format|
+        format.html do
+          flash.now[:alert] = "Failed to update idea work token settings."
+          render :idea_work_tokens, status: :unprocessable_content
+        end
+        format.json { render json: { saved: false }, status: :unprocessable_entity }
+      end
     end
+  end
+
+  def local_agent
+    load_local_agent_settings
+  end
+
+  def update_local_agent
+    if @user.update_local_agent_settings(local_agent_params)
+      LocalAgentSupervisorJob.perform_later(@user.id)
+      respond_to do |format|
+        format.html { redirect_to settings_local_agent_path, notice: "Local agent settings updated." }
+        format.json { render json: { saved: true, status: @user.local_agent_status } }
+      end
+    else
+      load_local_agent_settings
+      respond_to do |format|
+        format.html do
+          flash.now[:alert] = "Failed to update local agent settings."
+          render :local_agent, status: :unprocessable_content
+        end
+        format.json { render json: { saved: false }, status: :unprocessable_entity }
+      end
+    end
+  end
+
+  def run_local_agent_now
+    unless @user.local_agent_enabled?
+      redirect_to settings_local_agent_path, alert: "Enable the local agent before running a cycle."
+      return
+    end
+
+    LocalAgentSupervisorJob.perform_later(@user.id, run_once: true)
+    redirect_to settings_local_agent_path, notice: "Local agent cycle requested."
+  end
+
+  def create_local_agent_question
+    unless @user.local_agent_enabled?
+      redirect_to local_agent_question_return_path(anchor: false), alert: "Enable the local agent before asking a question."
+      return
+    end
+
+    question = local_agent_question_params[:body].to_s.strip
+    if question.blank?
+      redirect_to local_agent_question_return_path, alert: "Enter a question for the local agent."
+      return
+    end
+
+    @user.agent_events.create!(
+      event_type: "question",
+      summary: question.truncate(160),
+      payload: {
+        "question" => question,
+        "status" => "pending"
+      }
+    )
+    LocalAgentSupervisorJob.perform_later(@user.id, run_once: true)
+
+    redirect_to local_agent_question_return_path, notice: "Question queued for the local agent."
+  end
+
+  def approve_local_agent_recommendation
+    recommendation = @user.agent_recommendations.pending.find(params[:id])
+
+    if recommendation.approve!
+      redirect_to settings_local_agent_path, notice: "Recommendation applied."
+    else
+      redirect_to settings_local_agent_path, alert: "Recommendation could not be applied."
+    end
+  end
+
+  def dismiss_local_agent_recommendation
+    recommendation = @user.agent_recommendations.pending.find(params[:id])
+    recommendation.dismiss!
+    redirect_to settings_local_agent_path, notice: "Recommendation dismissed."
   end
 
   def update_security
@@ -177,11 +259,14 @@ class SettingsController < ApplicationController
 
     @user.update_email_settings({ 'recipients' => recipients.to_s }) if recipients.present? || params.key?(:email_settings)
     @user.update_notification_triggers(triggers)
-    @user.update_notification_content(content)
-    @user.update_notification_templates(templates)
-    @user.update_event_presets(presets)
+    @user.update_notification_content(content) if params.key?(:notification_content)
+    @user.update_notification_templates(templates) if params.key?(:notification_templates)
+    @user.update_event_presets(presets) if params.key?(:event_presets)
 
-    redirect_to settings_email_path, notice: "Email & notification preferences updated."
+    respond_to do |format|
+      format.html { redirect_to settings_email_path, notice: "Email & notification preferences updated." }
+      format.json { render json: { saved: true } }
+    end
   end
 
   def topologies
@@ -363,9 +448,15 @@ class SettingsController < ApplicationController
     )
 
     if @user.update_backup_settings(backup_params)
-      redirect_to settings_exports_path, notice: "Backup settings updated."
+      respond_to do |format|
+        format.html { redirect_to settings_exports_path, notice: "Backup settings updated." }
+        format.json { render json: { saved: true } }
+      end
     else
-      redirect_to settings_exports_path, alert: "Failed to update backup settings."
+      respond_to do |format|
+        format.html { redirect_to settings_exports_path, alert: "Failed to update backup settings." }
+        format.json { render json: { saved: false }, status: :unprocessable_entity }
+      end
     end
   end
 
@@ -409,6 +500,15 @@ class SettingsController < ApplicationController
     @authenticator_app_settings = @user.authenticator_app_settings
     @voice_id_settings = @user.voice_id_settings
     @authenticator_app_qr_svg = AuthenticatorApp.qr_svg(@user.authenticator_app_provisioning_uri) if @user.authenticator_app_configured?
+  end
+
+  def load_local_agent_settings
+    @local_agent_settings = @user.local_agent_settings
+    @local_agent_status = @user.local_agent_status
+    @latest_agent_run = @user.agent_runs.recent.first
+    @latest_agent_event = @user.agent_events.recent.first
+    @pending_agent_recommendations = @user.agent_recommendations.pending.recent.limit(25)
+    @recent_agent_events = @user.agent_events.recent.limit(20)
   end
 
   def load_database_encryption_status
@@ -523,6 +623,20 @@ class SettingsController < ApplicationController
 
   def idea_work_token_params
     params.fetch(:idea_work_tokens, {}).permit(:enabled)
+  end
+
+  def local_agent_params
+    params.fetch(:local_agent, {}).permit(*User::ALLOWED_LOCAL_AGENT_SETTING_KEYS)
+  end
+
+  def local_agent_question_params
+    params.fetch(:agent_question, {}).permit(:body)
+  end
+
+  def local_agent_question_return_path(anchor: true)
+    return safe_return_path(params[:return_to]) if params[:return_to].present?
+
+    anchor ? settings_local_agent_path(ask_agent: "open") : settings_local_agent_path
   end
 
   def github_params

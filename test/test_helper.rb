@@ -1,10 +1,13 @@
 ENV["RAILS_ENV"] ||= "test"
 require_relative "../config/environment"
 require "rails/test_help"
+require "active_support/testing/event_reporter_assertions"
 require "minitest/mock"
 
 module ActiveSupport
   class TestCase
+    include ActiveSupport::Testing::EventReporterAssertions
+
     # Run tests in parallel with specified workers
     parallelize(workers: :number_of_processors)
 

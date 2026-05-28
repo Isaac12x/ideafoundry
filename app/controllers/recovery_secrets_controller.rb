@@ -20,7 +20,8 @@ class RecoverySecretsController < ApplicationController
     reset_recovery_secret_database_connections! if database_recovery_unlock_required?
     RecoverySecret.with(passphrase, override_configured: true) { verify_recovery_secret! }
     RecoverySecret.persist_user_passphrase!(passphrase)
-    session[RECOVERY_SECRET_SESSION_KEY] = passphrase
+    RecoverySecret.rekey!(passphrase, env: Rails.env) if RecoverySecret.rekey_needed?
+    session.delete(RECOVERY_SECRET_SESSION_KEY)
     redirect_to @return_to
   rescue ActiveRecord::StatementInvalid, ActiveSupport::MessageEncryptor::InvalidMessage, SQLite3::Exception => e
     reset_recovery_secret_database_connections!

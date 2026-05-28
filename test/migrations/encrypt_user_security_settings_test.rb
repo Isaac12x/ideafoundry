@@ -40,6 +40,29 @@ class EncryptUserSecuritySettingsTest < ActiveSupport::TestCase
     user.update!(settings: original_settings) if defined?(user) && user&.persisted?
   end
 
+  test "up keeps serialized settings as a hash when encryption runs" do
+    user = User.first || User.create!(email: "migration-test@example.com", name: "Migration Test")
+    original_settings = user.settings.deep_dup
+
+    user.update!(settings: {
+      "authenticator_app" => {
+        "enabled" => true,
+        "secret" => "plaintext-authenticator-secret"
+      }
+    })
+
+    RecoverySecret.with("migration test passphrase", override_configured: true) do
+      EncryptUserSecuritySettings.new.up
+    end
+
+    user.reload
+    assert_kind_of Hash, user.settings
+    assert_nil user.settings.dig("authenticator_app", "secret")
+    assert user.settings.dig("authenticator_app", "secret_ciphertext").present?
+  ensure
+    user.update!(settings: original_settings) if defined?(user) && user&.persisted?
+  end
+
   private
 
   def with_recovery_env_cleared

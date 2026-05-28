@@ -35,8 +35,6 @@ class IdeasController < ApplicationController
 
     if @idea.save
       @idea.create_version("Initial version")
-      update_kanban_list_memberships
-      update_named_list_memberships
       @idea.enqueue_attachment_ocr!
 
       redirect_to uncompleted_ideas_path(idea_draft_saved: 1), notice: 'Idea was successfully created.'
@@ -60,7 +58,7 @@ class IdeasController < ApplicationController
         @idea.enqueue_attachment_ocr!
 
         # Update list association if provided (only for non-AJAX requests)
-        unless request.xhr?
+        unless request.xhr? || was_draft
           update_kanban_list_memberships if params.key?(:kanban_list_ids) || params.key?(:list_id)
           update_named_list_memberships if params.key?(:named_list_ids)
         end
@@ -419,7 +417,7 @@ class IdeasController < ApplicationController
 
   def idea_params
     permitted = params.require(:idea).permit(
-      :title, :state, :template_id,
+      :title, :tldr, :state, :template_id,
       :trl, :difficulty, :opportunity, :timing,
       :difficulty_explanation, :opportunity_explanation, :timing_explanation,
       :description,

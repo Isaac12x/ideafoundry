@@ -84,6 +84,14 @@ class Idea < ApplicationRecord
     attachments.attachments.order(Arel.sql("COALESCE(position, 2147483647) ASC"), :created_at)
   end
 
+  def image_attachments
+    ordered_attachments.select(&:image?)
+  end
+
+  def document_attachments
+    ordered_attachments.reject(&:image?)
+  end
+
   def ocr_attachment_parts
     ordered_attachments.each_with_object([]) do |attachment, parts|
       next unless attachment.ocr_complete?

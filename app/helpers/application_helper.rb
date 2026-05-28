@@ -82,6 +82,23 @@ module ApplicationHelper
     idea.idea_lists.map(&:list_id).join(",")
   end
 
+  def ask_agent_question_threads(limit: 10)
+    return [] unless @user
+
+    @user.local_agent_question_threads(limit: limit).reverse
+  end
+
+  def ask_agent_return_path
+    uri = URI.parse(request.fullpath)
+    query_params = Rack::Utils.parse_nested_query(uri.query)
+    query_params["ask_agent"] = "open"
+    query_string = query_params.to_query
+
+    "#{uri.path}#{query_string.present? ? "?#{query_string}" : ""}"
+  rescue URI::InvalidURIError
+    root_path(ask_agent: "open")
+  end
+
   private
 
   def backlog_description_list_item(build_item, item)

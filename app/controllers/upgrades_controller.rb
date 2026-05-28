@@ -1,6 +1,8 @@
 class UpgradesController < ApplicationController
   UPGRADE_LOCK_FILE = Rails.root.join("tmp", "upgrade.lock").freeze
 
+  before_action :require_local_request
+
   def create
     return render json: { status: "upgrading" }, status: :accepted if upgrading?
 
@@ -18,6 +20,11 @@ class UpgradesController < ApplicationController
   end
 
   private
+
+  def require_local_request
+    return if request.local?
+    render json: { error: "forbidden" }, status: :forbidden
+  end
 
   def upgrading?
     UPGRADE_LOCK_FILE.exist?
