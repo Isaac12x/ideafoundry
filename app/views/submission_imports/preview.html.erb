@@ -8,7 +8,7 @@
     </div>
 
     <div class="submission-header-content">
-      <h1 class="submission-detail-title">Select Folders</h1>
+      <h1 class="submission-detail-title">Select Notes</h1>
       <div class="submission-header-meta">
         <span class="source-badge"><%= @preview.source_label %></span>
         <span class="submission-timestamp"><%= pluralize(@preview.total_notes, "note") %> detected</span>
@@ -20,12 +20,24 @@
     <%= hidden_field_tag :import_payload, @preview.encoded_payload %>
 
     <div class="submission-import-panel">
+      <h2 class="submission-import-section-title">Folders</h2>
       <div class="submission-import-folder-list">
         <% @preview.folders.each do |folder| %>
           <label class="submission-import-folder">
             <%= check_box_tag "folder_keys[]", folder.key, true %>
             <span class="submission-import-folder-name"><%= folder.name %></span>
             <span class="submission-import-folder-count"><%= pluralize(folder.count, "note") %></span>
+          </label>
+        <% end %>
+      </div>
+
+      <h2 class="submission-import-section-title">Notes</h2>
+      <div class="submission-import-folder-list">
+        <% @preview.notes.each do |note| %>
+          <label class="submission-import-folder">
+            <%= check_box_tag "note_keys[]", note["note_key"], true %>
+            <span class="submission-import-folder-name"><%= note["title"] %></span>
+            <span class="submission-import-folder-count"><%= Array(note["folders"]).first || "Unfiled" %></span>
           </label>
         <% end %>
       </div>
