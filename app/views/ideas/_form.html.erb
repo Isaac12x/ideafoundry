@@ -91,6 +91,10 @@
           <%= form.text_field :title, class: "form-control", required: true, placeholder: "What's the idea?" %>
         </div>
         <div class="form-group">
+          <%= form.label :tldr, "TL;DR" %>
+          <%= form.text_field :tldr, class: "form-control", placeholder: "One sentence: what is this idea and why it matters?" %>
+        </div>
+        <div class="form-group">
           <%= form.label :state %>
           <%= form.select :state,
               Idea.states.keys.map { |k| [k.humanize, k] },
@@ -220,23 +224,49 @@
 
       <!-- Attachments -->
       <% attachment_drawings = idea.persisted? ? idea.attachment_drawings.to_a : [] %>
+      <% image_attachments = idea.image_attachments %>
+      <% document_attachments = idea.document_attachments %>
       <div class="form-panel">
         <h3 class="form-panel-title">Attachments</h3>
 
         <div class="current-attachments"
              data-controller="attachment-reorder"
              data-attachment-reorder-url-value="<%= reorder_idea_attachments_path(idea) if idea.persisted? %>"
-             data-action="dropzone:uploaded->attachment-reorder#appendItems">
+             data-action="dropzone:uploaded->attachment-reorder#appendItems attachment:removed->attachment-reorder#sync attachment:updated->attachment-reorder#sync">
 
           <% if idea.attachments.attached? %>
             <p class="form-hint">Drag attachments or use the arrow buttons to rearrange them. OCR runs locally through the bundled compose service.</p>
           <% end %>
 
-          <ul class="current-attachments__list" data-attachment-reorder-target="list">
-            <% idea.ordered_attachments.each do |attachment| %>
-              <%= render "idea_attachments/item", attachment: attachment, idea: idea %>
-            <% end %>
-          </ul>
+          <div class="current-attachments__section current-attachments__section--images">
+            <div class="current-attachments__section-header">
+              <h4>Images</h4>
+              <span><%= image_attachments.size %></span>
+            </div>
+            <ul class="current-attachments__list"
+                data-attachment-reorder-target="list"
+                data-attachment-list="image">
+              <% image_attachments.each do |attachment| %>
+                <%= render "idea_attachments/item", attachment: attachment, idea: idea %>
+              <% end %>
+            </ul>
+            <p class="current-attachments__empty" data-attachment-empty="image" <%= "hidden" if image_attachments.any? %>>No images attached.</p>
+          </div>
+
+          <div class="current-attachments__section current-attachments__section--documents">
+            <div class="current-attachments__section-header">
+              <h4>Documents</h4>
+              <span><%= document_attachments.size %></span>
+            </div>
+            <ul class="current-attachments__list"
+                data-attachment-reorder-target="list"
+                data-attachment-list="document">
+              <% document_attachments.each do |attachment| %>
+                <%= render "idea_attachments/item", attachment: attachment, idea: idea %>
+              <% end %>
+            </ul>
+            <p class="current-attachments__empty" data-attachment-empty="document" <%= "hidden" if document_attachments.any? %>>No documents attached.</p>
+          </div>
 
           <p class="form-hint" data-attachment-reorder-target="status" aria-live="polite"></p>
 
@@ -248,8 +278,8 @@
             <div class="dropzone" data-dropzone-target="zone" data-action="click->dropzone#click dragover->dropzone#dragover dragenter->dropzone#dragenter dragleave->dropzone#dragleave drop->dropzone#drop">
               <div class="dropzone__label" data-dropzone-target="placeholder">
                 <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
-                <span>Drag files here or <strong>browse</strong></span>
-                <small>Multiple files allowed</small>
+                <span>Drag images or documents here, or <strong>browse</strong></span>
+                <small>Images, PDFs, emails, and notes</small>
               </div>
               <div class="dropzone__preview-grid" data-dropzone-target="preview"></div>
             </div>
@@ -311,56 +341,58 @@
           </div>
         </div>
 
-        <% kanban_boards ||= [] %>
-        <% named_lists ||= [] %>
+        <% unless idea.new_record? || idea.draft? %>
+          <% kanban_boards ||= [] %>
+          <% named_lists ||= [] %>
 
-        <div class="form-group">
-          <label>Kanban Boards</label>
-          <% if kanban_boards.any? %>
-            <div class="kanban-board-pickers">
-              <% kanban_boards.each do |board| %>
-                <% board_lists = board.lists.to_a %>
-                <% current_board_list = idea.idea_lists.joins(:list).find_by(lists: { kind: "kanban", kanban_board_id: board.id })&.list %>
-                <div class="kanban-board-picker">
-                  <h4><%= board.name %></h4>
-                  <div class="checkbox-group">
-                    <div class="checkbox-item">
-                      <%= radio_button_tag "kanban_list_ids[#{board.id}]", "", current_board_list.nil?, id: "kanban_board_#{board.id}_none" %>
-                      <%= label_tag "kanban_board_#{board.id}_none", "None" %>
-                    </div>
-                    <% board_lists.each do |list| %>
+          <div class="form-group">
+            <label>Kanban Boards</label>
+            <% if kanban_boards.any? %>
+              <div class="kanban-board-pickers">
+                <% kanban_boards.each do |board| %>
+                  <% board_lists = board.lists.to_a %>
+                  <% current_board_list = idea.idea_lists.joins(:list).find_by(lists: { kind: "kanban", kanban_board_id: board.id })&.list %>
+                  <div class="kanban-board-picker">
+                    <h4><%= board.name %></h4>
+                    <div class="checkbox-group">
                       <div class="checkbox-item">
-                        <%= radio_button_tag "kanban_list_ids[#{board.id}]", list.id, current_board_list == list, id: "kanban_board_#{board.id}_list_#{list.id}" %>
-                        <%= label_tag "kanban_board_#{board.id}_list_#{list.id}", list.name %>
+                        <%= radio_button_tag "kanban_list_ids[#{board.id}]", "", current_board_list.nil?, id: "kanban_board_#{board.id}_none" %>
+                        <%= label_tag "kanban_board_#{board.id}_none", "None" %>
                       </div>
-                    <% end %>
-                    <% if board_lists.empty? %>
-                      <p class="text-muted" style="font-size: 0.85rem;">No columns on this board yet. Create one from the Lists page.</p>
-                    <% end %>
+                      <% board_lists.each do |list| %>
+                        <div class="checkbox-item">
+                          <%= radio_button_tag "kanban_list_ids[#{board.id}]", list.id, current_board_list == list, id: "kanban_board_#{board.id}_list_#{list.id}" %>
+                          <%= label_tag "kanban_board_#{board.id}_list_#{list.id}", list.name %>
+                        </div>
+                      <% end %>
+                      <% if board_lists.empty? %>
+                        <p class="text-muted" style="font-size: 0.85rem;">No columns on this board yet. Create one from the Lists page.</p>
+                      <% end %>
+                    </div>
                   </div>
-                </div>
-              <% end %>
-            </div>
-          <% else %>
-            <p class="text-muted" style="font-size: 0.85rem;">No kanban boards yet. Create one from the Lists page.</p>
-          <% end %>
-        </div>
-
-        <div class="form-group">
-          <label>Named Lists</label>
-          <div class="checkbox-group">
-            <%= hidden_field_tag "named_list_ids[]", "" %>
-            <% named_lists.each do |list| %>
-              <div class="checkbox-item">
-                <%= check_box_tag "named_list_ids[]", list.id, idea.lists.include?(list), id: "named_list_#{list.id}" %>
-                <%= label_tag "named_list_#{list.id}", list.name %>
+                <% end %>
               </div>
-            <% end %>
-            <% if named_lists.empty? %>
-              <p class="text-muted" style="font-size: 0.85rem;">No named lists yet. Create one from the Lists page.</p>
+            <% else %>
+              <p class="text-muted" style="font-size: 0.85rem;">No kanban boards yet. Create one from the Lists page.</p>
             <% end %>
           </div>
-        </div>
+
+          <div class="form-group">
+            <label>Named Lists</label>
+            <div class="checkbox-group">
+              <%= hidden_field_tag "named_list_ids[]", "" %>
+              <% named_lists.each do |list| %>
+                <div class="checkbox-item">
+                  <%= check_box_tag "named_list_ids[]", list.id, idea.lists.include?(list), id: "named_list_#{list.id}" %>
+                  <%= label_tag "named_list_#{list.id}", list.name %>
+                </div>
+              <% end %>
+              <% if named_lists.empty? %>
+                <p class="text-muted" style="font-size: 0.85rem;">No named lists yet. Create one from the Lists page.</p>
+              <% end %>
+            </div>
+          </div>
+        <% end %>
       </div>
 
       <!-- Custom Fields from Template (flat, sorted by position) -->
@@ -541,6 +573,25 @@
         </div>
       </div>
 
+      <% ocr_parts = idea.persisted? ? idea.ocr_attachment_parts : [] %>
+      <aside class="form-panel idea-form-ocr-sidebar" aria-label="Extracted attachment parts">
+        <details <%= "open" if ocr_parts.present? %>>
+          <summary>Extracted parts <span><%= ocr_parts.size %></span></summary>
+          <% if ocr_parts.present? %>
+            <ul>
+              <% ocr_parts.each do |part| %>
+                <li>
+                  <strong><%= part[:attachment].filename %></strong>
+                  <span><%= part[:text] %></span>
+                </li>
+              <% end %>
+            </ul>
+          <% else %>
+            <p>Upload a document or image and local OCR will extract likely parts here.</p>
+          <% end %>
+        </details>
+      </aside>
+
       <!-- Form Actions -->
       <div class="form-panel">
         <div style="display:flex;flex-direction:column;gap:10px;">
@@ -552,25 +603,6 @@
       </div>
 
     </div>
-
-    <% ocr_parts = idea.ocr_attachment_parts if idea.persisted? %>
-    <aside class="idea-form-ocr-sidebar" aria-label="Extracted attachment parts">
-      <details <%= "open" if ocr_parts.present? %>>
-        <summary>Extracted parts <span><%= ocr_parts&.size.to_i %></span></summary>
-        <% if ocr_parts.present? %>
-          <ul>
-            <% ocr_parts.each do |part| %>
-              <li>
-                <strong><%= part[:attachment].filename %></strong>
-                <span><%= part[:text] %></span>
-              </li>
-            <% end %>
-          </ul>
-        <% else %>
-          <p>Upload a document or image and local OCR will extract likely parts here.</p>
-        <% end %>
-      </details>
-    </aside>
   </div>
 
   <dialog class="attachment-viewer-modal"

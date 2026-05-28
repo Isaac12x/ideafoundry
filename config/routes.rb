@@ -26,7 +26,16 @@ Rails.application.routes.draw do
     end
   end
 
+  namespace :local_agent, path: "local-agent" do
+    match "tools", to: "tools#index", via: [:get, :post], as: :tools
+    post "tools/:tool_name", to: "tools#create", as: :tool
+  end
+
   # Submission review queue
+  get "submissions/import", to: "submission_imports#new", as: :new_submission_import
+  post "submissions/import/preview", to: "submission_imports#preview", as: :preview_submission_import
+  post "submissions/import", to: "submission_imports#create", as: :submission_import
+
   resources :submissions, only: [:index, :show, :destroy] do
     member do
       post :approve
@@ -141,6 +150,17 @@ Rails.application.routes.draw do
   post 'settings/security/encrypt-database', to: 'settings#encrypt_database', as: :settings_security_encrypt_database
   get 'settings/idea-work-tokens', to: 'settings#idea_work_tokens', as: :settings_idea_work_tokens
   patch 'settings/idea-work-tokens', to: 'settings#update_idea_work_tokens'
+  get 'settings/ai-agents', to: 'settings#local_agent', as: :settings_local_agent
+  patch 'settings/ai-agents', to: 'settings#update_local_agent'
+  post 'settings/ai-agents/run-now', to: 'settings#run_local_agent_now', as: :settings_local_agent_run_now
+  post 'settings/ai-agents/questions', to: 'settings#create_local_agent_question', as: :settings_local_agent_questions
+  post 'settings/ai-agents/recommendations/:id/approve',
+       to: 'settings#approve_local_agent_recommendation',
+       as: :settings_local_agent_recommendation_approve
+  post 'settings/ai-agents/recommendations/:id/dismiss',
+       to: 'settings#dismiss_local_agent_recommendation',
+       as: :settings_local_agent_recommendation_dismiss
+  get 'settings/local-agent', to: redirect('/settings/ai-agents')
   get 'settings/github', to: 'settings#github', as: :settings_github
   patch 'settings/github', to: 'settings#update_github'
   get 'settings/topologies', to: 'settings#topologies'

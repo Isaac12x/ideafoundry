@@ -17,21 +17,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Named lists alongside Kanban columns, including a Lists default-view setting.
 - Scoped idea document tokens for agents, LLMs, and harnesses to update an idea's working document with history-tracked API changes.
 - Downloadable per-idea agent skill markdown for sharing idea document API instructions with agents.
+- Local Agent settings, audit records, app-domain tools, recommendations, and supervisor hooks for the app-owned Idea Foundry worker.
+- Local Agent questions on the AI Agents settings page, with queued answers linked into the audit trail and app-wide database context available through the Rails tool bridge.
 - Comprehensive idea history snapshots and restore support for calculations, drawings, enrichment metadata, todos, notes, tools, competitors, media, scores, and list/topology memberships.
 - Multiple Kanban boards with board-scoped columns, idea placement, and drag-and-drop moves.
 - Native `docs/kb/` markdown files are automatically included in the KB.
 - Topology-triggered template fields, GitHub credential settings, and GitHub repository release tracking for software ideas.
 - KB Maxims section for high-importance reminders alongside IPFs/BPFs.
+- Markdown responses for scoped idea document API reads via Rails 8.1's native markdown renderer.
+- Structured Rails event reporting for scoped idea document reads and updates.
+- App-wide Ask Agent chat sidebar for queuing local-agent questions from any page.
+- Intake batch imports for Apple Notes, Notion, Google Keep, and Evernote exports with selectable folders before import.
+- OS keychain-backed recovery passphrase storage with an external file fallback and legacy storage migration.
+- Rack::Attack throttling for recovery secret and local upgrade endpoints.
+- Active Storage upgrade migrations and idea TLDR persistence.
+- Static 400 and unsupported-browser error pages with app icons.
 
 ### Changed
 
+- Idea creation no longer asks for Kanban board or named-list placement; placement remains available after the idea exists.
+- Updated the app to resolve Rails 8.1.3 and Puma 8, with Rails 8.1 local CI and framework-default upgrade prep.
+- Adopted Rails 8.1 framework defaults and regenerated schema dumps with Rails 8.1 alphabetized column ordering.
 - Inbound email now enters the submission intake queue by default, while explicit `[IDEA-id]` subjects still update existing ideas directly.
 - Kanban idea cards no longer show tools or competitor summaries.
 - Idea work tokens are now gated by a settings toggle and the idea page shows only one compact token control.
 - Backlog is now disabled by default and requires `BACKLOG_ENABLED=true` when building or running the app.
+- AI agent settings now live at `/settings/ai-agents` and no longer expose model or inference URL overrides.
+- Ask Agent moved out of `/settings/ai-agents` into a bottom-right resizable overlay.
+- On/off settings toggles now autosave without requiring an extra settings form submission.
+- SQLCipher recovery keys can rekey to stronger scrypt defaults and plaintext migration backups are removed after encryption.
+- Setup, development, production, and CI configuration now target the Rails 8.1 and SQLCipher app runtime.
 
 ### Fixed
 
+- Local agent harness probes to `/local-agent/tools` now receive JSON tool discovery instead of falling through to the app catch-all.
 - Resend inbound email setup now uses the mounted `/rails/action_mailbox/resend/inbound_emails` webhook route.
 - Backlog edit, delete, and completion streams now preserve item context and refresh counts/empty states.
 - KB now fills the viewport below the app header and IPFs/BPFs content is centered within its panel
@@ -40,6 +59,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Idea index and topology cards once again expose enabled structured-entry quick add summaries.
 - Multi-file media uploads from the idea edit page now create one history entry per upload batch instead of one per file.
 - Missing saved KB folders remain listed as unavailable so the path can be updated.
+- Idea media controls now keep Ask Agent out of navigation, show extracted attachment parts in the form sidebar, and separate image thumbnails from document attachments.
+- Development now uses its own Solid Queue database so encrypted production queue data does not break local page loads.
+- User settings are normalized after security-settings encryption so local security lock checks do not crash on double-encoded settings.
+
+### Security
+
+- Persisted recovery passphrases are moved out of app-local storage into platform secure storage when available.
+- SQLCipher and recovery-secret configuration values are filtered from logs.
 
 ## [1.4.0] - 2026-05-12
 

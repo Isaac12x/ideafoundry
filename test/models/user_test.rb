@@ -20,6 +20,28 @@ class UserTest < ActiveSupport::TestCase
     assert_equal 86_400, user.typing_lock_timeout_seconds
   end
 
+  test "double encoded settings are normalized on read" do
+    user = users(:one)
+    original_settings = user.settings.deep_dup
+    encoded_settings = {
+      "typing_lock" => {
+        "enabled" => false,
+        "lock_after_seconds" => 300
+      }
+    }.to_json
+
+    User.connection.execute(
+      "UPDATE users SET settings = #{User.connection.quote(encoded_settings.to_json)} WHERE id = #{user.id}"
+    )
+
+    user = User.find(user.id)
+
+    assert_kind_of Hash, user.settings
+    refute user.typing_lock_enabled?
+  ensure
+    users(:one).update!(settings: original_settings) if defined?(original_settings)
+  end
+
   test "production sqlite databases are configured for SQLCipher encryption" do
     raw_config = ERB.new(Rails.root.join("config/database.yml").read).result
     database_config = YAML.safe_load(raw_config, aliases: true)
@@ -163,6 +185,39 @@ class UserTest < ActiveSupport::TestCase
     user = User.new(email: "fresh-agent@example.com", name: "Fresh Agent", settings: nil)
 
     refute user.idea_work_tokens_enabled?
+  end
+
+  test "local agent settings default to disabled" do
+    user = User.new(email: "fresh-local-agent@example.com", name: "Fresh Local Agent", settings: nil)
+
+    assert_equal User::DEFAULT_LOCAL_AGENT_SETTINGS, user.local_agent_settings
+    refute user.local_agent_enabled?
+    refute user.local_agent_destructive_actions_enabled?
+  end
+
+  test "local agent settings persist only allowed keys" do
+    user = users(:one)
+
+    assert user.update_local_agent_settings(
+      "enabled" => "1",
+      "destructive_actions_enabled" => "0",
+      "sleep_seconds" => "12",
+      "max_actions_per_cycle" => "7",
+      "model" => "  qwen2.5-coder  ",
+      "base_url" => "  http://localhost:11434/v1  ",
+      "hacker" => "bad"
+    )
+
+    settings = user.reload.local_agent_settings
+    assert_equal true, settings["enabled"]
+    assert_equal false, settings["destructive_actions_enabled"]
+    assert_equal 12, settings["sleep_seconds"]
+    assert_equal 7, settings["max_actions_per_cycle"]
+    refute_includes settings, "model"
+    refute_includes settings, "base_url"
+    assert_nil user.settings.dig("local_agent", "model")
+    assert_nil user.settings.dig("local_agent", "base_url")
+    assert_nil user.settings.dig("local_agent", "hacker")
   end
 
   test "idea work token settings can be toggled" do

@@ -55,7 +55,7 @@ class EncryptUserSecuritySettings < ActiveRecord::Migration[8.0]
         end
       end
 
-      user.update_columns(settings: settings.to_json) if changed
+      user.update_columns(settings: settings) if changed
     end
   end
 end

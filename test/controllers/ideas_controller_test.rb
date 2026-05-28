@@ -106,12 +106,76 @@ class IdeasControllerTest < ActionDispatch::IntegrationTest
     end
   end
 
+  test "draft idea edit form does not render list or board placement controls" do
+    draft = @user.ideas.create!(title: "Draft", state: :idea_new, draft: true)
+    board = @user.kanban_boards.create!(name: "Validation")
+    @user.lists.create!(name: "Queued", kind: :kanban, kanban_board: board)
+    @user.lists.create!(name: "Launch Candidates", kind: :named)
+
+    get edit_idea_url(draft, draft: 1)
+
+    assert_response :success
+    assert_select "label", text: "Kanban Boards", count: 0
+    assert_select "label", text: "Named Lists", count: 0
+    assert_select "input[name^=?]", "kanban_list_ids", count: 0
+    assert_select "input[name=?]", "named_list_ids[]", count: 0
+  end
+
+  test "persisted idea edit form still renders list and board placement controls" do
+    board = @user.kanban_boards.create!(name: "Validation")
+    @user.lists.create!(name: "Queued", kind: :kanban, kanban_board: board)
+    @user.lists.create!(name: "Launch Candidates", kind: :named)
+
+    get edit_idea_url(@idea)
+
+    assert_response :success
+    assert_select "label", text: "Kanban Boards"
+    assert_select "label", text: "Named Lists"
+    assert_select "input[name^=?]", "kanban_list_ids"
+    assert_select "input[name=?]", "named_list_ids[]"
+  end
+
   test "should create idea" do
     assert_difference("Idea.count") do
       post ideas_url, params: { idea: { title: "New Idea" } }
     end
 
     assert_redirected_to uncompleted_ideas_url(idea_draft_saved: 1)
+  end
+
+  test "create ignores list and board placement params" do
+    board = @user.kanban_boards.create!(name: "Validation")
+    kanban_list = @user.lists.create!(name: "Queued", kind: :kanban, kanban_board: board)
+    named_list = @user.lists.create!(name: "Launch Candidates", kind: :named)
+
+    assert_difference("Idea.count", 1) do
+      assert_no_difference("IdeaList.count") do
+        post ideas_url, params: {
+          idea: { title: "New Idea" },
+          kanban_list_ids: { board.id => kanban_list.id },
+          named_list_ids: [named_list.id]
+        }
+      end
+    end
+  end
+
+  test "promoting a draft ignores list and board placement params" do
+    draft = @user.ideas.create!(title: "Draft", state: :idea_new, draft: true)
+    board = @user.kanban_boards.create!(name: "Validation")
+    kanban_list = @user.lists.create!(name: "Queued", kind: :kanban, kanban_board: board)
+    named_list = @user.lists.create!(name: "Launch Candidates", kind: :named)
+
+    assert_no_difference("IdeaList.count") do
+      patch idea_url(draft), params: {
+        idea: { title: "Promoted" },
+        kanban_list_ids: { board.id => kanban_list.id },
+        named_list_ids: [named_list.id]
+      }
+    end
+
+    draft.reload
+    refute draft.draft?
+    assert_empty draft.lists
   end
 
   test "should show idea" do
@@ -168,9 +232,51 @@ class IdeasControllerTest < ActionDispatch::IntegrationTest
     get edit_idea_url(@idea)
 
     assert_response :success
+    assert_select ".form-sidebar .idea-form-ocr-sidebar", 1
     assert_select ".idea-form-ocr-sidebar details[open]", 1
     assert_select ".idea-form-ocr-sidebar li span", text: "Widget bracket"
     assert_select ".idea-form-ocr-sidebar li span", text: "M4 bolt"
+  end
+
+  test "edit form separates image and document attachments" do
+    @idea.attachments.attach(
+      io: StringIO.new("image data"),
+      filename: "mockup.png",
+      content_type: "image/png"
+    )
+    @idea.attachments.attach(
+      io: StringIO.new("document data"),
+      filename: "brief.pdf",
+      content_type: "application/pdf"
+    )
+
+    get edit_idea_url(@idea)
+
+    assert_response :success
+    assert_select ".current-attachments__section--images [data-attachment-kind=?]", "image", 1
+    assert_select ".current-attachments__section--images img.current-attachments__thumb", 1
+    assert_select ".current-attachments__section--documents [data-attachment-kind=?]", "document", 1
+    assert_select ".current-attachments__section--documents [data-filename=?]", "brief.pdf", 1
+  end
+
+  test "show media tab separates images and documents" do
+    @idea.attachments.attach(
+      io: StringIO.new("image data"),
+      filename: "mockup.png",
+      content_type: "image/png"
+    )
+    @idea.attachments.attach(
+      io: StringIO.new("document data"),
+      filename: "brief.pdf",
+      content_type: "application/pdf"
+    )
+
+    get idea_url(@idea)
+
+    assert_response :success
+    assert_select ".media-section__group--images img.attachment-thumbnail", 1
+    assert_select ".media-section__group--documents .attachment-file", 1
+    assert_select ".media-section__group--documents .attachment-name", text: "brief.pdf"
   end
 
   test "should update idea" do

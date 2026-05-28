@@ -6,7 +6,7 @@
 #
 default: &default
   adapter: sqlite3
-  pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
+  pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 3 } %>
   timeout: 5000
   pragmas:
     busy_timeout: 5000
@@ -20,7 +20,7 @@ development:
     database: storage/development.sqlite3
   queue:
     <<: *default
-    database: storage/queue.sqlite3
+    database: storage/development_queue.sqlite3
     migrations_paths: db/queue_migrate
     pragmas:
       journal_mode: wal

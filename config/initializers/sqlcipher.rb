@@ -28,8 +28,14 @@ module IdeaFoundrySqlcipherConnectionKey
       raise "SQLite3 gem is not linked with SQLCipher. Rebuild the image/gem with libsqlcipher and --with-sqlcipher before opening encrypted databases."
     end
 
-    @raw_connection.execute(%(PRAGMA key = "x'#{RecoverySecret.sqlcipher_key_hex}'"))
-    @raw_connection.execute("PRAGMA cipher_memory_security = ON") rescue nil
+    Rails.logger.silence do
+      @raw_connection.execute(%(PRAGMA key = "x'#{RecoverySecret.sqlcipher_key_hex}'"))
+      begin
+      @raw_connection.execute("PRAGMA cipher_memory_security = ON")
+    rescue => e
+      Rails.logger.warn("[SQLCipher] cipher_memory_security not set: #{e.message}")
+    end
+    end
 
     verify_sqlcipher_database_unlock! if encrypted_database
   rescue SQLite3::NotADatabaseException
@@ -74,4 +80,9 @@ else
   ActiveSupport.on_load(:active_record_sqlite3adapter) do
     prepend IdeaFoundrySqlcipherConnectionKey
   end
+end
+
+# Migrate co-located recovery_passphrase.key → OS keychain on startup.
+ActiveSupport.on_load(:after_initialize) do
+  RecoverySecret.migrate_legacy_credential!
 end

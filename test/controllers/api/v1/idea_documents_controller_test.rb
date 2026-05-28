@@ -22,6 +22,32 @@ class Api::V1::IdeaDocumentsControllerTest < ActionDispatch::IntegrationTest
     assert_equal @version.id, json["latest_version_id"]
   end
 
+  test "shows the idea document as markdown for markdown requests" do
+    get api_v1_idea_document_url(@idea, format: :md), headers: @headers
+
+    assert_response :success
+    assert_equal "text/markdown", response.media_type
+    assert_match "# Mobile App for Local Farmers", response.body
+    assert_match "Initial spec", response.body
+    assert_match "Latest version: #{@version.id}", response.body
+  end
+
+  test "reports a structured event when reading the idea document" do
+    event = assert_event_reported(
+      "idea_document.read",
+      payload: {
+        idea_id: @idea.id,
+        credential_id: @token.id,
+        format: "json"
+      },
+      tags: { idea_work_token: true }
+    ) do
+      get api_v1_idea_document_url(@idea), headers: @headers
+    end
+
+    assert_equal @idea.user_id, event[:payload][:user_id]
+  end
+
   test "updates the idea document and records version history" do
     assert_difference -> { @idea.versions.count }, 1 do
       patch api_v1_idea_document_url(@idea),
@@ -33,6 +59,25 @@ class Api::V1::IdeaDocumentsControllerTest < ActionDispatch::IntegrationTest
     @idea.reload
     assert_equal "Revised spec", @idea.description.to_plain_text
     assert_equal "Spec Bot: Tighten acceptance criteria", @idea.latest_version.commit_message
+  end
+
+  test "reports a structured event when updating the idea document" do
+    event = assert_event_reported(
+      "idea_document.updated",
+      payload: {
+        idea_id: @idea.id,
+        credential_id: @token.id,
+        operation: "append",
+        changed: true
+      },
+      tags: { idea_work_token: true }
+    ) do
+      patch api_v1_idea_document_url(@idea),
+            params: { append: "Evented note", commit_message: "Add evented note" }.to_json,
+            headers: @headers.merge("Content-Type" => "application/json")
+    end
+
+    assert_equal @idea.reload.latest_version.id, event[:payload][:version_id]
   end
 
   test "appends to the idea document and records version history" do

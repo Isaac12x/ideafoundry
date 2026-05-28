@@ -22,6 +22,26 @@ class SettingsControllerTest < ActionDispatch::IntegrationTest
     assert_select "a[href=?]", settings_display_path
   end
 
+  test "GET settings renders Local Agent link" do
+    get settings_path
+
+    assert_response :success
+    assert_equal "/settings/ai-agents", settings_local_agent_path
+    assert_select "a[href=?]", settings_local_agent_path
+  end
+
+  test "layout renders global ask agent form" do
+    get ideas_path
+
+    assert_response :success
+    assert_select "nav.header-nav .ask-agent-shell", count: 0
+    assert_select ".ask-agent-shell form[action=?]", settings_local_agent_questions_path, count: 1
+    assert_select ".ask-agent-shell textarea[name=?]", "agent_question[body]"
+    assert_select ".ask-agent-shell input[name=?][value=?]", "return_to", "#{ideas_path}?ask_agent=open"
+    assert_select ".ask-agent-launcher[aria-controls=?]", "ask_agent_sidebar"
+    assert_select ".ask-agent-sidebar[role=?]", "dialog"
+  end
+
   test "GET settings/display renders display quote field with current quote" do
     @user.update!(settings: (@user.settings || {}).merge("display_quote" => { "text" => "Focus on the next useful thing." }))
 
@@ -225,9 +245,9 @@ class SettingsControllerTest < ActionDispatch::IntegrationTest
 
     assert_redirected_to settings_security_path
     assert_match(/Encrypted 1 SQLite database/, flash[:notice])
-    assert_equal "correct horse battery staple", File.read(root.join("recovery_passphrase.key"))
+    assert_equal "correct horse battery staple", JSON.parse(File.read(root.join("recovery_passphrase.key")))["passphrase"]
     refute_equal "SQLite format 3\0", File.binread(database_path, 16)
-    assert_equal "SQLite format 3\0", File.binread(Dir[backup_dir.join("production.sqlite3.*.plaintext").to_s].first, 16)
+    assert_nil Dir[backup_dir.join("production.sqlite3.*.plaintext").to_s].first, "plaintext backup must be deleted after successful migration"
   ensure
     FileUtils.rm_rf(root) if root&.exist?
   end
@@ -302,6 +322,165 @@ class SettingsControllerTest < ActionDispatch::IntegrationTest
     assert @user.reload.idea_work_tokens_enabled?
   end
 
+  test "PATCH settings/idea-work-tokens as json updates token access setting" do
+    patch settings_idea_work_tokens_path, as: :json, params: {
+      idea_work_tokens: {
+        enabled: "1"
+      }
+    }
+
+    assert_response :success
+    assert_equal({ "saved" => true }, JSON.parse(response.body))
+    assert @user.reload.idea_work_tokens_enabled?
+  end
+
+  test "GET settings/ai-agents renders local agent controls" do
+    get settings_local_agent_path
+
+    assert_response :success
+    assert_select "input[name=?]", "local_agent[enabled]"
+    assert_select "input[name=?]", "local_agent[destructive_actions_enabled]"
+    assert_select "input[name=?]", "local_agent[sleep_seconds]"
+    assert_select "input[name=?]", "local_agent[max_actions_per_cycle]"
+    assert_select "input[name=?]", "local_agent[model]", count: 0
+    assert_select "input[name=?]", "local_agent[base_url]", count: 0
+    assert_select "form[action=?]", settings_local_agent_run_now_path
+  end
+
+  test "GET settings/ai-agents omits the local question form when local agent is enabled" do
+    @user.update_local_agent_settings("enabled" => "1")
+
+    get settings_local_agent_path
+
+    assert_response :success
+    assert_select ".local-agent-questions", count: 0
+    assert_select ".ask-agent-shell form[action=?]", settings_local_agent_questions_path, count: 1
+    assert_select ".ask-agent-shell textarea[name=?]", "agent_question[body]"
+  end
+
+  test "GET settings/ai-agents omits the local question form when local agent is disabled" do
+    @user.update_local_agent_settings("enabled" => "0")
+
+    get settings_local_agent_path
+
+    assert_response :success
+    assert_select ".local-agent-questions", count: 0
+    assert_select ".ask-agent-shell form[action=?]", settings_local_agent_questions_path, count: 1
+  end
+
+  test "POST settings/ai-agents/questions queues a local agent question" do
+    @user.update_local_agent_settings("enabled" => "1")
+
+    assert_difference -> { @user.agent_events.where(event_type: "question").count }, 1 do
+      post settings_local_agent_questions_path, params: {
+        agent_question: {
+          body: "Which idea should I focus on next?"
+        }
+      }
+    end
+
+    assert_redirected_to settings_local_agent_path(ask_agent: "open")
+    event = @user.agent_events.where(event_type: "question").recent.first
+    assert_equal "Which idea should I focus on next?", event.payload["question"]
+    assert_equal "pending", event.payload["status"]
+  end
+
+  test "POST settings/ai-agents/questions returns to provided page" do
+    @user.update_local_agent_settings("enabled" => "1")
+
+    assert_difference -> { @user.agent_events.where(event_type: "question").count }, 1 do
+      post settings_local_agent_questions_path, params: {
+        return_to: ideas_path,
+        agent_question: {
+          body: "What changed recently?"
+        }
+      }
+    end
+
+    assert_redirected_to ideas_path
+  end
+
+  test "POST settings/ai-agents/questions rejects questions while local agent is disabled" do
+    @user.update_local_agent_settings("enabled" => "0")
+
+    assert_no_difference -> { @user.agent_events.where(event_type: "question").count } do
+      post settings_local_agent_questions_path, params: {
+        agent_question: {
+          body: "What changed recently?"
+        }
+      }
+    end
+
+    assert_redirected_to settings_local_agent_path
+  end
+
+  test "GET settings/local-agent redirects to ai agents settings" do
+    get "/settings/local-agent"
+
+    assert_redirected_to settings_local_agent_path
+  end
+
+  test "PATCH settings/ai-agents updates local agent settings" do
+    patch settings_local_agent_path, params: {
+      local_agent: {
+        enabled: "1",
+        destructive_actions_enabled: "0",
+        sleep_seconds: "9",
+        max_actions_per_cycle: "4",
+        model: "local-model",
+        base_url: "http://localhost:1234/v1",
+        hacker: "bad"
+      }
+    }
+
+    assert_redirected_to settings_local_agent_path
+    settings = @user.reload.local_agent_settings
+    assert_equal true, settings["enabled"]
+    assert_equal false, settings["destructive_actions_enabled"]
+    assert_equal 9, settings["sleep_seconds"]
+    assert_equal 4, settings["max_actions_per_cycle"]
+    refute_includes settings, "model"
+    refute_includes settings, "base_url"
+    assert_nil @user.settings.dig("local_agent", "model")
+    assert_nil @user.settings.dig("local_agent", "base_url")
+    assert_nil @user.settings.dig("local_agent", "hacker")
+  end
+
+  test "PATCH settings/ai-agents as json updates local agent settings" do
+    patch settings_local_agent_path, as: :json, params: {
+      local_agent: {
+        enabled: "1",
+        destructive_actions_enabled: "0",
+        sleep_seconds: "9",
+        max_actions_per_cycle: "4"
+      }
+    }
+
+    assert_response :success
+    assert_equal true, JSON.parse(response.body)["saved"]
+    settings = @user.reload.local_agent_settings
+    assert_equal true, settings["enabled"]
+    assert_equal false, settings["destructive_actions_enabled"]
+  end
+
+  test "GET settings/ai-agents renders pending recommendations" do
+    idea = @user.ideas.create!(title: "Recommendation target", state: :triage)
+    recommendation = @user.agent_recommendations.create!(
+      target: idea,
+      action: "transition_idea",
+      risk_level: "high",
+      reasoning: "Ready to ship",
+      payload: { "idea_id" => idea.id, "state" => "shipped" }
+    )
+
+    get settings_local_agent_path
+
+    assert_response :success
+    assert_select "[data-agent-recommendation-id=?]", recommendation.id.to_s
+    assert_select "form[action=?]", settings_local_agent_recommendation_approve_path(recommendation)
+    assert_select "form[action=?]", settings_local_agent_recommendation_dismiss_path(recommendation)
+  end
+
   test "GET settings/lists renders page" do
     get settings_lists_path
     assert_response :success
@@ -331,6 +510,43 @@ class SettingsControllerTest < ActionDispatch::IntegrationTest
     assert_equal 'info', @user.event_preset_for('state_changed')
     assert_equal 'digest', @user.event_preset_for('score_changed')
     assert_equal ['state_changed'], @user.notification_triggers
+  end
+
+  test "PATCH settings/notifications as json saves toggle preferences" do
+    patch settings_notifications_path, as: :json, params: {
+      notification_triggers: %w[state_changed],
+      notification_content: {
+        state_changed: {
+          include_scores: "false",
+          include_description: "true"
+        }
+      }
+    }
+
+    assert_response :success
+    assert_equal({ "saved" => true }, JSON.parse(response.body))
+    @user.reload
+    assert_equal ["state_changed"], @user.notification_triggers
+    assert_equal "false", @user.notification_content.dig("state_changed", "include_scores")
+    assert_equal "true", @user.notification_content.dig("state_changed", "include_description")
+  end
+
+  test "PATCH settings/backup as json saves on off settings" do
+    patch settings_backup_path, as: :json, params: {
+      backup_settings: {
+        frequency: "daily",
+        retention_days: "14",
+        max_backups: "3",
+        auto_cleanup: "false",
+        email_notification: "true"
+      }
+    }
+
+    assert_response :success
+    assert_equal({ "saved" => true }, JSON.parse(response.body))
+    settings = @user.reload.backup_settings
+    assert_equal "false", settings["auto_cleanup"]
+    assert_equal "true", settings["email_notification"]
   end
 
   test "idea tabs route uses hyphenated path" do
