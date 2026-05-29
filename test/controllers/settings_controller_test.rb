@@ -481,6 +481,22 @@ class SettingsControllerTest < ActionDispatch::IntegrationTest
     assert_select "form[action=?]", settings_local_agent_recommendation_dismiss_path(recommendation)
   end
 
+  test "POST dismiss local agent recommendation redirects to safe return path" do
+    idea = @user.ideas.create!(title: "Inline recommendation target", state: :triage)
+    recommendation = @user.agent_recommendations.create!(
+      target: idea,
+      action: "update_idea",
+      risk_level: "medium",
+      reasoning: "Needs review",
+      payload: { "idea_id" => idea.id, "title" => "Updated" }
+    )
+
+    post settings_local_agent_recommendation_dismiss_path(recommendation),
+         params: { return_to: idea_path(idea, anchor: "agent-suggestions") }
+
+    assert_redirected_to idea_path(idea, anchor: "agent-suggestions")
+  end
+
   test "GET settings/lists renders page" do
     get settings_lists_path
     assert_response :success
