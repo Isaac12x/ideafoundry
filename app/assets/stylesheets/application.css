@@ -197,6 +197,10 @@ a:hover { color: var(--accent-hover); }
   pointer-events: none;
 }
 
+.ask-agent-shell[hidden] {
+  display: none;
+}
+
 .ask-agent-launcher {
   position: fixed;
   right: 1.15rem;
@@ -206,26 +210,160 @@ a:hover { color: var(--accent-hover); }
   justify-content: center;
   width: 64px;
   height: 64px;
-  border: 1px solid rgba(212, 149, 58, 0.38);
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, #202024);
   border-radius: 50%;
-  background: color-mix(in srgb, var(--bg-elevated) 92%, var(--accent));
+  background:
+    radial-gradient(circle at 34% 23%, rgba(255, 248, 218, 0.28), transparent 24px),
+    linear-gradient(145deg, #332718, #151419 58%, #0d0d10);
   color: var(--accent);
-  box-shadow: var(--shadow-lg), var(--shadow-glow);
+  box-shadow:
+    0 18px 36px rgba(0, 0, 0, 0.52),
+    0 0 28px rgba(212, 149, 58, 0.16),
+    inset 0 1px 1px rgba(255, 241, 195, 0.24),
+    inset 0 -13px 18px rgba(0, 0, 0, 0.42);
   cursor: pointer;
+  isolation: isolate;
+  overflow: visible;
+  perspective: 140px;
   pointer-events: auto;
-  transition: transform 0.18s ease, border-color 0.18s ease, color 0.18s ease, background 0.18s ease;
+  transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.ask-agent-launcher::before,
+.ask-agent-launcher::after {
+  content: "";
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.ask-agent-launcher::before {
+  inset: 8px;
+  z-index: -1;
+  background:
+    radial-gradient(circle at 38% 22%, rgba(255, 255, 255, 0.2), transparent 22px),
+    conic-gradient(from 140deg, rgba(212, 149, 58, 0.16), rgba(91, 184, 169, 0.2), rgba(180, 82, 64, 0.2), rgba(212, 149, 58, 0.16));
+  box-shadow: inset 0 -9px 15px rgba(0, 0, 0, 0.42);
+  opacity: 0.8;
+}
+
+.ask-agent-launcher::after {
+  inset: -6px;
+  z-index: -2;
+  border: 1px solid rgba(212, 149, 58, 0.18);
+  background: conic-gradient(from 18deg, transparent 0 18%, rgba(212, 149, 58, 0.34) 20%, transparent 26% 58%, rgba(91, 184, 169, 0.24) 62%, transparent 70% 100%);
+  filter: blur(0.2px);
+  opacity: 0.78;
+  animation: ask-agent-rim-turn 18s linear infinite;
+}
+
+.ask-agent-launcher__invention {
+  position: relative;
+  display: block;
+  width: 45px;
+  height: 45px;
+  transform-style: preserve-3d;
+  z-index: 1;
+}
+
+.ask-agent-invention {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  filter: drop-shadow(0 10px 9px rgba(0, 0, 0, 0.38));
+  transform: translateY(4px) rotateX(18deg) rotateY(-12deg) scale(0.78);
+  transition: opacity 0.42s ease, transform 0.42s cubic-bezier(0.22, 1, 0.36, 1), filter 0.18s ease;
+}
+
+.ask-agent-launcher[data-invention="bulb"] .ask-agent-invention--bulb,
+.ask-agent-launcher[data-invention="engine"] .ask-agent-invention--engine,
+.ask-agent-launcher[data-invention="magnet"] .ask-agent-invention--magnet,
+.ask-agent-launcher[data-invention="gyro"] .ask-agent-invention--gyro {
+  opacity: 1;
+  transform: translateY(0) rotateX(16deg) rotateY(-8deg) rotateZ(-3deg) scale(1);
+  animation: ask-agent-invention-drift 4.8s ease-in-out infinite;
+}
+
+.ask-agent-launcher[data-invention="engine"] {
+  border-color: rgba(144, 168, 158, 0.56);
+}
+
+.ask-agent-launcher[data-invention="engine"]::before {
+  background:
+    radial-gradient(circle at 35% 23%, rgba(237, 245, 239, 0.18), transparent 22px),
+    conic-gradient(from 90deg, rgba(212, 149, 58, 0.14), rgba(144, 168, 158, 0.28), rgba(89, 95, 92, 0.26), rgba(212, 149, 58, 0.14));
+}
+
+.ask-agent-launcher[data-invention="magnet"] {
+  border-color: rgba(88, 176, 189, 0.54);
+}
+
+.ask-agent-launcher[data-invention="magnet"]::before {
+  background:
+    radial-gradient(circle at 35% 23%, rgba(255, 235, 220, 0.18), transparent 22px),
+    conic-gradient(from 128deg, rgba(229, 83, 65, 0.25), rgba(75, 163, 184, 0.3), rgba(212, 149, 58, 0.15), rgba(229, 83, 65, 0.25));
+}
+
+.ask-agent-launcher[data-invention="gyro"] {
+  border-color: rgba(116, 196, 156, 0.54);
+}
+
+.ask-agent-launcher[data-invention="gyro"]::before {
+  background:
+    radial-gradient(circle at 35% 23%, rgba(236, 255, 241, 0.2), transparent 22px),
+    conic-gradient(from 156deg, rgba(116, 196, 156, 0.28), rgba(212, 149, 58, 0.2), rgba(65, 94, 101, 0.28), rgba(116, 196, 156, 0.28));
 }
 
 .ask-agent-launcher:hover {
   transform: translateY(-2px);
-  border-color: rgba(212, 149, 58, 0.72);
-  color: var(--accent-hover);
-  background: var(--bg-overlay);
+  border-color: rgba(241, 199, 122, 0.78);
+  box-shadow:
+    0 22px 40px rgba(0, 0, 0, 0.5),
+    0 0 34px rgba(212, 149, 58, 0.24),
+    inset 0 1px 1px rgba(255, 241, 195, 0.3),
+    inset 0 -13px 18px rgba(0, 0, 0, 0.38);
+}
+
+.ask-agent-launcher:hover .ask-agent-invention {
+  filter: drop-shadow(0 12px 11px rgba(0, 0, 0, 0.44)) saturate(1.08);
 }
 
 .ask-agent-launcher:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 4px;
+}
+
+@keyframes ask-agent-invention-drift {
+  0%, 100% {
+    transform: translateY(0) rotateX(16deg) rotateY(-8deg) rotateZ(-3deg) scale(1);
+  }
+
+  50% {
+    transform: translateY(2px) rotateX(20deg) rotateY(10deg) rotateZ(4deg) scale(1.03);
+  }
+}
+
+@keyframes ask-agent-rim-turn {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ask-agent-launcher::after,
+  .ask-agent-launcher[data-invention="bulb"] .ask-agent-invention--bulb,
+  .ask-agent-launcher[data-invention="engine"] .ask-agent-invention--engine,
+  .ask-agent-launcher[data-invention="magnet"] .ask-agent-invention--magnet,
+  .ask-agent-launcher[data-invention="gyro"] .ask-agent-invention--gyro {
+    animation: none;
+  }
+
+  .ask-agent-invention {
+    transition: opacity 0.2s ease;
+  }
 }
 
 .ask-agent-backdrop {
@@ -2240,6 +2378,11 @@ select.form-control {
     bottom: 0.85rem;
     width: 56px;
     height: 56px;
+  }
+
+  .ask-agent-launcher__invention {
+    width: 39px;
+    height: 39px;
   }
 
   .ask-agent-sidebar {

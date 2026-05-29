@@ -1,10 +1,14 @@
 import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
-  static targets = ["backdrop", "body", "launcher", "messages", "panel"]
+  static targets = ["backdrop", "body", "invention", "launcher", "messages", "panel"]
+  static inventionVariants = ["bulb", "engine", "magnet", "gyro"]
 
   connect() {
     this.resizing = false
+    this.inventionIndex = this.initialInventionIndex()
+    this.showCurrentInvention()
+    this.startInventionCycle()
 
     if (this.shouldOpenFromUrl()) {
       requestAnimationFrame(() => {
@@ -16,6 +20,7 @@ export default class extends Controller {
 
   disconnect() {
     this.stopResize()
+    this.stopInventionCycle()
   }
 
   open(event) {
@@ -118,5 +123,35 @@ export default class extends Controller {
     const url = new URL(window.location.href)
     url.searchParams.delete("ask_agent")
     window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`)
+  }
+
+  startInventionCycle() {
+    if (!this.hasLauncherTarget) return
+
+    this.inventionTimer = window.setInterval(() => {
+      this.inventionIndex = (this.inventionIndex + 1) % this.constructor.inventionVariants.length
+      this.showCurrentInvention()
+    }, 8000)
+  }
+
+  stopInventionCycle() {
+    if (!this.inventionTimer) return
+
+    window.clearInterval(this.inventionTimer)
+    this.inventionTimer = null
+  }
+
+  showCurrentInvention() {
+    if (!this.hasLauncherTarget) return
+
+    const invention = this.constructor.inventionVariants[this.inventionIndex]
+    this.launcherTarget.dataset.invention = invention
+    if (this.hasInventionTarget) {
+      this.inventionTarget.dataset.currentInvention = invention
+    }
+  }
+
+  initialInventionIndex() {
+    return Math.floor(Date.now() / 8000) % this.constructor.inventionVariants.length
   }
 }

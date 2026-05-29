@@ -65,6 +65,17 @@ class TypingLocksControllerTest < ActionDispatch::IntegrationTest
     assert_no_match(/value="Unlock"/, response.body)
   end
 
+  test "lock screens do not render ask agent bubble" do
+    @user.store_typing_fingerprint!(fingerprint_for(SAMPLE_TEXT))
+
+    get root_path
+
+    assert_response :success
+    assert_select ".typing-lock-shell"
+    assert_select ".ask-agent-shell", count: 0
+    assert_no_match(/Open Ask Agent/, response.body)
+  end
+
   test "unlock form opts out of turbo so matched POST response can render" do
     @user.store_typing_fingerprint!(fingerprint_for(SAMPLE_TEXT))
 
