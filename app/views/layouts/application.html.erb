@@ -18,8 +18,8 @@
 
   <%
     body_class = content_for?(:body_class) ? yield(:body_class) : ""
-    typing_activity_enabled = @user&.security_lock_enabled? &&
-      !body_class.include?("typing-lock-page")
+    security_lock_screen = body_class.include?("typing-lock-page")
+    typing_activity_enabled = @user&.security_lock_enabled? && !security_lock_screen
     typing_lock_shortcut = "Ctrl/Cmd+Shift+L"
     display_quote = @user&.display_quote.to_s.strip
     display_contrast = @user&.display_contrast.to_s
@@ -100,7 +100,7 @@
       </div>
     </header>
 
-    <%= render "layouts/ask_agent" %>
+    <%= render "layouts/ask_agent" unless security_lock_screen %>
 
     <% if display_quote.present? %>
       <div class="app-quote-banner">

@@ -9,15 +9,103 @@
           class="ask-agent-launcher"
           data-action="click->ask-agent#open"
           data-ask-agent-target="launcher"
+          data-invention="bulb"
           aria-controls="ask_agent_sidebar"
           aria-expanded="false"
           aria-haspopup="dialog"
           aria-label="Open Ask Agent">
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-      <path d="M12 3a6 6 0 016 6v2a6 6 0 01-12 0V9a6 6 0 016-6z"/>
-      <path d="M8 15v2a4 4 0 008 0v-2"/>
-      <path d="M9 9h.01M15 9h.01M10 12h4"/>
-    </svg>
+    <span class="ask-agent-launcher__invention" data-ask-agent-target="invention" aria-hidden="true">
+      <svg class="ask-agent-invention ask-agent-invention--bulb" viewBox="0 0 64 64" focusable="false" aria-hidden="true">
+        <defs>
+          <radialGradient id="ask-agent-bulb-glass" cx="32%" cy="20%" r="70%">
+            <stop offset="0" stop-color="#fff8d8"/>
+            <stop offset="0.36" stop-color="#f6c95f"/>
+            <stop offset="1" stop-color="#9a5d21"/>
+          </radialGradient>
+          <linearGradient id="ask-agent-bulb-cap" x1="20" y1="42" x2="44" y2="54" gradientUnits="userSpaceOnUse">
+            <stop stop-color="#f1c77a"/>
+            <stop offset="0.52" stop-color="#9f6c2f"/>
+            <stop offset="1" stop-color="#52351e"/>
+          </linearGradient>
+        </defs>
+        <ellipse cx="32" cy="26" rx="17" ry="19" fill="url(#ask-agent-bulb-glass)"/>
+        <path d="M22 27c0-9 5-15 13-17" fill="none" stroke="#fff7c7" stroke-width="3" stroke-linecap="round" opacity="0.58"/>
+        <path d="M25 41h14l-2 11H27z" fill="url(#ask-agent-bulb-cap)"/>
+        <path d="M26 45h12M27 49h10" fill="none" stroke="#3a281a" stroke-width="2" stroke-linecap="round" opacity="0.66"/>
+        <path d="M27 33c2.4-3 7.6-3 10 0M29 34l2 7M35 34l-2 7" fill="none" stroke="#6c3417" stroke-width="2" stroke-linecap="round"/>
+        <ellipse cx="41" cy="21" rx="4" ry="7" fill="#fff8d8" opacity="0.24" transform="rotate(-22 41 21)"/>
+      </svg>
+
+      <svg class="ask-agent-invention ask-agent-invention--engine" viewBox="0 0 64 64" focusable="false" aria-hidden="true">
+        <defs>
+          <linearGradient id="ask-agent-engine-body" x1="17" y1="21" x2="49" y2="48" gradientUnits="userSpaceOnUse">
+            <stop stop-color="#d7e0db"/>
+            <stop offset="0.45" stop-color="#737d7a"/>
+            <stop offset="1" stop-color="#23292a"/>
+          </linearGradient>
+          <linearGradient id="ask-agent-engine-copper" x1="14" y1="25" x2="50" y2="46" gradientUnits="userSpaceOnUse">
+            <stop stop-color="#ffd08b"/>
+            <stop offset="0.5" stop-color="#c46f2a"/>
+            <stop offset="1" stop-color="#5d2d1c"/>
+          </linearGradient>
+        </defs>
+        <rect x="17" y="23" width="31" height="23" rx="7" fill="url(#ask-agent-engine-body)"/>
+        <rect x="12" y="29" width="9" height="11" rx="3" fill="url(#ask-agent-engine-copper)"/>
+        <path d="M45 29h8l2 7-5 5h-5z" fill="url(#ask-agent-engine-copper)"/>
+        <circle cx="32" cy="35" r="10" fill="#15191a" opacity="0.72"/>
+        <circle cx="32" cy="35" r="7" fill="#97a5a0"/>
+        <path d="M32 28v14M25 35h14M27 30l10 10M37 30 27 40" stroke="#27302f" stroke-width="2" stroke-linecap="round"/>
+        <circle cx="32" cy="35" r="3" fill="#f3c46b"/>
+        <path d="M22 23l4-6h14l4 6" fill="none" stroke="#d5ddd8" stroke-width="4" stroke-linecap="round"/>
+        <ellipse cx="33" cy="49" rx="17" ry="4" fill="#000" opacity="0.18"/>
+      </svg>
+
+      <svg class="ask-agent-invention ask-agent-invention--magnet" viewBox="0 0 64 64" focusable="false" aria-hidden="true">
+        <defs>
+          <linearGradient id="ask-agent-magnet-arc" x1="16" y1="17" x2="48" y2="51" gradientUnits="userSpaceOnUse">
+            <stop stop-color="#ff6b57"/>
+            <stop offset="0.46" stop-color="#c93b31"/>
+            <stop offset="0.54" stop-color="#4fa7b6"/>
+            <stop offset="1" stop-color="#1d5e74"/>
+          </linearGradient>
+          <linearGradient id="ask-agent-magnet-face" x1="19" y1="15" x2="48" y2="52" gradientUnits="userSpaceOnUse">
+            <stop stop-color="#ffd4bf"/>
+            <stop offset="0.45" stop-color="#ea5845"/>
+            <stop offset="0.55" stop-color="#8bd8df"/>
+            <stop offset="1" stop-color="#2e7792"/>
+          </linearGradient>
+        </defs>
+        <path d="M18 18v18c0 11 7 18 14 18s14-7 14-18V18" fill="none" stroke="#121719" stroke-width="17" stroke-linecap="round"/>
+        <path d="M18 18v18c0 11 7 18 14 18s14-7 14-18V18" fill="none" stroke="url(#ask-agent-magnet-arc)" stroke-width="14" stroke-linecap="round"/>
+        <path d="M18 18v18c0 11 7 18 14 18s14-7 14-18V18" fill="none" stroke="url(#ask-agent-magnet-face)" stroke-width="9" stroke-linecap="round"/>
+        <path d="M11 18h14M39 18h14" stroke="#f2e9d2" stroke-width="6" stroke-linecap="round"/>
+        <path d="M12 21h12M40 21h12" stroke="#2b2522" stroke-width="2" stroke-linecap="round" opacity="0.38"/>
+        <circle cx="32" cy="54" r="2.5" fill="#ffd98a" opacity="0.9"/>
+      </svg>
+
+      <svg class="ask-agent-invention ask-agent-invention--gyro" viewBox="0 0 64 64" focusable="false" aria-hidden="true">
+        <defs>
+          <linearGradient id="ask-agent-gyro-ring" x1="12" y1="18" x2="53" y2="48" gradientUnits="userSpaceOnUse">
+            <stop stop-color="#f9df9f"/>
+            <stop offset="0.46" stop-color="#8d6f3b"/>
+            <stop offset="1" stop-color="#2e3f45"/>
+          </linearGradient>
+          <radialGradient id="ask-agent-gyro-core" cx="35%" cy="26%" r="72%">
+            <stop stop-color="#f4fff6"/>
+            <stop offset="0.42" stop-color="#74c49c"/>
+            <stop offset="1" stop-color="#1d5544"/>
+          </radialGradient>
+        </defs>
+        <ellipse cx="32" cy="32" rx="23" ry="8" fill="none" stroke="#121719" stroke-width="5" transform="rotate(-22 32 32)"/>
+        <ellipse cx="32" cy="32" rx="23" ry="8" fill="none" stroke="url(#ask-agent-gyro-ring)" stroke-width="3" transform="rotate(-22 32 32)"/>
+        <ellipse cx="32" cy="32" rx="22" ry="8" fill="none" stroke="#121719" stroke-width="5" transform="rotate(37 32 32)"/>
+        <ellipse cx="32" cy="32" rx="22" ry="8" fill="none" stroke="url(#ask-agent-gyro-ring)" stroke-width="3" transform="rotate(37 32 32)"/>
+        <circle cx="32" cy="32" r="9" fill="url(#ask-agent-gyro-core)"/>
+        <circle cx="29" cy="29" r="3" fill="#ecfff1" opacity="0.64"/>
+        <path d="M32 41v10M24 52h16" stroke="#d6b873" stroke-width="4" stroke-linecap="round"/>
+        <path d="M32 13v10" stroke="#d6b873" stroke-width="4" stroke-linecap="round"/>
+      </svg>
+    </span>
     <span class="sr-only">Ask Agent</span>
   </button>
 
