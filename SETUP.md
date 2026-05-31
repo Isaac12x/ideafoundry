@@ -81,11 +81,17 @@ The sidecar services bind to localhost only:
 - Voice ID: `http://127.0.0.1:8000` (configurable via `VOICE_ID_PORT`)
 - OCR: `http://127.0.0.1:8001/extract` (configurable via `OCR_SERVICE_PORT`)
 
+OCR uses Surya with a local `llama.cpp` inference backend. The first OCR request downloads
+the Surya model into the `ocr-model-cache` compose volume and can take several minutes.
+The service returns complete plain text for saving plus Surya HTML blocks in metadata for
+rendering extracted pages.
+
 When Rails runs directly under launchd/systemd, point it at those host-side services:
 
 ```bash
 export VOICE_ID_SERVICE_URL=http://127.0.0.1:8000
 export OCR_SERVICE_URL=http://127.0.0.1:8001/extract
+export OCR_SERVICE_TIMEOUT=900
 ```
 
 If you do want compose to run the Rails app too, opt into the `app` profile:
