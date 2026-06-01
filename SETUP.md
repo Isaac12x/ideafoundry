@@ -86,7 +86,7 @@ the Surya model into the `ocr-model-cache` compose volume and can take several m
 The service returns complete plain text for saving plus Surya HTML blocks in metadata for
 rendering extracted pages.
 
-When Rails runs directly under launchd/systemd, point it at those host-side services:
+When Rails runs directly under launchd/systemd, `bin/start_idea_app.sh` starts the default compose sidecar graph in detached mode before Rails. It uses the first available running runtime from `docker compose`, `docker-compose`, `podman compose`, or `podman-compose`; set `IDEA_APP_COMPOSE_CMD` to override that detection. The script also points Rails at the host-side service URLs:
 
 ```bash
 export VOICE_ID_SERVICE_URL=http://127.0.0.1:8000
