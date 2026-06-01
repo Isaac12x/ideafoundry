@@ -32,6 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Rack::Attack throttling for recovery secret and local upgrade endpoints.
 - Active Storage upgrade migrations and idea TLDR persistence.
 - Static 400 and unsupported-browser error pages with app icons.
+- LaunchAgent startup now brings up the Docker/Podman Compose sidecar services before Rails.
 
 ### Changed
 
