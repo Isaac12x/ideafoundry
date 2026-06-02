@@ -611,6 +611,10 @@ class User < ApplicationRecord
     local_agent_settings['enabled'] == true
   end
 
+  def local_agent_live?
+    local_agent_enabled? && agent_runs.active.exists?
+  end
+
   def local_agent_destructive_actions_enabled?
     local_agent_settings['destructive_actions_enabled'] == true
   end
