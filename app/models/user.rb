@@ -31,6 +31,43 @@ class User < ApplicationRecord
     'timing' => 0.2
   }.freeze
 
+  LEGACY_SCORING_SYSTEM_ID = 'weighted_readiness'.freeze
+  FOUNDER_SCORECARD_SYSTEM_ID = 'founder_scorecard'.freeze
+
+  DEFAULT_SCORING_SYSTEMS = {
+    LEGACY_SCORING_SYSTEM_ID => {
+      'id' => LEGACY_SCORING_SYSTEM_ID,
+      'name' => 'Weighted readiness',
+      'description' => 'Weighted TRL, difficulty, opportunity, and timing score normalized to 10.',
+      'kind' => 'legacy_weighted',
+      'criteria' => [
+        { 'key' => 'trl', 'label' => 'Technology readiness', 'scale_min' => 0, 'scale_max' => 10 },
+        { 'key' => 'difficulty', 'label' => 'Difficulty', 'scale_min' => 0, 'scale_max' => 10 },
+        { 'key' => 'opportunity', 'label' => 'Opportunity', 'scale_min' => 0, 'scale_max' => 10 },
+        { 'key' => 'timing', 'label' => 'Timing', 'scale_min' => 0, 'scale_max' => 10 }
+      ]
+    },
+    FOUNDER_SCORECARD_SYSTEM_ID => {
+      'id' => FOUNDER_SCORECARD_SYSTEM_ID,
+      'name' => 'Founder scorecard',
+      'description' => 'Seven 1-5 criteria for deciding whether an idea is ready for active work.',
+      'kind' => 'criterion_scorecard',
+      'scale_min' => 1,
+      'scale_max' => 5,
+      'work_threshold_total' => 24,
+      'blocks_work' => true,
+      'criteria' => [
+        { 'key' => 'pain_intensity', 'label' => 'Pain intensity' },
+        { 'key' => 'buyer_clarity', 'label' => 'Buyer clarity' },
+        { 'key' => 'distribution_access', 'label' => 'Distribution access' },
+        { 'key' => 'speed_to_mvp', 'label' => 'Speed to MVP' },
+        { 'key' => 'revenue_potential', 'label' => 'Revenue potential' },
+        { 'key' => 'strategic_fit', 'label' => 'Strategic fit with main company' },
+        { 'key' => 'operator_independence', 'label' => 'Can operate without me' }
+      ]
+    }
+  }.freeze
+
   DEFAULT_EMAIL_SETTINGS = {
     'recipients' => ''
   }.freeze
@@ -196,6 +233,46 @@ class User < ApplicationRecord
     settings&.dig('scoring_weights') || DEFAULT_SCORING_WEIGHTS
   end
 
+  def scoring_systems
+    stored = settings&.dig('scoring_systems') || {}
+
+    DEFAULT_SCORING_SYSTEMS.each_with_object({}) do |(id, defaults), systems|
+      overrides = stored[id].is_a?(Hash) ? stored[id] : {}
+      systems[id] = normalized_scoring_system(defaults, overrides)
+    end
+  end
+
+  def available_scoring_systems
+    scoring_systems.values
+  end
+
+  def scoring_system(id)
+    scoring_systems[id.to_s]
+  end
+
+  def scoring_system_ids
+    scoring_systems.keys
+  end
+
+  def update_scoring_systems(raw_systems)
+    self.settings ||= {}
+    submitted = raw_systems.to_h
+
+    self.settings['scoring_systems'] = DEFAULT_SCORING_SYSTEMS.each_with_object({}) do |(id, defaults), cleaned|
+      next unless defaults['kind'] == 'criterion_scorecard'
+
+      raw = submitted[id].is_a?(Hash) ? submitted[id] : {}
+      max_total = scorecard_max_total(defaults)
+      threshold = raw['work_threshold_total'].presence || defaults['work_threshold_total']
+
+      cleaned[id] = {
+        'work_threshold_total' => threshold.to_f.clamp(0, max_total)
+      }
+    end
+
+    save!
+  end
+
   def email_settings
     settings&.dig('email') || DEFAULT_EMAIL_SETTINGS
   end
@@ -250,6 +327,21 @@ class User < ApplicationRecord
   def scoring_formula_display
     weights = scoring_weights
     "normalize(TRL × #{weights['trl']} + Opportunity × #{weights['opportunity']} + Timing × #{weights['timing']} + Difficulty × #{weights['difficulty']}) → 0–10"
+  end
+
+  def scorecard_max_total(system)
+    system['criteria'].size * system.fetch('scale_max', 5).to_i
+  end
+
+  def normalized_scoring_system(defaults, overrides)
+    system = defaults.deep_dup
+    return system unless system['kind'] == 'criterion_scorecard'
+
+    max_total = scorecard_max_total(system)
+    threshold = overrides['work_threshold_total'].presence || system['work_threshold_total']
+    system['work_threshold_total'] = threshold.to_f.clamp(0, max_total)
+    system['work_threshold_normalized'] = (system['work_threshold_total'].to_f / max_total * 10).round(2)
+    system
   end
 
   def backup_settings

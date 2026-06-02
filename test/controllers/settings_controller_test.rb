@@ -39,6 +39,7 @@ class SettingsControllerTest < ActionDispatch::IntegrationTest
     assert_select ".ask-agent-shell textarea[name=?]", "agent_question[body]"
     assert_select ".ask-agent-shell input[name=?][value=?]", "return_to", "#{ideas_path}?ask_agent=open"
     assert_select ".ask-agent-launcher[aria-controls=?]", "ask_agent_sidebar"
+    assert_select ".ask-agent-launcher__invention .ask-agent-invention--bulb", count: 1
     assert_select ".ask-agent-sidebar[role=?]", "dialog"
   end
 

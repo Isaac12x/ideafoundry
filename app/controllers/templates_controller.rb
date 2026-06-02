@@ -17,7 +17,8 @@ class TemplatesController < ApplicationController
           is_default: @template.is_default?,
           field_definitions: @template.field_definitions,
           section_order: @template.section_order,
-          tab_definitions: @template.effective_tab_definitions
+          tab_definitions: @template.effective_tab_definitions,
+          scoring_system_ids: @template.enabled_scoring_system_ids
         }
       end
     end
@@ -29,6 +30,8 @@ class TemplatesController < ApplicationController
     @template.field_definitions = []
     @template.section_order = []
     @template.tab_definitions = default_tab_definitions
+    @template.scoring_system_ids = [User::LEGACY_SCORING_SYSTEM_ID]
+    load_scoring_systems
   end
 
   def create
@@ -37,17 +40,20 @@ class TemplatesController < ApplicationController
     if @template.save
       redirect_to settings_templates_path, notice: 'Template was successfully created.'
     else
+      load_scoring_systems
       render :new, status: :unprocessable_content
     end
   end
 
   def edit
+    load_scoring_systems
   end
 
   def update
     if @template.update(template_params)
       redirect_to @template, notice: 'Template was successfully updated.'
     else
+      load_scoring_systems
       render :edit, status: :unprocessable_content
     end
   end
@@ -80,7 +86,7 @@ class TemplatesController < ApplicationController
   end
 
   def template_params
-    permitted = params.require(:template).permit(:name, :is_default)
+    permitted = params.require(:template).permit(:name, :is_default, scoring_system_ids: [])
 
     # section_order comes as indexed hash keys — convert to array
     if params[:template][:section_order].present?
@@ -112,6 +118,10 @@ class TemplatesController < ApplicationController
     end
 
     permitted
+  end
+
+  def load_scoring_systems
+    @scoring_systems = @user.available_scoring_systems
   end
 
   def default_field_definitions

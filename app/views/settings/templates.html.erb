@@ -33,7 +33,8 @@
             <% end %>
             <span class="template-settings-meta">
               <%= pluralize(template.field_definitions.length, 'field') %> &middot;
-              <%= pluralize(template.section_order.length, 'section') %>
+              <%= pluralize(template.section_order.length, 'section') %> &middot;
+              <%= template.scoring_systems.map { |system| system['name'] }.to_sentence %>
             </span>
           </div>
           <div class="template-settings-actions">
