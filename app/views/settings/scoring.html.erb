@@ -168,6 +168,67 @@
                 data: { turbo_confirm: "Reset to default weights?" } %>
           </div>
         </div>
+
+        <div class="config-section">
+          <h3>Scoring Systems</h3>
+          <p class="config-description">
+            Configure the scorecards that templates can enable. Each template can use one or more systems.
+          </p>
+
+          <div class="scoring-system-list">
+            <% (@scoring_systems || @user.available_scoring_systems).each do |system| %>
+              <div class="scoring-system-card">
+                <div class="scoring-system-card__header">
+                  <div>
+                    <h4><%= system['name'] %></h4>
+                    <p><%= system['description'] %></p>
+                  </div>
+                  <span class="scoring-system-card__kind"><%= system['kind'].to_s.humanize %></span>
+                </div>
+
+                <% if system['kind'] == 'criterion_scorecard' %>
+                  <div class="weight-input-group scoring-system-card__threshold">
+                    <label class="weight-label" for="scoring_systems_<%= system['id'] %>_work_threshold_total">
+                      Work threshold
+                      <span class="weight-description">
+                        Ideas below this total cannot move into active work or kanban.
+                      </span>
+                    </label>
+                    <%= number_field_tag "scoring_systems[#{system['id']}][work_threshold_total]",
+                        system['work_threshold_total'],
+                        id: "scoring_systems_#{system['id']}_work_threshold_total",
+                        min: 0,
+                        max: system['criteria'].size * system['scale_max'].to_i,
+                        step: 1,
+                        class: "weight-input" %>
+                    <span class="weight-range">
+                      / <%= system['criteria'].size * system['scale_max'].to_i %>
+                      (<%= number_with_precision(system['work_threshold_normalized'], precision: 2) %>/10)
+                    </span>
+                  </div>
+
+                  <div class="scorecard-criteria-grid">
+                    <% system['criteria'].each do |criterion| %>
+                      <div class="scorecard-criterion">
+                        <span><%= criterion['label'] %></span>
+                        <small><%= system['scale_min'] %>-<%= system['scale_max'] %></small>
+                      </div>
+                    <% end %>
+                  </div>
+                <% else %>
+                  <div class="scorecard-criteria-grid">
+                    <% system['criteria'].each do |criterion| %>
+                      <div class="scorecard-criterion">
+                        <span><%= criterion['label'] %></span>
+                        <small><%= criterion['scale_min'] %>-<%= criterion['scale_max'] %></small>
+                      </div>
+                    <% end %>
+                  </div>
+                <% end %>
+              </div>
+            <% end %>
+          </div>
+        </div>
       <% end %>
     </div>
 
