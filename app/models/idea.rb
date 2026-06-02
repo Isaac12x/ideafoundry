@@ -33,6 +33,9 @@ class Idea < ApplicationRecord
     shipped: 8
   }
 
+  SCORE_METADATA_KEY = "scoring".freeze
+  WORK_STATE_NAMES = %w[first_try second_try].freeze
+
   # JSON serialization
   serialize :metadata, coder: JSON
   # napkin_calculations is a native json column (auto-serialized by Rails)
@@ -44,6 +47,8 @@ class Idea < ApplicationRecord
             inclusion: { in: 0..10 }, allow_nil: true
   validates :attempt_count, presence: true, numericality: { greater_than_or_equal_to: 0 }
   validate :template_required_fields_present
+  validate :scorecard_values_within_limits
+  validate :work_state_requires_scoring_threshold
   validate :napkin_calculations_within_limits
 
   # Callbacks
@@ -216,11 +221,11 @@ class Idea < ApplicationRecord
 
   # State checking methods
   def can_transition_to_first_try?
-    idea_new? || triage?
+    (idea_new? || triage?) && work_allowed?
   end
 
   def can_transition_to_second_try?
-    (triage? && attempt_count >= 1) || (incubating? && attempt_count >= 1 && !in_cool_off?)
+    ((triage? && attempt_count >= 1) || (incubating? && attempt_count >= 1 && !in_cool_off?)) && work_allowed?
   end
 
   def in_attempt_state?
@@ -330,6 +335,71 @@ class Idea < ApplicationRecord
     current_score = history.first[:score].to_f
     previous_score = history.second[:score].to_f
     current_score - previous_score
+  end
+
+  def active_scoring_system_ids
+    template&.enabled_scoring_system_ids.presence || [User::LEGACY_SCORING_SYSTEM_ID]
+  end
+
+  def active_scoring_systems
+    return [] unless user
+
+    active_scoring_system_ids.filter_map { |system_id| user.scoring_system(system_id) }
+  end
+
+  def scoring_values_for(system_id)
+    values = metadata&.dig(SCORE_METADATA_KEY, system_id.to_s)
+    values.is_a?(Hash) ? values : {}
+  end
+
+  def scorecard_value_for(system_id, criterion_key)
+    scoring_values_for(system_id)[criterion_key.to_s]
+  end
+
+  def scoring_breakdowns
+    active_scoring_systems.map { |system| scoring_breakdown_for(system) }
+  end
+
+  def scoring_breakdown_for(system)
+    if system['kind'] == 'criterion_scorecard'
+      scorecard_breakdown_for(system)
+    else
+      legacy_weighted_breakdown_for(system)
+    end
+  end
+
+  def aggregate_normalized_score
+    scores = scoring_breakdowns.filter_map { |breakdown| breakdown[:normalized] }
+    return nil if scores.empty?
+
+    (scores.sum / scores.size.to_f).round(2)
+  end
+
+  def kanban_eligible?
+    work_blocking_score_issues.empty?
+  end
+
+  def work_allowed?
+    kanban_eligible?
+  end
+
+  def work_blocking_score_issues
+    scoring_breakdowns.filter_map do |breakdown|
+      next unless breakdown[:blocks_work]
+      next if breakdown[:eligible_for_work]
+
+      threshold = trim_score_number(breakdown[:work_threshold_total])
+      total = trim_score_number(breakdown[:total])
+      max_total = trim_score_number(breakdown[:max_total])
+      normalized = trim_score_number(breakdown[:normalized])
+      threshold_normalized = trim_score_number(breakdown[:work_threshold_normalized])
+
+      "#{breakdown[:name]} score is #{total}/#{max_total} (#{normalized}/10), below #{threshold}/#{max_total} (#{threshold_normalized}/10)"
+    end
+  end
+
+  def kanban_ineligibility_message
+    work_blocking_score_issues.to_sentence.presence || "Idea does not meet the scoring threshold for kanban."
   end
 
   # Template methods
@@ -622,23 +692,77 @@ class Idea < ApplicationRecord
   end
 
   def calculate_score
-    return unless trl && difficulty && opportunity && timing
+    self.computed_score = aggregate_normalized_score
+  end
 
-    # Use user's configurable scoring weights
+  def legacy_weighted_breakdown_for(system)
+    return { id: system['id'], name: system['name'], normalized: nil, blocks_work: false } unless trl && difficulty && opportunity && timing
+
     weights = user.scoring_weights
     w = [weights['trl'].to_f, weights['difficulty'].to_f, weights['opportunity'].to_f, weights['timing'].to_f]
-
     raw = trl * w[0] + difficulty * w[1] + opportunity * w[2] + timing * w[3]
-
-    # Normalize to 0.0–10.0 range regardless of weight signs
     raw_min = 10.0 * w.select(&:negative?).sum
     raw_max = 10.0 * w.select(&:positive?).sum
+    normalized = raw_max == raw_min ? 0.0 : ((raw - raw_min) / (raw_max - raw_min) * 10.0).round(2)
 
-    self.computed_score = if raw_max == raw_min
-                           0.0
-                         else
-                           ((raw - raw_min) / (raw_max - raw_min) * 10.0).round(2)
-                         end
+    {
+      id: system['id'],
+      name: system['name'],
+      kind: system['kind'],
+      normalized: normalized,
+      values: {
+        'trl' => trl,
+        'difficulty' => difficulty,
+        'opportunity' => opportunity,
+        'timing' => timing
+      },
+      blocks_work: false,
+      eligible_for_work: true
+    }
+  end
+
+  def scorecard_breakdown_for(system)
+    scale_min = system.fetch('scale_min', 1).to_i
+    scale_max = system.fetch('scale_max', 5).to_i
+    values = scoring_values_for(system['id'])
+    criteria = system['criteria']
+
+    criterion_scores = criteria.each_with_object({}) do |criterion, scores|
+      raw_value = values[criterion['key']]
+      scores[criterion['key']] = normalized_scorecard_value(raw_value, scale_min, scale_max)
+    end
+
+    total = criterion_scores.values.sum
+    max_total = criteria.size * scale_max
+    normalized = max_total.zero? ? 0.0 : (total.to_f / max_total * 10).round(2)
+    threshold = system.fetch('work_threshold_total', 0).to_f
+
+    {
+      id: system['id'],
+      name: system['name'],
+      kind: system['kind'],
+      criteria: criteria,
+      values: criterion_scores,
+      total: total,
+      max_total: max_total,
+      normalized: normalized,
+      scale_min: scale_min,
+      scale_max: scale_max,
+      blocks_work: system['blocks_work'] == true,
+      work_threshold_total: threshold,
+      work_threshold_normalized: max_total.zero? ? 0.0 : (threshold / max_total * 10).round(2),
+      eligible_for_work: threshold.zero? || total >= threshold
+    }
+  end
+
+  def normalized_scorecard_value(raw_value, scale_min, scale_max)
+    value = raw_value.presence || scale_min
+    value.to_i.clamp(scale_min, scale_max)
+  end
+
+  def trim_score_number(value)
+    number = value.to_f
+    number == number.to_i ? number.to_i : number.round(2)
   end
 
   def template_required_fields_present
@@ -648,6 +772,37 @@ class Idea < ApplicationRecord
     validation_errors.each do |error|
       errors.add(:base, error)
     end
+  end
+
+  def scorecard_values_within_limits
+    active_scoring_systems.each do |system|
+      next unless system['kind'] == 'criterion_scorecard'
+
+      values = scoring_values_for(system['id'])
+      next if values.blank?
+
+      scale_min = system.fetch('scale_min', 1).to_i
+      scale_max = system.fetch('scale_max', 5).to_i
+      allowed_keys = system['criteria'].map { |criterion| criterion['key'] }
+
+      values.slice(*allowed_keys).each do |key, raw_value|
+        next if raw_value.blank?
+
+        value = raw_value.to_i
+        next if value.between?(scale_min, scale_max)
+
+        label = system['criteria'].find { |criterion| criterion['key'] == key }&.dig('label') || key.humanize
+        errors.add(:base, "#{label} must be between #{scale_min} and #{scale_max}")
+      end
+    end
+  end
+
+  def work_state_requires_scoring_threshold
+    return unless WORK_STATE_NAMES.include?(state.to_s)
+    return unless new_record? || will_save_change_to_state?
+    return if work_allowed?
+
+    errors.add(:state, "cannot move to #{state.humanize}: #{kanban_ineligibility_message}")
   end
 
   def napkin_calculations_within_limits

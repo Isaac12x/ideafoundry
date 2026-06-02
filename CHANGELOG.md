@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Multiple scoring systems, including a founder scorecard with seven 1-5 criteria and a 24/35 gate for active work and Kanban placement.
 - Right-click idea cards can add ideas to Kanban board columns or named lists.
 - Backlog items can include multiple uploaded images with inline thumbnails.
 - Static GitHub Pages project overview site and deployment workflow.

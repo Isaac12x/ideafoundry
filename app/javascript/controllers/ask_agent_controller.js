@@ -1,10 +1,20 @@
 import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
-  static targets = ["backdrop", "body", "launcher", "messages", "panel"]
+  static targets = ["backdrop", "body", "invention", "launcher", "messages", "panel"]
+  static inventionVariants = ["bulb", "engine", "magnet", "gyro"]
 
   connect() {
+    if (document.body.classList.contains("typing-lock-page")) {
+      this.element.hidden = true
+      this.element.setAttribute("aria-hidden", "true")
+      return
+    }
+
     this.resizing = false
+    this.inventionIndex = this.initialInventionIndex()
+    this.showCurrentInvention({ immediate: true })
+    this.startInventionCycle()
 
     if (this.shouldOpenFromUrl()) {
       requestAnimationFrame(() => {
@@ -16,6 +26,7 @@ export default class extends Controller {
 
   disconnect() {
     this.stopResize()
+    this.stopInventionCycle()
   }
 
   open(event) {
@@ -118,5 +129,57 @@ export default class extends Controller {
     const url = new URL(window.location.href)
     url.searchParams.delete("ask_agent")
     window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`)
+  }
+
+  startInventionCycle() {
+    if (!this.hasLauncherTarget || !this.hasInventionTarget) return
+
+    this.inventionTimer = window.setInterval(() => {
+      this.inventionIndex = (this.inventionIndex + 1) % this.constructor.inventionVariants.length
+      this.showCurrentInvention()
+    }, 8000)
+  }
+
+  stopInventionCycle() {
+    if (!this.inventionTimer) return
+
+    window.clearInterval(this.inventionTimer)
+    this.inventionTimer = null
+  }
+
+  showCurrentInvention({ immediate = false } = {}) {
+    if (!this.hasLauncherTarget || !this.hasInventionTarget) return
+
+    const invention = this.constructor.inventionVariants[this.inventionIndex]
+    this.launcherTarget.dataset.invention = invention
+
+    if (this.inventionTarget.dataset.currentInvention === invention) return
+
+    const template = this.element.querySelector(`template[data-ask-agent-invention-template="${invention}"]`)
+    if (!template) return
+
+    if (immediate || this.prefersReducedMotion()) {
+      this.replaceInvention(template, invention)
+      return
+    }
+
+    this.inventionTarget.classList.add("is-swapping")
+    window.setTimeout(() => {
+      this.replaceInvention(template, invention)
+    }, 180)
+  }
+
+  replaceInvention(template, invention) {
+    this.inventionTarget.replaceChildren(template.content.cloneNode(true))
+    this.inventionTarget.dataset.currentInvention = invention
+    this.inventionTarget.classList.remove("is-swapping")
+  }
+
+  initialInventionIndex() {
+    return Math.floor(Date.now() / 8000) % this.constructor.inventionVariants.length
+  }
+
+  prefersReducedMotion() {
+    return window.matchMedia("(prefers-reduced-motion: reduce)").matches
   }
 }
