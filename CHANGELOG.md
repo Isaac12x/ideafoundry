@@ -51,6 +51,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Ask Agent now only renders while the local agent is enabled and live, and its launcher icon changes at most once per day.
 - Local agent harness probes to `/local-agent/tools` now receive JSON tool discovery instead of falling through to the app catch-all.
 - Resend inbound email setup now uses the mounted `/rails/action_mailbox/resend/inbound_emails` webhook route.
 - Backlog edit, delete, and completion streams now preserve item context and refresh counts/empty states.
