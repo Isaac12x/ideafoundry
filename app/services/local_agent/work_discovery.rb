@@ -69,6 +69,8 @@ module LocalAgent
     def idea_candidates
       candidates = []
       user.ideas.active.includes(:todo_items).order(updated_at: :asc).limit(50).each do |idea|
+        next unless idea.work_allowed?
+
         description = idea.description.to_plain_text.to_s.strip
         if description.blank? || description.length < 80
           candidates << candidate(idea, 70, "Improve weak idea description", {
@@ -106,10 +108,13 @@ module LocalAgent
     def todo_candidates
       TodoItem.joins(:idea)
               .where(ideas: { user_id: user.id })
+              .includes(:idea)
               .where(completed: false)
               .order(updated_at: :asc)
               .limit(20)
-              .map do |todo|
+              .filter_map do |todo|
+        next unless todo.idea.work_allowed?
+
         candidate(todo, 45, "Elaborate or group pending todo", {
           title: todo.title,
           idea_id: todo.idea_id
@@ -136,6 +141,7 @@ module LocalAgent
 
     def attachment_candidates
       user.ideas.active.limit(50).filter_map do |idea|
+        next unless idea.work_allowed?
         next if idea.ocr_attachment_parts.blank?
         next if idea.notes.where("body LIKE ?", "%OCR%").exists?
 
@@ -166,7 +172,9 @@ module LocalAgent
                       .where(ideas: { user_id: user.id })
                       .where("github_repositories.last_checked_at IS NULL OR github_repositories.last_checked_at < ?", 1.day.ago)
                       .limit(10)
-                      .map do |repository|
+                      .filter_map do |repository|
+        next unless repository.idea.work_allowed?
+
         candidate(repository.idea, 40, "Refresh GitHub repository tracking", {
           title: repository.idea.title,
           repository_url: repository.repository_url,
