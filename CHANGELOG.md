@@ -33,6 +33,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Rack::Attack throttling for recovery secret and local upgrade endpoints.
 - Active Storage upgrade migrations and idea TLDR persistence.
 - Static 400 and unsupported-browser error pages with app icons.
+- Default page quote fallbacks and additional typing-lock unlock prompts inspired by Ford, Feynman, and Create or Perish.
 
 ### Changed
 

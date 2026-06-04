@@ -106,7 +106,7 @@
 
     <% if display_quote.present? %>
       <div class="app-quote-banner">
-        <p class="app-quote-banner__text"><%= display_quote %></p>
+        <%= simple_format(display_quote, { class: "app-quote-banner__text" }, sanitize: true) %>
       </div>
     <% end %>
 

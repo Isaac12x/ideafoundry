@@ -77,6 +77,20 @@ class SettingsControllerTest < ActionDispatch::IntegrationTest
     end
   end
 
+  test "GET settings/display renders default quote banner with empty custom quote field" do
+    @user.update!(settings: (@user.settings || {}).except("display_quote"))
+
+    get settings_display_path
+
+    assert_response :success
+    assert_select "body > header.app-header ~ div.app-quote-banner .app-quote-banner__text", text: /Your mind is for having ideas/
+    assert_select "body > header.app-header ~ div.app-quote-banner .app-quote-banner__text", text: /David Allen/
+    assert_select "textarea[name=?]", "display_settings[quote]" do |elements|
+      assert_equal "", elements.first.text
+      assert_includes elements.first["placeholder"], "Your mind is for having ideas"
+    end
+  end
+
   test "GET settings/display renders configured quote banner" do
     @user.update!(settings: (@user.settings || {}).merge("display_quote" => { "text" => "Focus on the next useful thing." }))
 

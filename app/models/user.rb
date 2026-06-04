@@ -187,6 +187,12 @@ class User < ApplicationRecord
     'text' => ''
   }.freeze
 
+  DEFAULT_DISPLAY_QUOTES = [
+    "Your mind is for having ideas, not holding them\n- David Allen",
+    "Designed it without pen and paper. I learned later one of the advantages of designing without pencil and paper is that you're almost forced to avoid all avoidable complexities\n- Edgar Dijkstra",
+    "Simplicity is pre-requisite for reliability\n- Edgar Dijkstra"
+  ].freeze
+
 
   ALLOWED_TOPOLOGY_OVERRIDE_KEYS = %w[
     dag_mode show_ideas node_size_topology node_size_idea
@@ -774,8 +780,16 @@ class User < ApplicationRecord
     DEFAULT_DISPLAY_QUOTE_SETTINGS.merge(settings&.dig('display_quote') || {})
   end
 
+  def custom_display_quote
+    settings&.dig('display_quote', 'text').to_s
+  end
+
+  def default_display_quote
+    DEFAULT_DISPLAY_QUOTES.first
+  end
+
   def display_quote
-    display_quote_settings['text'].to_s
+    custom_display_quote.presence || default_display_quote
   end
 
   def display_contrast
