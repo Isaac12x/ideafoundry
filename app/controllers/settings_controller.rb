@@ -9,6 +9,7 @@ class SettingsController < ApplicationController
   def display
     @display_quote = @user.custom_display_quote
     @display_contrast = @user.display_contrast
+    @idea_tab_settings = @user.idea_tab_settings
   end
 
   def update_display

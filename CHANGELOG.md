@@ -49,6 +49,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - On/off settings toggles now autosave without requiring an extra settings form submission.
 - SQLCipher recovery keys can rekey to stronger scrypt defaults and plaintext migration backups are removed after encryption.
 - Setup, development, production, and CI configuration now target the Rails 8.1 and SQLCipher app runtime.
+- Settings pages now group related sections, combine display and idea-tab controls, and present scoring systems in dedicated panels.
 
 ### Fixed
 
