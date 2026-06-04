@@ -2,12 +2,12 @@ class SettingsController < ApplicationController
   before_action :set_user
 
   def index
-    @display_quote = @user.display_quote
+    @display_quote = @user.custom_display_quote
     @display_contrast = @user.display_contrast
   end
 
   def display
-    @display_quote = @user.display_quote
+    @display_quote = @user.custom_display_quote
     @display_contrast = @user.display_contrast
   end
 
@@ -15,7 +15,7 @@ class SettingsController < ApplicationController
     if @user.update_display_quote(display_settings_params)
       redirect_to settings_display_path, notice: 'Display settings updated.'
     else
-      @display_quote = @user.display_quote
+      @display_quote = @user.custom_display_quote
       @display_contrast = @user.display_contrast
       flash.now[:alert] = 'Failed to update display settings.'
       render :display, status: :unprocessable_content

@@ -34,6 +34,15 @@ class TypingTextLibrary
     "folded-map" => "a folded map is still useful if the maker knows which crease points back to the unsolved problem.",
     "bright-filament" => "a bright filament is only useful when the rest of the circuit is honest enough to carry the load.",
     "clean-join" => "a clean join disappears into the object, leaving only the feeling that the whole thing belongs together.",
+    "ford-real-task" => "hard thought and hard work move a business forward when slogans cannot.",
+    "ford-better-ways" => "a useful maker keeps finding new and better ways for the product to serve.",
+    "ford-precision" => "precision grows when better machinery and better habits pull each tolerance closer.",
+    "feynman-question" => "there is no learning without a question, and every honest question leaves room for doubt.",
+    "feynman-uncertainty" => "it is more interesting to live with uncertainty than to hold answers that might be wrong.",
+    "feynman-evidence" => "experience teaches the lesson, and science asks how the evidence was found.",
+    "rines-free-minds" => "a dynamic society depends on free creative minds and the protected fruits of their work.",
+    "rines-conformity" => "conformity is the enemy of innovation when organizations stop listening to original thought.",
+    "rines-create" => "when obstacles choke creativity, the only useful course is to create before time runs out.",
     "test-weight" => "a test weight does not argue with optimism; it simply shows what the frame can actually hold."
   }.freeze
 

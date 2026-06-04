@@ -276,6 +276,14 @@ class UserTest < ActiveSupport::TestCase
     @user = User.new(email: "test@example.com", name: "Test User")
   end
 
+  test "display quote falls back to the default quote library" do
+    @user.settings = {}
+
+    assert_equal "", @user.custom_display_quote
+    assert_equal User::DEFAULT_DISPLAY_QUOTES.first, @user.display_quote
+    assert_includes User::DEFAULT_DISPLAY_QUOTES, "Simplicity is pre-requisite for reliability\n- Edgar Dijkstra"
+  end
+
   test "should be valid with valid attributes" do
     assert @user.valid?
   end
