@@ -4,10 +4,10 @@
     ask_agent_body_class.include?("typing-lock-page") ||
     controller_path.to_s.start_with?("typing_locks") ||
     controller_path.to_s == "recovery_secrets"
+  ask_agent_live = @user&.local_agent_live?
 %>
 
-<% unless ask_agent_lock_screen %>
-<% agent_enabled = @user&.local_agent_enabled? %>
+<% if !ask_agent_lock_screen && ask_agent_live %>
 <% agent_threads = ask_agent_question_threads %>
 
 <div class="ask-agent-shell"
@@ -165,8 +165,8 @@
     <header class="ask-agent-sidebar__header">
       <div>
         <h2 id="ask_agent_title">Ask Agent</h2>
-        <span class="ask-agent-sidebar__status <%= agent_enabled ? 'ask-agent-sidebar__status--enabled' : 'ask-agent-sidebar__status--disabled' %>">
-          <%= agent_enabled ? "Ready" : "Disabled" %>
+        <span class="ask-agent-sidebar__status ask-agent-sidebar__status--enabled">
+          Ready
         </span>
       </div>
 
@@ -220,11 +220,6 @@
 
     <%= form_with url: settings_local_agent_questions_path, method: :post, local: true, class: "ask-agent-sidebar__form" do %>
       <%= hidden_field_tag :return_to, ask_agent_return_path %>
-      <% unless agent_enabled %>
-        <p class="ask-agent-sidebar__notice">
-          Enable the local agent in <%= link_to "AI Agents", settings_local_agent_path %> before sending questions.
-        </p>
-      <% end %>
 
       <div class="form-group">
         <%= label_tag "global_agent_question_body", "Question" %>

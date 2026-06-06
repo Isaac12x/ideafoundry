@@ -1,24 +1,37 @@
 <%= render 'settings/upgrade_bar' %>
 <div class="settings-container">
   <div class="page-header">
-    <h2>Scoring Configuration</h2>
+    <h2>Scoring Systems</h2>
     <div class="header-actions">
-      <%= link_to "← Back to Settings", settings_path, class: "btn btn-secondary" %>
+      <%= link_to settings_path, class: "btn btn-sm" do %>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        Back to Settings
+      <% end %>
     </div>
   </div>
 
-  <div class="scoring-config-layout">
-    <div class="scoring-config-main">
-      <%= form_with url: settings_scoring_path, method: :patch, local: true, 
-                    data: { controller: "score" } do |form| %>
-        
-        <div class="config-section">
-          <h3>Scoring Weights</h3>
-          <p class="config-description">
-            Adjust how each factor contributes to the overall idea score. 
-            Positive weights increase the score, negative weights decrease it.
-          </p>
+  <% all_systems       = (@scoring_systems || @user.available_scoring_systems) %>
+  <% legacy_system     = all_systems.find  { |s| s['kind'] == 'legacy_weighted' } %>
+  <% scorecard_systems = all_systems.select { |s| s['kind'] == 'criterion_scorecard' } %>
 
+  <div class="scoring-config-layout">
+
+    <%= form_with url: settings_scoring_path, method: :patch, local: true,
+                  data: { controller: "score" } do |form| %>
+
+      <%# ──────────────────────────────────────────────────────────────
+          PANEL 1 — Weighted Readiness (the main / formula-based score)
+      ────────────────────────────────────────────────────────────────── %>
+      <section class="scoring-sys-panel scoring-sys-panel--weighted">
+        <header class="scoring-sys-panel__header">
+          <div class="scoring-sys-panel__meta">
+            <span class="scoring-sys-badge scoring-sys-badge--primary">Main Score</span>
+            <h3 class="scoring-sys-panel__name"><%= legacy_system['name'] %></h3>
+            <p class="scoring-sys-panel__desc"><%= legacy_system['description'] %></p>
+          </div>
+        </header>
+
+        <div class="scoring-sys-panel__body">
           <div class="weight-grid">
             <div class="weight-item weight-item--trl">
               <label class="weight-label">
@@ -26,14 +39,11 @@
                 <span class="weight-description">How mature is the technology?</span>
               </label>
               <div class="weight-input-group">
-                <%= form.number_field "scoring_weights[trl]", 
+                <%= form.number_field "scoring_weights[trl]",
                     value: @user.scoring_weights['trl'],
                     step: 0.1, min: -1, max: 1,
                     class: "weight-input",
-                    data: { 
-                      score_target: "trlSlider",
-                      action: "input->score#updateTrl"
-                    } %>
+                    data: { score_target: "trlSlider", action: "input->score#updateTrl" } %>
                 <span class="weight-range">(-1.0 to 1.0)</span>
               </div>
             </div>
@@ -44,14 +54,11 @@
                 <span class="weight-description">How hard is this to execute?</span>
               </label>
               <div class="weight-input-group">
-                <%= form.number_field "scoring_weights[difficulty]", 
+                <%= form.number_field "scoring_weights[difficulty]",
                     value: @user.scoring_weights['difficulty'],
                     step: 0.1, min: -1, max: 1,
                     class: "weight-input",
-                    data: { 
-                      score_target: "difficultySlider",
-                      action: "input->score#updateDifficulty"
-                    } %>
+                    data: { score_target: "difficultySlider", action: "input->score#updateDifficulty" } %>
                 <span class="weight-range">(-1.0 to 1.0)</span>
               </div>
             </div>
@@ -62,14 +69,11 @@
                 <span class="weight-description">How big is the market opportunity?</span>
               </label>
               <div class="weight-input-group">
-                <%= form.number_field "scoring_weights[opportunity]", 
+                <%= form.number_field "scoring_weights[opportunity]",
                     value: @user.scoring_weights['opportunity'],
                     step: 0.1, min: -1, max: 1,
                     class: "weight-input",
-                    data: { 
-                      score_target: "opportunitySlider",
-                      action: "input->score#updateOpportunity"
-                    } %>
+                    data: { score_target: "opportunitySlider", action: "input->score#updateOpportunity" } %>
                 <span class="weight-range">(-1.0 to 1.0)</span>
               </div>
             </div>
@@ -80,14 +84,11 @@
                 <span class="weight-description">How good is the timing for this idea?</span>
               </label>
               <div class="weight-input-group">
-                <%= form.number_field "scoring_weights[timing]", 
+                <%= form.number_field "scoring_weights[timing]",
                     value: @user.scoring_weights['timing'],
                     step: 0.1, min: -1, max: 1,
                     class: "weight-input",
-                    data: { 
-                      score_target: "timingSlider",
-                      action: "input->score#updateTiming"
-                    } %>
+                    data: { score_target: "timingSlider", action: "input->score#updateTiming" } %>
                 <span class="weight-range">(-1.0 to 1.0)</span>
               </div>
             </div>
@@ -155,97 +156,105 @@
             </div>
           </div>
 
-          <div class="config-actions">
+          <div class="scoring-sys-panel__actions">
             <%= form.submit "Update Scoring Weights", class: "btn btn-primary" %>
-            <%= link_to "Reset to Defaults", settings_scoring_path, 
-                method: :patch, 
-                params: { 
-                  scoring_weights: { 
-                    trl: 0.3, difficulty: -0.1, opportunity: 0.4, timing: 0.2 
-                  } 
-                },
+            <%= link_to "Reset to Defaults", settings_scoring_path,
+                method: :patch,
+                params: { scoring_weights: { trl: 0.3, difficulty: -0.1, opportunity: 0.4, timing: 0.2 } },
                 class: "btn btn-secondary",
                 data: { turbo_confirm: "Reset to default weights?" } %>
           </div>
         </div>
+      </section>
 
-        <div class="config-section">
-          <h3>Scoring Systems</h3>
-          <p class="config-description">
-            Configure the scorecards that templates can enable. Each template can use one or more systems.
-          </p>
+      <%# ──────────────────────────────────────────────────────────────
+          PANEL 2+ — Criterion Scorecards
+      ────────────────────────────────────────────────────────────────── %>
+      <% if scorecard_systems.any? %>
+        <div class="scoring-scorecards-group">
+          <div class="scoring-scorecards-group__label">
+            <span>Scorecards</span>
+            <p>Template-level scorecards for structured go/no-go decisions. Each is independent of the main score.</p>
+          </div>
 
-          <div class="scoring-system-list">
-            <% (@scoring_systems || @user.available_scoring_systems).each do |system| %>
-              <div class="scoring-system-card">
-                <div class="scoring-system-card__header">
-                  <div>
-                    <h4><%= system['name'] %></h4>
-                    <p><%= system['description'] %></p>
+          <% scorecard_systems.each do |system| %>
+            <section class="scoring-sys-panel scoring-sys-panel--scorecard">
+              <header class="scoring-sys-panel__header">
+                <div class="scoring-sys-panel__meta">
+                  <span class="scoring-sys-badge scoring-sys-badge--scorecard">Scorecard</span>
+                  <h3 class="scoring-sys-panel__name"><%= system['name'] %></h3>
+                  <p class="scoring-sys-panel__desc"><%= system['description'] %></p>
+                </div>
+                <% if system['blocks_work'] %>
+                  <span class="scoring-sys-blocks-work">Blocks work</span>
+                <% end %>
+              </header>
+
+              <div class="scoring-sys-panel__body">
+                <div class="scoring-sys-threshold">
+                  <div class="scoring-sys-threshold__field">
+                    <div class="scoring-sys-threshold__labels">
+                      <label class="weight-label" for="scoring_systems_<%= system['id'] %>_work_threshold_total">
+                        Work threshold
+                        <span class="weight-description">Ideas below this total cannot move into active work or kanban.</span>
+                      </label>
+                    </div>
+                    <div class="weight-input-group">
+                      <%= number_field_tag "scoring_systems[#{system['id']}][work_threshold_total]",
+                          system['work_threshold_total'],
+                          id: "scoring_systems_#{system['id']}_work_threshold_total",
+                          min: 0,
+                          max: system['criteria'].size * system['scale_max'].to_i,
+                          step: 1,
+                          class: "weight-input" %>
+                      <span class="weight-range">
+                        / <%= system['criteria'].size * system['scale_max'].to_i %>
+                        &nbsp;&middot;&nbsp;
+                        <%= number_with_precision(system['work_threshold_normalized'], precision: 2) %>/10
+                      </span>
+                    </div>
                   </div>
-                  <span class="scoring-system-card__kind"><%= system['kind'].to_s.humanize %></span>
                 </div>
 
-                <% if system['kind'] == 'criterion_scorecard' %>
-                  <div class="weight-input-group scoring-system-card__threshold">
-                    <label class="weight-label" for="scoring_systems_<%= system['id'] %>_work_threshold_total">
-                      Work threshold
-                      <span class="weight-description">
-                        Ideas below this total cannot move into active work or kanban.
-                      </span>
-                    </label>
-                    <%= number_field_tag "scoring_systems[#{system['id']}][work_threshold_total]",
-                        system['work_threshold_total'],
-                        id: "scoring_systems_#{system['id']}_work_threshold_total",
-                        min: 0,
-                        max: system['criteria'].size * system['scale_max'].to_i,
-                        step: 1,
-                        class: "weight-input" %>
-                    <span class="weight-range">
-                      / <%= system['criteria'].size * system['scale_max'].to_i %>
-                      (<%= number_with_precision(system['work_threshold_normalized'], precision: 2) %>/10)
-                    </span>
+                <div class="scoring-sys-criteria">
+                  <div class="scoring-sys-criteria__label">
+                    Criteria &mdash; scored <%= system['scale_min'] %>&ndash;<%= system['scale_max'] %> each
                   </div>
-
                   <div class="scorecard-criteria-grid">
                     <% system['criteria'].each do |criterion| %>
                       <div class="scorecard-criterion">
                         <span><%= criterion['label'] %></span>
-                        <small><%= system['scale_min'] %>-<%= system['scale_max'] %></small>
+                        <small><%= system['scale_min'] %>&ndash;<%= system['scale_max'] %></small>
                       </div>
                     <% end %>
                   </div>
-                <% else %>
-                  <div class="scorecard-criteria-grid">
-                    <% system['criteria'].each do |criterion| %>
-                      <div class="scorecard-criterion">
-                        <span><%= criterion['label'] %></span>
-                        <small><%= criterion['scale_min'] %>-<%= criterion['scale_max'] %></small>
-                      </div>
-                    <% end %>
-                  </div>
-                <% end %>
+                </div>
               </div>
-            <% end %>
+            </section>
+          <% end %>
+
+          <div class="scoring-scorecards-group__actions">
+            <button type="submit" class="btn btn-primary">Save Scorecard Settings</button>
           </div>
         </div>
       <% end %>
-    </div>
+
+    <% end %>
 
     <div class="scoring-config-sidebar">
       <div class="config-info-card">
-        <h4>💡 Scoring Tips</h4>
+        <h4>Scoring Tips</h4>
         <ul>
           <li><strong>Positive weights</strong> increase the score when the factor is high</li>
           <li><strong>Negative weights</strong> decrease the score when the factor is high</li>
           <li><strong>Difficulty</strong> typically has a negative weight since higher difficulty should lower the score</li>
-          <li><strong>Sum of weights</strong> doesn't need to equal 1.0</li>
+          <li><strong>Sum of weights</strong> doesn&apos;t need to equal 1.0</li>
         </ul>
       </div>
 
       <div class="config-info-card">
-        <h4>📈 Score Range</h4>
-        <p>Scores are always normalized to:</p>
+        <h4>Score Range</h4>
+        <p>Main scores are always normalized to:</p>
         <div class="score-range-display">
           <div class="range-item">
             <span class="range-label">Minimum:</span>
@@ -259,9 +268,10 @@
       </div>
 
       <div class="config-info-card">
-        <h4>⚠️ Important</h4>
+        <h4>Important</h4>
         <p>Changing weights will recalculate scores for <strong>all existing ideas</strong>. This action cannot be undone, but version history will preserve the old scores.</p>
       </div>
     </div>
+
   </div>
 </div>

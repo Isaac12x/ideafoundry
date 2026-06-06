@@ -33,6 +33,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Rack::Attack throttling for recovery secret and local upgrade endpoints.
 - Active Storage upgrade migrations and idea TLDR persistence.
 - Static 400 and unsupported-browser error pages with app icons.
+- Default page quote fallbacks and additional typing-lock unlock prompts inspired by Ford, Feynman, and Create or Perish.
 - LaunchAgent startup now brings up the Docker/Podman Compose sidecar services before Rails.
 
 ### Changed
@@ -50,9 +51,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - On/off settings toggles now autosave without requiring an extra settings form submission.
 - SQLCipher recovery keys can rekey to stronger scrypt defaults and plaintext migration backups are removed after encryption.
 - Setup, development, production, and CI configuration now target the Rails 8.1 and SQLCipher app runtime.
+- Settings pages now group related sections, combine display and idea-tab controls, and present scoring systems in dedicated panels.
 
 ### Fixed
 
+- Ask Agent now only renders while the local agent is enabled and live, and its launcher icon changes at most once per day.
 - Local agent harness probes to `/local-agent/tools` now receive JSON tool discovery instead of falling through to the app catch-all.
 - Resend inbound email setup now uses the mounted `/rails/action_mailbox/resend/inbound_emails` webhook route.
 - Backlog edit, delete, and completion streams now preserve item context and refresh counts/empty states.
