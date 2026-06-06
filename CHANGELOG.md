@@ -62,6 +62,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Idea media controls now keep Ask Agent out of navigation, show extracted attachment parts in the form sidebar, and separate image thumbnails from document attachments.
 - Development now uses its own Solid Queue database so encrypted production queue data does not break local page loads.
 - User settings are normalized after security-settings encryption so local security lock checks do not crash on double-encoded settings.
+- Idea image editor uploads now center the editing modal in the viewport and keep actions visible while page scrolling is locked.
 
 ### Security
 
