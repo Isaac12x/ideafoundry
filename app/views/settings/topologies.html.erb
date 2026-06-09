@@ -1,3 +1,4 @@
+<%= render 'settings/upgrade_bar' %>
 <div class="settings-container">
   <div class="page-header">
     <h2>Topology & Graph Settings</h2>
@@ -168,6 +169,62 @@
       </div>
     </div>
 
+    <div class="config-section" id="topology-template-fields">
+      <h3>Template Fields by Topology</h3>
+      <p class="config-description">Fields listed here appear on ideas when the matching topology is selected. A topology named Software includes a GitHub URL field automatically.</p>
+
+      <% if @topologies.any? %>
+        <div class="topology-fields-list">
+          <% @topologies.each do |topology| %>
+            <% fields = topology.effective_default_field_definitions %>
+            <% editable_fields = fields.presence || [] %>
+            <% rows = editable_fields + [{}] %>
+            <details class="topology-fields-row" <%= 'open' if topology.software? || editable_fields.any? %>>
+              <summary>
+                <span><%= topology.full_path %></span>
+                <small><%= pluralize(fields.length, "default field") %></small>
+              </summary>
+              <div class="topology-fields-table">
+                <div class="topology-fields-heading">Name</div>
+                <div class="topology-fields-heading">Label</div>
+                <div class="topology-fields-heading">Type</div>
+                <div class="topology-fields-heading">Placeholder</div>
+                <div class="topology-fields-heading">Required</div>
+
+                <% rows.each_with_index do |field, index| %>
+                  <%= text_field_tag "topology_template_fields[#{topology.id}][#{index}][name]",
+                      field["name"],
+                      class: "form-control form-control--sm",
+                      placeholder: "github_url" %>
+                  <%= text_field_tag "topology_template_fields[#{topology.id}][#{index}][label]",
+                      field["label"],
+                      class: "form-control form-control--sm",
+                      placeholder: "GitHub URL" %>
+                  <%= select_tag "topology_template_fields[#{topology.id}][#{index}][type]",
+                      options_for_select(Topology::FIELD_TYPES.map { |type| [type.humanize, type] }, field["type"].presence || "text"),
+                      class: "form-control form-control--sm" %>
+                  <%= text_field_tag "topology_template_fields[#{topology.id}][#{index}][placeholder]",
+                      field["placeholder"],
+                      class: "form-control form-control--sm",
+                      placeholder: "Optional hint" %>
+                  <%= check_box_tag "topology_template_fields[#{topology.id}][#{index}][required]",
+                      "1",
+                      ActiveModel::Type::Boolean.new.cast(field["required"]) == true %>
+                  <%= hidden_field_tag "topology_template_fields[#{topology.id}][#{index}][instance_id]", field["instance_id"] %>
+                  <%= hidden_field_tag "topology_template_fields[#{topology.id}][#{index}][tab]", field["tab"].presence || "general" %>
+                  <%= hidden_field_tag "topology_template_fields[#{topology.id}][#{index}][position]", index %>
+                <% end %>
+              </div>
+            </details>
+          <% end %>
+        </div>
+      <% else %>
+        <div class="empty-state-small">
+          <p>No topologies yet. Create a topology to attach default template fields.</p>
+        </div>
+      <% end %>
+    </div>
+
     <!-- Display Preferences -->
     <div class="config-section">
       <h3>Display Preferences</h3>
@@ -196,3 +253,57 @@
     </div>
   <% end %>
 </div>
+
+<style>
+  .topology-fields-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .topology-fields-row {
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    background: var(--bg-surface);
+    padding: 0.75rem 1rem;
+  }
+
+  .topology-fields-row summary {
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    font-weight: 600;
+  }
+
+  .topology-fields-row summary small {
+    color: var(--text-muted);
+    font-weight: 400;
+  }
+
+  .topology-fields-table {
+    display: grid;
+    grid-template-columns: minmax(120px, 1fr) minmax(120px, 1fr) 120px minmax(160px, 1fr) 80px;
+    gap: 0.5rem;
+    align-items: center;
+    margin-top: 1rem;
+  }
+
+  .topology-fields-heading {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+  }
+
+  @media (max-width: 900px) {
+    .topology-fields-table {
+      grid-template-columns: 1fr;
+    }
+
+    .topology-fields-heading {
+      display: none;
+    }
+  }
+</style>

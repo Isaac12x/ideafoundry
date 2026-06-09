@@ -7,6 +7,49 @@
   margin: 0 auto;
 }
 
+.display-quote-settings {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.65fr) minmax(0, 1.35fr);
+  gap: 1.5rem;
+  align-items: start;
+  margin-bottom: 2rem;
+  padding: 1.25rem;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+}
+
+.display-quote-settings__copy h3 {
+  margin: 0 0 4px 0;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 1.2rem;
+  font-weight: 400;
+  color: var(--text-primary);
+}
+
+.display-quote-settings__copy p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
+
+.display-quote-settings__form .form-group {
+  margin-bottom: 0.9rem;
+}
+
+.display-quote-settings__textarea {
+  min-height: 86px;
+  line-height: 1.45;
+  resize: vertical;
+}
+
+.display-quote-settings__actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
 .settings-list {
   margin-top: 2rem;
   background: var(--bg-surface);
@@ -61,6 +104,7 @@
   grid-template-columns: 2fr 1fr;
   gap: 1.5rem;
   margin-top: 2rem;
+  align-items: start;
 }
 
 @media (max-width: 1024px) {
@@ -88,6 +132,179 @@
   margin: 0 0 2rem 0;
   line-height: 1.6;
   font-size: 0.9rem;
+}
+
+/* ============================================
+   Scoring System Panels (settings/scoring)
+   ============================================ */
+
+/* The left column holds all panels stacked */
+.scoring-config-layout > form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  min-width: 0;
+}
+
+.scoring-sys-panel {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+/* Weighted readiness gets a subtle left accent */
+.scoring-sys-panel--weighted {
+  border-left: 3px solid var(--accent);
+}
+
+/* Criterion scorecards get a different accent */
+.scoring-sys-panel--scorecard {
+  border-left: 3px solid var(--info);
+}
+
+.scoring-sys-panel__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.25rem 1.5rem 1rem;
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--bg-elevated);
+}
+
+.scoring-sys-panel__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.scoring-sys-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 3px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  width: fit-content;
+  margin-bottom: 4px;
+}
+
+.scoring-sys-badge--primary {
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+  color: var(--accent);
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+}
+
+.scoring-sys-badge--scorecard {
+  background: color-mix(in srgb, var(--info) 12%, transparent);
+  color: var(--info);
+  border: 1px solid color-mix(in srgb, var(--info) 25%, transparent);
+}
+
+.scoring-sys-panel__name {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 1.3rem;
+  font-weight: 400;
+  color: var(--text-primary);
+  margin: 0;
+  line-height: 1.2;
+}
+
+.scoring-sys-panel__desc {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.scoring-sys-blocks-work {
+  flex-shrink: 0;
+  align-self: center;
+  padding: 3px 10px;
+  border-radius: var(--radius-sm);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  background: color-mix(in srgb, var(--warning) 12%, transparent);
+  color: var(--warning);
+  border: 1px solid color-mix(in srgb, var(--warning) 25%, transparent);
+}
+
+.scoring-sys-panel__body {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.scoring-sys-panel__actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding-top: 0.25rem;
+}
+
+/* Threshold row inside scorecard panels */
+.scoring-sys-threshold {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 1rem 1.25rem;
+}
+
+.scoring-sys-threshold__field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+/* Criteria section inside scorecard panels */
+.scoring-sys-criteria__label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 0.75rem;
+}
+
+/* Scorecards group (section heading + panels + save) */
+.scoring-scorecards-group {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.scoring-scorecards-group__label {
+  padding-bottom: 0.25rem;
+}
+
+.scoring-scorecards-group__label span {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 1.35rem;
+  font-weight: 400;
+  color: var(--text-primary);
+  display: block;
+  margin-bottom: 4px;
+}
+
+.scoring-scorecards-group__label p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+  max-width: 600px;
+}
+
+.scoring-scorecards-group__actions {
+  display: flex;
+  gap: 12px;
 }
 
 .weight-grid {
@@ -568,12 +785,539 @@
   opacity: 1;
 }
 
+/* ============================================
+   Settings Index — group labels
+   ============================================ */
+.settings-group-label {
+  padding: 0.45rem 1.25rem 0.3rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  border-top: 1px solid var(--border-subtle);
+  background: var(--bg-elevated);
+}
+
+.settings-list .settings-group-label:first-child {
+  border-top: none;
+}
+
+.settings-row--last {
+  border-bottom: none;
+}
+
+/* ============================================
+   Display Page — inline field layout
+   ============================================ */
+.display-page-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  margin-top: 2rem;
+}
+
+.display-fields-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.display-field-row {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.display-field-row--sep {
+  border-top: 1px solid var(--border-subtle);
+}
+
+.display-field-label {
+  display: block;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.display-field-textarea {
+  min-height: 72px;
+  resize: vertical;
+}
+
+.display-field-hint {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.display-field-actions {
+  padding: 1rem 1.5rem 1.5rem;
+  border-top: 1px solid var(--border-subtle);
+  display: flex;
+  gap: 12px;
+}
+
+.display-section-divider {
+  padding-bottom: 0.25rem;
+}
+
+.display-section-heading {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 1.35rem;
+  font-weight: 400;
+  color: var(--text-primary);
+  margin: 0 0 4px 0;
+}
+
+.display-section-subhead {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  line-height: 1.55;
+  max-width: 640px;
+}
+
+/* ============================================
+   Idea Tabs — toggle cards
+   ============================================ */
+.idea-tabs-form {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.tab-toggle-section {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.tab-toggle-section__header {
+  padding: 1.25rem 1.5rem 1rem;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.tab-toggle-section__header h3 {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 1.35rem;
+  font-weight: 400;
+  color: var(--text-primary);
+  margin: 0 0 4px 0;
+}
+
+.tab-toggle-section__header p {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.tab-toggle-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.tab-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--border-subtle);
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.tab-toggle:last-child {
+  border-bottom: none;
+}
+
+.tab-toggle:hover {
+  background: var(--bg-elevated);
+}
+
+.tab-toggle__text {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.tab-toggle__name {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: 0.01em;
+}
+
+.tab-toggle__description {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+
+.tab-toggle__badge {
+  font-family: var(--font-body);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: 3px;
+  background: var(--accent-muted);
+  color: var(--accent);
+  border: 1px solid var(--accent-emphasis);
+}
+
+/* --- Switch --- */
+.tab-toggle__switch {
+  position: relative;
+  flex-shrink: 0;
+  width: 40px;
+  height: 22px;
+}
+
+.tab-toggle__input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+  z-index: 1;
+}
+
+.tab-toggle__track {
+  position: absolute;
+  inset: 0;
+  background: var(--bg-input);
+  border: 1px solid var(--border-default);
+  border-radius: 999px;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.tab-toggle__thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.tab-toggle__input:checked ~ .tab-toggle__track {
+  background: var(--accent-muted);
+  border-color: var(--accent);
+}
+
+.tab-toggle__input:checked ~ .tab-toggle__track .tab-toggle__thumb {
+  transform: translateX(18px);
+  background: var(--accent);
+}
+
+.tab-toggle__input:focus-visible ~ .tab-toggle__track {
+  box-shadow: 0 0 0 3px var(--accent-muted);
+}
+
+.tab-toggle-actions {
+  display: flex;
+  gap: 12px;
+  padding-top: 0.5rem;
+}
+
+.settings-autosave-indicator {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  padding: 4px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+  font-weight: 600;
+  z-index: 100;
+  pointer-events: none;
+}
+
+.settings-autosave-indicator.saved {
+  background: var(--success-bg);
+  color: var(--success);
+  border: 1px solid rgba(52, 211, 153, 0.2);
+}
+
+.settings-autosave-indicator.error {
+  background: var(--danger-bg);
+  color: var(--danger);
+  border: 1px solid rgba(248, 113, 113, 0.2);
+}
+
+.backup-toggle-item {
+  padding: 0;
+}
+
+.backup-settings-toggle {
+  min-height: 100%;
+  border-bottom: 0;
+  border-radius: var(--radius-sm);
+  background: var(--bg-input);
+}
+
+.backup-settings-toggle:hover {
+  background: var(--bg-overlay);
+}
+
+/* ============================================
+   API Keys — inline form alignment
+   ============================================ */
+.api-key-form .form-row {
+  align-items: flex-end;
+}
+
+.api-key-form .form-group {
+  margin-bottom: 0;
+}
+
+.api-key-form .btn-primary {
+  height: 40px;
+  padding-inline: 20px;
+  flex-shrink: 0;
+}
+
+/* ============================================
+   Local Agent
+   ============================================ */
+.local-agent-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr);
+  gap: 1.25rem;
+  align-items: start;
+  margin-top: 2rem;
+}
+
+.settings-section.local-agent-panel {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  padding: 0;
+  overflow: hidden;
+}
+
+.local-agent-status {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px;
+  background: var(--border-subtle);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.local-agent-status > div {
+  min-width: 0;
+  padding: 1rem 1.25rem;
+  background: var(--bg-elevated);
+}
+
+.local-agent-status__label {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.local-agent-status strong {
+  display: block;
+  color: var(--text-primary);
+  font-size: 0.95rem;
+  overflow-wrap: anywhere;
+}
+
+.local-agent-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  padding: 1.25rem;
+}
+
+.local-agent-fields .form-group {
+  margin-bottom: 0;
+}
+
+.local-agent-actions,
+.local-agent-run-now {
+  padding: 0 1.25rem 1.25rem;
+}
+
+.local-agent-run-now {
+  margin: -0.75rem 0 0;
+}
+
+.local-agent-recommendations,
+.local-agent-event-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.local-agent-recommendation,
+.local-agent-event {
+  padding: 1rem 1.25rem;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.local-agent-recommendation:first-child,
+.local-agent-event:first-child {
+  border-top: none;
+}
+
+.local-agent-recommendation__header,
+.local-agent-event {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.local-agent-recommendation__header span,
+.local-agent-event span,
+.local-agent-event time {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+
+.local-agent-recommendation p {
+  margin: 0.75rem 0;
+  color: var(--text-secondary);
+  line-height: 1.45;
+}
+
+.local-agent-recommendation pre {
+  max-height: 180px;
+  overflow: auto;
+  margin: 0 0 0.75rem;
+  padding: 0.75rem;
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-size: 0.76rem;
+  white-space: pre-wrap;
+}
+
+.local-agent-recommendation__actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.local-agent-events {
+  margin-top: 1.25rem;
+}
+
+.local-agent-questions {
+  margin-top: 1.25rem;
+}
+
+.local-agent-question-form {
+  display: grid;
+  gap: 0.9rem;
+  padding: 1.25rem;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.local-agent-question-form .form-group {
+  margin-bottom: 0;
+}
+
+.local-agent-question-form textarea {
+  min-height: 112px;
+  resize: vertical;
+}
+
+.local-agent-question-list {
+  border-top: 1px solid var(--border-subtle);
+}
+
+.local-agent-question {
+  padding: 1rem 1.25rem;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.local-agent-question:first-child {
+  border-top: none;
+}
+
+.local-agent-question__entry {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.local-agent-question__entry + .local-agent-question__entry,
+.local-agent-question__pending {
+  margin-top: 0.85rem;
+}
+
+.local-agent-question__meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+
+.local-agent-question__entry p,
+.local-agent-question__pending {
+  margin: 0;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.local-agent-question__entry--answer {
+  padding-left: 1rem;
+  border-left: 2px solid var(--accent-primary);
+}
+
+.local-agent-question__pending {
+  color: var(--text-muted);
+  font-size: 0.88rem;
+}
+
+.empty-state-text {
+  margin: 0;
+  padding: 1rem 1.25rem;
+  color: var(--text-muted);
+  font-size: 0.88rem;
+}
+
 @media (max-width: 768px) {
   .weight-grid { grid-template-columns: 1fr; }
   .config-actions { flex-direction: column; }
   .weight-input-group { flex-direction: column; align-items: stretch; gap: 6px; }
   .weight-range { text-align: center; }
   .export-row { flex-direction: column; align-items: flex-start; }
+
+  .display-quote-settings {
+    grid-template-columns: 1fr;
+  }
+
+  .display-quote-settings__actions {
+    justify-content: stretch;
+  }
+
+  .display-quote-settings__actions .btn {
+    width: 100%;
+  }
 
   .metric-legend-content { padding: 1rem 1rem 1.5rem; gap: 1.25rem; }
   .legend-track { margin: 0 0.5rem; }
@@ -582,4 +1326,14 @@
   .legend-scale-name { font-size: 0.7rem; }
 
   .theme-preview-popup { display: none; }
+
+  .tab-toggle { flex-direction: row; gap: 1rem; padding: 1rem 1.25rem; }
+  .tab-toggle-section__header { padding: 1rem 1.25rem 0.75rem; }
+  .api-key-form .form-row { flex-direction: column; align-items: stretch; }
+  .api-key-form .btn-primary { width: 100%; }
+  .local-agent-grid,
+  .local-agent-status,
+  .local-agent-fields {
+    grid-template-columns: 1fr;
+  }
 }

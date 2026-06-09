@@ -1,0 +1,29 @@
+<% content_for :body_class, "drawings-canvas-page" %>
+
+<div class="drawing-canvas-toolbar">
+  <%= link_to idea_path(@idea, anchor: "drawing"), class: "btn btn-sm" do %>
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+    Back to <%= truncate(@idea.title, length: 40) %>
+  <% end %>
+  <%= button_to "Delete", idea_drawing_path(@idea, @drawing),
+        method: :delete,
+        class: "btn btn-sm btn-danger",
+        form: { data: { turbo_confirm: "Delete this drawing?" } } %>
+</div>
+
+<div
+  id="excalidraw-root-<%= @drawing.id %>"
+  class="excalidraw-mount"
+  data-controller="excalidraw"
+  data-standalone="true"
+  data-drawing-id="<%= @drawing.id %>"
+  data-drawing-title="<%= @drawing.title %>"
+  data-drawing-role="<%= @drawing.role %>"
+  data-drawing-content="<%= @drawing.content.to_json %>"
+  data-idea-id="<%= @idea.id %>"
+  data-create-url="<%= idea_drawings_path(@idea) %>"
+  data-show-url-pattern="/ideas/<%= @idea.id %>/drawings/__ID__"
+></div>
+
+<%= stylesheet_link_tag "excalidraw_app/index" %>
+<%= javascript_include_tag "excalidraw_app/index", defer: true, type: "module" %>

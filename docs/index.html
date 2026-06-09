@@ -1,0 +1,521 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta
+      name="description"
+      content="Idea Foundry is a private idea management system for capturing, scoring, organizing, and shipping entrepreneurial ideas."
+    >
+    <title>Idea Foundry | Personal Idea Management</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --paper: oklch(0.955 0.017 155);
+        --paper-strong: oklch(0.99 0.006 228);
+        --ink: oklch(0.18 0.03 222);
+        --muted: oklch(0.43 0.035 205);
+        --line: oklch(0.82 0.025 172);
+        --forge: oklch(0.56 0.17 28);
+        --copper: oklch(0.69 0.12 58);
+        --verdigris: oklch(0.58 0.13 176);
+        --steel: oklch(0.3 0.045 245);
+        --shadow: 0 26px 60px oklch(0.22 0.035 215 / 18%);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        margin: 0;
+        background: var(--paper);
+        color: var(--ink);
+        font-family: Charter, "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+        font-size: 1rem;
+        line-height: 1.6;
+        letter-spacing: 0;
+      }
+
+      a {
+        color: inherit;
+      }
+
+      .site-shell {
+        min-height: 100vh;
+        overflow: hidden;
+      }
+
+      .hero {
+        position: relative;
+        display: grid;
+        min-height: 78vh;
+        align-items: end;
+        isolation: isolate;
+        background:
+          linear-gradient(90deg, oklch(0.13 0.035 220 / 90%), oklch(0.19 0.05 175 / 48%)),
+          url("https://raw.githubusercontent.com/Isaac12x/ideafoundry/master/public/idea-foundry-banner.png") center / cover;
+      }
+
+      .hero::after {
+        position: absolute;
+        inset: auto 0 0;
+        height: 38%;
+        content: "";
+        background: linear-gradient(180deg, transparent, var(--paper));
+        z-index: 0;
+      }
+
+      .nav {
+        position: absolute;
+        inset: 0 0 auto;
+        z-index: 2;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        width: min(1120px, calc(100% - 40px));
+        margin: 0 auto;
+        padding: 1.15rem 0;
+        color: oklch(0.98 0.006 92);
+      }
+
+      .brand {
+        font-family: Avenir Next, "Trebuchet MS", sans-serif;
+        font-size: 0.88rem;
+        font-weight: 800;
+        text-transform: uppercase;
+      }
+
+      .nav-links {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        font-family: Avenir Next, "Trebuchet MS", sans-serif;
+        font-size: 0.86rem;
+        font-weight: 700;
+      }
+
+      .nav-links a,
+      .button {
+        text-decoration: none;
+      }
+
+      .hero-inner {
+        position: relative;
+        z-index: 1;
+        width: min(1120px, calc(100% - 40px));
+        margin: 0 auto;
+        padding: 8rem 0 5rem;
+        color: oklch(0.985 0.008 92);
+      }
+
+      .eyebrow {
+        display: flex;
+        align-items: center;
+        gap: 0.7rem;
+        margin: 0 0 1.25rem;
+        font-family: Avenir Next, "Trebuchet MS", sans-serif;
+        font-size: 0.82rem;
+        font-weight: 800;
+        text-transform: uppercase;
+      }
+
+      .eyebrow::before {
+        display: block;
+        width: 3.8rem;
+        height: 0.18rem;
+        content: "";
+        background: var(--copper);
+      }
+
+      h1,
+      h2,
+      h3,
+      p {
+        margin-top: 0;
+      }
+
+      h1 {
+        max-width: 10ch;
+        margin-bottom: 1.15rem;
+        font-size: 4.65rem;
+        line-height: 0.93;
+        font-weight: 800;
+        text-wrap: balance;
+      }
+
+      .hero-copy {
+        max-width: 42rem;
+        margin-bottom: 2rem;
+        color: oklch(0.94 0.011 92);
+        font-size: 1.22rem;
+      }
+
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.8rem;
+      }
+
+      .button {
+        display: inline-flex;
+        align-items: center;
+        min-height: 2.9rem;
+        padding: 0.72rem 1rem;
+        border: 1px solid transparent;
+        border-radius: 6px;
+        font-family: Avenir Next, "Trebuchet MS", sans-serif;
+        font-size: 0.9rem;
+        font-weight: 800;
+      }
+
+      .button-primary {
+        background: var(--verdigris);
+        color: oklch(0.13 0.03 185);
+      }
+
+      .button-secondary {
+        border-color: oklch(0.96 0.01 92 / 55%);
+        color: oklch(0.98 0.006 92);
+      }
+
+      .band {
+        padding: 4.8rem 0;
+      }
+
+      .band-alt {
+        background: var(--paper-strong);
+      }
+
+      .content {
+        width: min(1120px, calc(100% - 40px));
+        margin: 0 auto;
+      }
+
+      .intro-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1.1fr) minmax(280px, 0.9fr);
+        gap: 4rem;
+        align-items: start;
+      }
+
+      .section-kicker {
+        margin-bottom: 0.75rem;
+        color: var(--forge);
+        font-family: Avenir Next, "Trebuchet MS", sans-serif;
+        font-size: 0.78rem;
+        font-weight: 800;
+        text-transform: uppercase;
+      }
+
+      h2 {
+        max-width: 14ch;
+        margin-bottom: 1.1rem;
+        font-size: 2.8rem;
+        line-height: 1;
+        font-weight: 800;
+        text-wrap: balance;
+      }
+
+      .lede {
+        max-width: 47rem;
+        color: var(--muted);
+        font-size: 1.13rem;
+      }
+
+      .flow {
+        display: grid;
+        gap: 0.65rem;
+        padding: 0;
+        margin: 0;
+        list-style: none;
+      }
+
+      .flow li {
+        display: grid;
+        grid-template-columns: 5.4rem 1fr;
+        gap: 1rem;
+        padding: 0.9rem 0;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .flow strong {
+        color: var(--steel);
+        font-family: Avenir Next, "Trebuchet MS", sans-serif;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+      }
+
+      .feature-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 1rem;
+        margin-top: 2.4rem;
+      }
+
+      .feature {
+        min-height: 15rem;
+        padding: 1.25rem;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--paper-strong);
+      }
+
+      .feature h3 {
+        margin-bottom: 0.7rem;
+        font-size: 1.2rem;
+        line-height: 1.2;
+      }
+
+      .feature p {
+        margin-bottom: 0;
+        color: var(--muted);
+      }
+
+      .feature:nth-child(2) {
+        border-color: color-mix(in oklch, var(--verdigris), var(--line) 50%);
+      }
+
+      .feature:nth-child(4) {
+        border-color: color-mix(in oklch, var(--forge), var(--line) 45%);
+      }
+
+      .callout {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 2rem;
+        align-items: center;
+        padding: 2rem;
+        border: 1px solid color-mix(in oklch, var(--steel), var(--line) 60%);
+        border-radius: 8px;
+        background: oklch(0.18 0.034 222);
+        color: var(--paper-strong);
+        box-shadow: var(--shadow);
+      }
+
+      .callout h2 {
+        margin-bottom: 0.65rem;
+        color: var(--paper-strong);
+      }
+
+      .callout p {
+        max-width: 48rem;
+        margin-bottom: 0;
+        color: oklch(0.89 0.016 90);
+      }
+
+      .callout .button {
+        background: var(--verdigris);
+        color: oklch(0.12 0.025 190);
+        white-space: nowrap;
+      }
+
+      .footer {
+        padding: 2rem 0 3rem;
+        color: var(--muted);
+        font-family: Avenir Next, "Trebuchet MS", sans-serif;
+        font-size: 0.86rem;
+      }
+
+      .footer .content {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.7rem 1.3rem;
+        justify-content: space-between;
+      }
+
+      @media (max-width: 860px) {
+        .nav {
+          align-items: flex-start;
+          flex-direction: column;
+        }
+
+        .hero {
+          min-height: 82vh;
+        }
+
+        .hero-inner {
+          padding-top: 9rem;
+          padding-bottom: 4rem;
+        }
+
+        h1 {
+          font-size: 3.45rem;
+        }
+
+        h2 {
+          font-size: 2.25rem;
+        }
+
+        .intro-grid,
+        .callout {
+          grid-template-columns: 1fr;
+        }
+
+        .feature-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .callout {
+          padding: 1.35rem;
+        }
+      }
+
+      @media (max-width: 560px) {
+        .nav-links {
+          width: 100%;
+          justify-content: space-between;
+          gap: 0.5rem;
+        }
+
+        h1 {
+          font-size: 2.7rem;
+        }
+
+        .hero-copy,
+        .lede {
+          font-size: 1.02rem;
+        }
+
+        .flow li {
+          grid-template-columns: 1fr;
+          gap: 0.2rem;
+        }
+
+        .actions,
+        .button {
+          width: 100%;
+        }
+
+        .button {
+          justify-content: center;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="site-shell">
+      <section class="hero" aria-label="Idea Foundry overview">
+        <nav class="nav" aria-label="Primary navigation">
+          <a class="brand" href="#top">Idea Foundry</a>
+          <div class="nav-links">
+            <a href="#workflow">Workflow</a>
+            <a href="#features">Features</a>
+            <a href="https://github.com/Isaac12x/ideafoundry">GitHub</a>
+          </div>
+        </nav>
+
+        <div class="hero-inner" id="top">
+          <p class="eyebrow">Personal idea management</p>
+          <h1>Idea Foundry</h1>
+          <p class="hero-copy">
+            A private workspace for entrepreneurs to capture raw ideas, score their potential,
+            organize the work, map relationships, and keep a full history as concepts move from spark to shipped.
+          </p>
+          <div class="actions" aria-label="Project links">
+            <a class="button button-primary" href="https://github.com/Isaac12x/ideafoundry#install-macos">Install locally</a>
+            <a class="button button-secondary" href="#features">Explore features</a>
+          </div>
+        </div>
+      </section>
+
+      <section class="band" id="workflow">
+        <div class="content intro-grid">
+          <div>
+            <p class="section-kicker">What it does</p>
+            <h2>Turns scattered ideas into a working portfolio.</h2>
+            <p class="lede">
+              Idea Foundry is built for one person who needs a serious system without multi-tenant overhead.
+              It combines intake, lifecycle states, weighted scoring, notes, templates, boards, drawings,
+              and relationship maps in a local-first Rails app.
+            </p>
+          </div>
+
+          <ol class="flow" aria-label="Idea Foundry workflow">
+            <li>
+              <strong>Capture</strong>
+              <span>Record ideas directly, send them by email, or start from reusable templates.</span>
+            </li>
+            <li>
+              <strong>Assess</strong>
+              <span>Score TRL, difficulty, opportunity, and timing with configurable weights.</span>
+            </li>
+            <li>
+              <strong>Shape</strong>
+              <span>Use notes, drawings, todo lists, and rich text to develop the strongest concepts.</span>
+            </li>
+            <li>
+              <strong>Ship</strong>
+              <span>Move ideas through validation, backlog work, export, and backup workflows.</span>
+            </li>
+          </ol>
+        </div>
+      </section>
+
+      <section class="band band-alt" id="features">
+        <div class="content">
+          <p class="section-kicker">Core system</p>
+          <h2>Built for repeated decisions.</h2>
+          <p class="lede">
+            The app keeps both the strategic view and the working detail close at hand, so an idea can be ranked,
+            connected, revised, and recovered without leaving the workspace.
+          </p>
+
+          <div class="feature-grid" aria-label="Idea Foundry feature areas">
+            <article class="feature">
+              <h3>Lifecycle pipeline</h3>
+              <p>Track ideas from new intake through triage, trials, cool-off, validation, shipping, parking, or rejection.</p>
+            </article>
+            <article class="feature">
+              <h3>Weighted scoring</h3>
+              <p>Compare ideas with configurable criteria and trend history instead of relying on gut feel alone.</p>
+            </article>
+            <article class="feature">
+              <h3>Boards and lists</h3>
+              <p>Organize ideas on kanban boards, custom lists, and optional build backlog lanes.</p>
+            </article>
+            <article class="feature">
+              <h3>Topology graph</h3>
+              <p>Explore categories, parent-child relationships, and adjacent concepts in an interactive 3D graph.</p>
+            </article>
+            <article class="feature">
+              <h3>Version history</h3>
+              <p>Snapshot each idea, compare revisions, and restore earlier versions when a direction needs to be recovered.</p>
+            </article>
+            <article class="feature">
+              <h3>Exports and backups</h3>
+              <p>Create encrypted or archive exports and schedule daily backup notifications for local resilience.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="band">
+        <div class="content">
+          <div class="callout">
+            <div>
+              <p class="section-kicker">Run it privately</p>
+              <h2>Local by design.</h2>
+              <p>
+                Idea Foundry is a single-user app intended for local machines or private servers behind network-level access control.
+              </p>
+            </div>
+            <a class="button" href="https://github.com/Isaac12x/ideafoundry">View source</a>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="content">
+        <span>Idea Foundry project overview</span>
+        <a href="https://github.com/Isaac12x/ideafoundry">github.com/Isaac12x/ideafoundry</a>
+      </div>
+    </footer>
+  </body>
+</html>

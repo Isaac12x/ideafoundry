@@ -1,3 +1,4 @@
+<%= render 'settings/upgrade_bar' %>
 <div class="settings-container">
   <div class="page-header">
     <h2>Export & Backup</h2>
@@ -97,7 +98,7 @@
           Configure automatic backups. Scheduled backups run daily at 2 AM and follow your frequency setting.
         </p>
 
-        <%= form_with url: settings_backup_path, method: :patch, local: true do |f| %>
+        <%= form_with url: settings_backup_path, method: :patch, local: true, data: { controller: "settings-autosave" } do |f| %>
           <div class="weight-grid">
             <div class="weight-item">
               <label class="weight-label">Frequency</label>
@@ -123,22 +124,46 @@
                      value="<%= @backup_settings['max_backups'] %>" min="1" max="100">
             </div>
 
-            <div class="weight-item">
-              <label class="weight-label">Auto Cleanup</label>
-              <span class="weight-description">Automatically delete old backups after scheduled runs</span>
-              <select name="backup_settings[auto_cleanup]" class="weight-input" style="text-align: left;">
-                <option value="true" <%= 'selected' if @backup_settings['auto_cleanup'].to_s == 'true' %>>Enabled</option>
-                <option value="false" <%= 'selected' if @backup_settings['auto_cleanup'].to_s == 'false' %>>Disabled</option>
-              </select>
+            <div class="weight-item backup-toggle-item">
+              <%= hidden_field_tag "backup_settings[auto_cleanup]", "false" %>
+              <label class="tab-toggle backup-settings-toggle" for="backup_auto_cleanup">
+                <div class="tab-toggle__text">
+                  <span class="tab-toggle__name">Auto Cleanup</span>
+                  <span class="tab-toggle__description">Automatically delete old backups after scheduled runs</span>
+                </div>
+                <span class="tab-toggle__switch">
+                  <%= check_box_tag "backup_settings[auto_cleanup]",
+                        "true",
+                        ActiveModel::Type::Boolean.new.cast(@backup_settings["auto_cleanup"]),
+                        id: "backup_auto_cleanup",
+                        class: "tab-toggle__input",
+                        data: { action: "change->settings-autosave#toggleChanged" } %>
+                  <span class="tab-toggle__track" aria-hidden="true">
+                    <span class="tab-toggle__thumb"></span>
+                  </span>
+                </span>
+              </label>
             </div>
 
-            <div class="weight-item">
-              <label class="weight-label">Email Notification</label>
-              <span class="weight-description">Send email after each scheduled backup completes</span>
-              <select name="backup_settings[email_notification]" class="weight-input" style="text-align: left;">
-                <option value="true" <%= 'selected' if @backup_settings['email_notification'].to_s == 'true' %>>Enabled</option>
-                <option value="false" <%= 'selected' if @backup_settings['email_notification'].to_s == 'false' %>>Disabled</option>
-              </select>
+            <div class="weight-item backup-toggle-item">
+              <%= hidden_field_tag "backup_settings[email_notification]", "false" %>
+              <label class="tab-toggle backup-settings-toggle" for="backup_email_notification">
+                <div class="tab-toggle__text">
+                  <span class="tab-toggle__name">Email Notification</span>
+                  <span class="tab-toggle__description">Send email after each scheduled backup completes</span>
+                </div>
+                <span class="tab-toggle__switch">
+                  <%= check_box_tag "backup_settings[email_notification]",
+                        "true",
+                        ActiveModel::Type::Boolean.new.cast(@backup_settings["email_notification"]),
+                        id: "backup_email_notification",
+                        class: "tab-toggle__input",
+                        data: { action: "change->settings-autosave#toggleChanged" } %>
+                  <span class="tab-toggle__track" aria-hidden="true">
+                    <span class="tab-toggle__thumb"></span>
+                  </span>
+                </span>
+              </label>
             </div>
           </div>
 

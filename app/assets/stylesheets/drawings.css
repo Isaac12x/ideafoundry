@@ -1,0 +1,322 @@
+/* Drawings list (rendered inside the idea Drawings tab) */
+.drawings-tab {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.drawings-tab-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.drawings-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.drawing-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-default);
+  border-radius: 8px;
+}
+
+.drawing-row .drawing-title {
+  flex: 1;
+  font-weight: 500;
+  color: var(--text-primary);
+  text-decoration: none;
+}
+
+.drawing-row .drawing-title:hover {
+  color: var(--accent);
+}
+
+.drawing-row .drawing-meta {
+  font-size: 0.85rem;
+  color: var(--text-muted, #888);
+}
+
+/* Drawing canvas page */
+.drawing-canvas-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+/* Excalidraw canvas mount — fill viewport, dark theme */
+.excalidraw-mount {
+  width: 100%;
+  height: calc(100vh - 140px);
+  min-height: 500px;
+  position: relative;
+  background: #000;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.excalidraw-mount .excalidraw,
+.excalidraw-mount .excalidraw-container {
+  --color-primary: #6965db;
+  background: #121212 !important;
+}
+
+/* Top toolbar overlay used by the React app — dark variant */
+.excalidraw-topbar {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(20, 20, 20, 0.95);
+  padding: 6px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+}
+
+.excalidraw-topbar input[type="text"] {
+  border: 1px solid #333;
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 14px;
+  width: 200px;
+  color: #eee;
+  background: #1a1a1a;
+}
+
+.excalidraw-topbar input[type="text"]::placeholder {
+  color: #777;
+}
+
+.excalidraw-topbar button {
+  padding: 4px 12px;
+  font-size: 14px;
+  border-radius: 4px;
+  border: 1px solid #444;
+  background: #2a2a2a;
+  cursor: pointer;
+  color: #eee;
+}
+
+.excalidraw-topbar button:hover {
+  background: #3a3a3a;
+}
+
+.excalidraw-topbar .save-status {
+  font-size: 12px;
+  color: #aaa;
+  min-width: 70px;
+}
+
+.excalidraw-topbar .save-status.error {
+  color: #ff6b6b;
+}
+
+/* ========================================================================
+   Drawings inside the idea form (thumbnails + modal)
+   ======================================================================== */
+
+.idea-drawings {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.idea-drawings__header {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.idea-drawings__list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 0.75rem;
+}
+
+.idea-drawings__empty {
+  font-size: 0.85rem;
+  color: var(--text-muted, #888);
+  font-style: italic;
+}
+
+.idea-drawings__empty.hidden {
+  display: none;
+}
+
+.drawing-thumb {
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-default);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.drawing-thumb__image {
+  aspect-ratio: 4/3;
+  background: #1a1a1a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.drawing-thumb__image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.drawing-thumb__placeholder {
+  font-size: 0.8rem;
+  color: var(--text-muted, #888);
+}
+
+.drawing-thumb__row {
+  padding: 0.5rem 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.drawing-thumb__title {
+  font-weight: 500;
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.drawing-thumb__actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+/* Drawing list thumbnail in show-page tab */
+.drawing-thumb-link {
+  display: block;
+  flex-shrink: 0;
+}
+
+.drawing-thumb-image {
+  width: 56px;
+  height: 42px;
+  object-fit: cover;
+  border-radius: 4px;
+  border: 1px solid var(--border-default);
+}
+
+/* Modal */
+.idea-drawings__modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1.5rem;
+}
+
+.idea-drawings__modal.hidden {
+  display: none;
+}
+
+.idea-drawings__modal-dialog {
+  background: var(--bg-base, #0e0e0e);
+  border: 1px solid var(--border-default);
+  border-radius: 10px;
+  width: min(1200px, 100%);
+  height: min(800px, 90vh);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.idea-drawings__modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border-default);
+}
+
+.idea-drawings__modal-title {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.idea-drawings__modal-body {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+
+.idea-drawings__modal-body .excalidraw-mount {
+  flex: 1;
+  height: 100%;
+  min-height: 0;
+  border-radius: 0;
+}
+
+body.modal-open {
+  overflow: hidden;
+}
+
+/* Hero file/draw toggle */
+.hero-mode-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.hero-mode-tab {
+  padding: 0.4rem 0.9rem;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-default);
+  border-radius: 6px;
+  color: var(--text-secondary, #aaa);
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.hero-mode-tab.active {
+  background: var(--accent, #6965db);
+  border-color: var(--accent, #6965db);
+  color: #fff;
+}
+
+.hero-mode-panel.hidden {
+  display: none;
+}
+
+.form-subsection {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px dashed var(--border-default);
+}
+
+.form-subsection-title {
+  font-size: 0.85rem;
+  color: var(--text-muted, #888);
+  margin: 0 0 0.5rem 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}

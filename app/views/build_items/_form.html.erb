@@ -22,6 +22,8 @@
         <button type="button" class="btn btn-sm" data-action="click->backlog-links#add">+</button>
       </div>
     </div>
+
+    <%= render "build_items/image_upload", form: f, build_item: build_item %>
   </div>
 
   <button type="button" class="backlog-expand-btn" data-action="click->build-item-form#toggleDesc" data-build-item-form-target="descToggle">

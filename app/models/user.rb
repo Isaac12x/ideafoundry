@@ -1,10 +1,18 @@
 class User < ApplicationRecord
   has_many :lists, dependent: :destroy
+  has_many :kanban_boards, dependent: :destroy
   has_many :ideas, dependent: :destroy
   has_many :templates, dependent: :destroy
   has_many :export_jobs, dependent: :destroy
   has_many :topologies, dependent: :destroy
   has_many :build_items, dependent: :destroy
+  has_many :submissions, dependent: :destroy
+  has_many :api_keys, dependent: :destroy
+  has_many :facts, dependent: :destroy
+  has_many :maxims, dependent: :destroy
+  has_many :agent_runs, dependent: :destroy
+  has_many :agent_events, dependent: :destroy
+  has_many :agent_recommendations, dependent: :destroy
 
   # Single-user application - one user per instance
   validates :email, presence: true, uniqueness: true
@@ -12,6 +20,8 @@ class User < ApplicationRecord
 
   # Settings stored as JSON
   serialize :settings, coder: JSON
+  after_find :normalize_settings_attribute
+  before_validation :normalize_settings_attribute
 
   # Default scoring weights
   DEFAULT_SCORING_WEIGHTS = {
@@ -19,6 +29,43 @@ class User < ApplicationRecord
     'difficulty' => -0.1,
     'opportunity' => 0.4,
     'timing' => 0.2
+  }.freeze
+
+  LEGACY_SCORING_SYSTEM_ID = 'weighted_readiness'.freeze
+  FOUNDER_SCORECARD_SYSTEM_ID = 'founder_scorecard'.freeze
+
+  DEFAULT_SCORING_SYSTEMS = {
+    LEGACY_SCORING_SYSTEM_ID => {
+      'id' => LEGACY_SCORING_SYSTEM_ID,
+      'name' => 'Weighted readiness',
+      'description' => 'Weighted TRL, difficulty, opportunity, and timing score normalized to 10.',
+      'kind' => 'legacy_weighted',
+      'criteria' => [
+        { 'key' => 'trl', 'label' => 'Technology readiness', 'scale_min' => 0, 'scale_max' => 10 },
+        { 'key' => 'difficulty', 'label' => 'Difficulty', 'scale_min' => 0, 'scale_max' => 10 },
+        { 'key' => 'opportunity', 'label' => 'Opportunity', 'scale_min' => 0, 'scale_max' => 10 },
+        { 'key' => 'timing', 'label' => 'Timing', 'scale_min' => 0, 'scale_max' => 10 }
+      ]
+    },
+    FOUNDER_SCORECARD_SYSTEM_ID => {
+      'id' => FOUNDER_SCORECARD_SYSTEM_ID,
+      'name' => 'Founder scorecard',
+      'description' => 'Seven 1-5 criteria for deciding whether an idea is ready for active work.',
+      'kind' => 'criterion_scorecard',
+      'scale_min' => 1,
+      'scale_max' => 5,
+      'work_threshold_total' => 24,
+      'blocks_work' => true,
+      'criteria' => [
+        { 'key' => 'pain_intensity', 'label' => 'Pain intensity' },
+        { 'key' => 'buyer_clarity', 'label' => 'Buyer clarity' },
+        { 'key' => 'distribution_access', 'label' => 'Distribution access' },
+        { 'key' => 'speed_to_mvp', 'label' => 'Speed to MVP' },
+        { 'key' => 'revenue_potential', 'label' => 'Revenue potential' },
+        { 'key' => 'strategic_fit', 'label' => 'Strategic fit with main company' },
+        { 'key' => 'operator_independence', 'label' => 'Can operate without me' }
+      ]
+    }
   }.freeze
 
   DEFAULT_EMAIL_SETTINGS = {
@@ -34,6 +81,35 @@ class User < ApplicationRecord
     'auto_cleanup' => true,
     'email_notification' => false
   }.freeze
+
+  DEFAULT_TYPING_LOCK_SETTINGS = {
+    'enabled' => false,
+    'lock_after_seconds' => 5.minutes.to_i,
+    'failed_unlock_cooldown_seconds' => 5.minutes.to_i
+  }.freeze
+  DEFAULT_AUTHENTICATOR_APP_SETTINGS = {
+    'enabled' => false
+  }.freeze
+  DEFAULT_VOICE_ID_SETTINGS = {
+    'enabled' => false
+  }.freeze
+  DEFAULT_IDEA_WORK_TOKEN_SETTINGS = {
+    'enabled' => false
+  }.freeze
+  DEFAULT_LOCAL_AGENT_SETTINGS = {
+    'enabled' => false,
+    'destructive_actions_enabled' => false,
+    'sleep_seconds' => 30,
+    'max_actions_per_cycle' => 20
+  }.freeze
+  ALLOWED_LOCAL_AGENT_SETTING_KEYS = DEFAULT_LOCAL_AGENT_SETTINGS.keys.freeze
+  DEFAULT_GITHUB_SETTINGS = {
+    'api_base_url' => 'https://api.github.com'
+  }.freeze
+  MIN_TYPING_LOCK_SECONDS = 1.minute.to_i
+  MAX_TYPING_LOCK_SECONDS = 24.hours.to_i
+  MIN_TYPING_LOCK_FAILED_UNLOCK_COOLDOWN_SECONDS = 1.minute.to_i
+  MAX_TYPING_LOCK_FAILED_UNLOCK_COOLDOWN_SECONDS = 24.hours.to_i
 
   ALLOWED_NOTIFICATION_TRIGGERS = %w[
     state_changed score_changed added_to_list created
@@ -82,15 +158,125 @@ class User < ApplicationRecord
     'sort_order' => 'position'
   }.freeze
 
+  def self.normalize_settings_value(value)
+    current = value
+
+    3.times do
+      return current if current.is_a?(Hash)
+      return {} if current.blank?
+      return {} unless current.is_a?(String)
+
+      current = JSON.parse(current)
+    rescue JSON::ParserError
+      return {}
+    end
+
+    current.is_a?(Hash) ? current : {}
+  end
+
   ALLOWED_TOPOLOGY_SETTING_KEYS = DEFAULT_TOPOLOGY_SETTINGS.keys.freeze
+
+  DEFAULT_LIST_SETTINGS = {
+    'default_view' => 'kanban'
+  }.freeze
+
+  ALLOWED_LIST_DEFAULT_VIEWS = %w[kanban named].freeze
+  ALLOWED_LIST_SETTING_KEYS = DEFAULT_LIST_SETTINGS.keys.freeze
+
+  DEFAULT_DISPLAY_QUOTE_SETTINGS = {
+    'text' => ''
+  }.freeze
+
+  DEFAULT_DISPLAY_QUOTES = [
+    "Your mind is for having ideas, not holding them\n- David Allen",
+    "Designed it without pen and paper. I learned later one of the advantages of designing without pencil and paper is that you're almost forced to avoid all avoidable complexities\n- Edgar Dijkstra",
+    "Simplicity is pre-requisite for reliability\n- Edgar Dijkstra"
+  ].freeze
+
 
   ALLOWED_TOPOLOGY_OVERRIDE_KEYS = %w[
     dag_mode show_ideas node_size_topology node_size_idea
     bloom_strength fog_density auto_fit_on_load click_behavior
   ].freeze
 
+  # Tabs that can be toggled on the idea detail page.
+  # Description is always visible and not listed here.
+  # Entry-kind tabs (tool/competitor/potential_competitor) match IdeaEntry enum kinds.
+  AVAILABLE_IDEA_TABS = %w[
+    scores media metadata notes todo history drawing
+    tool competitor potential_competitor
+  ].freeze
+
+  DEFAULT_IDEA_TAB_SETTINGS = {
+    'scores' => true,
+    'media' => true,
+    'metadata' => true,
+    'notes' => true,
+    'todo' => true,
+    'history' => true,
+    'drawing' => true,
+    'tool' => false,
+    'competitor' => false,
+    'potential_competitor' => false
+  }.freeze
+
+  IDEA_TAB_LABELS = {
+    'scores' => 'Scores',
+    'media' => 'Media',
+    'metadata' => 'Metadata',
+    'notes' => 'Notes',
+    'todo' => 'Todo',
+    'history' => 'History',
+    'drawing' => 'Drawings',
+    'tool' => 'Tools',
+    'competitor' => 'Competitors',
+    'potential_competitor' => 'Potential Competitors'
+  }.freeze
+
+  IDEA_ENTRY_TABS = %w[tool competitor potential_competitor].freeze
+
   def scoring_weights
     settings&.dig('scoring_weights') || DEFAULT_SCORING_WEIGHTS
+  end
+
+  def scoring_systems
+    stored = settings&.dig('scoring_systems') || {}
+
+    DEFAULT_SCORING_SYSTEMS.each_with_object({}) do |(id, defaults), systems|
+      overrides = stored[id].is_a?(Hash) ? stored[id] : {}
+      systems[id] = normalized_scoring_system(defaults, overrides)
+    end
+  end
+
+  def available_scoring_systems
+    scoring_systems.values
+  end
+
+  def scoring_system(id)
+    scoring_systems[id.to_s]
+  end
+
+  def scoring_system_ids
+    scoring_systems.keys
+  end
+
+  def update_scoring_systems(raw_systems)
+    self.settings ||= {}
+    submitted = raw_systems.to_h
+
+    self.settings['scoring_systems'] = DEFAULT_SCORING_SYSTEMS.each_with_object({}) do |(id, defaults), cleaned|
+      next unless defaults['kind'] == 'criterion_scorecard'
+
+      raw = submitted[id].is_a?(Hash) ? submitted[id] : {}
+      max_total = scorecard_max_total(defaults)
+      threshold = raw['work_threshold_total'].presence || defaults['work_threshold_total']
+
+      cleaned[id] = {
+        'work_threshold_total' => threshold.to_f.clamp(0, max_total)
+      }
+    end
+
+    save!
   end
 
   def email_settings
@@ -130,15 +316,38 @@ class User < ApplicationRecord
     email_settings['recipients'].to_s.split(',').map(&:strip).reject(&:blank?)
   end
 
+  def email_configured?
+    email_recipients.present?
+  end
+
   def update_scoring_weights(weights)
     self.settings ||= {}
     self.settings['scoring_weights'] = weights.slice('trl', 'difficulty', 'opportunity', 'timing')
     save!
   end
 
+  def default_kanban_board
+    kanban_boards.ordered.first || kanban_boards.create!(name: "Main Board")
+  end
+
   def scoring_formula_display
     weights = scoring_weights
-    "TRL × #{weights['trl']} + Opportunity × #{weights['opportunity']} + Timing × #{weights['timing']} + Difficulty × #{weights['difficulty']}"
+    "normalize(TRL × #{weights['trl']} + Opportunity × #{weights['opportunity']} + Timing × #{weights['timing']} + Difficulty × #{weights['difficulty']}) → 0–10"
+  end
+
+  def scorecard_max_total(system)
+    system['criteria'].size * system.fetch('scale_max', 5).to_i
+  end
+
+  def normalized_scoring_system(defaults, overrides)
+    system = defaults.deep_dup
+    return system unless system['kind'] == 'criterion_scorecard'
+
+    max_total = scorecard_max_total(system)
+    threshold = overrides['work_threshold_total'].presence || system['work_threshold_total']
+    system['work_threshold_total'] = threshold.to_f.clamp(0, max_total)
+    system['work_threshold_normalized'] = (system['work_threshold_total'].to_f / max_total * 10).round(2)
+    system
   end
 
   def backup_settings
@@ -148,6 +357,344 @@ class User < ApplicationRecord
   def update_backup_settings(params)
     self.settings ||= {}
     self.settings['backup'] = params.to_h
+    save
+  end
+
+  def typing_lock_settings
+    DEFAULT_TYPING_LOCK_SETTINGS.merge(settings&.dig('typing_lock') || {})
+  end
+
+  def typing_lock_enabled?
+    ActiveModel::Type::Boolean.new.cast(typing_lock_settings['enabled']) == true
+  end
+
+  def typing_lock_timeout_seconds
+    raw_seconds = typing_lock_settings['lock_after_seconds']
+    raw_seconds = typing_lock_settings['lock_after_minutes'].to_f.minutes.to_i if raw_seconds.blank?
+    raw_seconds.to_i.clamp(MIN_TYPING_LOCK_SECONDS, MAX_TYPING_LOCK_SECONDS)
+  end
+
+  def typing_lock_timeout_minutes
+    typing_lock_timeout_seconds / 60
+  end
+
+  def typing_lock_failed_unlock_cooldown_seconds
+    raw_seconds = typing_lock_settings['failed_unlock_cooldown_seconds']
+    raw_seconds = typing_lock_settings['failed_unlock_cooldown_minutes'].to_f.minutes.to_i if raw_seconds.blank?
+    raw_seconds.to_i.clamp(MIN_TYPING_LOCK_FAILED_UNLOCK_COOLDOWN_SECONDS, MAX_TYPING_LOCK_FAILED_UNLOCK_COOLDOWN_SECONDS)
+  end
+
+  def typing_lock_failed_unlock_cooldown_minutes
+    typing_lock_failed_unlock_cooldown_seconds / 60
+  end
+
+  def typing_fingerprint
+    secure_settings_value(typing_lock_settings, 'fingerprint')
+  end
+
+  def typing_fingerprint_configured?
+    typing_fingerprint.present?
+  end
+
+  def active_typing_lock_failed_unlock
+    failed_unlock = typing_lock_failed_unlock
+    return unless failed_unlock.present?
+
+    cooldown_until = typing_lock_failed_unlock_cooldown_until(failed_unlock)
+    return unless cooldown_until&.future?
+
+    failed_unlock
+  end
+
+  def typing_lock_failed_unlock
+    typing_lock_settings['last_failed_unlock']
+  end
+
+  def typing_lock_failed_unlock_cooldown_until(failed_unlock = typing_lock_failed_unlock)
+    Time.zone.parse(failed_unlock&.dig('cooldown_until').to_s)
+  rescue ArgumentError, TypeError
+    nil
+  end
+
+  def record_typing_lock_failed_unlock!(match:, challenge_id:)
+    failed_unlock = {
+      "score" => match.score.to_f,
+      "sample_count" => match.sample_count.to_i,
+      "compared_features" => match.compared_features.to_i,
+      "challenge_id" => challenge_id.to_s,
+      "created_at" => Time.current.iso8601,
+      "cooldown_until" => typing_lock_failed_unlock_cooldown_seconds.seconds.from_now.iso8601
+    }
+
+    self.settings ||= {}
+    self.settings['typing_lock'] ||= {}
+    self.settings['typing_lock']['last_failed_unlock'] = failed_unlock
+    save!
+
+    failed_unlock
+  end
+
+  def clear_typing_lock_failed_unlock!
+    return true unless settings&.dig('typing_lock', 'last_failed_unlock')
+
+    self.settings ||= {}
+    self.settings['typing_lock'] ||= {}
+    self.settings['typing_lock'].delete('last_failed_unlock')
+    save!
+  end
+
+  def update_typing_lock_settings(params)
+    self.settings ||= {}
+    self.settings['typing_lock'] ||= {}
+    lock_after_minutes = params['lock_after_minutes'].presence || typing_lock_timeout_minutes
+    lock_after_seconds = (lock_after_minutes.to_f * 60).round.clamp(MIN_TYPING_LOCK_SECONDS, MAX_TYPING_LOCK_SECONDS)
+    failed_unlock_cooldown_minutes = params['failed_unlock_cooldown_minutes'].presence || typing_lock_failed_unlock_cooldown_minutes
+    failed_unlock_cooldown_seconds = (failed_unlock_cooldown_minutes.to_f * 60).round.clamp(
+      MIN_TYPING_LOCK_FAILED_UNLOCK_COOLDOWN_SECONDS,
+      MAX_TYPING_LOCK_FAILED_UNLOCK_COOLDOWN_SECONDS
+    )
+
+    enabled = ActiveModel::Type::Boolean.new.cast(params.fetch('enabled', false)) == true
+    self.settings['typing_lock']['enabled'] = enabled
+    self.settings['typing_lock']['lock_after_seconds'] = lock_after_seconds
+    self.settings['typing_lock']['failed_unlock_cooldown_seconds'] = failed_unlock_cooldown_seconds
+    self.settings['typing_lock'].delete('last_failed_unlock') unless enabled
+    save
+  end
+
+  def store_typing_fingerprint!(fingerprint)
+    self.settings ||= {}
+    self.settings['typing_lock'] ||= {}
+    self.settings['typing_lock']['enabled'] = true
+    self.settings['typing_lock']['fingerprint_ciphertext'] = SecureSettingsPayload.encrypt(fingerprint)
+    self.settings['typing_lock'].delete('fingerprint')
+    self.settings['typing_lock'].delete('last_failed_unlock')
+    save
+  end
+
+  def clear_typing_fingerprint!
+    self.settings ||= {}
+    self.settings['typing_lock'] ||= {}
+    self.settings['typing_lock'].delete('fingerprint')
+    self.settings['typing_lock'].delete('fingerprint_ciphertext')
+    self.settings['typing_lock'].delete('last_failed_unlock')
+    save
+  end
+
+  def authenticator_app_settings
+    DEFAULT_AUTHENTICATOR_APP_SETTINGS.merge(settings&.dig('authenticator_app') || {})
+  end
+
+  def authenticator_app_enabled?
+    ActiveModel::Type::Boolean.new.cast(authenticator_app_settings['enabled']) == true && authenticator_app_configured?
+  end
+
+  def authenticator_app_configured?
+    authenticator_app_secret.present?
+  end
+
+  def authenticator_app_secret
+    secure_settings_value(authenticator_app_settings, 'secret').presence
+  end
+
+  def authenticator_app_provisioning_uri
+    return unless authenticator_app_secret
+
+    AuthenticatorApp.provisioning_uri(secret: authenticator_app_secret, account: email)
+  end
+
+  def update_authenticator_app_settings(params)
+    enabled = ActiveModel::Type::Boolean.new.cast(params.fetch('enabled', false)) == true
+    self.settings ||= {}
+    self.settings['authenticator_app'] ||= {}
+
+    if enabled
+      self.settings['authenticator_app']['enabled'] = true
+      self.settings['authenticator_app']['secret_ciphertext'] = SecureSettingsPayload.encrypt(authenticator_app_secret || AuthenticatorApp.generate_secret)
+      self.settings['authenticator_app'].delete('secret')
+    else
+      self.settings['authenticator_app'] = { 'enabled' => false }
+    end
+
+    save
+  end
+
+  def voice_id_settings
+    DEFAULT_VOICE_ID_SETTINGS.merge(settings&.dig('voice_id') || {})
+  end
+
+  def voice_id_enabled?
+    ActiveModel::Type::Boolean.new.cast(voice_id_settings['enabled']) == true && voice_id_configured?
+  end
+
+  def voice_id_requested?
+    ActiveModel::Type::Boolean.new.cast(voice_id_settings['enabled']) == true
+  end
+
+  def voice_id_fingerprint
+    secure_settings_value(voice_id_settings, 'fingerprint')
+  end
+
+  def voice_id_configured?
+    voice_id_fingerprint.present? && voice_id_fingerprint['sample_count'].to_i >= VoiceFingerprint::MIN_ENROLLMENT_SAMPLE_COUNT
+  end
+
+  def update_voice_id_settings(params)
+    enabled = ActiveModel::Type::Boolean.new.cast(params.fetch('enabled', false)) == true
+    self.settings ||= {}
+    self.settings['voice_id'] ||= {}
+
+    if enabled
+      self.settings['voice_id']['enabled'] = true
+    else
+      self.settings['voice_id'] = { 'enabled' => false }
+    end
+
+    save
+  end
+
+  def store_voice_id_fingerprint!(fingerprint)
+    self.settings ||= {}
+    self.settings['voice_id'] ||= {}
+    self.settings['voice_id']['enabled'] = true
+    self.settings['voice_id']['fingerprint_ciphertext'] = SecureSettingsPayload.encrypt(fingerprint.except('raw_audio', 'audio', 'blob', 'recording'))
+    self.settings['voice_id'].delete('fingerprint')
+    save
+  end
+
+  def clear_voice_id_fingerprint!
+    self.settings ||= {}
+    self.settings['voice_id'] ||= {}
+    self.settings['voice_id'].delete('fingerprint')
+    self.settings['voice_id'].delete('fingerprint_ciphertext')
+    save
+  end
+
+  def security_lock_enabled?
+    typing_lock_enabled? || authenticator_app_enabled? || voice_id_requested?
+  end
+
+  def security_lock_timeout_seconds
+    typing_lock_timeout_seconds
+  end
+
+  def idea_draft_unlock_seed
+    Rails.application.key_generator.generate_key("idea-draft:user:#{id}:#{created_at.to_i}", 32).unpack1("H*")
+  end
+
+  def idea_work_token_settings
+    DEFAULT_IDEA_WORK_TOKEN_SETTINGS.merge(settings&.dig('idea_work_tokens') || {})
+  end
+
+  def idea_work_tokens_enabled?
+    ActiveModel::Type::Boolean.new.cast(idea_work_token_settings['enabled']) == true
+  end
+
+  def update_idea_work_token_settings(params)
+    enabled = ActiveModel::Type::Boolean.new.cast(params.fetch('enabled', false)) == true
+    self.settings ||= {}
+    self.settings['idea_work_tokens'] = { 'enabled' => enabled }
+    save
+  end
+
+  def local_agent_settings
+    stored = (settings&.dig('local_agent') || {}).slice(*ALLOWED_LOCAL_AGENT_SETTING_KEYS)
+    resolved = DEFAULT_LOCAL_AGENT_SETTINGS.merge(stored.slice(*DEFAULT_LOCAL_AGENT_SETTINGS.keys))
+
+    boolean = ActiveModel::Type::Boolean.new
+    resolved['enabled'] = boolean.cast(resolved['enabled']) == true
+    resolved['destructive_actions_enabled'] = boolean.cast(resolved['destructive_actions_enabled']) == true
+    resolved['sleep_seconds'] = positive_integer_or_default(resolved['sleep_seconds'], DEFAULT_LOCAL_AGENT_SETTINGS['sleep_seconds'])
+    resolved['max_actions_per_cycle'] = positive_integer_or_default(
+      resolved['max_actions_per_cycle'],
+      DEFAULT_LOCAL_AGENT_SETTINGS['max_actions_per_cycle']
+    )
+
+    resolved
+  end
+
+  def local_agent_enabled?
+    local_agent_settings['enabled'] == true
+  end
+
+  def local_agent_live?
+    local_agent_enabled? && agent_runs.active.exists?
+  end
+
+  def local_agent_destructive_actions_enabled?
+    local_agent_settings['destructive_actions_enabled'] == true
+  end
+
+  def update_local_agent_settings(params)
+    values = params.to_h.stringify_keys
+    cleaned = {
+      'enabled' => ActiveModel::Type::Boolean.new.cast(values.fetch('enabled', false)) == true,
+      'destructive_actions_enabled' => ActiveModel::Type::Boolean.new.cast(values.fetch('destructive_actions_enabled', false)) == true,
+      'sleep_seconds' => positive_integer_or_default(values['sleep_seconds'], DEFAULT_LOCAL_AGENT_SETTINGS['sleep_seconds']),
+      'max_actions_per_cycle' => positive_integer_or_default(values['max_actions_per_cycle'], DEFAULT_LOCAL_AGENT_SETTINGS['max_actions_per_cycle'])
+    }
+
+    self.settings ||= {}
+    self.settings['local_agent'] = cleaned
+    save
+  end
+
+  def local_agent_status
+    return 'disabled' unless local_agent_enabled?
+
+    latest = agent_runs.recent.first
+    return 'stopped' unless latest
+    return 'stale' if latest.heartbeat_stale?
+
+    latest.status
+  end
+
+  def local_agent_question_threads(limit: 10)
+    questions = agent_events.where(event_type: "question").recent.limit(limit).to_a
+    answers_by_question_id =
+      agent_events
+        .where(event_type: "answer", target_type: "AgentEvent", target_id: questions.map(&:id))
+        .recent
+        .group_by(&:target_id)
+
+    questions.map do |question|
+      {
+        question: question,
+        answer: answers_by_question_id[question.id]&.first
+      }
+    end
+  end
+
+  def github_settings
+    stored = settings&.dig('github') || {}
+    DEFAULT_GITHUB_SETTINGS.merge(stored.slice('api_base_url')).merge(
+      'token_configured' => github_configured?
+    )
+  end
+
+  def github_token
+    secure_settings_value(settings&.dig('github') || {}, 'token').presence
+  end
+
+  def github_configured?
+    github_token.present?
+  end
+
+  def update_github_settings(params)
+    values = params.to_h.stringify_keys
+    self.settings ||= {}
+    self.settings['github'] ||= {}
+
+    if ActiveModel::Type::Boolean.new.cast(values['clear_token']) == true
+      self.settings['github'].delete('token')
+      self.settings['github'].delete('token_ciphertext')
+    elsif values['token'].present?
+      self.settings['github']['token_ciphertext'] = SecureSettingsPayload.encrypt(values['token'].to_s.strip)
+      self.settings['github'].delete('token')
+    end
+
+    api_base_url = values['api_base_url'].presence || settings['github']['api_base_url'].presence || DEFAULT_GITHUB_SETTINGS['api_base_url']
+    self.settings['github']['api_base_url'] = api_base_url
     save
   end
 
@@ -214,6 +761,107 @@ class User < ApplicationRecord
     save
   end
 
+  def list_settings
+    stored = settings&.dig('list_settings') || {}
+    DEFAULT_LIST_SETTINGS.merge(stored).tap do |resolved|
+      resolved['default_view'] = DEFAULT_LIST_SETTINGS['default_view'] unless ALLOWED_LIST_DEFAULT_VIEWS.include?(resolved['default_view'])
+    end
+  end
+
+  def update_list_settings(params)
+    cleaned = params.to_h.slice(*ALLOWED_LIST_SETTING_KEYS)
+    cleaned['default_view'] = DEFAULT_LIST_SETTINGS['default_view'] unless ALLOWED_LIST_DEFAULT_VIEWS.include?(cleaned['default_view'])
+    self.settings ||= {}
+    self.settings['list_settings'] = cleaned
+    save
+  end
+
+  def display_quote_settings
+    DEFAULT_DISPLAY_QUOTE_SETTINGS.merge(settings&.dig('display_quote') || {})
+  end
+
+  def custom_display_quote
+    settings&.dig('display_quote', 'text').to_s
+  end
+
+  def default_display_quote
+    DEFAULT_DISPLAY_QUOTES.first
+  end
+
+  def display_quote
+    custom_display_quote.presence || default_display_quote
+  end
+
+  def display_contrast
+    val = settings&.dig('display_contrast').to_s
+    return 130 if val == 'high'
+    return 100 if val == 'normal' || val.empty?
+    int = val.to_i
+    int.between?(70, 150) ? int : 100
+  end
+
+  def update_display_quote(params)
+    h = params.to_h
+    quote = h.fetch('quote', '').to_s.strip
+    contrast = h.fetch('contrast', '100').to_s.strip
+    self.settings ||= {}
+
+    if quote.present?
+      self.settings['display_quote'] = { 'text' => quote }
+    else
+      self.settings.delete('display_quote')
+    end
+
+    contrast_int = contrast.to_i.clamp(70, 150)
+    if contrast_int == 100
+      self.settings.delete('display_contrast')
+    else
+      self.settings['display_contrast'] = contrast_int.to_s
+    end
+
+    save
+  end
+
+  def idea_tab_settings
+    stored = (settings&.dig('idea_tabs') || {}).slice(*AVAILABLE_IDEA_TABS)
+    # Drop nil values so DEFAULTS apply for keys that were never explicitly set
+    # (pre-fix checkbox submissions stored unchecked tabs as nil).
+    stored.reject! { |_, v| v.nil? }
+    DEFAULT_IDEA_TAB_SETTINGS.merge(stored)
+  end
+
+  def idea_tab_enabled?(tab_name)
+    key = tab_name.to_s
+    return false unless AVAILABLE_IDEA_TABS.include?(key)
+    idea_tab_settings[key] == true
+  end
+
+  def enabled_idea_tabs
+    idea_tab_settings.select { |_, v| v }.keys
+  end
+
+  def kb_folders
+    Array(settings&.dig('kb', 'folders'))
+  end
+
+  def update_kb_folders(paths)
+    self.settings ||= {}
+    self.settings['kb'] ||= {}
+    self.settings['kb']['folders'] = Array(paths).map(&:strip).reject(&:blank?)
+    save
+  end
+
+  def update_idea_tab_settings(params)
+    # Unchecked checkboxes are absent from params — coerce to a strict boolean
+    # (not nil) so reads don't fall back to defaults and silently re-enable them.
+    cleaned = AVAILABLE_IDEA_TABS.each_with_object({}) do |key, acc|
+      acc[key] = ActiveModel::Type::Boolean.new.cast(params[key]) == true
+    end
+    self.settings ||= {}
+    self.settings['idea_tabs'] = cleaned
+    save
+  end
+
   def topology_overrides_for(topology_id)
     overrides = settings&.dig('topology_overrides', topology_id.to_s) || {}
     topology_settings.merge(overrides)
@@ -229,5 +877,24 @@ class User < ApplicationRecord
       self.settings['topology_overrides'][topology_id.to_s] = filtered
     end
     save
+  end
+
+  private
+
+  def normalize_settings_attribute
+    normalized = self.class.normalize_settings_value(read_attribute(:settings))
+    self.settings = normalized unless read_attribute(:settings) == normalized
+  end
+
+  def positive_integer_or_default(value, default)
+    integer = value.to_i
+    integer.positive? ? integer : default
+  end
+
+  def secure_settings_value(settings_hash, key)
+    ciphertext = settings_hash["#{key}_ciphertext"]
+    return SecureSettingsPayload.decrypt(ciphertext) if ciphertext.present?
+
+    settings_hash[key]
   end
 end

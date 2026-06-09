@@ -1,0 +1,114 @@
+#!/bin/zsh
+set -e
+
+APP_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+RUBY_VERSION=$(cat "$APP_DIR/.ruby-version")
+USERNAME=$(whoami)
+HOMEDIR=$HOME
+PLIST_NAME="com.${USERNAME}.idea-app.plist"
+PLIST_DEST="$HOMEDIR/Library/LaunchAgents/$PLIST_NAME"
+
+echo "==> idea-app installer"
+echo "    User: $USERNAME | Ruby: $RUBY_VERSION | App: $APP_DIR"
+
+# --- Homebrew ---
+if ! command -v brew &>/dev/null; then
+  echo "==> Installing Homebrew..."
+  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+  eval "$(/opt/homebrew/bin/brew shellenv 2>/dev/null || /usr/local/bin/brew shellenv)"
+fi
+
+# --- rbenv ---
+if ! command -v rbenv &>/dev/null; then
+  echo "==> Installing rbenv + ruby-build..."
+  brew install rbenv ruby-build
+fi
+eval "$(rbenv init - zsh)"
+
+# --- Ruby ---
+if ! rbenv versions --bare | grep -qx "$RUBY_VERSION"; then
+  echo "==> Installing Ruby $RUBY_VERSION (this takes a few minutes)..."
+  rbenv install "$RUBY_VERSION"
+fi
+rbenv local "$RUBY_VERSION"
+
+# --- Node.js (for esbuild/JS bundle) ---
+if ! command -v node &>/dev/null; then
+  echo "==> Installing Node.js..."
+  brew install node
+fi
+
+# --- Caddy ---
+if ! command -v caddy &>/dev/null; then
+  echo "==> Installing Caddy..."
+  brew install caddy
+fi
+
+# --- Disable macOS built-in Apache httpd ---
+if launchctl list 2>/dev/null | grep -q "org.apache.httpd"; then
+  echo "==> Disabling built-in Apache httpd..."
+  sudo launchctl unload -w /System/Library/LaunchDaemons/org.apache.httpd.plist 2>/dev/null || true
+fi
+if pgrep -x httpd &>/dev/null; then
+  echo "==> Stopping running httpd..."
+  sudo apachectl stop 2>/dev/null || true
+fi
+
+# --- /etc/hosts entry for ideas.local ---
+if ! grep -q "ideas.local" /etc/hosts; then
+  echo "==> Adding ideas.local to /etc/hosts..."
+  echo "127.0.0.1 ideas.local" | sudo tee -a /etc/hosts >/dev/null
+fi
+
+# --- Bundler + gems ---
+echo "==> Installing gems..."
+gem install bundler --no-document 2>/dev/null || true
+bundle install --jobs 4
+
+# --- Node modules (esbuild, 3D graph) ---
+if [ -f "$APP_DIR/package.json" ]; then
+  echo "==> Installing Node dependencies..."
+  npm install --prefix "$APP_DIR"
+fi
+
+# --- Generate SECRET_KEY_BASE if not already set ---
+SECRET_FILE="$APP_DIR/.secret_key_base"
+if [ -f "$SECRET_FILE" ]; then
+  SECRET_KEY_BASE=$(cat "$SECRET_FILE")
+else
+  SECRET_KEY_BASE=$(ruby -rsecurerandom -e 'puts SecureRandom.hex(64)')
+  echo "$SECRET_KEY_BASE" > "$SECRET_FILE"
+fi
+
+# --- Unload old plist if running ---
+if launchctl list 2>/dev/null | grep -q "com\.${USERNAME}\.idea-app"; then
+  echo "==> Stopping existing service..."
+  launchctl bootout "gui/$(id -u)/$PLIST_NAME" 2>/dev/null || \
+    launchctl unload "$PLIST_DEST" 2>/dev/null || true
+fi
+
+# --- Generate plist from template ---
+echo "==> Installing LaunchAgent → $PLIST_DEST"
+sed -e "s|__USERNAME__|${USERNAME}|g" \
+    -e "s|__APPDIR__|${APP_DIR}|g" \
+    -e "s|__HOMEDIR__|${HOMEDIR}|g" \
+    -e "s|__SECRET_KEY_BASE__|${SECRET_KEY_BASE}|g" \
+    "$APP_DIR/com.USERNAME.idea-app.plist" > "$PLIST_DEST"
+
+# --- DB setup ---
+echo "==> Preparing database..."
+RAILS_ENV=production bin/rails db:prepare
+
+# --- Asset precompile ---
+echo "==> Precompiling assets..."
+RAILS_ENV=production bin/rails assets:precompile
+
+# --- Load + start ---
+echo "==> Starting service..."
+launchctl load -w "$PLIST_DEST"
+
+echo ""
+echo "==> Done! idea-app is running."
+echo "    Service: $PLIST_NAME"
+echo "    Logs:    /tmp/idea-app.out & /tmp/idea-app.err"
+echo "    URL:     https://ideas.local:8443"

@@ -1,0 +1,8 @@
+<%= turbo_stream.replace "todo_tab_#{@idea.id}" do %>
+  <%= render "todo_items/tab", idea: @idea %>
+<% end %>
+
+<% count = @idea.todo_items.count %>
+<%= turbo_stream.update "todo_tab_label_#{@idea.id}" do %>
+  Todo<% if count > 0 %> (<%= count %>)<% end %>
+<% end %>
