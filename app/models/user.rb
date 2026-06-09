@@ -1,3 +1,5 @@
+require "securerandom"
+
 class User < ApplicationRecord
   has_many :lists, dependent: :destroy
   has_many :kanban_boards, dependent: :destroy
@@ -56,6 +58,9 @@ class User < ApplicationRecord
   DEFAULT_VOICE_ID_SETTINGS = {
     'enabled' => false
   }.freeze
+  DEFAULT_MOBILE_UPLINK_SETTINGS = {
+    'enabled' => false
+  }.freeze
   DEFAULT_IDEA_WORK_TOKEN_SETTINGS = {
     'enabled' => false
   }.freeze
@@ -73,6 +78,7 @@ class User < ApplicationRecord
   MAX_TYPING_LOCK_SECONDS = 24.hours.to_i
   MIN_TYPING_LOCK_FAILED_UNLOCK_COOLDOWN_SECONDS = 1.minute.to_i
   MAX_TYPING_LOCK_FAILED_UNLOCK_COOLDOWN_SECONDS = 24.hours.to_i
+  MOBILE_UPLINK_ID_BYTES = 18
 
   ALLOWED_NOTIFICATION_TRIGGERS = %w[
     state_changed score_changed added_to_list created
@@ -469,6 +475,43 @@ class User < ApplicationRecord
     self.settings['voice_id'] ||= {}
     self.settings['voice_id'].delete('fingerprint')
     self.settings['voice_id'].delete('fingerprint_ciphertext')
+    save
+  end
+
+  def mobile_uplink_settings
+    DEFAULT_MOBILE_UPLINK_SETTINGS.merge(settings&.dig('mobile_uplink') || {})
+  end
+
+  def mobile_uplink_enabled?
+    ActiveModel::Type::Boolean.new.cast(mobile_uplink_settings['enabled']) == true && mobile_uplink_configured?
+  end
+
+  def mobile_uplink_configured?
+    mobile_uplink_id.present?
+  end
+
+  def mobile_uplink_id
+    mobile_uplink_settings['connect_id'].presence
+  end
+
+  def mobile_uplink_pairing_payload(workspace_url:)
+    return unless mobile_uplink_id
+
+    MobileUplink.pairing_payload(uplink_id: mobile_uplink_id, workspace_url: workspace_url)
+  end
+
+  def update_mobile_uplink_settings(params)
+    enabled = ActiveModel::Type::Boolean.new.cast(params.fetch('enabled', false)) == true
+    self.settings ||= {}
+    self.settings['mobile_uplink'] ||= {}
+
+    if enabled
+      self.settings['mobile_uplink']['enabled'] = true
+      self.settings['mobile_uplink']['connect_id'] ||= SecureRandom.urlsafe_base64(MOBILE_UPLINK_ID_BYTES)
+    else
+      self.settings['mobile_uplink'] = { 'enabled' => false }
+    end
+
     save
   end
 
