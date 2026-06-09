@@ -1,0 +1,53 @@
+<% replies = note.replies.chronological %>
+<% max_depth = 4 %>
+
+<div class="note-node <%= 'note-node--root' if note.root? %> <%= 'note-node--has-replies' if replies.any? %>"
+     id="note_<%= note.id %>"
+     data-note-tree-target="node"
+     data-depth="<%= depth %>">
+
+  <div class="note-card">
+    <div class="note-body"><%= simple_format(note.body, {}, sanitize: true) %></div>
+    <div class="note-meta">
+      <span class="note-timestamp"><%= time_ago_in_words(note.created_at) %> ago</span>
+      <% if replies.any? %>
+        <span class="note-reply-count"><%= replies.size %> <%= 'reply'.pluralize(replies.size) %></span>
+      <% end %>
+      <div class="note-actions">
+        <% if depth < max_depth %>
+          <button class="note-action-btn note-reply-btn"
+                  data-action="click->note-tree#toggleReply"
+                  data-note-tree-note-id-param="<%= note.id %>"
+                  title="Reply">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg>
+            Reply
+          </button>
+        <% end %>
+        <%= button_to idea_note_path(idea, note), method: :delete, class: "note-action-btn note-delete-btn", data: { turbo_stream: true, turbo_confirm: "Delete this note#{replies.any? ? ' and its replies' : ''}?" }, title: "Delete" do %>
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        <% end %>
+      </div>
+    </div>
+  </div>
+
+  <div class="note-reply-form" id="note_reply_form_<%= note.id %>" style="display: none;"
+       data-note-tree-target="replyForm" data-note-id="<%= note.id %>">
+    <%= render "notes/form", idea: idea, parent_note_id: note.id %>
+  </div>
+
+  <% if replies.any? %>
+    <div class="note-children" data-note-tree-target="children" data-note-id="<%= note.id %>">
+      <% if replies.size > 2 && depth > 0 %>
+        <button class="note-collapse-btn" data-action="click->note-tree#toggleCollapse" data-note-tree-note-id-param="<%= note.id %>">
+          <svg class="note-collapse-chevron" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+          <span data-note-tree-target="collapseLabel" data-note-id="<%= note.id %>"><%= replies.size %> replies</span>
+        </button>
+      <% end %>
+      <div class="note-thread" data-note-tree-target="thread" data-note-id="<%= note.id %>">
+        <% replies.each do |reply| %>
+          <%= render "notes/note", note: reply, idea: idea, depth: depth + 1 %>
+        <% end %>
+      </div>
+    </div>
+  <% end %>
+</div>

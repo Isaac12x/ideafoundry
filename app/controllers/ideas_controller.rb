@@ -1,17 +1,20 @@
 class IdeasController < ApplicationController
   before_action :set_user
-  before_action :set_idea, only: [:show, :edit, :update, :destroy, :send_email, :approve_pending_email, :discard_pending_email]
+  before_action :set_idea, only: [:show, :edit, :update, :destroy, :send_email, :approve_pending_email, :discard_pending_email, :enrich, :enrichment_status, :archive, :restore, :add_to_list]
   before_action :check_cool_off_period, only: [:edit, :update]
 
   def index
-    @ideas = @user.ideas.includes(:lists, :idea_lists, :topologies)
-    
+    @ideas = @user.ideas.non_draft.includes(:lists, :idea_lists, :topologies, :idea_entries)
+    @user.default_kanban_board if @user.kanban_boards.none?
+    @kanban_boards = @user.kanban_boards.ordered.includes(:lists)
+    @named_lists = @user.lists.named.ordered
+
     # Apply filters
     @ideas = apply_filters(@ideas)
-    
+
     # Apply sorting
     @ideas = apply_sorting(@ideas)
-    
+
     @ideas = @ideas.page(params[:page]).per(20)
   end
 
@@ -20,66 +23,60 @@ class IdeasController < ApplicationController
   end
 
   def new
-    @idea = @user.ideas.build
-    @lists = @user.lists.ordered
-    @topologies = @user.topologies.ordered
-    @templates = @user.templates.order(:name)
-
-    # User picks template in step 1 of the form
+    # Auto-draft: create a hidden draft idea immediately so drawings can attach
+    # to it during composition. Drafts are filtered from listings and cleaned up
+    # daily by CleanOrphanedDraftsJob if abandoned.
+    @idea = @user.ideas.create!(draft: true, state: :idea_new, attempt_count: 0, title: "")
+    redirect_to edit_idea_path(@idea, draft: 1)
   end
 
   def create
     @idea = @user.ideas.build(idea_params)
-    
+
     if @idea.save
       @idea.create_version("Initial version")
+      @idea.enqueue_attachment_ocr!
 
-      # Add to selected lists if provided
-      if params[:list_ids].present?
-        params[:list_ids].reject(&:blank?).each do |list_id|
-          list = @user.lists.find(list_id)
-          @idea.idea_lists.create(list: list)
-        end
-      end
-
-      redirect_to @idea, notice: 'Idea was successfully created.'
+      redirect_to uncompleted_ideas_path(idea_draft_saved: 1), notice: 'Idea was successfully created.'
     else
-      @lists = @user.lists.ordered
-      @topologies = @user.topologies.ordered
-      @templates = @user.templates.order(:name)
-      render :new, status: :unprocessable_entity
+      load_form_options
+      render :new, status: :unprocessable_content
     end
   end
 
   def edit
-    @lists = @user.lists.ordered
-    @topologies = @user.topologies.ordered
-    @templates = @user.templates.order(:name)
+    load_form_options
   end
 
   def update
+    was_draft = @idea.draft?
+    attrs = idea_params
+    attrs[:draft] = false if was_draft  # Submitting promotes draft → real idea
     respond_to do |format|
-      if @idea.update(idea_params)
-        @idea.create_version(version_commit_message)
+      if @idea.update(attrs)
+        if !request.xhr? && !was_draft && kanban_assignment_requested? && selected_kanban_list_requested? && !@idea.kanban_eligible?
+          @idea.errors.add(:base, @idea.kanban_ineligibility_message)
+          load_form_options
+          format.html { render :edit, status: :unprocessable_content }
+          format.json { render json: { success: false, errors: @idea.errors.full_messages }, status: :unprocessable_content }
+          return
+        end
 
-        # Update list associations if provided (only for non-AJAX requests)
-        if params[:list_ids] && !request.xhr?
-          current_list_ids = @idea.lists.pluck(:id)
-          new_list_ids = params[:list_ids].reject(&:blank?).map(&:to_i)
-          
-          # Remove from lists that are no longer selected
-          (current_list_ids - new_list_ids).each do |list_id|
-            @idea.idea_lists.find_by(list_id: list_id)&.destroy
-          end
-          
-          # Add to new lists
-          (new_list_ids - current_list_ids).each do |list_id|
-            list = @user.lists.find(list_id)
-            @idea.idea_lists.create(list: list)
-          end
+        @idea.create_version(was_draft ? "Initial version" : version_commit_message)
+        @idea.enqueue_attachment_ocr!
+
+        # Update list association if provided (only for non-AJAX requests)
+        unless request.xhr? || was_draft
+          update_kanban_list_memberships if params.key?(:kanban_list_ids) || params.key?(:list_id)
+          update_named_list_memberships if params.key?(:named_list_ids)
         end
         
-        format.html { redirect_to @idea, notice: 'Idea was successfully updated.' }
+        format.html do
+          redirect_to(
+            was_draft ? uncompleted_ideas_path(idea_draft_saved: 1) : idea_path(@idea, idea_edit_saved: 1),
+            notice: 'Idea was successfully updated.'
+          )
+        end
         format.json { 
           render json: { 
             success: true, 
@@ -89,16 +86,14 @@ class IdeasController < ApplicationController
         }
       else
         format.html {
-          @lists = @user.lists.ordered
-          @topologies = @user.topologies.ordered
-          @templates = @user.templates.order(:name)
-          render :edit, status: :unprocessable_entity
+          load_form_options
+          render :edit, status: :unprocessable_content
         }
         format.json { 
           render json: { 
             success: false, 
             errors: @idea.errors.full_messages 
-          }, status: :unprocessable_entity 
+          }, status: :unprocessable_content 
         }
       end
     end
@@ -159,10 +154,259 @@ class IdeasController < ApplicationController
     redirect_to ideas_path, notice: 'Idea was successfully deleted.'
   end
 
+  # POST /ideas/:id/enrich
+  # Triggers web enrichment for this idea.
+  def enrich
+    query = params[:query].presence
+    sources = params[:sources].presence&.split(",")
+
+    IdeaEnrichmentJob.perform_later(@idea.id, query: query, sources: sources)
+
+    respond_to do |format|
+      format.html { redirect_to @idea, notice: 'Enrichment started. Results will appear in the Enrichment tab when ready.' }
+      format.json { render json: { status: 'enqueued', idea_id: @idea.id } }
+    end
+  end
+
+  # GET /ideas/:id/enrichment_status
+  # Returns the current enrichment state as JSON.
+  def enrichment_status
+    service = IdeaEnrichmentService.new(@idea)
+    enrichment = service.last_enrichment
+
+    render json: {
+      idea_id: @idea.id,
+      enriched: service.enriched?,
+      enrichment: enrichment,
+      can_enrich: !service.enriched?
+    }
+  end
+
+  # GET /ideas/archived
+  # Shows all archived (soft-deleted) ideas.
+  def archived
+    @ideas = @user.ideas.non_draft.where.not(discarded_at: nil)
+                  .order(discarded_at: :desc)
+                  .page(params[:page]).per(20)
+  end
+
+  # GET /ideas/uncompleted
+  # Gives users a calm place to resume abandoned auto-drafts and the idea they
+  # just started instead of interrupting the composition flow immediately.
+  def uncompleted
+    recent_cutoff = 15.minutes.ago
+    @draft_ideas = @user.ideas.drafts.where(discarded_at: nil).order(updated_at: :desc)
+    @recent_ideas = @user.ideas.non_draft
+                         .where(discarded_at: nil)
+                         .where("ideas.updated_at >= ?", recent_cutoff)
+                         .order(updated_at: :desc)
+  end
+
+  # POST /ideas/:id/archive
+  # Soft-deletes an idea (archive).
+  def archive
+    @idea.update!(discarded_at: Time.current)
+
+    respond_to do |format|
+      format.html { redirect_to ideas_path, notice: 'Idea archived.' }
+      format.json { render json: { success: true, discarded_at: @idea.discarded_at } }
+    end
+  end
+
+  # POST /ideas/:id/restore
+  # Restores an archived idea.
+  def restore
+    @idea.update!(discarded_at: nil)
+
+    respond_to do |format|
+      format.html { redirect_to @idea, notice: 'Idea restored.' }
+      format.json { render json: { success: true, discarded_at: nil } }
+    end
+  end
+
+  def add_to_list
+    list = @user.lists.find(params[:list_id])
+    result = add_idea_to_list(@idea, list)
+
+    respond_to do |format|
+      format.html do
+        redirect_back fallback_location: ideas_path, notice: "Idea added to #{list.name}."
+      end
+      format.json do
+        render json: idea_list_membership_payload(@idea, list, result)
+      end
+    end
+  rescue ActiveRecord::RecordNotFound
+    respond_to do |format|
+      format.html { redirect_back fallback_location: ideas_path, alert: "List not found." }
+      format.json { render json: { error: "List not found." }, status: :not_found }
+    end
+  rescue ActiveRecord::RecordInvalid => e
+    respond_to do |format|
+      format.html { redirect_back fallback_location: ideas_path, alert: e.record.errors.full_messages.to_sentence }
+      format.json { render json: { error: e.record.errors.full_messages.to_sentence }, status: :unprocessable_content }
+    end
+  end
+
+  # GET /ideas/search?q=...
+  # Quick search endpoint returning JSON results.
+  def search
+    query = params[:q].to_s.strip
+    if query.blank?
+      render json: { results: [] }
+      return
+    end
+
+    search_term = "%#{query.downcase}%"
+    ideas = @user.ideas.non_draft.where(discarded_at: nil)
+                 .left_joins(:rich_text_description)
+                 .where("LOWER(ideas.title) LIKE :q OR LOWER(action_text_rich_texts.body) LIKE :q", q: search_term)
+                 .distinct
+                 .order(updated_at: :desc)
+                 .limit(20)
+                 .map do |idea|
+      {
+        id: idea.id,
+        title: idea.title,
+        state: idea.state,
+        score: idea.computed_score,
+        url: idea_path(idea)
+      }
+    end
+
+    render json: { results: ideas }
+  end
+
   private
 
   def set_idea
-    @idea = @user.ideas.find(params[:id])
+    # Use with_discarded to find ideas even if they're archived
+    @idea = @user.ideas.find_by(id: params[:id])
+    unless @idea
+      redirect_to ideas_path, alert: "Idea not found."
+    end
+  end
+
+  def load_form_options
+    @user.default_kanban_board if @user.kanban_boards.none?
+    @kanban_boards = @user.kanban_boards.ordered.includes(:lists)
+    @lists = @user.lists.kanban.includes(:kanban_board).order(:kanban_board_id, :position)
+    @named_lists = @user.lists.named.ordered
+    @topologies = @user.topologies.ordered
+    @templates = @user.templates.order(:name)
+  end
+
+  def update_kanban_list_memberships
+    if params.key?(:kanban_list_ids)
+      update_board_scoped_kanban_memberships
+    else
+      update_legacy_kanban_membership
+    end
+  end
+
+  def update_board_scoped_kanban_memberships
+    selected_by_board = params.fetch(:kanban_list_ids, {}).to_unsafe_h
+
+    selected_by_board.each do |board_id, list_id|
+      board = @user.kanban_boards.find(board_id)
+      current_memberships = @idea.idea_lists.joins(:list)
+        .where(lists: { kind: "kanban", kanban_board_id: board.id })
+
+      if list_id.blank?
+        current_memberships.destroy_all
+        next
+      end
+
+      list = board.lists.find(list_id)
+      current_memberships.where.not(list_id: list.id).destroy_all
+      @idea.idea_lists.find_or_create_by!(list: list)
+    end
+  end
+
+  def update_legacy_kanban_membership
+    @idea.idea_lists.joins(:list).where(lists: { kind: "kanban" }).destroy_all
+    return if params[:list_id].blank?
+
+    list = @user.lists.kanban.find(params[:list_id])
+    @idea.idea_lists.create!(list: list)
+  end
+
+  def update_named_list_memberships
+    selected_ids = Array(params[:named_list_ids]).reject(&:blank?).map(&:to_i)
+    selected_lists = @user.lists.named.where(id: selected_ids)
+    current_memberships = @idea.idea_lists.joins(:list).where(lists: { kind: "named" })
+
+    current_memberships.where.not(list_id: selected_lists.select(:id)).destroy_all
+
+    selected_lists.find_each do |list|
+      @idea.idea_lists.find_or_create_by!(list: list)
+    end
+  end
+
+  def add_idea_to_list(idea, list)
+    return { membership: idea.idea_lists.find_or_create_by!(list: list), removed_list: nil } if list.named?
+
+    add_idea_to_kanban_list(idea, list)
+  end
+
+  def add_idea_to_kanban_list(idea, new_list)
+    ensure_idea_can_enter_kanban!(idea)
+
+    removed_list = nil
+    membership = nil
+
+    ActiveRecord::Base.transaction do
+      existing = idea.idea_lists.joins(:list)
+        .where(lists: { kind: "kanban", kanban_board_id: new_list.kanban_board_id })
+        .includes(:list)
+        .first
+
+      if existing&.list_id == new_list.id
+        membership = existing
+      elsif existing
+        removed_list = existing.list
+        removed_list.idea_lists.where("position > ?", existing.position).update_all("position = position - 1")
+        membership = existing
+        membership.update!(list: new_list, position: new_list.idea_lists.maximum(:position).to_i + 1)
+      else
+        membership = idea.idea_lists.create!(list: new_list)
+      end
+    end
+
+    { membership: membership, removed_list: removed_list }
+  end
+
+  def ensure_idea_can_enter_kanban!(idea)
+    return if idea.kanban_eligible?
+
+    idea.errors.add(:base, idea.kanban_ineligibility_message)
+    raise ActiveRecord::RecordInvalid, idea
+  end
+
+  def idea_list_membership_payload(idea, list, result)
+    membership = result[:membership]
+    board = list.kanban_board
+
+    {
+      success: true,
+      message: "Added to #{list.name}.",
+      idea: {
+        id: idea.id
+      },
+      list: {
+        id: list.id,
+        name: list.name,
+        kind: list.kind,
+        kanban_board_id: list.kanban_board_id,
+        board_name: board&.name
+      },
+      membership: {
+        id: membership.id,
+        position: membership.position
+      },
+      removed_list_id: result[:removed_list]&.id,
+      board_list_ids: board ? board.lists.pluck(:id) : []
+    }
   end
 
   def check_cool_off_period
@@ -189,16 +433,37 @@ class IdeasController < ApplicationController
   end
 
   def idea_params
-    params.require(:idea).permit(
-      :title, :state, :template_id,
+    permitted = params.require(:idea).permit(
+      :title, :tldr, :state, :template_id,
       :trl, :difficulty, :opportunity, :timing,
       :difficulty_explanation, :opportunity_explanation, :timing_explanation,
       :description,
       :hero_image,
-      attachments: [],
+      :napkin_calculations,
       topology_ids: [],
       metadata: {}
     )
+    permitted[:napkin_calculations] = parse_napkin_param(permitted[:napkin_calculations]) if permitted.key?(:napkin_calculations)
+    permitted
+  end
+
+  def parse_napkin_param(raw)
+    return nil if raw.blank?
+    JSON.parse(raw)
+  rescue JSON::ParserError
+    nil
+  end
+
+  def kanban_assignment_requested?
+    params.key?(:kanban_list_ids) || params.key?(:list_id)
+  end
+
+  def selected_kanban_list_requested?
+    if params.key?(:kanban_list_ids)
+      params.fetch(:kanban_list_ids, {}).to_unsafe_h.values.any?(&:present?)
+    else
+      params[:list_id].present?
+    end
   end
 
   def apply_filters(ideas)
@@ -228,7 +493,7 @@ class IdeasController < ApplicationController
     
     # Filter by list
     if params[:list_id].present? && params[:list_id] != 'all'
-      ideas = ideas.joins(:idea_lists).where(idea_lists: { list_id: params[:list_id] })
+      ideas = ideas.joins(:idea_lists).where(idea_lists: { list_id: params[:list_id] }).distinct
     end
     
     # Filter by date range
@@ -246,7 +511,22 @@ class IdeasController < ApplicationController
     elsif params[:has_attachments] == 'false'
       ideas = ideas.left_joins(:attachments_attachments).where(active_storage_attachments: { id: nil })
     end
-    
+
+    # Full-text search across title and description
+    if params[:search].present?
+      search_term = "%#{params[:search].strip.downcase}%"
+      ideas = ideas.left_joins(:rich_text_description)
+                   .where(
+                     "LOWER(ideas.title) LIKE :q OR LOWER(action_text_rich_texts.body) LIKE :q",
+                     q: search_term
+                   ).distinct
+    end
+
+    # Exclude archived ideas by default
+    unless params[:include_archived] == 'true' || params[:state] == 'archived'
+      ideas = ideas.where(discarded_at: nil)
+    end
+
     ideas
   end
 

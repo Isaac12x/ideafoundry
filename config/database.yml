@@ -6,32 +6,54 @@
 #
 default: &default
   adapter: sqlite3
-  pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
+  pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 3 } %>
   timeout: 5000
   pragmas:
     busy_timeout: 5000
+    journal_mode: wal
     journal_size_limit: 67108864
     wal_autocheckpoint: 1000
 
 development:
-  <<: *default
-  database: storage/development.sqlite3
+  primary:
+    <<: *default
+    database: storage/development.sqlite3
+  queue:
+    <<: *default
+    database: storage/development_queue.sqlite3
+    migrations_paths: db/queue_migrate
+    pragmas:
+      journal_mode: wal
+      busy_timeout: 10000
 
 # Warning: The database defined as "test" will be erased and
 # re-generated from your development database when you run "rake".
 # Do not set this db to the same as development or production.
 test:
-  <<: *default
-  database: storage/test.sqlite3
+  primary:
+    <<: *default
+    database: storage/test.sqlite3
+  queue:
+    <<: *default
+    database: storage/queue_test.sqlite3
+    migrations_paths: db/queue_migrate
+    pragmas:
+      journal_mode: wal
+      busy_timeout: 10000
 
 production:
-  <<: *default
-  database: storage/production.sqlite3
-
-queue:
-  <<: *default
-  database: storage/queue.sqlite3
-  migrations_paths: db/queue_migrate
-  pragmas:
-    journal_mode: wal
-    busy_timeout: 10000
+  primary:
+    <<: *default
+    database: storage/production.sqlite3
+    # Full-database encryption for the user data DB. The key is derived from
+    # the user-held recovery passphrase by config/initializers/sqlcipher.rb.
+    sqlcipher: true
+  queue:
+    <<: *default
+    database: storage/queue.sqlite3
+    migrations_paths: db/queue_migrate
+    # Solid Queue arguments may contain user context, so encrypt this DB too.
+    sqlcipher: true
+    pragmas:
+      journal_mode: wal
+      busy_timeout: 10000

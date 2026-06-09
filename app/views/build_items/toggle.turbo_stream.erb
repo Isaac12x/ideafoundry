@@ -1,15 +1,48 @@
-<% if @build_item.completed? %>
-  <%= turbo_stream.remove "build_item_#{@build_item.id}" %>
-  <%= turbo_stream.replace "completed_build_items" do %>
-    <div class="completed-items completed-items--visible" data-completed-toggle-target="list" id="completed_build_items">
-      <% @user.build_items.done.each_with_index do |item, i| %>
-        <%= render "build_item", build_item: item, index: i %>
-      <% end %>
-    </div>
+<% if @toggle_blocked %>
+  <%= turbo_stream.replace "build_item_#{@build_item.id}" do %>
+    <%= render "build_item", build_item: @build_item, index: @pending_index %>
   <% end %>
+
+<% elsif @build_item.completed? %>
+  <%= turbo_stream.remove "build_item_#{@build_item.id}" %>
+
+  <% if @pending_count.zero? %>
+    <%= turbo_stream.append "build_items_list" do %>
+      <%= render "empty" %>
+    <% end %>
+  <% end %>
+
+  <% if @done_count == 1 %>
+    <%= turbo_stream.replace "backlog_done_section" do %>
+      <div id="backlog_done_section">
+        <div class="backlog-section-divider"></div>
+        <div id="done_build_items" class="backlog-done-list">
+          <%= render "build_item", build_item: @build_item, index: 0 %>
+        </div>
+      </div>
+    <% end %>
+  <% else %>
+    <%= turbo_stream.prepend "done_build_items" do %>
+      <%= render "build_item", build_item: @build_item, index: 0 %>
+    <% end %>
+  <% end %>
+
 <% else %>
-  <%= turbo_stream.remove "build_item_#{@build_item.id}" %>
-  <%= turbo_stream.append "build_items_list" do %>
-    <%= render "build_item", build_item: @build_item, index: 0 %>
+  <% if @done_count == 0 %>
+    <%= turbo_stream.replace "backlog_done_section" do %>
+      <div id="backlog_done_section">
+        <div id="done_build_items" class="backlog-done-list"></div>
+      </div>
+    <% end %>
+  <% else %>
+    <%= turbo_stream.remove "build_item_#{@build_item.id}" %>
   <% end %>
+
+  <%= turbo_stream.append "build_items_list" do %>
+    <%= render "build_item", build_item: @build_item, index: @pending_index %>
+  <% end %>
+
+  <%= turbo_stream.remove "build_items_empty" %>
 <% end %>
+
+<%= render "stats" %>

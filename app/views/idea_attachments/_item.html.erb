@@ -1,0 +1,36 @@
+<li class="current-attachments__item"
+    draggable="true"
+    data-attachment-reorder-target="item"
+    data-attachment-id="<%= attachment.id %>"
+    data-destroy-url="<%= idea_attachment_path(idea, attachment) %>"
+    data-update-url="<%= idea_attachment_path(idea, attachment) %>"
+    data-filename="<%= attachment.filename %>"
+    data-url="<%= rails_blob_path(attachment, disposition: "inline") %>"
+    data-content-type="<%= attachment.content_type %>"
+    data-attachment-kind="<%= attachment.image? ? 'image' : 'document' %>"
+    data-action="dragstart->attachment-reorder#dragStart dragend->attachment-reorder#dragEnd dragover->attachment-reorder#dragOver drop->attachment-reorder#drop click->attachment-viewer#open">
+  <span class="current-attachments__drag-handle" aria-hidden="true">⋮⋮</span>
+  <span class="current-attachments__preview" aria-hidden="true">
+    <% if attachment.image? %>
+      <%= image_tag attachment, class: "current-attachments__thumb", alt: "" %>
+    <% else %>
+      <span class="current-attachments__file-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+          <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+          <path d="M14 2v6h6"/>
+          <path d="M8 13h8M8 17h5"/>
+        </svg>
+      </span>
+    <% end %>
+  </span>
+  <span class="current-attachments__filename"><%= attachment.filename %> (<%= number_to_human_size(attachment.byte_size) %>)</span>
+  <span class="current-attachments__ocr-status"><%= attachment.ocr_status.to_s.humanize %></span>
+  <span class="current-attachments__actions">
+    <button type="button" class="btn btn-sm" data-action="attachment-reorder#moveUp">↑</button>
+    <button type="button" class="btn btn-sm" data-action="attachment-reorder#moveDown">↓</button>
+    <% if AttachmentOcrJob.ocr_supported?(attachment) %>
+      <%= button_to "Run OCR", ocr_idea_attachment_path(idea, attachment), method: :post, class: "btn btn-sm", form: { style: "display:inline" } %>
+    <% end %>
+    <button type="button" class="btn btn-sm" data-action="click->attachment-viewer#openDelete" title="Remove attachment">&times;</button>
+  </span>
+</li>

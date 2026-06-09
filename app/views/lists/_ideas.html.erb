@@ -2,8 +2,13 @@
   <% idea_list = idea.idea_lists.find_by(list: list) %>
   <div class="idea-card draggable-item"
        data-drag-target="item"
+       data-idea-context-menu-target="idea"
+       data-action="contextmenu->idea-context-menu#open"
        data-idea-id="<%= idea.id %>"
+       data-idea-title="<%= idea.title %>"
+       data-idea-list-ids="<%= idea_context_list_ids(idea) %>"
        data-list-id="<%= list.id %>"
+       data-kanban-board-id="<%= list.kanban_board_id %>"
        data-position="<%= idea_list&.position || 0 %>">
 
     <div class="idea-card-header">
@@ -13,12 +18,34 @@
       </div>
     </div>
 
+    <% if idea.github_repository %>
+      <div class="idea-github"
+           data-github-repository-id="<%= idea.github_repository.id %>"
+           data-github-has-releases="<%= idea.github_repository.has_releases? %>">
+        <%= link_to "#{idea.github_repository.owner}/#{idea.github_repository.name}",
+            idea.github_repository.repository_url,
+            target: "_blank",
+            rel: "noopener",
+            class: "idea-github__repo" %>
+        <span class="idea-github__release <%= idea.github_repository.has_releases? ? 'has-releases' : 'no-releases' %>">
+          <%= idea.github_repository.has_releases? ? "Releases" : "No releases" %>
+        </span>
+      </div>
+    <% end %>
+
     <div class="idea-meta">
       <span class="idea-state <%= idea.state %>"><%= idea.state.humanize %></span>
       <% if idea.computed_score %>
         <span class="idea-score"><%= number_with_precision(idea.computed_score, precision: 1) %></span>
       <% end %>
-      <span class="idea-date"><%= time_ago_in_words(idea.created_at) %> ago</span>
+      <span class="idea-date">Created <%= time_ago_in_words(idea.created_at) %> ago</span>
+    </div>
+
+    <div class="idea-card-timestamps">
+      <span>Updated <%= time_ago_in_words(idea.updated_at) %> ago</span>
+      <% if idea_list %>
+        <span>Moved <%= time_ago_in_words(idea_list.updated_at) %> ago</span>
+      <% end %>
     </div>
 
     <% if idea.description.present? %>
@@ -26,6 +53,7 @@
         <%= truncate(strip_tags(idea.description.to_s), length: 80) %>
       </div>
     <% end %>
+
   </div>
 <% end %>
 

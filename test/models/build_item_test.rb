@@ -10,6 +10,21 @@ class BuildItemTest < ActiveSupport::TestCase
     assert item.valid?
   end
 
+  test "allows image attachments" do
+    item = BuildItem.new(user: @user, title: "Add annotated screenshot")
+    item.images.attach(io: StringIO.new("\x89PNG\r\n\x1a\n"), filename: "screenshot.png", content_type: "image/png")
+
+    assert item.valid?
+  end
+
+  test "rejects non-image attachments" do
+    item = BuildItem.new(user: @user, title: "Add annotated screenshot")
+    item.images.attach(io: StringIO.new("notes"), filename: "notes.txt", content_type: "text/plain")
+
+    assert_not item.valid?
+    assert_includes item.errors[:images], "must be image files"
+  end
+
   test "invalid without title" do
     item = BuildItem.new(user: @user, title: nil)
     assert_not item.valid?
@@ -54,5 +69,55 @@ class BuildItemTest < ActiveSupport::TestCase
     item.mark_pending!
     assert_not item.completed
     assert_nil item.completed_at
+  end
+
+  test "parses checklist items from markdown task list lines" do
+    item = BuildItem.new(
+      user: @user,
+      title: "Grouped item",
+      description: "Release prep\n- [ ] Write notes\n- [x] Ship build\n* [X] Verify logs"
+    )
+
+    assert_equal 3, item.checklist_total_count
+    assert_equal 1, item.checklist_remaining_count
+    assert_equal [1, 2, 3], item.checklist_items.map { |entry| entry[:line_index] }
+  end
+
+  test "toggles checklist items in description" do
+    item = BuildItem.create!(
+      user: @user,
+      title: "Grouped item",
+      description: "- [ ] Write notes\n- [x] Ship build"
+    )
+
+    item.toggle_checklist_item!(0)
+
+    assert_includes item.reload.description, "- [x] Write notes"
+    assert_equal 0, item.checklist_remaining_count
+  end
+
+  test "toggle checklist item ignores invalid line indexes" do
+    item = BuildItem.create!(
+      user: @user,
+      title: "Grouped item",
+      description: "- [ ] Write notes"
+    )
+
+    assert_not item.toggle_checklist_item!(-1)
+    assert_not item.toggle_checklist_item!(9)
+    assert_includes item.reload.description, "- [ ] Write notes"
+  end
+
+  test "does not allow completion while checklist items remain" do
+    item = BuildItem.create!(
+      user: @user,
+      title: "Grouped item",
+      description: "- [ ] Write notes"
+    )
+
+    assert_raises ActiveRecord::RecordInvalid do
+      item.mark_completed!
+    end
+    assert_not item.reload.completed
   end
 end

@@ -82,6 +82,7 @@
   font-size: 0.75rem;
   color: var(--text-muted);
   display: flex;
+  flex-wrap: wrap;
   gap: 10px;
 }
 

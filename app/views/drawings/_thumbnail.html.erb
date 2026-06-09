@@ -1,0 +1,21 @@
+<div class="drawing-thumb" data-drawing-item data-drawing-id="<%= drawing.id %>">
+  <div class="drawing-thumb__image">
+    <% if drawing.rendered_png.attached? %>
+      <%= image_tag drawing.rendered_png, alt: drawing.title %>
+    <% else %>
+      <div class="drawing-thumb__placeholder">No preview</div>
+    <% end %>
+  </div>
+  <div class="drawing-thumb__row">
+    <span class="drawing-thumb__title"><%= drawing.title %></span>
+    <div class="drawing-thumb__actions">
+      <button type="button" class="btn btn-sm"
+              data-action="click->idea-drawings#edit"
+              data-drawing-id="<%= drawing.id %>"
+              data-drawing-title="<%= drawing.title %>">Edit</button>
+      <button type="button" class="btn btn-sm btn-danger"
+              data-action="click->idea-drawings#delete"
+              data-drawing-id="<%= drawing.id %>">Delete</button>
+    </div>
+  </div>
+</div>

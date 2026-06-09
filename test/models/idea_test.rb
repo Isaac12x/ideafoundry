@@ -51,8 +51,45 @@ class IdeaTest < ActiveSupport::TestCase
 
   test "should calculate score automatically" do
     @idea.save!
-    expected_score = (5 * 0.3 + 8 * 0.4 + 6 * 0.2 - 3 * 0.1).round(2)
+    # Raw: 5*0.3 + 3*(-0.1) + 8*0.4 + 6*0.2 = 5.6, normalized to 0-10: (5.6+1)/10*10 = 6.6
+    raw = 5 * 0.3 + 8 * 0.4 + 6 * 0.2 - 3 * 0.1
+    expected_score = ((raw - (-1.0)) / (9.0 - (-1.0)) * 10.0).round(2)
     assert_equal expected_score, @idea.computed_score
+  end
+
+  test "calculates founder scorecard and blocks active work below threshold" do
+    template = Template.create!(
+      user: @user,
+      name: "Founder Scorecard #{SecureRandom.hex(4)}",
+      field_definitions: [],
+      section_order: [],
+      tab_definitions: [{ "name" => "general", "label" => "General", "position" => 0 }],
+      scoring_system_ids: [User::FOUNDER_SCORECARD_SYSTEM_ID]
+    )
+    low_scores = founder_scorecard_values(3)
+    idea = Idea.create!(
+      user: @user,
+      title: "Low scorecard idea",
+      template: template,
+      metadata: { Idea::SCORE_METADATA_KEY => { User::FOUNDER_SCORECARD_SYSTEM_ID => low_scores } }
+    )
+
+    assert_in_delta 6.0, idea.computed_score.to_f, 0.001
+    refute idea.kanban_eligible?
+    assert_match(/below 24\/35/, idea.kanban_ineligibility_message)
+    refute idea.transition_to_first_try!
+
+    high_scores = low_scores.merge(
+      "pain_intensity" => 4,
+      "buyer_clarity" => 4,
+      "distribution_access" => 4,
+      "speed_to_mvp" => 4
+    )
+    idea.update!(metadata: { Idea::SCORE_METADATA_KEY => { User::FOUNDER_SCORECARD_SYSTEM_ID => high_scores } })
+
+    assert_in_delta 7.14, idea.computed_score.to_f, 0.01
+    assert idea.kanban_eligible?
+    assert idea.transition_to_first_try!
   end
 
   test "should have valid state enum" do
@@ -68,6 +105,45 @@ class IdeaTest < ActiveSupport::TestCase
 
   test "should have many lists through idea_lists" do
     assert_respond_to @idea, :lists
+  end
+
+  test "effective field definitions include selected topology defaults" do
+    template = Template.create!(
+      user: @user,
+      name: "Product Template #{SecureRandom.hex(4)}",
+      field_definitions: [
+        {
+          "name" => "priority",
+          "label" => "Priority",
+          "type" => "text",
+          "instance_id" => "priority",
+          "required" => false
+        }
+      ],
+      section_order: [],
+      tab_definitions: [{ "name" => "general", "label" => "General", "position" => 0 }]
+    )
+    software = @user.topologies.create!(name: "Software", topology_type: :custom)
+    idea = Idea.create!(user: @user, title: "Repository-backed project", template: template)
+    idea.topologies << software
+
+    field_names = idea.reload.effective_field_definitions.map { |field| field["name"] }
+
+    assert_includes field_names, "priority"
+    assert_includes field_names, "github_url"
+  ensure
+    software&.destroy
+    template&.destroy
+  end
+
+  test "github repository url reads github metadata values" do
+    idea = Idea.new(
+      user: @user,
+      title: "Repository-backed project",
+      metadata: { "github_url" => "https://github.com/acme/widgets" }
+    )
+
+    assert_equal "https://github.com/acme/widgets", idea.github_repository_url
   end
 
   test "should have active scope" do
@@ -246,17 +322,17 @@ class IdeaTest < ActiveSupport::TestCase
   end
 
   # Relationship tests (Requirement 1.4)
-  test "should belong to multiple lists" do
-    idea = Idea.create!(user: @user, title: "Multi-list Idea")
+  test "should belong to only one list" do
+    idea = Idea.create!(user: @user, title: "Single-list Idea")
     list1 = List.create!(user: @user, name: "List 1")
     list2 = List.create!(user: @user, name: "List 2")
-    
-    idea.lists << list1
-    idea.lists << list2
-    
-    assert_equal 2, idea.lists.count
-    assert_includes idea.lists, list1
-    assert_includes idea.lists, list2
+
+    idea.idea_lists.create!(list: list1)
+    assert_equal 1, idea.lists.count
+
+    # Adding to a second list should fail validation
+    second = idea.idea_lists.build(list: list2)
+    assert_not second.valid?
   end
 
   test "should cascade delete idea_lists when idea is deleted" do
@@ -348,5 +424,13 @@ class IdeaTest < ActiveSupport::TestCase
     idea.destroy
     
     assert_equal version_count - 2, Version.count
+  end
+
+  private
+
+  def founder_scorecard_values(value)
+    User::DEFAULT_SCORING_SYSTEMS[User::FOUNDER_SCORECARD_SYSTEM_ID]["criteria"].each_with_object({}) do |criterion, values|
+      values[criterion["key"]] = value
+    end
   end
 end
