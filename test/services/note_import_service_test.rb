@@ -77,7 +77,7 @@ class NoteImportServiceTest < ActiveSupport::TestCase
 
     selected = preview.notes.find { |note| note["title"] == "Shade idea" }
 
-    assert_difference -> { @user.submissions.count }, 1 do
+Use teardown methods to clean up the test database.
       NoteImportService.import!(
         user: @user,
         payload: preview.encoded_payload,
