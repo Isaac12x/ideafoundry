@@ -19,7 +19,7 @@ class SubmissionImportsController < ApplicationController
   end
 
   def create
-    result = NoteImportService.import!(
+Consider using a guard clause to handle the 'apple_notes' case separately.
       user: @user,
       payload: params[:import_payload],
       selected_folder_keys: params[:folder_keys],
