@@ -8,6 +8,7 @@ class IdeaList < ApplicationRecord
   validates :position, presence: true
   validates :idea_id, uniqueness: { scope: :list_id, message: "is already in this list" }
   validate :single_kanban_list_per_idea
+  validate :idea_meets_kanban_scoring_threshold
 
   # Callbacks
   before_validation :set_position, on: :create
@@ -30,6 +31,13 @@ class IdeaList < ApplicationRecord
     return unless existing_kanban_memberships.where.not(list_id: list_id).exists?
 
     errors.add(:idea_id, "already has a kanban list")
+  end
+
+  def idea_meets_kanban_scoring_threshold
+    return unless idea && list&.kanban?
+    return if idea.kanban_eligible?
+
+    errors.add(:idea, idea.kanban_ineligibility_message)
   end
 
   def notify_added_to_list
