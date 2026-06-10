@@ -72,7 +72,8 @@
           <% templates.each do |tmpl| %>
             <option value="<%= tmpl.id %>"
                     <%= 'selected' if idea.template_id == tmpl.id %>
-                    data-default="<%= tmpl.is_default? %>">
+                    data-default="<%= tmpl.is_default? %>"
+                    data-scoring-system-ids="<%= tmpl.enabled_scoring_system_ids.join(',') %>">
               <%= tmpl.name %><%= ' (default)' if tmpl.is_default? %>
             </option>
           <% end %>
@@ -475,101 +476,148 @@
       </div>
 
       <!-- Scoring -->
-      <% user = User.first || User.create!(email: 'user@example.com', name: 'Default User') %>
-      <% weights = user.scoring_weights %>
-      <div class="form-panel scoring-section" data-controller="score"
-           data-score-trl-weight-value="<%= weights['trl'] %>"
-           data-score-difficulty-weight-value="<%= weights['difficulty'] %>"
-           data-score-opportunity-weight-value="<%= weights['opportunity'] %>"
-           data-score-timing-weight-value="<%= weights['timing'] %>">
+      <% scoring_user = idea.user || @user %>
+      <% active_scoring_system_ids = idea.active_scoring_system_ids %>
+      <% form_scoring_systems = scoring_user.available_scoring_systems %>
+      <% legacy_scoring_system = form_scoring_systems.find { |system| system['kind'] == 'legacy_weighted' } %>
+      <% scorecard_systems = form_scoring_systems.select { |system| system['kind'] == 'criterion_scorecard' } %>
+      <% weights = scoring_user.scoring_weights %>
+      <div class="form-panel scoring-section"
+           <% if legacy_scoring_system %>
+             data-controller="score"
+             data-score-trl-weight-value="<%= weights['trl'] %>"
+             data-score-difficulty-weight-value="<%= weights['difficulty'] %>"
+             data-score-opportunity-weight-value="<%= weights['opportunity'] %>"
+             data-score-timing-weight-value="<%= weights['timing'] %>"
+           <% end %>>
         <h3 class="form-panel-title">Scoring</h3>
 
-        <div class="scoring-grid">
-          <div class="score-item">
-            <div class="score-item-header">
-              <label class="score-label score-tooltip">
-                TRL
-                <span class="tooltip-text">Technology Readiness Level (0=concept, 10=proven)</span>
-              </label>
-              <span class="score-value trl" data-score-target="trlValue"><%= idea.trl || 0 %></span>
+        <% if legacy_scoring_system %>
+          <div class="scoring-grid"
+               data-template-switch-target="scoringSystem"
+               data-scoring-system-id="<%= legacy_scoring_system['id'] %>"
+               <%= "hidden" unless active_scoring_system_ids.include?(legacy_scoring_system['id']) %>>
+            <div class="score-item">
+              <div class="score-item-header">
+                <label class="score-label score-tooltip">
+                  TRL
+                  <span class="tooltip-text">Technology Readiness Level (0=concept, 10=proven)</span>
+                </label>
+                <span class="score-value trl" data-score-target="trlValue"><%= idea.trl || 0 %></span>
+              </div>
+              <%= form.range_field :trl,
+                  min: 0, max: 10, step: 1,
+                  value: idea.trl || 0,
+                  class: "score-slider trl",
+                  data: { score_target: "trlSlider", action: "input->score#updateTrl" } %>
+              <div class="score-range"><span>Concept</span><span>Proven</span></div>
             </div>
-            <%= form.range_field :trl,
-                min: 0, max: 10, step: 1,
-                value: idea.trl || 0,
-                class: "score-slider trl",
-                data: { score_target: "trlSlider", action: "input->score#updateTrl" } %>
-            <div class="score-range"><span>Concept</span><span>Proven</span></div>
-          </div>
 
-          <div class="score-item">
-            <div class="score-item-header">
-              <label class="score-label score-tooltip">
-                Difficulty
-                <span class="tooltip-text">Execution difficulty (0=easy, 10=extremely hard)</span>
-              </label>
-              <span class="score-value difficulty" data-score-target="difficultyValue"><%= idea.difficulty || 0 %></span>
+            <div class="score-item">
+              <div class="score-item-header">
+                <label class="score-label score-tooltip">
+                  Difficulty
+                  <span class="tooltip-text">Execution difficulty (0=easy, 10=extremely hard)</span>
+                </label>
+                <span class="score-value difficulty" data-score-target="difficultyValue"><%= idea.difficulty || 0 %></span>
+              </div>
+              <%= form.range_field :difficulty,
+                  min: 0, max: 10, step: 1,
+                  value: idea.difficulty || 0,
+                  class: "score-slider difficulty",
+                  data: { score_target: "difficultySlider", action: "input->score#updateDifficulty" } %>
+              <div class="score-range"><span>Easy</span><span>Extreme</span></div>
+              <%= form.text_area :difficulty_explanation,
+                  placeholder: "Why this score?",
+                  class: "score-explanation",
+                  data: { score_target: "difficultyExplanation", action: "input->score#debouncedSave" } %>
             </div>
-            <%= form.range_field :difficulty,
-                min: 0, max: 10, step: 1,
-                value: idea.difficulty || 0,
-                class: "score-slider difficulty",
-                data: { score_target: "difficultySlider", action: "input->score#updateDifficulty" } %>
-            <div class="score-range"><span>Easy</span><span>Extreme</span></div>
-            <%= form.text_area :difficulty_explanation,
-                placeholder: "Why this score?",
-                class: "score-explanation",
-                data: { score_target: "difficultyExplanation", action: "input->score#debouncedSave" } %>
-          </div>
 
-          <div class="score-item">
-            <div class="score-item-header">
-              <label class="score-label score-tooltip">
-                Opportunity
-                <span class="tooltip-text">Market opportunity size (0=small, 10=huge)</span>
-              </label>
-              <span class="score-value opportunity" data-score-target="opportunityValue"><%= idea.opportunity || 0 %></span>
+            <div class="score-item">
+              <div class="score-item-header">
+                <label class="score-label score-tooltip">
+                  Opportunity
+                  <span class="tooltip-text">Market opportunity size (0=small, 10=huge)</span>
+                </label>
+                <span class="score-value opportunity" data-score-target="opportunityValue"><%= idea.opportunity || 0 %></span>
+              </div>
+              <%= form.range_field :opportunity,
+                  min: 0, max: 10, step: 1,
+                  value: idea.opportunity || 0,
+                  class: "score-slider opportunity",
+                  data: { score_target: "opportunitySlider", action: "input->score#updateOpportunity" } %>
+              <div class="score-range"><span>Small</span><span>Huge</span></div>
+              <%= form.text_area :opportunity_explanation,
+                  placeholder: "Why this score?",
+                  class: "score-explanation",
+                  data: { score_target: "opportunityExplanation", action: "input->score#debouncedSave" } %>
             </div>
-            <%= form.range_field :opportunity,
-                min: 0, max: 10, step: 1,
-                value: idea.opportunity || 0,
-                class: "score-slider opportunity",
-                data: { score_target: "opportunitySlider", action: "input->score#updateOpportunity" } %>
-            <div class="score-range"><span>Small</span><span>Huge</span></div>
-            <%= form.text_area :opportunity_explanation,
-                placeholder: "Why this score?",
-                class: "score-explanation",
-                data: { score_target: "opportunityExplanation", action: "input->score#debouncedSave" } %>
-          </div>
 
-          <div class="score-item">
-            <div class="score-item-header">
-              <label class="score-label score-tooltip">
-                Timing
-                <span class="tooltip-text">Market timing (0=poor, 10=perfect)</span>
-              </label>
-              <span class="score-value timing" data-score-target="timingValue"><%= idea.timing || 0 %></span>
+            <div class="score-item">
+              <div class="score-item-header">
+                <label class="score-label score-tooltip">
+                  Timing
+                  <span class="tooltip-text">Market timing (0=poor, 10=perfect)</span>
+                </label>
+                <span class="score-value timing" data-score-target="timingValue"><%= idea.timing || 0 %></span>
+              </div>
+              <%= form.range_field :timing,
+                  min: 0, max: 10, step: 1,
+                  value: idea.timing || 0,
+                  class: "score-slider timing",
+                  data: { score_target: "timingSlider", action: "input->score#updateTiming" } %>
+              <div class="score-range"><span>Poor</span><span>Perfect</span></div>
+              <%= form.text_area :timing_explanation,
+                  placeholder: "Why this score?",
+                  class: "score-explanation",
+                  data: { score_target: "timingExplanation", action: "input->score#debouncedSave" } %>
             </div>
-            <%= form.range_field :timing,
-                min: 0, max: 10, step: 1,
-                value: idea.timing || 0,
-                class: "score-slider timing",
-                data: { score_target: "timingSlider", action: "input->score#updateTiming" } %>
-            <div class="score-range"><span>Poor</span><span>Perfect</span></div>
-            <%= form.text_area :timing_explanation,
-                placeholder: "Why this score?",
-                class: "score-explanation",
-                data: { score_target: "timingExplanation", action: "input->score#debouncedSave" } %>
           </div>
-        </div>
+        <% end %>
 
-        <div class="computed-score-display" data-score-target="computedScore">
+        <% scorecard_systems.each do |system| %>
+          <% breakdown = idea.scoring_breakdown_for(system) %>
+          <div class="scorecard-form-system"
+               data-template-switch-target="scoringSystem"
+               data-scoring-system-id="<%= system['id'] %>"
+               <%= "hidden" unless active_scoring_system_ids.include?(system['id']) %>>
+            <div class="scorecard-form-system__header">
+              <h4><%= system['name'] %></h4>
+              <% if breakdown[:blocks_work] %>
+                <span>
+                  Threshold <%= number_with_precision(breakdown[:work_threshold_total], precision: 0) %>/<%= breakdown[:max_total] %>
+                </span>
+              <% end %>
+            </div>
+            <div class="scorecard-form-grid">
+              <% system['criteria'].each do |criterion| %>
+                <% value = idea.scorecard_value_for(system['id'], criterion['key']).presence || system['scale_min'] %>
+                <label class="scorecard-form-field" for="idea_scoring_<%= system['id'] %>_<%= criterion['key'] %>">
+                  <span><%= criterion['label'] %></span>
+                  <%= select_tag "idea[metadata][#{Idea::SCORE_METADATA_KEY}][#{system['id']}][#{criterion['key']}]",
+                      options_for_select((system['scale_min'].to_i..system['scale_max'].to_i).map { |score| [score, score] }, value.to_i),
+                      id: "idea_scoring_#{system['id']}_#{criterion['key']}",
+                      class: "form-control form-control--sm" %>
+                </label>
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+
+        <div class="computed-score-display" <%= 'data-score-target="computedScore"' if legacy_scoring_system %>>
           <div class="computed-score-label">Computed Score</div>
-          <div class="computed-score-value" data-score-target="computedScore">
+          <div class="computed-score-value" <%= 'data-score-target="computedScore"' if legacy_scoring_system %>>
             <%= number_with_precision(idea.computed_score || 0, precision: 2) %>
           </div>
-          <div class="score-formula" data-score-target="scoreFormula">
-            <%= user.scoring_formula_display %>
-          </div>
+          <% if legacy_scoring_system %>
+            <div class="score-formula" data-score-target="scoreFormula">
+              <%= scoring_user.scoring_formula_display %>
+            </div>
+          <% elsif scorecard_systems.any? %>
+            <div class="score-formula">
+              <%= scorecard_systems.map { |system| idea.scoring_breakdown_for(system)[:normalized] }.map { |score| "#{number_with_precision(score, precision: 2)}/10" }.to_sentence %>
+            </div>
+          <% end %>
         </div>
       </div>
 

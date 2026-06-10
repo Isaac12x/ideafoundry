@@ -18,7 +18,32 @@ class TypingTextLibrary
     "close-tolerance" => "a close tolerance is a promise between the designer and the material.",
     "second-attempt" => "the second attempt carries the weight of everything the first attempt taught.",
     "worn-bench" => "a worn bench is the signature of someone who kept working until the thing was right.",
-    "field-fix" => "the best invention is sometimes the one improvised far from the workshop with whatever is at hand."
+    "field-fix" => "the best invention is sometimes the one improvised far from the workshop with whatever is at hand.",
+    "brass-hinge" => "a brass hinge remembers every careless shortcut, so the careful maker listens before tightening the final screw.",
+    "paper-circuit" => "a paper circuit can prove the shape of an idea before copper, code, or glass enter the room.",
+    "calm-lever" => "a calm lever does not need to look dramatic when it moves the right weight at the right time.",
+    "glass-gauge" => "the glass gauge tells the truth quietly, even when the inventor hoped the pressure would stay hidden.",
+    "bench-lamp" => "under the bench lamp, a difficult part becomes less mysterious with every patient adjustment.",
+    "threaded-needle" => "a threaded needle turns loose fabric into a useful seam only after the hand learns the pattern.",
+    "north-magnet" => "the north magnet pulls scattered filings into order, the way a good question pulls a design into focus.",
+    "clock-spring" => "a clock spring stores yesterday's winding so tomorrow's mechanism can move without complaint.",
+    "inked-template" => "an inked template saves the hand from guessing and gives the next cut a cleaner beginning.",
+    "small-furnace" => "a small furnace teaches patience because the metal changes only when heat, time, and attention agree.",
+    "steady-gear" => "a steady gear makes progress visible one tooth at a time, even when the whole machine turns slowly.",
+    "oiled-runner" => "an oiled runner reveals whether the design was truly smooth or merely quiet while no one was testing it.",
+    "folded-map" => "a folded map is still useful if the maker knows which crease points back to the unsolved problem.",
+    "bright-filament" => "a bright filament is only useful when the rest of the circuit is honest enough to carry the load.",
+    "clean-join" => "a clean join disappears into the object, leaving only the feeling that the whole thing belongs together.",
+    "ford-real-task" => "hard thought and hard work move a business forward when slogans cannot.",
+    "ford-better-ways" => "a useful maker keeps finding new and better ways for the product to serve.",
+    "ford-precision" => "precision grows when better machinery and better habits pull each tolerance closer.",
+    "feynman-question" => "there is no learning without a question, and every honest question leaves room for doubt.",
+    "feynman-uncertainty" => "it is more interesting to live with uncertainty than to hold answers that might be wrong.",
+    "feynman-evidence" => "experience teaches the lesson, and science asks how the evidence was found.",
+    "rines-free-minds" => "a dynamic society depends on free creative minds and the protected fruits of their work.",
+    "rines-conformity" => "conformity is the enemy of innovation when organizations stop listening to original thought.",
+    "rines-create" => "when obstacles choke creativity, the only useful course is to create before time runs out.",
+    "test-weight" => "a test weight does not argue with optimism; it simply shows what the frame can actually hold."
   }.freeze
 
   class << self

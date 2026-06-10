@@ -517,6 +517,127 @@
   border-color: var(--border-emphasis);
 }
 
+.scorecard-form-system {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.scorecard-form-system__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.scorecard-form-system__header h4 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 0.95rem;
+}
+
+.scorecard-form-system__header span {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.scorecard-form-grid {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.scorecard-form-field {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 4.5rem;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  background: var(--bg-input);
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+
+.scorecard-form-field select {
+  min-width: 0;
+  padding: 0.35rem 0.5rem;
+}
+
+.scoring-system-list {
+  display: grid;
+  gap: 1rem;
+}
+
+.scoring-system-card {
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-surface);
+  border-radius: var(--radius-sm);
+  padding: 1rem;
+}
+
+.scoring-system-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.scoring-system-card__header h4 {
+  margin: 0 0 0.25rem;
+  font-size: 1rem;
+  color: var(--text-primary);
+}
+
+.scoring-system-card__header p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
+
+.scoring-system-card__kind {
+  flex-shrink: 0;
+  padding: 0.2rem 0.45rem;
+  border-radius: var(--radius-sm);
+  background: var(--bg-elevated);
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.scoring-system-card__threshold {
+  margin-bottom: 1rem;
+}
+
+.scorecard-criteria-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.65rem;
+}
+
+.scorecard-criterion {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  background: var(--bg-input);
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+
+.scorecard-criterion small {
+  color: var(--text-muted);
+  font-weight: 700;
+}
+
 /* ---- Responsive ---- */
 @media (max-width: 768px) {
   .scoring-grid { grid-template-columns: 1fr; }

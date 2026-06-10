@@ -220,6 +220,27 @@ class UserTest < ActiveSupport::TestCase
     assert_nil user.settings.dig("local_agent", "hacker")
   end
 
+  test "local agent live requires enabled settings and an active run" do
+    user = users(:one)
+    user.update!(settings: {})
+
+    refute user.local_agent_live?
+
+    user.update_local_agent_settings("enabled" => "1")
+    refute user.local_agent_live?
+
+    user.agent_runs.create!(
+      status: :running,
+      started_at: 1.minute.ago,
+      last_heartbeat_at: Time.current
+    )
+
+    assert user.local_agent_live?
+
+    user.update_local_agent_settings("enabled" => "0")
+    refute user.local_agent_live?
+  end
+
   test "idea work token settings can be toggled" do
     user = users(:one)
 
@@ -253,6 +274,14 @@ class UserTest < ActiveSupport::TestCase
 
   def setup
     @user = User.new(email: "test@example.com", name: "Test User")
+  end
+
+  test "display quote falls back to the default quote library" do
+    @user.settings = {}
+
+    assert_equal "", @user.custom_display_quote
+    assert_equal User::DEFAULT_DISPLAY_QUOTES.first, @user.display_quote
+    assert_includes User::DEFAULT_DISPLAY_QUOTES, "Simplicity is pre-requisite for reliability\n- Edgar Dijkstra"
   end
 
   test "should be valid with valid attributes" do

@@ -1,3 +1,21 @@
+<%
+  tab_descriptions = {
+    'scores'               => 'Breakdown of TRL, opportunity, timing, and difficulty with weighted formula.',
+    'media'                => 'Images, files, and attachments linked to the idea.',
+    'metadata'             => 'Tags, custom fields, and any template-driven data.',
+    'notes'                => 'Free-form notes and running observations.',
+    'todo'                 => 'Actionable checklist items tied to the idea.',
+    'history'              => 'Version history and change log.',
+    'drawing'              => 'Excalidraw whiteboards attached to the idea.',
+    'tool'                 => 'Third-party tools, libraries, or services relevant to this idea.',
+    'competitor'           => 'Direct competitors already in the market.',
+    'potential_competitor' => 'Adjacent players who could become competitors.'
+  }
+
+  core_tabs  = User::AVAILABLE_IDEA_TABS - User::IDEA_ENTRY_TABS
+  entry_tabs = User::AVAILABLE_IDEA_TABS & User::IDEA_ENTRY_TABS
+%>
+
 <%= render 'settings/upgrade_bar' %>
 <div class="settings-container">
   <div class="page-header">
@@ -10,70 +28,110 @@
     </div>
   </div>
 
-  <div class="scoring-config-layout">
-    <div class="scoring-config-main">
-      <%= form_with url: settings_display_path, method: :patch, local: true do |form| %>
-        <div class="config-section">
-          <h3>Quote</h3>
-          <p class="config-description">Text shown at the top of every page.</p>
+  <div class="display-page-stack">
 
-          <div class="weight-grid">
-            <div class="weight-item">
-              <label class="weight-label" for="display_settings_quote">Page Quote</label>
-              <%= text_area_tag "display_settings[quote]",
-                                @display_quote,
-                                id: "display_settings_quote",
-                                rows: 2,
-                                class: "form-control",
-                                placeholder: "A useful reminder for the top of the page" %>
-            </div>
-          </div>
+    <%= form_with url: settings_display_path, method: :patch, local: true do |form| %>
+      <div class="display-fields-card">
+        <div class="display-field-row">
+          <label class="display-field-label" for="display_settings_quote">Page Quote</label>
+          <%= text_area_tag "display_settings[quote]",
+                            @display_quote,
+                            id: "display_settings_quote",
+                            rows: 2,
+                            class: "form-control display-field-textarea",
+                            placeholder: User::DEFAULT_DISPLAY_QUOTES.first %>
+          <p class="display-field-hint">Shown at the top of every page as a persistent reminder. Leave blank to use the default quote.</p>
         </div>
 
-        <div class="config-section" data-controller="contrast">
-          <h3>Contrast</h3>
-          <p class="config-description">Adjust display contrast. Preview updates in real time.</p>
-
-          <div class="weight-grid">
-            <div class="weight-item">
-              <label class="weight-label">
-                Contrast level: <span data-contrast-target="output"><%= @display_contrast %>%</span>
-              </label>
-              <%= range_field_tag "display_settings[contrast]",
-                                  @display_contrast,
-                                  min: 70,
-                                  max: 150,
-                                  step: 1,
-                                  class: "form-control-range",
-                                  data: {
-                                    contrast_target: "input",
-                                    action: "input->contrast#sync"
-                                  } %>
-            </div>
-          </div>
+        <div class="display-field-row display-field-row--sep" data-controller="contrast">
+          <label class="display-field-label">
+            Contrast &mdash; <span data-contrast-target="output"><%= @display_contrast %>%</span>
+          </label>
+          <%= range_field_tag "display_settings[contrast]",
+                              @display_contrast,
+                              min: 70,
+                              max: 150,
+                              step: 1,
+                              class: "form-control-range",
+                              data: {
+                                contrast_target: "input",
+                                action: "input->contrast#sync"
+                              } %>
+          <p class="display-field-hint">100% is default. Below 100% softens the interface; above 100% sharpens it. Applies to the entire page.</p>
         </div>
 
-        <div class="config-actions">
-          <%= form.submit "Save Display", class: "btn btn-primary" %>
+        <div class="display-field-actions">
+          <%= form.submit "Save", class: "btn btn-primary" %>
         </div>
-      <% end %>
+      </div>
+    <% end %>
+
+    <div class="display-section-divider">
+      <h3 class="display-section-heading">Idea Tabs</h3>
+      <p class="display-section-subhead">Toggle which tabs appear on each idea's detail page. The <strong>Description</strong> tab is always visible. Hidden tabs preserve your data.</p>
     </div>
 
-    <div class="scoring-config-sidebar">
-      <div class="config-info-card">
-        <h4>Quote</h4>
-        <p>Shown at the top of every page as a persistent reminder. Leave blank to hide it.</p>
-      </div>
+    <%= form_with url: settings_idea_tabs_path, method: :patch, local: true, class: "idea-tabs-form", data: { controller: "settings-autosave" } do |form| %>
+      <section class="tab-toggle-section">
+        <header class="tab-toggle-section__header">
+          <h3>Core tabs</h3>
+          <p>Built-in views that ship with every idea.</p>
+        </header>
 
-      <div class="config-info-card">
-        <h4>Contrast</h4>
-        <ul>
-          <li><strong>100%</strong> is the default — no adjustment</li>
-          <li>Lower values (70–99%) soften the interface</li>
-          <li>Higher values (101–150%) sharpen it</li>
-        </ul>
-        <p>Applies to the entire page including the header.</p>
+        <div class="tab-toggle-list">
+          <% core_tabs.each do |tab| %>
+            <label class="tab-toggle" for="idea_tab_<%= tab %>">
+              <div class="tab-toggle__text">
+                <span class="tab-toggle__name"><%= User::IDEA_TAB_LABELS[tab] %></span>
+                <span class="tab-toggle__description"><%= tab_descriptions[tab] %></span>
+              </div>
+              <span class="tab-toggle__switch">
+                <%= check_box_tag "idea_tabs[#{tab}]", "1", @idea_tab_settings[tab] == true, id: "idea_tab_#{tab}", class: "tab-toggle__input", data: { action: "change->settings-autosave#toggleChanged" } %>
+                <span class="tab-toggle__track" aria-hidden="true">
+                  <span class="tab-toggle__thumb"></span>
+                </span>
+              </span>
+            </label>
+          <% end %>
+        </div>
+      </section>
+
+      <section class="tab-toggle-section">
+        <header class="tab-toggle-section__header">
+          <h3>Structured entry tabs</h3>
+          <p>Lists of records saved to the database &mdash; add, edit, and delete per idea. Enable only what you'll use.</p>
+        </header>
+
+        <div class="tab-toggle-list">
+          <% entry_tabs.each do |tab| %>
+            <label class="tab-toggle tab-toggle--entry" for="idea_tab_<%= tab %>">
+              <div class="tab-toggle__text">
+                <span class="tab-toggle__name">
+                  <%= User::IDEA_TAB_LABELS[tab] %>
+                  <span class="tab-toggle__badge">DB</span>
+                </span>
+                <span class="tab-toggle__description"><%= tab_descriptions[tab] %></span>
+              </div>
+              <span class="tab-toggle__switch">
+                <%= check_box_tag "idea_tabs[#{tab}]", "1", @idea_tab_settings[tab] == true, id: "idea_tab_#{tab}", class: "tab-toggle__input", data: { action: "change->settings-autosave#toggleChanged" } %>
+                <span class="tab-toggle__track" aria-hidden="true">
+                  <span class="tab-toggle__thumb"></span>
+                </span>
+              </span>
+            </label>
+          <% end %>
+        </div>
+      </section>
+
+      <div class="tab-toggle-actions">
+        <%= button_tag "Reset to Defaults",
+              type: "submit",
+              name: "reset_idea_tabs",
+              value: "1",
+              class: "btn btn-secondary",
+              data: { turbo_confirm: "Reset idea tab visibility to defaults?" } %>
       </div>
-    </div>
+    <% end %>
+
   </div>
 </div>

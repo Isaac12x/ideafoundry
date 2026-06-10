@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Multiple scoring systems, including a founder scorecard with seven 1-5 criteria and a 24/35 gate for active work and Kanban placement.
 - Right-click idea cards can add ideas to Kanban board columns or named lists.
 - Backlog items can include multiple uploaded images with inline thumbnails.
 - Static GitHub Pages project overview site and deployment workflow.
@@ -33,9 +34,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Active Storage upgrade migrations and idea TLDR persistence.
 - Static 400 and unsupported-browser error pages with app icons.
 - File storage backup contract documenting local durable storage beside the app.
+- Default page quote fallbacks and additional typing-lock unlock prompts inspired by Ford, Feynman, and Create or Perish.
+- LaunchAgent startup now brings up the Docker/Podman Compose sidecar services before Rails.
 
 ### Changed
 
+- Local attachment OCR now uses Surya with block HTML metadata while preserving complete extracted text for saving.
 - Idea creation no longer asks for Kanban board or named-list placement; placement remains available after the idea exists.
 - Updated the app to resolve Rails 8.1.3 and Puma 8, with Rails 8.1 local CI and framework-default upgrade prep.
 - Adopted Rails 8.1 framework defaults and regenerated schema dumps with Rails 8.1 alphabetized column ordering.
@@ -49,9 +53,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - SQLCipher recovery keys can rekey to stronger scrypt defaults and plaintext migration backups are removed after encryption.
 - Setup, development, production, and CI configuration now target the Rails 8.1 and SQLCipher app runtime.
 - Manual and scheduled backups now treat every user-owned Active Storage blob as first-class data.
+- Settings pages now group related sections, combine display and idea-tab controls, and present scoring systems in dedicated panels.
 
 ### Fixed
 
+- Ask Agent now only renders while the local agent is enabled and live, and its launcher icon changes at most once per day.
 - Local agent harness probes to `/local-agent/tools` now receive JSON tool discovery instead of falling through to the app catch-all.
 - Resend inbound email setup now uses the mounted `/rails/action_mailbox/resend/inbound_emails` webhook route.
 - Backlog edit, delete, and completion streams now preserve item context and refresh counts/empty states.
