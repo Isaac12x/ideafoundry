@@ -35,6 +35,8 @@ Rails.application.routes.draw do
   get "submissions/import", to: "submission_imports#new", as: :new_submission_import
   post "submissions/import/preview", to: "submission_imports#preview", as: :preview_submission_import
   post "submissions/import", to: "submission_imports#create", as: :submission_import
+  get "submissions/import/:source/oauth", to: "submission_imports#oauth", as: :oauth_submission_import
+  get "submissions/import/:source/oauth/callback", to: "submission_imports#oauth_callback", as: :oauth_callback_submission_import
 
   resources :submissions, only: [:index, :show, :destroy] do
     member do
