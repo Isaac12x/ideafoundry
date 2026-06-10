@@ -1,7 +1,7 @@
 import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
-  static targets = ["selector", "tabCustomFields", "tabPanelsContainer", "orphanedPanel", "orphanedList", "topologyCheckbox"]
+  static targets = ["selector", "tabCustomFields", "tabPanelsContainer", "orphanedPanel", "orphanedList", "topologyCheckbox", "scoringSystem"]
   static values = {
     currentFields: { type: Array, default: [] },
     fieldValues: { type: Object, default: {} }
@@ -9,6 +9,7 @@ export default class extends Controller {
 
   connect() {
     this.captureCurrentValues()
+    this.syncScoringSystems()
   }
 
   captureCurrentValues() {
@@ -40,6 +41,7 @@ export default class extends Controller {
 
     // Capture current values before switching
     this.captureCurrentValues()
+    this.syncScoringSystems()
 
     if (!templateId) {
       this.removeAllTabPanels()
@@ -61,9 +63,35 @@ export default class extends Controller {
       const effectiveTemplate = this.withTopologyFields(template)
       this.renderTabPanels(effectiveTemplate)
       this.currentFieldsValue = effectiveTemplate.field_definitions
+      this.syncScoringSystems(template.scoring_system_ids || [])
     } catch (e) {
       console.error("Template switch error:", e)
     }
+  }
+
+  syncScoringSystems(ids = null) {
+    if (!this.hasScoringSystemTarget) return
+
+    const activeIds = ids || this.selectedScoringSystemIds()
+    this.scoringSystemTargets.forEach(element => {
+      const active = activeIds.includes(element.dataset.scoringSystemId)
+      element.hidden = !active
+      element.querySelectorAll("input, select, textarea").forEach(input => {
+        input.disabled = !active
+      })
+    })
+  }
+
+  selectedScoringSystemIds() {
+    if (!this.hasSelectorTarget || !this.selectorTarget.value) return ["weighted_readiness"]
+
+    const selected = this.selectorTarget.selectedOptions[0]
+    const ids = (selected?.dataset.scoringSystemIds || "")
+      .split(",")
+      .map(id => id.trim())
+      .filter(Boolean)
+
+    return ids.length > 0 ? ids : ["weighted_readiness"]
   }
 
   topologiesChanged() {

@@ -10,7 +10,10 @@ class OcrClient
     new.extract(attachment)
   end
 
-  def initialize(endpoint: ENV.fetch("OCR_SERVICE_URL", DEFAULT_URL), timeout: 30)
+  def initialize(
+    endpoint: ENV.fetch("OCR_SERVICE_URL", DEFAULT_URL),
+    timeout: ENV.fetch("OCR_SERVICE_TIMEOUT", "900").to_i
+  )
     @uri = URI(endpoint)
     @timeout = timeout
   end
