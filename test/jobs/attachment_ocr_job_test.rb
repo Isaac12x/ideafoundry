@@ -10,7 +10,20 @@ class AttachmentOcrJobTest < ActiveJob::TestCase
     )
     attachment = idea.attachments.last
 
-    OcrClient.stub :extract, { "text" => "Part A\nPart B", "parts" => ["Part A", "Part B"] } do
+    ocr_result = {
+      "text" => "Part A\nPart B",
+      "html" => "<div>Part A</div><div>Part B</div>",
+      "parts" => ["Part A", "Part B"],
+      "pages" => [
+        {
+          "page" => 1,
+          "html" => "<div>Part A</div><div>Part B</div>",
+          "blocks" => [{ "label" => "Text", "html" => "<div>Part A</div>" }]
+        }
+      ]
+    }
+
+    OcrClient.stub :extract, ocr_result do
       AttachmentOcrJob.perform_now(attachment.id)
     end
 
@@ -18,5 +31,7 @@ class AttachmentOcrJobTest < ActiveJob::TestCase
     assert_equal "complete", attachment.ocr_status
     assert_equal "Part A\nPart B", attachment.ocr_text
     assert_equal ["Part A", "Part B"], attachment.ocr_metadata["parts"]
+    assert_equal "<div>Part A</div><div>Part B</div>", attachment.ocr_metadata["html"]
+    assert_equal "<div>Part A</div><div>Part B</div>", attachment.ocr_metadata["pages"].first["html"]
   end
 end

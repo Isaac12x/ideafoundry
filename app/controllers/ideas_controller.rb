@@ -54,6 +54,14 @@ class IdeasController < ApplicationController
     attrs[:draft] = false if was_draft  # Submitting promotes draft → real idea
     respond_to do |format|
       if @idea.update(attrs)
+        if !request.xhr? && !was_draft && kanban_assignment_requested? && selected_kanban_list_requested? && !@idea.kanban_eligible?
+          @idea.errors.add(:base, @idea.kanban_ineligibility_message)
+          load_form_options
+          format.html { render :edit, status: :unprocessable_content }
+          format.json { render json: { success: false, errors: @idea.errors.full_messages }, status: :unprocessable_content }
+          return
+        end
+
         @idea.create_version(was_draft ? "Initial version" : version_commit_message)
         @idea.enqueue_attachment_ocr!
 
@@ -342,6 +350,8 @@ class IdeasController < ApplicationController
   end
 
   def add_idea_to_kanban_list(idea, new_list)
+    ensure_idea_can_enter_kanban!(idea)
+
     removed_list = nil
     membership = nil
 
@@ -364,6 +374,13 @@ class IdeasController < ApplicationController
     end
 
     { membership: membership, removed_list: removed_list }
+  end
+
+  def ensure_idea_can_enter_kanban!(idea)
+    return if idea.kanban_eligible?
+
+    idea.errors.add(:base, idea.kanban_ineligibility_message)
+    raise ActiveRecord::RecordInvalid, idea
   end
 
   def idea_list_membership_payload(idea, list, result)
@@ -435,6 +452,18 @@ class IdeasController < ApplicationController
     JSON.parse(raw)
   rescue JSON::ParserError
     nil
+  end
+
+  def kanban_assignment_requested?
+    params.key?(:kanban_list_ids) || params.key?(:list_id)
+  end
+
+  def selected_kanban_list_requested?
+    if params.key?(:kanban_list_ids)
+      params.fetch(:kanban_list_ids, {}).to_unsafe_h.values.any?(&:present?)
+    else
+      params[:list_id].present?
+    end
   end
 
   def apply_filters(ideas)

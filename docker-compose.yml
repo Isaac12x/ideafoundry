@@ -52,6 +52,16 @@ services:
     build: ./ocr_service
     ports:
       - "127.0.0.1:${OCR_SERVICE_PORT:-8001}:8000"
+    environment:
+      - LLAMA_CPP_NGL=${LLAMA_CPP_NGL:-0}
+      - OCR_PAGE_BATCH_SIZE=${OCR_PAGE_BATCH_SIZE:-4}
+      - OCR_PDF_DPI=${OCR_PDF_DPI:-192}
+      - SURYA_INFERENCE_BACKEND=${SURYA_INFERENCE_BACKEND:-llamacpp}
+      - SURYA_INFERENCE_KEEP_ALIVE=${SURYA_INFERENCE_KEEP_ALIVE:-1}
+      - SURYA_INFERENCE_PARALLEL=${SURYA_INFERENCE_PARALLEL:-1}
+      - SURYA_INFERENCE_STARTUP_TIMEOUT=${SURYA_INFERENCE_STARTUP_TIMEOUT:-900}
+    volumes:
+      - ocr-model-cache:/root/.cache
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health').read()"]
       interval: 30s
@@ -59,3 +69,6 @@ services:
       start_period: 15s
       retries: 3
     restart: unless-stopped
+
+volumes:
+  ocr-model-cache:
