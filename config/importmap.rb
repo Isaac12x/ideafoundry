@@ -6,6 +6,9 @@ pin "@hotwired/stimulus", to: "stimulus.min.js", preload: true
 pin "@hotwired/stimulus-loading", to: "stimulus-loading.js", preload: true
 pin_all_from "app/javascript/controllers", under: "controllers"
 
+# HyperFormula (Excel-compatible formula engine) — lazy-loaded by napkin controller.
+pin "hyperformula", to: "https://esm.sh/hyperformula@3.2.0"
+
 # TipTap WYSIWYG editor (ESM via esm.sh)
 pin "@tiptap/core", to: "https://esm.sh/@tiptap/core@2.11.5"
 pin "@tiptap/extension-document", to: "https://esm.sh/@tiptap/extension-document@2.11.5"

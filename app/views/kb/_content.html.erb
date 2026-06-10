@@ -1,0 +1,14 @@
+<% if content_html.present? %>
+  <article class="kb-markdown rich-text-content">
+    <%= content_html %>
+  </article>
+<% elsif defined?(selected_file) && selected_file.present? %>
+  <div class="kb-content-empty">
+    <p>File not found or could not be read.</p>
+  </div>
+<% else %>
+  <div class="kb-content-empty">
+    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>
+    <p>Select a document to view</p>
+  </div>
+<% end %>

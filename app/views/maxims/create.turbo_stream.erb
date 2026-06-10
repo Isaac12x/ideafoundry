@@ -1,0 +1,3 @@
+<%= turbo_stream.prepend "maxims-list", partial: "maxims/maxim", locals: { maxim: @maxim } %>
+<%= turbo_stream.remove "maxims-empty-state" %>
+<%= turbo_stream.replace "maxim_form", partial: "maxims/form" %>

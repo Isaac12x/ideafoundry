@@ -1,0 +1,61 @@
+<div class="lists-container">
+  <div class="page-header">
+    <div class="header-left">
+      <h2><%= @list.name %></h2>
+      <span class="list-kind-badge"><%= @list.kanban? ? "Kanban column" : "Named list" %></span>
+    </div>
+    <div class="header-actions">
+      <%= link_to lists_path(view: @list.kind), class: "btn btn-sm" do %>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        Back to Lists
+      <% end %>
+      <%= link_to "Edit", edit_list_path(@list), class: "btn btn-sm" %>
+    </div>
+  </div>
+
+  <% if @list.named? %>
+    <div class="config-section">
+      <h3>Add Idea</h3>
+      <% if @available_ideas.any? %>
+        <%= form_with url: add_idea_list_path(@list), method: :post, local: true, class: "inline-list-form" do |form| %>
+          <%= form.select :idea_id,
+              options_from_collection_for_select(@available_ideas, :id, :title),
+              {},
+              class: "form-control" %>
+          <%= form.submit "Add", class: "btn btn-primary" %>
+        <% end %>
+      <% else %>
+        <p class="text-muted">All current ideas are already in this list.</p>
+      <% end %>
+    </div>
+  <% end %>
+
+  <div class="named-list-items">
+    <% @ideas.each do |idea| %>
+      <div class="named-list-item">
+        <div>
+          <h3><%= link_to idea.title, idea_path(idea) %></h3>
+          <p>
+            <span class="idea-state <%= idea.state %>"><%= idea.state.humanize %></span>
+            <% if idea.computed_score %>
+              <span class="idea-score"><%= number_with_precision(idea.computed_score, precision: 1) %></span>
+            <% end %>
+          </p>
+        </div>
+        <% if @list.named? %>
+          <%= button_to "Remove", remove_idea_list_path(@list, idea_id: idea.id),
+              method: :delete,
+              class: "btn btn-sm btn-danger",
+              form: { data: { turbo_confirm: "Remove this idea from the list?" } } %>
+        <% end %>
+      </div>
+    <% end %>
+
+    <% if @ideas.empty? %>
+      <div class="empty-state">
+        <h3>No ideas in this list yet</h3>
+        <p>Add ideas to make this list useful.</p>
+      </div>
+    <% end %>
+  </div>
+</div>

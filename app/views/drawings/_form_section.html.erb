@@ -1,0 +1,61 @@
+<%#
+  Drawings section embedded inside the idea form.
+  Locals:
+    idea          - the Idea (must be persisted; auto-draft used for new ideas)
+    role          - "general" | "hero" | "attachment"
+    title         - heading for the section
+    mode          - "list" (multiple) | "single" (only one allowed)
+    drawings      - collection of Drawing records to render
+    add_label     - text for the add button
+%>
+<%
+  list_id = "idea_drawings_#{role}_#{idea.id}"
+  modal_id = "idea_drawings_modal_#{role}_#{idea.id}"
+%>
+
+<div class="idea-drawings"
+     data-controller="idea-drawings"
+     data-idea-drawings-role-value="<%= role %>"
+     data-idea-drawings-create-url-value="<%= idea_drawings_path(idea) %>"
+     data-idea-drawings-show-url-pattern-value="/ideas/<%= idea.id %>/drawings/__ID__"
+     data-idea-drawings-thumbnail-mode-value="<%= mode %>"
+     data-action="keydown@window->idea-drawings#closeOnEsc">
+
+  <div class="idea-drawings__header">
+    <button type="button" class="btn btn-sm btn-primary"
+            data-action="click->idea-drawings#open">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+      <%= add_label || "Add Drawing" %>
+    </button>
+  </div>
+
+  <div class="idea-drawings__list" id="<%= list_id %>"
+       data-idea-drawings-target="list">
+    <% drawings.each do |drawing| %>
+      <%= render "drawings/thumbnail", drawing: drawing %>
+    <% end %>
+  </div>
+
+  <div class="idea-drawings__empty <%= 'hidden' if drawings.any? %>"
+       data-idea-drawings-target="empty">
+    <p>No drawings yet.</p>
+  </div>
+
+  <div class="idea-drawings__modal hidden"
+       id="<%= modal_id %>"
+       data-idea-drawings-target="modal"
+       data-action="click->idea-drawings#closeOnBackdrop">
+    <div class="idea-drawings__modal-dialog">
+      <div class="idea-drawings__modal-header">
+        <span class="idea-drawings__modal-title">Drawing</span>
+        <button type="button" class="btn btn-sm"
+                data-action="click->idea-drawings#close">Close</button>
+      </div>
+      <div class="idea-drawings__modal-body">
+        <div class="excalidraw-mount"
+             data-idea-drawings-target="mount"
+             data-standalone="false"></div>
+      </div>
+    </div>
+  </div>
+</div>

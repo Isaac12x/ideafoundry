@@ -1,0 +1,247 @@
+<%= render 'settings/upgrade_bar' %>
+<div class="settings-container">
+  <div class="page-header">
+    <h2>Security</h2>
+    <%= link_to settings_path, class: "btn btn-sm" do %>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      Back to Settings
+    <% end %>
+  </div>
+
+  <div class="typing-settings-layout">
+    <div class="typing-settings-main">
+      <section class="tab-toggle-section">
+        <header class="tab-toggle-section__header">
+          <h3>Protection</h3>
+          <p>Use keyboard rhythm and an authenticator app as local unlock checks for this single-user app.</p>
+        </header>
+
+        <%= form_with url: settings_security_path, method: :patch, local: true, class: "typing-settings-form", data: { controller: "settings-autosave" } do %>
+          <label class="tab-toggle" for="typing_lock_enabled">
+            <div class="tab-toggle__text">
+              <span class="tab-toggle__name">Require typing fingerprint</span>
+              <span class="tab-toggle__description">When enabled, the app locks after the inactivity window below.</span>
+            </div>
+            <span class="tab-toggle__switch">
+              <%= check_box_tag "typing_lock[enabled]", "1", @user.typing_lock_enabled?, id: "typing_lock_enabled", class: "tab-toggle__input", data: { action: "change->settings-autosave#toggleChanged" } %>
+              <span class="tab-toggle__track" aria-hidden="true">
+                <span class="tab-toggle__thumb"></span>
+              </span>
+            </span>
+          </label>
+
+          <%= hidden_field_tag "authenticator_app[enabled]", "0" %>
+          <label class="tab-toggle" for="authenticator_app_enabled">
+            <div class="tab-toggle__text">
+              <span class="tab-toggle__name">Require authenticator app</span>
+              <span class="tab-toggle__description">Ask for a six-digit authenticator code. If typing lock is also enabled, this runs after typing.</span>
+            </div>
+            <span class="tab-toggle__switch">
+              <%= check_box_tag "authenticator_app[enabled]", "1", @user.authenticator_app_enabled?, id: "authenticator_app_enabled", class: "tab-toggle__input", data: { action: "change->settings-autosave#toggleChanged" } %>
+              <span class="tab-toggle__track" aria-hidden="true">
+                <span class="tab-toggle__thumb"></span>
+              </span>
+            </span>
+          </label>
+
+          <%= hidden_field_tag "voice_id[enabled]", "0" %>
+          <label class="tab-toggle" for="voice_id_enabled">
+            <div class="tab-toggle__text">
+              <span class="tab-toggle__name">Require Voice ID</span>
+              <span class="tab-toggle__description">Unlock with your voice using a passphrase. Runs as the final check each time the workspace reopens.</span>
+            </div>
+            <span class="tab-toggle__switch">
+              <%= check_box_tag "voice_id[enabled]", "1", @user.voice_id_requested?, id: "voice_id_enabled", class: "tab-toggle__input", data: { action: "change->settings-autosave#toggleChanged" } %>
+              <span class="tab-toggle__track" aria-hidden="true">
+                <span class="tab-toggle__thumb"></span>
+              </span>
+            </span>
+          </label>
+
+          <div class="typing-settings-field">
+            <label for="typing_lock_minutes">Lock after</label>
+            <div class="typing-settings-number">
+              <%= number_field_tag "typing_lock[lock_after_minutes]",
+                    @user.typing_lock_timeout_minutes,
+                    id: "typing_lock_minutes",
+                    min: 1,
+                    max: 1440,
+                    step: 1,
+                    class: "form-control" %>
+              <span>minutes</span>
+            </div>
+          </div>
+
+          <div class="typing-settings-field">
+            <label for="typing_lock_failed_unlock_cooldown_minutes">Retry after no match</label>
+            <div class="typing-settings-number">
+              <%= number_field_tag "typing_lock[failed_unlock_cooldown_minutes]",
+                    @user.typing_lock_failed_unlock_cooldown_minutes,
+                    id: "typing_lock_failed_unlock_cooldown_minutes",
+                    min: 1,
+                    max: 1440,
+                    step: 1,
+                    class: "form-control" %>
+              <span>minutes</span>
+            </div>
+          </div>
+
+          <div class="typing-settings-actions">
+            <%= submit_tag "Save Settings", class: "btn btn-primary" %>
+          </div>
+        <% end %>
+      </section>
+
+      <section class="tab-toggle-section security-database-encryption">
+        <header class="tab-toggle-section__header">
+          <h3>Database Encryption</h3>
+          <p>Encrypt the SQLCipher-configured SQLite databases used by this workspace.</p>
+        </header>
+
+        <div class="security-database-encryption__body">
+          <% if @database_encryption_requires_recovery_secret %>
+            <div class="security-database-encryption__message security-database-encryption__message--recovery-secret">
+              <strong>Recovery passphrase required</strong>
+              <p>Enter the user-held recovery passphrase to inspect or encrypt the configured SQLite databases.</p>
+              <%= link_to "Enter Recovery Passphrase",
+                    recovery_secret_path(return_to: settings_security_path),
+                    class: "btn btn-primary btn-sm" %>
+            </div>
+          <% elsif @database_encryption_error.present? %>
+            <div class="security-database-encryption__message security-database-encryption__message--error">
+              <strong>Encryption unavailable</strong>
+              <p><%= @database_encryption_error %></p>
+            </div>
+          <% elsif @database_encryption_results.blank? %>
+            <p class="security-database-encryption__empty">No SQLCipher-enabled SQLite databases are configured for this environment.</p>
+          <% else %>
+            <div class="security-database-encryption__list">
+              <% @database_encryption_results.each do |result| %>
+                <% status = result.status.to_sym %>
+                <% status_label = { plaintext: "Needs encryption", encrypted: "Encrypted", missing: "Missing", unreadable: "Needs attention" }.fetch(status, status.to_s.humanize) %>
+                <div class="security-database-encryption__row security-database-encryption__row--<%= status %>">
+                  <div class="security-database-encryption__path">
+                    <span><%= File.basename(result.path.to_s) %></span>
+                    <code><%= result.path %></code>
+                    <% if result.error.present? %>
+                      <small><%= result.error %></small>
+                    <% end %>
+                  </div>
+                  <strong><%= status_label %></strong>
+                </div>
+              <% end %>
+            </div>
+
+            <% if @database_encryption_results.any? { |result| result.status == :plaintext } %>
+              <div class="security-database-encryption__actions">
+                <%= form_with url: settings_security_encrypt_database_path, method: :post, local: true, class: "security-database-encryption__form", data: { controller: "passphrase-download" } do %>
+                  <div class="security-database-encryption__warning">
+                    <strong>This passphrase becomes the database recovery key.</strong>
+                    <p>Idea Foundry cannot recover it for you. Save it in at least two independent places before encrypting. The app will store a local copy for launchd/systemd at <code><%= @database_recovery_passphrase_file_path %></code>.</p>
+                  </div>
+
+                  <div class="typing-settings-field">
+                    <label for="database_encryption_passphrase">Database recovery passphrase</label>
+                    <%= password_field_tag "database_encryption[passphrase]", nil,
+                          id: "database_encryption_passphrase",
+                          class: "form-control",
+                          autocomplete: "new-password",
+                          minlength: 16,
+                          required: true,
+                          data: { passphrase_download_target: "passphrase" } %>
+                  </div>
+
+                  <div class="typing-settings-field">
+                    <label for="database_encryption_passphrase_confirmation">Confirm recovery passphrase</label>
+                    <%= password_field_tag "database_encryption[passphrase_confirmation]", nil,
+                          id: "database_encryption_passphrase_confirmation",
+                          class: "form-control",
+                          autocomplete: "new-password",
+                          minlength: 16,
+                          required: true %>
+                  </div>
+
+                  <label class="security-database-encryption__ack" for="database_encryption_saved_primary">
+                    <%= check_box_tag "database_encryption[saved_primary]", "1", false, id: "database_encryption_saved_primary", required: true %>
+                    <span>I saved this passphrase in my primary password manager or recovery vault.</span>
+                  </label>
+
+                  <label class="security-database-encryption__ack" for="database_encryption_saved_secondary">
+                    <%= check_box_tag "database_encryption[saved_secondary]", "1", false, id: "database_encryption_saved_secondary", required: true, data: { action: "change->passphrase-download#download" } %>
+                    <span>I saved this passphrase in a second separate place — <strong>download a copy</strong> to confirm.</span>
+                  </label>
+
+                  <%= submit_tag "Encrypt SQLite Databases",
+                        class: "btn btn-primary",
+                        data: { turbo_confirm: "Encrypt the configured SQLite databases now? Continue only if the passphrase is saved in more than one place." } %>
+                <% end %>
+              </div>
+            <% else %>
+              <p class="security-database-encryption__empty">No plaintext configured databases need encryption.</p>
+            <% end %>
+          <% end %>
+        </div>
+      </section>
+    </div>
+
+    <aside class="typing-settings-status">
+      <section class="security-fingerprint-row security-fingerprint-row--typing">
+        <div class="security-fingerprint-row__content">
+          <span class="typing-settings-status__label">Typing Fingerprint</span>
+          <% if @user.typing_fingerprint_configured? %>
+            <strong>Stored</strong>
+            <p><%= @user.typing_fingerprint["sample_count"] %> timing samples are saved in the database.</p>
+          <% else %>
+            <strong>Not trained</strong>
+            <p>The next protected visit will ask for a longer setup passage.</p>
+          <% end %>
+        </div>
+        <div class="security-fingerprint-row__action">
+          <%= link_to (@user.typing_fingerprint_configured? ? "Redo Typing Fingerprint" : "Set Up Typing Fingerprint"),
+                enroll_typing_lock_path(return_to: settings_security_path),
+                class: "btn btn-secondary btn-sm" %>
+        </div>
+      </section>
+
+      <section class="security-fingerprint-row security-fingerprint-row--authenticator">
+        <div class="security-fingerprint-row__content">
+          <span class="typing-settings-status__label">Authenticator App</span>
+          <% if @user.authenticator_app_configured? %>
+            <strong><%= @user.authenticator_app_enabled? ? "Enabled" : "Prepared" %></strong>
+            <p>Scan this QR code with an authenticator app, or enter the setup key manually.</p>
+            <div class="authenticator-setup-qr" aria-label="Authenticator app QR code">
+              <%= raw @authenticator_app_qr_svg %>
+            </div>
+            <code class="authenticator-setup-secret"><%= @user.authenticator_app_secret %></code>
+          <% else %>
+            <strong>Off</strong>
+            <p>Enable the authenticator app option and save to generate a QR code.</p>
+          <% end %>
+        </div>
+      </section>
+
+      <section class="security-fingerprint-row security-fingerprint-row--voice">
+        <div class="security-fingerprint-row__content">
+          <span class="typing-settings-status__label">Voice ID</span>
+          <% if @user.voice_id_configured? %>
+            <strong><%= @user.voice_id_enabled? ? "Enabled" : "Stored" %></strong>
+            <p><%= @user.voice_id_fingerprint["sample_count"] %> voice recordings stored. Raw audio is never saved.</p>
+          <% elsif @user.voice_id_requested? %>
+            <strong>Setup required</strong>
+            <p>Record yourself saying the passphrase 3 times to complete setup.</p>
+          <% else %>
+            <strong>Off</strong>
+            <p>Enable the toggle above and save to start voice setup.</p>
+          <% end %>
+        </div>
+        <div class="security-fingerprint-row__action">
+          <% if @user.voice_id_configured? %>
+            <%= link_to "Redo Voice ID", enroll_voice_id_path(return_to: settings_security_path), class: "btn btn-secondary btn-sm" %>
+          <% elsif @user.voice_id_requested? %>
+            <%= link_to "Set Up Voice ID", enroll_voice_id_path(return_to: settings_security_path), class: "btn btn-primary btn-sm" %>
+          <% end %>
+        </div>
+      </section>
+    </aside>
+  </div>
+</div>

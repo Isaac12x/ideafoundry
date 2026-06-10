@@ -1,87 +1,116 @@
-<div class="filters-panel">
-  <%= form_with url: ideas_path, method: :get, data: { turbo_frame: "ideas_list" } do |form| %>
-    <div class="filters-grid">
-      <div class="filter-group">
-        <%= form.label :state, "State" %>
-        <%= form.select :state,
-            options_for_select(
-              [['All States', 'all']] + Idea.states.keys.map { |k| [k.humanize, k] },
-              params[:state]
-            ),
-            {},
-            class: "form-control" %>
+<%
+  filters_active = [
+    params[:state].present? && params[:state] != 'all',
+    params[:topology_id].present? && params[:topology_id] != 'all',
+    params[:list_id].present? && params[:list_id] != 'all',
+    params[:trl_min].present?,
+    params[:trl_max].present?,
+    params[:score_min].present?,
+  ].any?
+%>
+<div class="filters-panel"
+     data-controller="auto-filter"
+     data-auto-filter-filters-active-value="<%= filters_active %>">
+  <%= form_with url: ideas_path, method: :get, data: { turbo_frame: "ideas_list", auto_filter_target: "form" } do |form| %>
+    <div class="filter-top-bar">
+      <div class="filter-search-bar">
+        <%= form.search_field :search, value: params[:search], placeholder: "Search ideas...", class: "form-control", data: { auto_filter_target: "search", action: "input->auto-filter#debouncedSubmit" } %>
       </div>
-
-      <div class="filter-group">
-        <%= form.label :topology_id, "Topology" %>
-        <%= form.select :topology_id,
-            options_for_select(
-              [['All Topologies', 'all']] + @user.topologies.ordered.map { |t| [t.full_path, t.id] },
-              params[:topology_id]
-            ),
-            {},
-            class: "form-control" %>
-      </div>
-
-      <div class="filter-group">
-        <%= form.label :list_id, "List" %>
-        <%= form.select :list_id,
-            options_for_select(
-              [['All Lists', 'all']] + @user.lists.pluck(:name, :id),
-              params[:list_id]
-            ),
-            {},
-            class: "form-control" %>
-      </div>
-
-      <div class="filter-group">
-        <%= form.label :trl_min, "TRL Min" %>
-        <%= form.number_field :trl_min, value: params[:trl_min], min: 0, max: 10, class: "form-control", placeholder: "0" %>
-      </div>
-
-      <div class="filter-group">
-        <%= form.label :trl_max, "TRL Max" %>
-        <%= form.number_field :trl_max, value: params[:trl_max], min: 0, max: 10, class: "form-control", placeholder: "10" %>
-      </div>
-
-      <div class="filter-group">
-        <%= form.label :score_min, "Score Min" %>
-        <%= form.number_field :score_min, value: params[:score_min], step: 0.1, class: "form-control", placeholder: "0" %>
-      </div>
-
-      <div class="filter-group">
-        <%= form.label :sort_by, "Sort" %>
-        <%= form.select :sort_by,
-            options_for_select(
-              [
-                ['Created', 'created_at'],
-                ['Updated', 'updated_at'],
-                ['Title', 'title'],
-                ['State', 'state'],
-                ['Score', 'score'],
-                ['TRL', 'trl']
-              ],
-              params[:sort_by] || 'created_at'
-            ),
-            {},
-            class: "form-control" %>
-      </div>
-
-      <div class="filter-group">
-        <%= form.label :sort_order, "Order" %>
-        <%= form.select :sort_order,
-            options_for_select(
-              [['Desc', 'desc'], ['Asc', 'asc']],
-              params[:sort_order] || 'desc'
-            ),
-            {},
-            class: "form-control" %>
-      </div>
+      <button type="button" class="filter-toggle-btn" data-action="click->auto-filter#toggleCollapse" data-auto-filter-target="toggleBtn">
+        Filters
+        <span class="filter-active-dot" data-auto-filter-target="activeDot" style="<%= filters_active ? '' : 'display:none' %>"></span>
+        <svg class="filter-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
     </div>
 
-    <div class="filter-actions">
-      <%= link_to "Clear", ideas_path, class: "btn btn-sm" %>
-      <%= form.submit "Apply", class: "btn btn-sm btn-primary" %>
+    <div class="filter-body" data-auto-filter-target="body">
+      <div class="filters-grid">
+        <div class="filter-group">
+          <%= form.label :state, "State" %>
+          <%= form.select :state,
+              options_for_select(
+                [['All States', 'all']] + Idea.states.keys.map { |k| [k.humanize, k] },
+                params[:state]
+              ),
+              {},
+              class: "form-control",
+              data: { action: "change->auto-filter#submit" } %>
+        </div>
+
+        <div class="filter-group">
+          <%= form.label :topology_id, "Topology" %>
+          <%= form.select :topology_id,
+              options_for_select(
+                [['All Topologies', 'all']] + @user.topologies.ordered.map { |t| [t.full_path, t.id] },
+                params[:topology_id]
+              ),
+              {},
+              class: "form-control",
+              data: { action: "change->auto-filter#submit" } %>
+        </div>
+
+        <div class="filter-group">
+          <%= form.label :list_id, "List" %>
+          <%= form.select :list_id,
+              options_for_select(
+                [['All Lists', 'all']] + @user.lists.pluck(:name, :id),
+                params[:list_id]
+              ),
+              {},
+              class: "form-control",
+              data: { action: "change->auto-filter#submit" } %>
+        </div>
+
+        <div class="filter-group">
+          <%= form.label :trl_min, "TRL Min" %>
+          <%= form.number_field :trl_min, value: params[:trl_min], min: 0, max: 10, class: "form-control", placeholder: "0", data: { action: "change->auto-filter#submit" } %>
+        </div>
+
+        <div class="filter-group">
+          <%= form.label :trl_max, "TRL Max" %>
+          <%= form.number_field :trl_max, value: params[:trl_max], min: 0, max: 10, class: "form-control", placeholder: "10", data: { action: "change->auto-filter#submit" } %>
+        </div>
+
+        <div class="filter-group">
+          <%= form.label :score_min, "Score Min" %>
+          <%= form.number_field :score_min, value: params[:score_min], step: 0.1, class: "form-control", placeholder: "0", data: { action: "change->auto-filter#submit" } %>
+        </div>
+
+        <div class="filter-group">
+          <%= form.label :sort_by, "Sort by" %>
+          <%= form.select :sort_by,
+              options_for_select(
+                [
+                  ['Newest', 'created_at'],
+                  ['Recently Updated', 'updated_at'],
+                  ['Title A–Z', 'title'],
+                  ['State', 'state'],
+                  ['Score', 'score'],
+                  ['TRL', 'trl']
+                ],
+                params[:sort_by] || 'created_at'
+              ),
+              {},
+              class: "form-control",
+              data: { action: "change->auto-filter#submit" } %>
+        </div>
+
+        <div class="filter-group">
+          <%= form.label :sort_order, "Order" %>
+          <%= form.select :sort_order,
+              options_for_select(
+                [['Descending', 'desc'], ['Ascending', 'asc']],
+                params[:sort_order] || 'desc'
+              ),
+              {},
+              class: "form-control",
+              data: { action: "change->auto-filter#submit" } %>
+        </div>
+      </div>
+
+      <div class="filter-actions">
+        <%= link_to "Clear", ideas_path, class: "btn btn-sm" %>
+      </div>
     </div>
   <% end %>
 </div>

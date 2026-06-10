@@ -1,0 +1,25 @@
+<div class="idea-entry-card" id="idea_entry_<%= idea_entry.id %>">
+  <div class="idea-entry-main">
+    <div class="idea-entry-header">
+      <span class="idea-entry-name"><%= idea_entry.name %></span>
+      <% if idea_entry.url.present? %>
+        <%= link_to idea_entry.url, target: "_blank", rel: "noopener noreferrer", class: "idea-entry-link" do %>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+          Visit
+        <% end %>
+      <% end %>
+    </div>
+    <% if idea_entry.description.present? %>
+      <div class="idea-entry-description"><%= simple_format(idea_entry.description, {}, sanitize: true) %></div>
+    <% end %>
+  </div>
+  <div class="idea-entry-actions">
+    <%= button_to idea_idea_entry_path(idea, idea_entry),
+          method: :delete,
+          class: "idea-entry-delete-btn",
+          data: { turbo_stream: true, turbo_confirm: "Delete this #{IdeaEntry.singular_for(idea_entry.kind).downcase}?" },
+          title: "Delete" do %>
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    <% end %>
+  </div>
+</div>

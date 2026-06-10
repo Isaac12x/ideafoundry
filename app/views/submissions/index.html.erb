@@ -1,0 +1,54 @@
+<div class="submissions-container">
+  <div class="page-header">
+    <h2>Intake</h2>
+    <div class="header-actions">
+      <%= link_to new_submission_import_path, class: "btn btn-primary" do %>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4"/><path d="M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
+        Import
+      <% end %>
+      <%= link_to ideas_path, class: "btn" do %>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+        Ideas
+      <% end %>
+    </div>
+  </div>
+
+  <div class="submission-status-tabs">
+    <%= link_to submissions_path(status: "pending"), class: "status-tab #{(params[:status].blank? || params[:status] == 'pending') ? 'active' : ''}" do %>
+      Pending
+      <% if @status_counts[:pending] > 0 %>
+        <span class="status-count"><%= @status_counts[:pending] %></span>
+      <% end %>
+    <% end %>
+    <%= link_to submissions_path(status: "approved"), class: "status-tab #{params[:status] == 'approved' ? 'active' : ''}" do %>
+      Approved
+      <% if @status_counts[:approved] > 0 %>
+        <span class="status-count approved"><%= @status_counts[:approved] %></span>
+      <% end %>
+    <% end %>
+    <%= link_to submissions_path(status: "rejected"), class: "status-tab #{params[:status] == 'rejected' ? 'active' : ''}" do %>
+      Rejected
+      <% if @status_counts[:rejected] > 0 %>
+        <span class="status-count rejected"><%= @status_counts[:rejected] %></span>
+      <% end %>
+    <% end %>
+    <%= link_to submissions_path(status: "all"), class: "status-tab #{params[:status] == 'all' ? 'active' : ''}" do %>
+      All
+    <% end %>
+  </div>
+
+  <%= render "filters" %>
+
+  <div class="submissions-grid">
+    <% @submissions.each do |submission| %>
+      <%= render "submission_card", submission: submission %>
+    <% end %>
+
+    <% if @submissions.empty? %>
+      <div class="empty-state" style="grid-column: 1 / -1;">
+        <h3>No submissions</h3>
+        <p>Submissions from the API will appear here for review.</p>
+      </div>
+    <% end %>
+  </div>
+</div>

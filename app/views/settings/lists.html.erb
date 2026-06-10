@@ -1,0 +1,38 @@
+<%= render 'settings/upgrade_bar' %>
+<div class="settings-container">
+  <div class="page-header">
+    <h2>List Settings</h2>
+    <div class="header-actions">
+      <%= link_to settings_path, class: "btn btn-sm" do %>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        Back to Settings
+      <% end %>
+      <%= link_to lists_path, class: "btn btn-sm" do %>
+        Manage Lists
+      <% end %>
+    </div>
+  </div>
+
+  <%= form_with url: settings_lists_path, method: :patch, local: true do |form| %>
+    <div class="config-section">
+      <h3>Display Preferences</h3>
+      <p class="config-description">Choose which Lists view opens first.</p>
+
+      <div class="weight-grid">
+        <div class="weight-item">
+          <label class="weight-label">
+            Default View
+            <span class="weight-description">Initial view when opening the Lists page</span>
+          </label>
+          <%= form.select "list_settings[default_view]",
+              options_for_select([["Kanban board", "kanban"], ["Named lists", "named"]], @list_settings['default_view']),
+              {}, class: "form-control" %>
+        </div>
+      </div>
+    </div>
+
+    <div class="config-actions">
+      <%= form.submit "Save Settings", class: "btn btn-primary" %>
+    </div>
+  <% end %>
+</div>

@@ -1,0 +1,11 @@
+# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+main:
+  user: one
+  name: Main Board
+  position: 1
+
+other_user_main:
+  user: two
+  name: Main Board
+  position: 1

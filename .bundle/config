@@ -1,0 +1,2 @@
+---
+BUNDLE_BUILD__SQLITE3: "--enable-system-libraries --with-sqlcipher"

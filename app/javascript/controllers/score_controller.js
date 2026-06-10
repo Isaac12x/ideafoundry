@@ -44,29 +44,31 @@ export default class extends Controller {
   }
 
   updateTrl() {
-    this.trlValueTarget.textContent = this.trlSliderTarget.value;
+    if (this.hasTrlValueTarget) this.trlValueTarget.textContent = this.trlSliderTarget.value;
     this.updateProgressBar("trl", this.trlSliderTarget.value);
     this.calculateScore();
     this.debouncedSave();
   }
 
   updateDifficulty() {
-    this.difficultyValueTarget.textContent = this.difficultySliderTarget.value;
+    if (this.hasDifficultyValueTarget) this.difficultyValueTarget.textContent = this.difficultySliderTarget.value;
     this.updateProgressBar("difficulty", this.difficultySliderTarget.value);
     this.calculateScore();
     this.debouncedSave();
   }
 
   updateOpportunity() {
-    this.opportunityValueTarget.textContent =
-      this.opportunitySliderTarget.value;
+    if (this.hasOpportunityValueTarget) {
+      this.opportunityValueTarget.textContent =
+        this.opportunitySliderTarget.value;
+    }
     this.updateProgressBar("opportunity", this.opportunitySliderTarget.value);
     this.calculateScore();
     this.debouncedSave();
   }
 
   updateTiming() {
-    this.timingValueTarget.textContent = this.timingSliderTarget.value;
+    if (this.hasTimingValueTarget) this.timingValueTarget.textContent = this.timingSliderTarget.value;
     this.updateProgressBar("timing", this.timingSliderTarget.value);
     this.calculateScore();
     this.debouncedSave();
@@ -74,21 +76,25 @@ export default class extends Controller {
 
   updateAllValues() {
     if (this.hasTrlSliderTarget) {
-      this.trlValueTarget.textContent = this.trlSliderTarget.value;
+      if (this.hasTrlValueTarget) this.trlValueTarget.textContent = this.trlSliderTarget.value;
       this.updateProgressBar("trl", this.trlSliderTarget.value);
     }
     if (this.hasDifficultySliderTarget) {
-      this.difficultyValueTarget.textContent =
-        this.difficultySliderTarget.value;
+      if (this.hasDifficultyValueTarget) {
+        this.difficultyValueTarget.textContent =
+          this.difficultySliderTarget.value;
+      }
       this.updateProgressBar("difficulty", this.difficultySliderTarget.value);
     }
     if (this.hasOpportunitySliderTarget) {
-      this.opportunityValueTarget.textContent =
-        this.opportunitySliderTarget.value;
+      if (this.hasOpportunityValueTarget) {
+        this.opportunityValueTarget.textContent =
+          this.opportunitySliderTarget.value;
+      }
       this.updateProgressBar("opportunity", this.opportunitySliderTarget.value);
     }
     if (this.hasTimingSliderTarget) {
-      this.timingValueTarget.textContent = this.timingSliderTarget.value;
+      if (this.hasTimingValueTarget) this.timingValueTarget.textContent = this.timingSliderTarget.value;
       this.updateProgressBar("timing", this.timingSliderTarget.value);
     }
   }
@@ -109,12 +115,18 @@ export default class extends Controller {
     const opportunity = parseFloat(this.opportunitySliderTarget?.value) || 0;
     const timing = parseFloat(this.timingSliderTarget?.value) || 0;
 
-    // Calculate score using configurable weights
-    const score =
-      trl * this.trlWeightValue +
-      difficulty * this.difficultyWeightValue +
-      opportunity * this.opportunityWeightValue +
-      timing * this.timingWeightValue;
+    // Calculate raw score using configurable weights
+    const weights = [this.trlWeightValue, this.difficultyWeightValue, this.opportunityWeightValue, this.timingWeightValue];
+    const raw =
+      trl * weights[0] +
+      difficulty * weights[1] +
+      opportunity * weights[2] +
+      timing * weights[3];
+
+    // Normalize to 0.0–10.0 range regardless of weight signs
+    const rawMin = 10 * weights.filter(w => w < 0).reduce((s, w) => s + w, 0);
+    const rawMax = 10 * weights.filter(w => w > 0).reduce((s, w) => s + w, 0);
+    const score = rawMax === rawMin ? 0 : ((raw - rawMin) / (rawMax - rawMin)) * 10;
 
     const roundedScore = Math.round(score * 100) / 100;
 

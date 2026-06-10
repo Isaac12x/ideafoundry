@@ -150,4 +150,40 @@ class ListTest < ActiveSupport::TestCase
     ordered = @user.lists.ordered.where(name: ["List A", "List B", "List C"])
     assert_equal [list1, list2, list3], ordered.to_a
   end
+
+  test "defaults new lists to kanban kind" do
+    @list.save!
+
+    assert_equal "kanban", @list.kind
+    assert @list.kanban?
+  end
+
+  test "named lists are positioned independently from kanban lists" do
+    named_list = List.create!(user: @user, name: "Launch Candidates", kind: :named)
+
+    assert_equal "named", named_list.kind
+    assert_equal 1, named_list.position
+  end
+
+  test "kanban columns are positioned independently within each board" do
+    other_board = @user.kanban_boards.create!(name: "Validation")
+    first_column = @user.lists.create!(name: "Validation Backlog", kind: :kanban, kanban_board: other_board)
+
+    assert_equal 1, first_column.position
+  end
+
+  test "kanban columns default to the user's first board" do
+    other_user = User.create!(email: "board-owner@example.com", name: "Board Owner")
+    board = other_user.kanban_boards.create!(name: "Validation")
+    list = other_user.lists.create!(name: "Loose Column", kind: :kanban)
+
+    assert_equal board, list.kanban_board
+  end
+
+  test "ordered scope can be constrained by list kind" do
+    named_list = List.create!(user: @user, name: "Named List", kind: :named)
+
+    assert_includes @user.lists.named.ordered, named_list
+    assert_not_includes @user.lists.kanban.ordered, named_list
+  end
 end

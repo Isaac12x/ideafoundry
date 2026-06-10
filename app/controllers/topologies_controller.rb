@@ -9,7 +9,7 @@ class TopologiesController < ApplicationController
 
   def show
     @children = @topology.children.ordered
-    @ideas = @topology.ideas
+    @ideas = @topology.ideas.includes(:lists, :idea_lists, :topologies, :idea_entries)
   end
 
   def new
@@ -28,8 +28,8 @@ class TopologiesController < ApplicationController
     else
       @parent_options = @user.topologies.ordered
       respond_to do |format|
-        format.html { render :new, status: :unprocessable_entity }
-        format.json { render json: { errors: @topology.errors }, status: :unprocessable_entity }
+        format.html { render :new, status: :unprocessable_content }
+        format.json { render json: { errors: @topology.errors }, status: :unprocessable_content }
       end
     end
   end
@@ -40,8 +40,9 @@ class TopologiesController < ApplicationController
 
   def update
     if @topology.update(topology_params)
-      if params[:topology_overrides].present?
-        overrides = params[:topology_overrides].permit(*User::ALLOWED_TOPOLOGY_OVERRIDE_KEYS).to_h
+      raw_overrides = params[:topology_overrides].presence || params.dig(:topology, :topology_overrides)
+      if raw_overrides.present?
+        overrides = raw_overrides.permit(*User::ALLOWED_TOPOLOGY_OVERRIDE_KEYS).to_h
         overrides.reject! { |_, v| v.blank? }
         overrides.transform_values! do |v|
           case v
@@ -60,8 +61,8 @@ class TopologiesController < ApplicationController
     else
       @parent_options = @user.topologies.where.not(id: [@topology.id] + @topology.descendants.map(&:id)).ordered
       respond_to do |format|
-        format.html { render :edit, status: :unprocessable_entity }
-        format.json { render json: { errors: @topology.errors }, status: :unprocessable_entity }
+        format.html { render :edit, status: :unprocessable_content }
+        format.json { render json: { errors: @topology.errors }, status: :unprocessable_content }
       end
     end
   end

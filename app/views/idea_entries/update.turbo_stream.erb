@@ -1,0 +1,7 @@
+<%= turbo_stream.replace "idea_entry_#{@idea_entry.id}" do %>
+  <%= render "idea_entries/idea_entry", idea: @idea, idea_entry: @idea_entry %>
+<% end %>
+
+<%= turbo_stream.replace "idea_entry_summary_#{@idea.id}_#{@idea_entry.kind}" do %>
+  <%= render "idea_entries/card_summary", idea: @idea, kind: @idea_entry.kind, open: true %>
+<% end %>
