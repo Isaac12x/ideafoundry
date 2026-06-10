@@ -9,18 +9,12 @@
   </div>
 
   <div class="settings-list">
+    <div class="settings-group-label">Appearance</div>
+
     <%= link_to settings_display_path, class: "settings-row" do %>
       <div class="settings-row-info">
         <h3>Display</h3>
-        <p>Quote and contrast settings</p>
-      </div>
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
-    <% end %>
-
-    <%= link_to settings_scoring_path, class: "settings-row" do %>
-      <div class="settings-row-info">
-        <h3>Scoring System</h3>
-        <p>Configure how ideas are scored and weighted</p>
+        <p>Quote, contrast, and idea tab visibility</p>
       </div>
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
     <% end %>
@@ -41,50 +35,12 @@
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
     <% end %>
 
-    <%= link_to settings_email_path, class: "settings-row" do %>
-      <div class="settings-row-info">
-        <h3>Email Integration</h3>
-        <p>Configure recipients and sender settings for sharing ideas via email</p>
-      </div>
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
-    <% end %>
+    <div class="settings-group-label">Ideas</div>
 
-    <%= link_to settings_security_path, class: "settings-row" do %>
+    <%= link_to settings_scoring_path, class: "settings-row" do %>
       <div class="settings-row-info">
-        <h3>Security</h3>
-        <p>Manage fingerprint training, unlock timing, and app protection</p>
-      </div>
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
-    <% end %>
-
-    <%= link_to settings_idea_work_tokens_path, class: "settings-row" do %>
-      <div class="settings-row-info">
-        <h3>Idea Work Tokens</h3>
-        <p>Enable scoped agent access for individual idea documents</p>
-      </div>
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
-    <% end %>
-
-    <%= link_to settings_local_agent_path, class: "settings-row" do %>
-      <div class="settings-row-info">
-        <h3>AI Agents</h3>
-        <p>Run the continuous app-owned agent and review its recommendations</p>
-      </div>
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
-    <% end %>
-
-    <%= link_to settings_github_path, class: "settings-row" do %>
-      <div class="settings-row-info">
-        <h3>GitHub</h3>
-        <p>Store GitHub credentials for repository and release tracking</p>
-      </div>
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
-    <% end %>
-
-    <%= link_to settings_idea_tabs_path, class: "settings-row" do %>
-      <div class="settings-row-info">
-        <h3>Idea Tabs</h3>
-        <p>Choose which tabs (scores, tools, competitors, etc.) appear on each idea</p>
+        <h3>Scoring System</h3>
+        <p>Configure how ideas are scored and weighted</p>
       </div>
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
     <% end %>
@@ -97,10 +53,30 @@
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
     <% end %>
 
-    <%= link_to settings_exports_path, class: "settings-row" do %>
+    <div class="settings-group-label">AI</div>
+
+    <%= link_to settings_local_agent_path, class: "settings-row" do %>
       <div class="settings-row-info">
-        <h3>Export & Backup</h3>
-        <p>Export your workspace and manage backups</p>
+        <h3>AI Agents</h3>
+        <p>Run the continuous app-owned agent and review its recommendations</p>
+      </div>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+    <% end %>
+
+    <%= link_to settings_idea_work_tokens_path, class: "settings-row" do %>
+      <div class="settings-row-info">
+        <h3>Idea Work Tokens</h3>
+        <p>Enable scoped agent access for individual idea documents</p>
+      </div>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+    <% end %>
+
+    <div class="settings-group-label">Integrations</div>
+
+    <%= link_to settings_email_path, class: "settings-row" do %>
+      <div class="settings-row-info">
+        <h3>Email</h3>
+        <p>Configure recipients and sender settings for sharing ideas via email</p>
       </div>
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
     <% end %>
@@ -117,6 +93,26 @@
       <div class="settings-row-info">
         <h3>API Keys</h3>
         <p>Manage keys for programmatic idea submission</p>
+      </div>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+    <% end %>
+
+    <div class="settings-group-label">Data</div>
+
+    <%= link_to settings_exports_path, class: "settings-row" do %>
+      <div class="settings-row-info">
+        <h3>Export & Backup</h3>
+        <p>Export your workspace and manage backups</p>
+      </div>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+    <% end %>
+
+    <div class="settings-group-label">Security</div>
+
+    <%= link_to settings_security_path, class: "settings-row settings-row--last" do %>
+      <div class="settings-row-info">
+        <h3>Security</h3>
+        <p>Manage fingerprint training, unlock timing, and app protection</p>
       </div>
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
     <% end %>

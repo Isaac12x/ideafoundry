@@ -723,6 +723,42 @@
   margin-top: 0.15rem;
 }
 
+.scorecard-detail-panel {
+  margin-top: 1.25rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.scorecard-detail-panel__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.4rem;
+}
+
+.scorecard-detail-panel__header h3 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 1rem;
+}
+
+.scorecard-detail-panel__header span {
+  font-weight: 700;
+}
+
+.scorecard-detail-panel__threshold {
+  margin: 0 0 0.85rem;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.scorecard-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.85rem;
+}
+
 @media (max-width: 768px) {
   .idea-agent-access__header,
   .idea-agent-access__row,

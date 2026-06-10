@@ -57,6 +57,41 @@ class IdeaTest < ActiveSupport::TestCase
     assert_equal expected_score, @idea.computed_score
   end
 
+  test "calculates founder scorecard and blocks active work below threshold" do
+    template = Template.create!(
+      user: @user,
+      name: "Founder Scorecard #{SecureRandom.hex(4)}",
+      field_definitions: [],
+      section_order: [],
+      tab_definitions: [{ "name" => "general", "label" => "General", "position" => 0 }],
+      scoring_system_ids: [User::FOUNDER_SCORECARD_SYSTEM_ID]
+    )
+    low_scores = founder_scorecard_values(3)
+    idea = Idea.create!(
+      user: @user,
+      title: "Low scorecard idea",
+      template: template,
+      metadata: { Idea::SCORE_METADATA_KEY => { User::FOUNDER_SCORECARD_SYSTEM_ID => low_scores } }
+    )
+
+    assert_in_delta 6.0, idea.computed_score.to_f, 0.001
+    refute idea.kanban_eligible?
+    assert_match(/below 24\/35/, idea.kanban_ineligibility_message)
+    refute idea.transition_to_first_try!
+
+    high_scores = low_scores.merge(
+      "pain_intensity" => 4,
+      "buyer_clarity" => 4,
+      "distribution_access" => 4,
+      "speed_to_mvp" => 4
+    )
+    idea.update!(metadata: { Idea::SCORE_METADATA_KEY => { User::FOUNDER_SCORECARD_SYSTEM_ID => high_scores } })
+
+    assert_in_delta 7.14, idea.computed_score.to_f, 0.01
+    assert idea.kanban_eligible?
+    assert idea.transition_to_first_try!
+  end
+
   test "should have valid state enum" do
     Idea.states.each do |state, _|
       @idea.state = state
@@ -389,5 +424,13 @@ class IdeaTest < ActiveSupport::TestCase
     idea.destroy
     
     assert_equal version_count - 2, Version.count
+  end
+
+  private
+
+  def founder_scorecard_values(value)
+    User::DEFAULT_SCORING_SYSTEMS[User::FOUNDER_SCORECARD_SYSTEM_ID]["criteria"].each_with_object({}) do |criterion, values|
+      values[criterion["key"]] = value
+    end
   end
 end
