@@ -178,16 +178,16 @@ class SettingsController < ApplicationController
     recommendation = @user.agent_recommendations.pending.find(params[:id])
 
     if recommendation.approve!
-      redirect_to settings_local_agent_path, notice: "Recommendation applied."
+      redirect_to local_agent_recommendation_return_path, notice: "Recommendation applied."
     else
-      redirect_to settings_local_agent_path, alert: "Recommendation could not be applied."
+      redirect_to local_agent_recommendation_return_path, alert: "Recommendation could not be applied."
     end
   end
 
   def dismiss_local_agent_recommendation
     recommendation = @user.agent_recommendations.pending.find(params[:id])
     recommendation.dismiss!
-    redirect_to settings_local_agent_path, notice: "Recommendation dismissed."
+    redirect_to local_agent_recommendation_return_path, notice: "Recommendation dismissed."
   end
 
   def update_security
@@ -519,6 +519,18 @@ class SettingsController < ApplicationController
     @latest_agent_event = @user.agent_events.recent.first
     @pending_agent_recommendations = @user.agent_recommendations.pending.recent.limit(25)
     @recent_agent_events = @user.agent_events.recent.limit(20)
+  end
+
+  def local_agent_recommendation_return_path
+    raw_path = params[:return_to].to_s
+    return settings_local_agent_path if raw_path.blank?
+
+    uri = URI.parse(raw_path)
+    return settings_local_agent_path if uri.host.present? || uri.scheme.present? || !raw_path.start_with?("/")
+
+    raw_path
+  rescue URI::InvalidURIError
+    settings_local_agent_path
   end
 
   def load_database_encryption_status

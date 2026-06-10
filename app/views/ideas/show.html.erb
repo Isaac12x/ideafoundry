@@ -122,6 +122,8 @@
     </div>
   <% end %>
 
+  <%= render "agent_recommendations", idea: @idea, recommendations: @inline_agent_recommendations %>
+
   <!-- Hero Image + Scores At-a-Glance -->
   <% hero_drawing = @idea.hero_drawing %>
   <% has_hero = @idea.hero_image.attached? || (hero_drawing && hero_drawing.rendered_png.attached?) %>
