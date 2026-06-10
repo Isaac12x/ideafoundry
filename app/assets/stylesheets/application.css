@@ -262,29 +262,23 @@ a:hover { color: var(--accent-hover); }
   display: block;
   width: 45px;
   height: 45px;
+  transform: translateY(0) rotateX(16deg) rotateY(-8deg) rotateZ(-3deg) scale(1);
   transform-style: preserve-3d;
+  transition: opacity 0.2s ease, transform 0.2s ease;
   z-index: 1;
+  animation: ask-agent-invention-drift 4.8s ease-in-out infinite;
+}
+
+.ask-agent-launcher__invention.is-swapping {
+  opacity: 0;
+  transform: translateY(4px) rotateX(18deg) rotateY(-12deg) scale(0.86);
 }
 
 .ask-agent-invention {
-  position: absolute;
-  inset: 0;
   display: block;
   width: 100%;
   height: 100%;
-  opacity: 0;
   filter: drop-shadow(0 10px 9px rgba(0, 0, 0, 0.38));
-  transform: translateY(4px) rotateX(18deg) rotateY(-12deg) scale(0.78);
-  transition: opacity 0.42s ease, transform 0.42s cubic-bezier(0.22, 1, 0.36, 1), filter 0.18s ease;
-}
-
-.ask-agent-launcher[data-invention="bulb"] .ask-agent-invention--bulb,
-.ask-agent-launcher[data-invention="engine"] .ask-agent-invention--engine,
-.ask-agent-launcher[data-invention="magnet"] .ask-agent-invention--magnet,
-.ask-agent-launcher[data-invention="gyro"] .ask-agent-invention--gyro {
-  opacity: 1;
-  transform: translateY(0) rotateX(16deg) rotateY(-8deg) rotateZ(-3deg) scale(1);
-  animation: ask-agent-invention-drift 4.8s ease-in-out infinite;
 }
 
 .ask-agent-launcher[data-invention="engine"] {
@@ -354,14 +348,11 @@ a:hover { color: var(--accent-hover); }
 
 @media (prefers-reduced-motion: reduce) {
   .ask-agent-launcher::after,
-  .ask-agent-launcher[data-invention="bulb"] .ask-agent-invention--bulb,
-  .ask-agent-launcher[data-invention="engine"] .ask-agent-invention--engine,
-  .ask-agent-launcher[data-invention="magnet"] .ask-agent-invention--magnet,
-  .ask-agent-launcher[data-invention="gyro"] .ask-agent-invention--gyro {
+  .ask-agent-launcher__invention {
     animation: none;
   }
 
-  .ask-agent-invention {
+  .ask-agent-launcher__invention {
     transition: opacity 0.2s ease;
   }
 }

@@ -292,6 +292,9 @@
         <!-- Scores Tab -->
         <% if @user.idea_tab_enabled?('scores') %>
         <div data-tabs-target="panel" data-tab-panel="scores" class="tab-panel hidden">
+          <% idea_scoring_systems = @idea.active_scoring_systems %>
+          <% legacy_scoring_system = idea_scoring_systems.find { |system| system['kind'] == 'legacy_weighted' } %>
+          <% scorecard_breakdowns = idea_scoring_systems.select { |system| system['kind'] == 'criterion_scorecard' }.map { |system| @idea.scoring_breakdown_for(system) } %>
           <div class="idea-metrics-row">
             <div class="metric-card metric-card-score">
               <span class="metric-card-label">Computed Score</span>
@@ -299,44 +302,76 @@
                 <%= number_with_precision(@idea.computed_score || 0, precision: 2) %>
               </span>
             </div>
-            <div class="metric-card">
-              <span class="metric-card-label">TRL</span>
-              <span class="metric-card-value trl-color"><%= @idea.trl || 0 %></span>
-              <div class="metric-card-bar">
-                <div class="metric-card-bar-fill trl" style="width: <%= (@idea.trl || 0) * 10 %>%"></div>
+            <% if legacy_scoring_system %>
+              <div class="metric-card">
+                <span class="metric-card-label">TRL</span>
+                <span class="metric-card-value trl-color"><%= @idea.trl || 0 %></span>
+                <div class="metric-card-bar">
+                  <div class="metric-card-bar-fill trl" style="width: <%= (@idea.trl || 0) * 10 %>%"></div>
+                </div>
               </div>
-            </div>
-            <div class="metric-card">
-              <span class="metric-card-label">Opportunity</span>
-              <span class="metric-card-value opportunity-color"><%= @idea.opportunity || 0 %></span>
-              <div class="metric-card-bar">
-                <div class="metric-card-bar-fill opportunity" style="width: <%= (@idea.opportunity || 0) * 10 %>%"></div>
+              <div class="metric-card">
+                <span class="metric-card-label">Opportunity</span>
+                <span class="metric-card-value opportunity-color"><%= @idea.opportunity || 0 %></span>
+                <div class="metric-card-bar">
+                  <div class="metric-card-bar-fill opportunity" style="width: <%= (@idea.opportunity || 0) * 10 %>%"></div>
+                </div>
+                <% if @idea.opportunity_explanation.present? %>
+                  <p class="score-explanation-display"><%= @idea.opportunity_explanation %></p>
+                <% end %>
               </div>
-              <% if @idea.opportunity_explanation.present? %>
-                <p class="score-explanation-display"><%= @idea.opportunity_explanation %></p>
-              <% end %>
-            </div>
-            <div class="metric-card">
-              <span class="metric-card-label">Timing</span>
-              <span class="metric-card-value timing-color"><%= @idea.timing || 0 %></span>
-              <div class="metric-card-bar">
-                <div class="metric-card-bar-fill timing" style="width: <%= (@idea.timing || 0) * 10 %>%"></div>
+              <div class="metric-card">
+                <span class="metric-card-label">Timing</span>
+                <span class="metric-card-value timing-color"><%= @idea.timing || 0 %></span>
+                <div class="metric-card-bar">
+                  <div class="metric-card-bar-fill timing" style="width: <%= (@idea.timing || 0) * 10 %>%"></div>
+                </div>
+                <% if @idea.timing_explanation.present? %>
+                  <p class="score-explanation-display"><%= @idea.timing_explanation %></p>
+                <% end %>
               </div>
-              <% if @idea.timing_explanation.present? %>
-                <p class="score-explanation-display"><%= @idea.timing_explanation %></p>
-              <% end %>
-            </div>
-            <div class="metric-card">
-              <span class="metric-card-label">Difficulty</span>
-              <span class="metric-card-value difficulty-color"><%= @idea.difficulty || 0 %></span>
-              <div class="metric-card-bar">
-                <div class="metric-card-bar-fill difficulty" style="width: <%= (@idea.difficulty || 0) * 10 %>%"></div>
+              <div class="metric-card">
+                <span class="metric-card-label">Difficulty</span>
+                <span class="metric-card-value difficulty-color"><%= @idea.difficulty || 0 %></span>
+                <div class="metric-card-bar">
+                  <div class="metric-card-bar-fill difficulty" style="width: <%= (@idea.difficulty || 0) * 10 %>%"></div>
+                </div>
+                <% if @idea.difficulty_explanation.present? %>
+                  <p class="score-explanation-display"><%= @idea.difficulty_explanation %></p>
+                <% end %>
               </div>
-              <% if @idea.difficulty_explanation.present? %>
-                <p class="score-explanation-display"><%= @idea.difficulty_explanation %></p>
-              <% end %>
-            </div>
+            <% end %>
           </div>
+
+          <% scorecard_breakdowns.each do |breakdown| %>
+            <div class="scorecard-detail-panel">
+              <div class="scorecard-detail-panel__header">
+                <h3><%= breakdown[:name] %></h3>
+                <span class="<%= breakdown[:eligible_for_work] ? 'positive' : 'negative' %>">
+                  <%= breakdown[:total] %>/<%= breakdown[:max_total] %>
+                  (<%= number_with_precision(breakdown[:normalized], precision: 2) %>/10)
+                </span>
+              </div>
+              <% if breakdown[:blocks_work] %>
+                <p class="scorecard-detail-panel__threshold">
+                  Work threshold: <%= number_with_precision(breakdown[:work_threshold_total], precision: 0) %>/<%= breakdown[:max_total] %>
+                  (<%= number_with_precision(breakdown[:work_threshold_normalized], precision: 2) %>/10)
+                </p>
+              <% end %>
+              <div class="scorecard-detail-grid">
+                <% breakdown[:criteria].each do |criterion| %>
+                  <% value = breakdown[:values][criterion['key']] %>
+                  <div class="metric-card">
+                    <span class="metric-card-label"><%= criterion['label'] %></span>
+                    <span class="metric-card-value"><%= value %></span>
+                    <div class="metric-card-bar">
+                      <div class="metric-card-bar-fill" style="width: <%= value.to_f / breakdown[:scale_max] * 100 %>%"></div>
+                    </div>
+                  </div>
+                <% end %>
+              </div>
+            </div>
+          <% end %>
         </div>
 
         <% end %>
