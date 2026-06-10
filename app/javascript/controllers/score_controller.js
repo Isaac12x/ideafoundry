@@ -44,29 +44,31 @@ export default class extends Controller {
   }
 
   updateTrl() {
-    this.trlValueTarget.textContent = this.trlSliderTarget.value;
+    if (this.hasTrlValueTarget) this.trlValueTarget.textContent = this.trlSliderTarget.value;
     this.updateProgressBar("trl", this.trlSliderTarget.value);
     this.calculateScore();
     this.debouncedSave();
   }
 
   updateDifficulty() {
-    this.difficultyValueTarget.textContent = this.difficultySliderTarget.value;
+    if (this.hasDifficultyValueTarget) this.difficultyValueTarget.textContent = this.difficultySliderTarget.value;
     this.updateProgressBar("difficulty", this.difficultySliderTarget.value);
     this.calculateScore();
     this.debouncedSave();
   }
 
   updateOpportunity() {
-    this.opportunityValueTarget.textContent =
-      this.opportunitySliderTarget.value;
+    if (this.hasOpportunityValueTarget) {
+      this.opportunityValueTarget.textContent =
+        this.opportunitySliderTarget.value;
+    }
     this.updateProgressBar("opportunity", this.opportunitySliderTarget.value);
     this.calculateScore();
     this.debouncedSave();
   }
 
   updateTiming() {
-    this.timingValueTarget.textContent = this.timingSliderTarget.value;
+    if (this.hasTimingValueTarget) this.timingValueTarget.textContent = this.timingSliderTarget.value;
     this.updateProgressBar("timing", this.timingSliderTarget.value);
     this.calculateScore();
     this.debouncedSave();
@@ -74,21 +76,25 @@ export default class extends Controller {
 
   updateAllValues() {
     if (this.hasTrlSliderTarget) {
-      this.trlValueTarget.textContent = this.trlSliderTarget.value;
+      if (this.hasTrlValueTarget) this.trlValueTarget.textContent = this.trlSliderTarget.value;
       this.updateProgressBar("trl", this.trlSliderTarget.value);
     }
     if (this.hasDifficultySliderTarget) {
-      this.difficultyValueTarget.textContent =
-        this.difficultySliderTarget.value;
+      if (this.hasDifficultyValueTarget) {
+        this.difficultyValueTarget.textContent =
+          this.difficultySliderTarget.value;
+      }
       this.updateProgressBar("difficulty", this.difficultySliderTarget.value);
     }
     if (this.hasOpportunitySliderTarget) {
-      this.opportunityValueTarget.textContent =
-        this.opportunitySliderTarget.value;
+      if (this.hasOpportunityValueTarget) {
+        this.opportunityValueTarget.textContent =
+          this.opportunitySliderTarget.value;
+      }
       this.updateProgressBar("opportunity", this.opportunitySliderTarget.value);
     }
     if (this.hasTimingSliderTarget) {
-      this.timingValueTarget.textContent = this.timingSliderTarget.value;
+      if (this.hasTimingValueTarget) this.timingValueTarget.textContent = this.timingSliderTarget.value;
       this.updateProgressBar("timing", this.timingSliderTarget.value);
     }
   }

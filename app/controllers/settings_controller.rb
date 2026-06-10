@@ -2,20 +2,21 @@ class SettingsController < ApplicationController
   before_action :set_user
 
   def index
-    @display_quote = @user.display_quote
+    @display_quote = @user.custom_display_quote
     @display_contrast = @user.display_contrast
   end
 
   def display
-    @display_quote = @user.display_quote
+    @display_quote = @user.custom_display_quote
     @display_contrast = @user.display_contrast
+    @idea_tab_settings = @user.idea_tab_settings
   end
 
   def update_display
     if @user.update_display_quote(display_settings_params)
       redirect_to settings_display_path, notice: 'Display settings updated.'
     else
-      @display_quote = @user.display_quote
+      @display_quote = @user.custom_display_quote
       @display_contrast = @user.display_contrast
       flash.now[:alert] = 'Failed to update display settings.'
       render :display, status: :unprocessable_content
@@ -23,7 +24,7 @@ class SettingsController < ApplicationController
   end
 
   def scoring
-    # Scoring configuration page
+    @scoring_systems = @user.available_scoring_systems
   end
 
   def update_scoring
@@ -32,6 +33,7 @@ class SettingsController < ApplicationController
     # Validate weights are numeric and within reasonable bounds
     if valid_scoring_weights?(weights)
       @user.update_scoring_weights(weights)
+      @user.update_scoring_systems(scoring_system_params) if params.key?(:scoring_systems)
       
       # Recalculate all idea scores with new weights
       recalculate_all_scores
@@ -47,6 +49,7 @@ class SettingsController < ApplicationController
         }
       end
     else
+      @scoring_systems = @user.available_scoring_systems
       respond_to do |format|
         format.html { 
           flash.now[:alert] = 'Invalid scoring weights. Please ensure all values are numbers between -1 and 1.'
@@ -67,7 +70,8 @@ class SettingsController < ApplicationController
       format.json {
         render json: {
           weights: @user.scoring_weights,
-          formula: @user.scoring_formula_display
+          formula: @user.scoring_formula_display,
+          scoring_systems: @user.available_scoring_systems
         }
       }
     end
@@ -590,6 +594,10 @@ class SettingsController < ApplicationController
 
   def scoring_params
     params.require(:scoring_weights).permit(:trl, :difficulty, :opportunity, :timing)
+  end
+
+  def scoring_system_params
+    params.fetch(:scoring_systems, {}).permit!
   end
 
   def email_params

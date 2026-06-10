@@ -30,7 +30,30 @@ class SettingsControllerTest < ActionDispatch::IntegrationTest
     assert_select "a[href=?]", settings_local_agent_path
   end
 
-  test "layout renders global ask agent form" do
+  test "layout hides global ask agent form when local agent is disabled" do
+    @user.update_local_agent_settings("enabled" => "0")
+
+    get ideas_path
+
+    assert_response :success
+    assert_select ".ask-agent-shell", count: 0
+    assert_no_match(/Open Ask Agent/, response.body)
+  end
+
+  test "layout hides global ask agent form when local agent is enabled but not live" do
+    @user.update_local_agent_settings("enabled" => "1")
+
+    get ideas_path
+
+    assert_response :success
+    assert_select ".ask-agent-shell", count: 0
+    assert_no_match(/Open Ask Agent/, response.body)
+  end
+
+  test "layout renders global ask agent form when local agent is live" do
+    @user.update_local_agent_settings("enabled" => "1")
+    create_live_local_agent_run
+
     get ideas_path
 
     assert_response :success
@@ -39,6 +62,7 @@ class SettingsControllerTest < ActionDispatch::IntegrationTest
     assert_select ".ask-agent-shell textarea[name=?]", "agent_question[body]"
     assert_select ".ask-agent-shell input[name=?][value=?]", "return_to", "#{ideas_path}?ask_agent=open"
     assert_select ".ask-agent-launcher[aria-controls=?]", "ask_agent_sidebar"
+    assert_select ".ask-agent-launcher__invention .ask-agent-invention--bulb", count: 1
     assert_select ".ask-agent-sidebar[role=?]", "dialog"
   end
 
@@ -50,6 +74,20 @@ class SettingsControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_select "textarea[name=?]", "display_settings[quote]" do |elements|
       assert_equal "Focus on the next useful thing.", elements.first.text
+    end
+  end
+
+  test "GET settings/display renders default quote banner with empty custom quote field" do
+    @user.update!(settings: (@user.settings || {}).except("display_quote"))
+
+    get settings_display_path
+
+    assert_response :success
+    assert_select "body > header.app-header ~ div.app-quote-banner .app-quote-banner__text", text: /Your mind is for having ideas/
+    assert_select "body > header.app-header ~ div.app-quote-banner .app-quote-banner__text", text: /David Allen/
+    assert_select "textarea[name=?]", "display_settings[quote]" do |elements|
+      assert_equal "", elements.first.text
+      assert_includes elements.first["placeholder"], "Your mind is for having ideas"
     end
   end
 
@@ -347,8 +385,9 @@ class SettingsControllerTest < ActionDispatch::IntegrationTest
     assert_select "form[action=?]", settings_local_agent_run_now_path
   end
 
-  test "GET settings/ai-agents omits the local question form when local agent is enabled" do
+  test "GET settings/ai-agents omits the local question form when local agent is live" do
     @user.update_local_agent_settings("enabled" => "1")
+    create_live_local_agent_run
 
     get settings_local_agent_path
 
@@ -365,7 +404,7 @@ class SettingsControllerTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_select ".local-agent-questions", count: 0
-    assert_select ".ask-agent-shell form[action=?]", settings_local_agent_questions_path, count: 1
+    assert_select ".ask-agent-shell", count: 0
   end
 
   test "POST settings/ai-agents/questions queues a local agent question" do
@@ -654,6 +693,14 @@ class SettingsControllerTest < ActionDispatch::IntegrationTest
   end
 
   private
+
+  def create_live_local_agent_run
+    @user.agent_runs.create!(
+      status: :running,
+      started_at: 1.minute.ago,
+      last_heartbeat_at: Time.current
+    )
+  end
 
   def create_plaintext_sqlite_database(path)
     db = SQLite3::Database.new(path.to_s)

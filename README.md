@@ -49,7 +49,7 @@ One command — installs all dependencies, configures the LaunchAgent, and start
 git clone <repo-url> idea-app && cd idea-app && bin/install
 ```
 
-This handles: Homebrew, rbenv, Ruby 3.4.5, Node.js, Caddy, gems, npm deps, DB setup, asset precompilation, `/etc/hosts` entry, Apache httpd disable, and LaunchAgent registration. Requires `sudo` for hosts file and httpd changes.
+This handles: Homebrew, rbenv, Ruby 3.4.5, Node.js, Caddy, gems, npm deps, DB setup, asset precompilation, `/etc/hosts` entry, Apache httpd disable, and LaunchAgent registration. On startup, the LaunchAgent also starts the Docker/Podman Compose sidecar services when a container runtime is available. Requires `sudo` for hosts file and httpd changes.
 
 Once running: **https://ideas.local:8443**
 
