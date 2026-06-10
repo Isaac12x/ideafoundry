@@ -40,6 +40,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Batch imports now discover local Apple Notes databases directly, preview folders and individual notes, and route cloud note apps through OAuth-oriented connection flows.
 - Local attachment OCR now uses Surya with block HTML metadata while preserving complete extracted text for saving.
 - Idea creation no longer asks for Kanban board or named-list placement; placement remains available after the idea exists.
 - Updated the app to resolve Rails 8.1.3 and Puma 8, with Rails 8.1 local CI and framework-default upgrade prep.
@@ -58,6 +59,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Local HTTPS access through `ideas.local:8443` is allowed by Rails host authorization.
+- Batch import export uploads are available again for note apps without OAuth support, and individual note selections no longer override folder selections.
 - Ask Agent now only renders while the local agent is enabled and live, and its launcher icon changes at most once per day.
 - Local agent harness probes to `/local-agent/tools` now receive JSON tool discovery instead of falling through to the app catch-all.
 - Resend inbound email setup now uses the mounted `/rails/action_mailbox/resend/inbound_emails` webhook route.
