@@ -1,0 +1,121 @@
+<% recommendations = Array(local_assigns.fetch(:recommendations, [])) %>
+<% return_to = idea_path(idea, anchor: "agent-suggestions") %>
+
+<% if recommendations.any? %>
+  <section class="agent-suggestions" id="agent-suggestions" aria-label="AI suggestions">
+    <div class="agent-suggestions__header">
+      <span class="agent-suggestions__kicker">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+          <path d="M12 3a6 6 0 0 1 6 6v1a6 6 0 0 1-12 0V9a6 6 0 0 1 6-6Z"/>
+          <path d="M8 15v1a4 4 0 0 0 8 0v-1"/>
+          <path d="M9 9h.01M15 9h.01M10 12h4"/>
+        </svg>
+        Agent hints
+      </span>
+      <span class="agent-suggestions__count"><%= pluralize(recommendations.size, "suggestion") %></span>
+    </div>
+
+    <div class="agent-suggestions__list">
+      <% recommendations.each do |recommendation| %>
+        <% changes = agent_recommendation_field_changes(recommendation, idea) %>
+        <% additions = agent_recommendation_additions(recommendation) %>
+        <% files = agent_recommendation_file_additions(recommendation) %>
+        <% preview_count = changes.size + additions.size + files.size %>
+
+        <article class="agent-suggestion" data-agent-recommendation-id="<%= recommendation.id %>">
+          <div class="agent-suggestion__body">
+            <div class="agent-suggestion__mark" aria-hidden="true"></div>
+            <div class="agent-suggestion__copy">
+              <div class="agent-suggestion__meta">
+                <span><%= recommendation.risk_level.humanize %> risk</span>
+                <time><%= time_ago_in_words(recommendation.created_at) %> ago</time>
+              </div>
+              <h3><%= agent_recommendation_title(recommendation) %></h3>
+              <p><%= recommendation.reasoning.presence || "The local agent has a suggestion ready for review." %></p>
+            </div>
+            <div class="agent-suggestion__actions">
+              <%= button_to settings_local_agent_recommendation_approve_path(recommendation),
+                    method: :post,
+                    params: { return_to: return_to },
+                    class: "agent-suggestion__action agent-suggestion__action--primary",
+                    data: (recommendation.risk_level == "high" ? { turbo_confirm: "Apply this high-risk recommendation?" } : {}) do %>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                  <path d="M20 6 9 17l-5-5"/>
+                </svg>
+                Apply
+              <% end %>
+
+              <%= button_to settings_local_agent_recommendation_dismiss_path(recommendation),
+                    method: :post,
+                    params: { return_to: return_to },
+                    class: "agent-suggestion__action" do %>
+                Dismiss
+              <% end %>
+            </div>
+          </div>
+
+          <details class="agent-suggestion__preview">
+            <summary>
+              <span>Review proposed content</span>
+              <strong><%= preview_count.positive? ? pluralize(preview_count, "item") : "Action payload" %></strong>
+            </summary>
+
+            <div class="agent-suggestion__preview-body">
+              <% if changes.any? %>
+                <% changes.each do |change| %>
+                  <section class="agent-diff agent-diff--<%= change[:field] %>">
+                    <div class="agent-diff__header">
+                      <h4><%= change[:label] %></h4>
+                      <span>Current -> proposed</span>
+                    </div>
+                    <div class="agent-diff__lines" role="table" aria-label="<%= change[:label] %> diff">
+                      <% agent_recommendation_line_diff(change[:from], change[:to]).each do |line| %>
+                        <% marker = line[:kind] == "insert" ? "+" : (line[:kind] == "delete" ? "-" : " ") %>
+                        <div class="agent-diff__line agent-diff__line--<%= line[:kind] %>" role="row">
+                          <span class="agent-diff__gutter"><%= line[:old_number] %></span>
+                          <span class="agent-diff__gutter"><%= line[:new_number] %></span>
+                          <span class="agent-diff__marker"><%= marker %></span>
+                          <code><%= line[:text].presence || " " %></code>
+                        </div>
+                      <% end %>
+                    </div>
+                  </section>
+                <% end %>
+              <% end %>
+
+              <% additions.each do |addition| %>
+                <details class="agent-addition">
+                  <summary>
+                    <span><%= addition[:label] %></span>
+                    <strong><%= addition[:title] %></strong>
+                  </summary>
+                  <pre><%= addition[:body] %></pre>
+                </details>
+              <% end %>
+
+              <% files.each do |file| %>
+                <details class="agent-addition agent-addition--file">
+                  <summary>
+                    <span>File</span>
+                    <strong><%= file[:path] %></strong>
+                  </summary>
+                  <pre><%= file[:content] %></pre>
+                </details>
+              <% end %>
+
+              <% if preview_count.zero? %>
+                <details class="agent-addition" open>
+                  <summary>
+                    <span>Payload</span>
+                    <strong><%= recommendation.action.humanize %></strong>
+                  </summary>
+                  <pre><%= JSON.pretty_generate(agent_recommendation_preview_payload(recommendation)) %></pre>
+                </details>
+              <% end %>
+            </div>
+          </details>
+        </article>
+      <% end %>
+    </div>
+  </section>
+<% end %>
