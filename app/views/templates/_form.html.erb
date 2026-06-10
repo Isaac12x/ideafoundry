@@ -25,6 +25,30 @@
           <label for="template_is_default">Set as default template</label>
         </div>
         <span class="form-text">New ideas will automatically use this template</span>
+
+        <% scoring_systems = @scoring_systems || template.user&.available_scoring_systems || [] %>
+        <% selected_scoring_system_ids = template.enabled_scoring_system_ids %>
+        <% if scoring_systems.any? %>
+          <div class="template-scoring-picker">
+            <label class="weight-label">Scoring systems</label>
+            <span class="form-text">Select one or more scoring systems for ideas that use this template.</span>
+            <%= hidden_field_tag "template[scoring_system_ids][]", "" %>
+            <div class="template-scoring-picker__list">
+              <% scoring_systems.each do |system| %>
+                <label class="template-scoring-picker__item" for="template_scoring_system_<%= system['id'] %>">
+                  <%= check_box_tag "template[scoring_system_ids][]",
+                                    system['id'],
+                                    selected_scoring_system_ids.include?(system['id']),
+                                    id: "template_scoring_system_#{system['id']}" %>
+                  <span>
+                    <strong><%= system['name'] %></strong>
+                    <small><%= system['description'] %></small>
+                  </span>
+                </label>
+              <% end %>
+            </div>
+          </div>
+        <% end %>
       </div>
 
       <div class="tpl-form__section">
@@ -184,6 +208,7 @@
             <option value="select">Select</option>
             <option value="boolean">Boolean</option>
             <option value="date">Date</option>
+            <option value="url">URL</option>
           </select>
         </div>
         <div class="form-group">
@@ -260,6 +285,44 @@
     font-weight: 400;
     font-size: 0.9rem;
     color: var(--text-primary);
+  }
+
+  .template-scoring-picker {
+    margin-top: 1rem;
+    display: grid;
+    gap: 0.6rem;
+  }
+
+  .template-scoring-picker__list {
+    display: grid;
+    gap: 0.55rem;
+  }
+
+  .template-scoring-picker__item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.65rem;
+    padding: 0.75rem;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    background: var(--bg-input);
+    cursor: pointer;
+  }
+
+  .template-scoring-picker__item input {
+    margin-top: 0.2rem;
+    accent-color: var(--accent);
+  }
+
+  .template-scoring-picker__item strong,
+  .template-scoring-picker__item small {
+    display: block;
+  }
+
+  .template-scoring-picker__item small {
+    margin-top: 0.2rem;
+    color: var(--text-muted);
+    line-height: 1.4;
   }
 
   /* Section order sortable */

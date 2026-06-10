@@ -1,0 +1,53 @@
+<div class="submission-detail-container submission-import-container">
+  <div class="submission-header">
+    <div class="submission-header-top">
+      <%= link_to submissions_path, class: "btn btn-sm" do %>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        Back
+      <% end %>
+    </div>
+
+    <div class="submission-header-content">
+      <h1 class="submission-detail-title">Batch Import</h1>
+      <div class="submission-header-meta">
+        <span class="submission-timestamp">Apple Notes, Notion, Google Keep, and Evernote</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="submission-import-panel">
+    <%= form_with url: preview_submission_import_path, method: :post, multipart: true, class: "submission-import-form" do %>
+      <div class="form-group">
+        <%= label_tag :source, "Source app" %>
+        <%= select_tag :source,
+                       options_for_select(@source_options.map { |value, label| [label, value] }),
+                       class: "form-control" %>
+      </div>
+
+      <div class="submission-import-upload-grid">
+        <div class="form-group">
+          <%= label_tag :import_files, "Export files" %>
+          <%= file_field_tag "files[]",
+                             multiple: true,
+                             id: "import_files",
+                             class: "form-control",
+                             accept: ".enex,.htm,.html,.json,.markdown,.md,.txt,.zip" %>
+        </div>
+
+        <div class="form-group">
+          <%= label_tag :import_folder_files, "Export folder" %>
+          <%= file_field_tag "files[]",
+                             multiple: true,
+                             id: "import_folder_files",
+                             class: "form-control",
+                             webkitdirectory: true,
+                             directory: true %>
+        </div>
+      </div>
+
+      <div class="submission-import-actions">
+        <%= submit_tag "Preview Import", class: "btn btn-primary" %>
+      </div>
+    <% end %>
+  </div>
+</div>

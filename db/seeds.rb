@@ -8,14 +8,21 @@ user = User.find_or_create_by!(email: 'user@example.com') do |u|
 end
 
 # Create some lists
+board = user.default_kanban_board
 backlog = user.lists.find_or_create_by!(name: 'Backlog') do |l|
-  l.position = user.lists.maximum(:position).to_i + 1
+  l.kind = "kanban"
+  l.kanban_board = board
+  l.position = board.lists.maximum(:position).to_i + 1
 end
 in_progress = user.lists.find_or_create_by!(name: 'In Progress') do |l|
-  l.position = user.lists.maximum(:position).to_i + 1
+  l.kind = "kanban"
+  l.kanban_board = board
+  l.position = board.lists.maximum(:position).to_i + 1
 end
 done = user.lists.find_or_create_by!(name: 'Done') do |l|
-  l.position = user.lists.maximum(:position).to_i + 1
+  l.kind = "kanban"
+  l.kanban_board = board
+  l.position = board.lists.maximum(:position).to_i + 1
 end
 
 # Create some sample ideas

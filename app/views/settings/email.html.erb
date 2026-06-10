@@ -1,3 +1,4 @@
+<%= render 'settings/upgrade_bar' %>
 <div class="settings-container">
   <div class="page-header">
     <h2>Email Settings</h2>
@@ -73,7 +74,7 @@
               Choose which events trigger email notifications. Emails are sent to the recipients configured above.
             </p>
 
-            <%= form_with url: settings_notifications_path, method: :patch, local: true do |f| %>
+            <%= form_with url: settings_notifications_path, method: :patch, local: true, data: { controller: "settings-autosave" } do |f| %>
               <div class="email-trigger-list">
                 <% User::ALLOWED_NOTIFICATION_TRIGGERS.each do |trigger| %>
                   <div class="email-trigger-item">
@@ -82,7 +83,8 @@
                            value="<%= trigger %>"
                            id="trigger_<%= trigger %>"
                            <%= 'checked' if @notification_triggers.include?(trigger) %>
-                           class="email-checkbox">
+                           class="email-checkbox"
+                           data-action="change->settings-autosave#toggleChanged">
                     <label for="trigger_<%= trigger %>" class="email-trigger-label">
                       <%= trigger.humanize %>
                     </label>
@@ -120,7 +122,8 @@
                                name="notification_content[<%= evt %>][include_scores]"
                                value="true"
                                <%= 'checked' if (@notification_content.dig(evt, 'include_scores') != false) %>
-                               class="email-checkbox">
+                               class="email-checkbox"
+                               data-action="change->settings-autosave#toggleChanged">
                         Scores
                       </label>
                       <label class="email-event-toggle">
@@ -129,7 +132,8 @@
                                name="notification_content[<%= evt %>][include_description]"
                                value="true"
                                <%= 'checked' if (@notification_content.dig(evt, 'include_description') != false) %>
-                               class="email-checkbox">
+                               class="email-checkbox"
+                               data-action="change->settings-autosave#toggleChanged">
                         Description
                       </label>
                       <% if evt == "webhook_triggered" %>
@@ -139,7 +143,8 @@
                                  name="notification_content[<%= evt %>][include_external_content]"
                                  value="true"
                                  <%= 'checked' if (@notification_content.dig(evt, 'include_external_content') != false) %>
-                                 class="email-checkbox">
+                                 class="email-checkbox"
+                                 data-action="change->settings-autosave#toggleChanged">
                           External content
                         </label>
                       <% end %>
@@ -179,7 +184,7 @@
         <p>For local development, expose the Action Mailbox ingress with:</p>
         <p class="email-mono-block">ngrok http 3333</p>
         <p>Then point your email provider's inbound webhook to:</p>
-        <p class="email-mono-block">&lt;ngrok-url&gt;/rails/action_mailbox/ingresses/relay/inbound_emails</p>
+        <p class="email-mono-block">&lt;ngrok-url&gt;/rails/action_mailbox/resend/inbound_emails</p>
         <ul>
           <li>Subject becomes the idea title</li>
           <li>Include <code>[IDEA-ID]</code> in subject to append to existing idea</li>
@@ -202,7 +207,7 @@
 
       <div class="config-info-card">
         <h4>Webhook Setup</h4>
-        <p>External services can create ideas or trigger notifications via:</p>
+        <p>External services can add to intake or trigger notifications via:</p>
         <p class="email-mono-block">POST /webhooks/external</p>
         <p>For local development:</p>
         <p class="email-mono-block">ngrok http 3333</p>
@@ -210,7 +215,8 @@
         <p class="email-mono-block">&lt;ngrok-url&gt;/webhooks/external</p>
         <p>Authenticate with a <code>Bearer</code> token set in <code>credentials.yml</code> under <code>external_webhook.token</code>.</p>
         <ul>
-          <li><code>event: "create_idea"</code> creates a new idea</li>
+          <li><code>event: "create_idea"</code> creates a pending intake submission and returns <code>temporary_idea_id</code></li>
+          <li>Send that <code>temporary_idea_id</code> back on later messages to append more chat context to the same intake item</li>
           <li>Other events update an existing idea via <code>payload.idea_id</code></li>
           <li>Include <code>content</code> for extra context</li>
         </ul>

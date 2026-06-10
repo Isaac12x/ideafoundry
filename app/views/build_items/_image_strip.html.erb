@@ -1,0 +1,9 @@
+<% if build_item.images.attached? %>
+  <div class="backlog-image-strip">
+    <% build_item.images.each do |image| %>
+      <%= link_to rails_blob_path(image, disposition: "inline"), target: "_blank", rel: "noopener", class: "backlog-image-link", title: image.filename.to_s do %>
+        <%= image_tag image, class: "backlog-image-thumb", alt: image.filename.to_s %>
+      <% end %>
+    <% end %>
+  </div>
+<% end %>

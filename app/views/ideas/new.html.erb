@@ -4,7 +4,20 @@
     <p class="form-container-subtitle">Capture and score a new concept</p>
   </div>
 
-  <%= form_with model: @idea, local: true do |form| %>
-    <%= render 'form', form: form, idea: @idea, lists: @lists, topologies: @topologies %>
+  <% draft_storage_key = "idea-draft:v1:user-#{@user.id}" %>
+  <%= form_with model: @idea,
+        local: true,
+        data: {
+          controller: "idea-draft-persist",
+          action: "input->idea-draft-persist#queueSave change->idea-draft-persist#queueSave submit->idea-draft-persist#submit",
+          idea_draft_persist_enabled_value: true,
+          idea_draft_persist_storage_key_value: draft_storage_key,
+          idea_draft_persist_unlock_seed_value: @user.idea_draft_unlock_seed,
+          idea_draft_persist_prompt_delay_value: 6000
+        } do |form| %>
+    <%= render 'form', form: form, idea: @idea, lists: @lists, kanban_boards: @kanban_boards, named_lists: @named_lists, topologies: @topologies %>
   <% end %>
 </div>
+
+<%= stylesheet_link_tag "excalidraw_app/index" %>
+<%= javascript_include_tag "excalidraw_app/index", defer: true, type: "module" %>

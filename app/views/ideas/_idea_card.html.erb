@@ -1,47 +1,38 @@
-<div class="idea-card">
+<div class="idea-card idea-card--<%= idea.state %>"
+     data-idea-context-menu-target="idea"
+     data-action="contextmenu->idea-context-menu#open"
+     data-idea-id="<%= idea.id %>"
+     data-idea-title="<%= idea.title %>"
+     data-idea-list-ids="<%= idea_context_list_ids(idea) %>">
+
+  <div class="idea-card-state-accent"></div>
+
   <%= link_to idea_path(idea), class: "idea-card-link", data: { turbo_frame: "_top" } do %>
-    <div class="idea-card-header">
-      <h3 class="idea-title"><%= idea.title %></h3>
-      <span class="idea-state <%= idea.state %>"><%= idea.state.humanize %></span>
-    </div>
-
-    <div class="idea-meta">
-      <% idea.topologies.each do |topology| %>
-        <span class="topology-badge" style="--badge-color: <%= topology.color || 'var(--accent)' %>">
-          <span class="topology-color-dot" style="background-color: <%= topology.color || 'var(--accent)' %>"></span>
-          <%= topology.name %>
-        </span>
-      <% end %>
-      <% if idea.computed_score %>
-        <span class="idea-score">
-          <%= number_with_precision(idea.computed_score, precision: 1) %>
-        </span>
-      <% end %>
-      <span class="idea-trl">TRL <%= idea.trl %></span>
-    </div>
-
-    <% if idea.description.present? %>
-      <div class="idea-description">
-        <%= truncate(strip_tags(idea.description.to_s), length: 120) %>
+    <div class="idea-card-inner">
+      <div class="idea-card-top">
+        <h3 class="idea-title"><%= idea.title %></h3>
+        <% if idea.computed_score %>
+          <span class="idea-card-score"><%= number_with_precision(idea.computed_score, precision: 1) %></span>
+        <% end %>
       </div>
-    <% end %>
 
-    <div class="idea-footer">
-      <span class="idea-date"><%= time_ago_in_words(idea.created_at) %> ago</span>
-      <% if idea.lists.any? %>
-        <span class="idea-lists"><%= idea.lists.pluck(:name).join(', ') %></span>
+      <% if idea.tldr.present? %>
+        <p class="idea-card-tldr"><%= idea.tldr %></p>
       <% end %>
+
+      <div class="idea-card-footer">
+        <span class="idea-state <%= idea.state %>"><%= idea.state == "idea_new" ? "New" : idea.state.humanize %></span>
+        <% if idea.topologies.any? %>
+          <div class="idea-card-tags">
+            <% idea.topologies.each do |topology| %>
+              <span class="topology-badge" style="--badge-color: <%= topology.color || 'var(--accent)' %>">
+                <span class="topology-color-dot" style="background-color: <%= topology.color || 'var(--accent)' %>"></span>
+                <%= topology.name %>
+              </span>
+            <% end %>
+          </div>
+        <% end %>
+      </div>
     </div>
   <% end %>
-
-  <div class="idea-actions">
-    <%= link_to edit_idea_path(idea), class: "btn btn-sm", data: { turbo_frame: "_top" } do %>
-      Edit
-    <% end %>
-    <%= link_to idea_path(idea), method: :delete,
-                data: { turbo_method: :delete, turbo_confirm: "Are you sure?" },
-                class: "btn btn-sm btn-danger" do %>
-      Delete
-    <% end %>
-  </div>
 </div>

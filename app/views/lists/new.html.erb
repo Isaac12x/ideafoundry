@@ -18,6 +18,25 @@
       <%= form.text_field :name, class: "form-control" %>
     </div>
 
+    <div class="form-group">
+      <%= form.label :kind, "List Type" %>
+      <%= form.select :kind,
+          options_for_select([["Kanban column", "kanban"], ["Named list", "named"]], @list.kind),
+          {},
+          class: "form-control" %>
+    </div>
+
+    <% if (@kanban_boards || []).any? %>
+      <div class="form-group">
+        <%= form.label :kanban_board_id, "Kanban Board" %>
+        <%= form.select :kanban_board_id,
+            options_from_collection_for_select(@kanban_boards, :id, :name, @list.kanban_board_id || params[:kanban_board_id]),
+            {},
+            class: "form-control" %>
+        <span class="form-text">Used when creating a kanban column.</span>
+      </div>
+    <% end %>
+
     <div class="form-actions">
       <%= form.submit "Create List", class: "btn btn-primary" %>
       <%= link_to "Cancel", lists_path, class: "btn btn-secondary" %>

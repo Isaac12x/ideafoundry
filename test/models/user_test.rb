@@ -1,8 +1,287 @@
 require "test_helper"
+require "erb"
+require "yaml"
 
 class UserTest < ActiveSupport::TestCase
+  test "typing lock defaults to disabled with five minute timeout" do
+    user = User.new(email: "fresh@example.com", name: "Fresh", settings: nil)
+
+    refute user.typing_lock_enabled?
+    assert_equal 300, user.typing_lock_timeout_seconds
+    refute user.typing_fingerprint_configured?
+  end
+
+  test "typing lock settings can be updated and clamped" do
+    user = users(:one)
+
+    assert user.update_typing_lock_settings("enabled" => "0", "lock_after_minutes" => "9999")
+
+    assert_equal false, user.typing_lock_enabled?
+    assert_equal 86_400, user.typing_lock_timeout_seconds
+  end
+
+  test "double encoded settings are normalized on read" do
+    user = users(:one)
+    original_settings = user.settings.deep_dup
+    encoded_settings = {
+      "typing_lock" => {
+        "enabled" => false,
+        "lock_after_seconds" => 300
+      }
+    }.to_json
+
+    User.connection.execute(
+      "UPDATE users SET settings = #{User.connection.quote(encoded_settings.to_json)} WHERE id = #{user.id}"
+    )
+
+    user = User.find(user.id)
+
+    assert_kind_of Hash, user.settings
+    refute user.typing_lock_enabled?
+  ensure
+    users(:one).update!(settings: original_settings) if defined?(original_settings)
+  end
+
+  test "production sqlite databases are configured for SQLCipher encryption" do
+    raw_config = ERB.new(Rails.root.join("config/database.yml").read).result
+    database_config = YAML.safe_load(raw_config, aliases: true)
+
+    assert_equal true, database_config.fetch("production").fetch("primary").fetch("sqlcipher")
+    assert_equal true, database_config.fetch("production").fetch("queue").fetch("sqlcipher")
+  end
+
+  test "typing fingerprint can be stored encrypted and cleared" do
+    user = users(:one)
+    fingerprint = { "version" => 1, "keys" => { "a" => { "mean" => 90 } } }
+
+    assert user.store_typing_fingerprint!(fingerprint)
+    assert user.typing_fingerprint_configured?
+    assert_equal fingerprint, user.typing_fingerprint
+
+    raw_settings = user.reload.settings.fetch("typing_lock")
+    assert raw_settings["fingerprint_ciphertext"].present?
+    assert_nil raw_settings["fingerprint"]
+    refute_includes raw_settings["fingerprint_ciphertext"], "mean"
+
+    assert user.clear_typing_fingerprint!
+    refute user.typing_fingerprint_configured?
+  end
+
+  test "typing fingerprint reader supports legacy plaintext templates" do
+    user = users(:one)
+    fingerprint = { "version" => 1, "keys" => { "a" => { "mean" => 90 } } }
+    user.update!(settings: { "typing_lock" => { "enabled" => true, "fingerprint" => fingerprint } })
+
+    assert_equal fingerprint, user.typing_fingerprint
+    assert user.typing_fingerprint_configured?
+  end
+
+  test "authenticator app settings default to disabled" do
+    user = User.new(email: "fresh-auth@example.com", name: "Fresh Auth", settings: nil)
+
+    refute user.authenticator_app_enabled?
+    refute user.authenticator_app_configured?
+    assert_nil user.authenticator_app_secret
+  end
+
+  test "authenticator app settings generate and clear a secret" do
+    user = users(:one)
+
+    assert user.update_authenticator_app_settings("enabled" => "1")
+
+    assert user.authenticator_app_enabled?
+    assert user.authenticator_app_configured?
+    assert_match(/\A[A-Z2-7]{32}\z/, user.authenticator_app_secret)
+    assert_includes user.authenticator_app_provisioning_uri, "otpauth://totp/Idea%20Foundry:"
+
+    raw_settings = user.reload.settings.fetch("authenticator_app")
+    assert raw_settings["secret_ciphertext"].present?
+    assert_nil raw_settings["secret"]
+    refute_includes raw_settings["secret_ciphertext"], user.authenticator_app_secret
+
+    secret = user.authenticator_app_secret
+
+    assert user.update_authenticator_app_settings("enabled" => "1")
+    assert_equal secret, user.authenticator_app_secret
+
+    assert user.update_authenticator_app_settings("enabled" => "0")
+    refute user.authenticator_app_enabled?
+    refute user.authenticator_app_configured?
+    assert_nil user.authenticator_app_secret
+  end
+
+  test "voice id stores a derived fingerprint and can be disabled without raw audio" do
+    user = users(:one)
+    samples = [
+      { "transcript" => "By my will and power you will open. Open sesame", "duration_ms" => 1900, "rms" => 0.42 },
+      { "transcript" => "By my will and power, you will open. Open sesame!", "duration_ms" => 2050, "rms" => 0.39 },
+      { "transcript" => "By my will and power you will open open sesame", "duration_ms" => 1980, "rms" => 0.41 }
+    ]
+
+    assert user.store_voice_id_fingerprint!(VoiceFingerprint.build(samples: samples))
+
+    assert user.voice_id_enabled?
+    assert user.voice_id_configured?
+    assert_equal 3, user.voice_id_fingerprint["sample_count"]
+    assert_equal VoiceFingerprint::CANONICAL_PHRASE, user.voice_id_fingerprint["phrase"]
+    assert_nil user.voice_id_fingerprint["raw_audio"]
+
+    raw_settings = user.reload.settings.fetch("voice_id")
+    assert raw_settings["fingerprint_ciphertext"].present?
+    assert_nil raw_settings["fingerprint"]
+    refute_includes raw_settings["fingerprint_ciphertext"], VoiceFingerprint::CANONICAL_PHRASE
+
+    assert user.update_voice_id_settings("enabled" => "0")
+    refute user.reload.voice_id_enabled?
+    refute user.voice_id_configured?
+  end
+
+  test "voice id reader supports legacy plaintext templates" do
+    user = users(:one)
+    fingerprint = VoiceFingerprint.build(samples: [
+      { "transcript" => "By my will and power you will open. Open sesame", "duration_ms" => 1900, "rms" => 0.42 },
+      { "transcript" => "By my will and power, you will open. Open sesame!", "duration_ms" => 2050, "rms" => 0.39 },
+      { "transcript" => "By my will and power you will open open sesame", "duration_ms" => 1980, "rms" => 0.41 }
+    ])
+    user.update!(settings: { "voice_id" => { "enabled" => true, "fingerprint" => fingerprint } })
+
+    assert user.voice_id_enabled?
+    assert_equal fingerprint, user.voice_id_fingerprint
+  end
+
+  test "voice id requires the canonical unlock phrase" do
+    user = users(:one)
+    fingerprint = VoiceFingerprint.build(samples: [
+      { "transcript" => "By my will and power you will open. Open sesame", "duration_ms" => 1900, "rms" => 0.42 },
+      { "transcript" => "By my will and power, you will open. Open sesame!", "duration_ms" => 2050, "rms" => 0.39 },
+      { "transcript" => "By my will and power you will open open sesame", "duration_ms" => 1980, "rms" => 0.41 }
+    ])
+    user.store_voice_id_fingerprint!(fingerprint)
+
+    assert VoiceFingerprint.match?(template: user.voice_id_fingerprint, transcript: "By my will and power you will open. Open sesame", sample: { "duration_ms" => 2000, "rms" => 0.40 })
+    refute VoiceFingerprint.match?(template: user.voice_id_fingerprint, transcript: "please open", sample: { "duration_ms" => 2000, "rms" => 0.40 })
+  end
+
+  test "security lock is enabled by any configured lock combination" do
+    user = users(:one)
+    user.update!(settings: {})
+    refute user.security_lock_enabled?
+
+    user.update_authenticator_app_settings("enabled" => "1")
+    assert user.security_lock_enabled?
+
+    user.update_authenticator_app_settings("enabled" => "0")
+    refute user.security_lock_enabled?
+
+    user.store_voice_id_fingerprint!(VoiceFingerprint.build(samples: [
+      { "transcript" => "By my will and power you will open. Open sesame", "duration_ms" => 1900, "rms" => 0.42 },
+      { "transcript" => "By my will and power, you will open. Open sesame!", "duration_ms" => 2050, "rms" => 0.39 },
+      { "transcript" => "By my will and power you will open open sesame", "duration_ms" => 1980, "rms" => 0.41 }
+    ]))
+    assert user.security_lock_enabled?
+  end
+
+  test "idea work tokens default to disabled" do
+    user = User.new(email: "fresh-agent@example.com", name: "Fresh Agent", settings: nil)
+
+    refute user.idea_work_tokens_enabled?
+  end
+
+  test "local agent settings default to disabled" do
+    user = User.new(email: "fresh-local-agent@example.com", name: "Fresh Local Agent", settings: nil)
+
+    assert_equal User::DEFAULT_LOCAL_AGENT_SETTINGS, user.local_agent_settings
+    refute user.local_agent_enabled?
+    refute user.local_agent_destructive_actions_enabled?
+  end
+
+  test "local agent settings persist only allowed keys" do
+    user = users(:one)
+
+    assert user.update_local_agent_settings(
+      "enabled" => "1",
+      "destructive_actions_enabled" => "0",
+      "sleep_seconds" => "12",
+      "max_actions_per_cycle" => "7",
+      "model" => "  qwen2.5-coder  ",
+      "base_url" => "  http://localhost:11434/v1  ",
+      "hacker" => "bad"
+    )
+
+    settings = user.reload.local_agent_settings
+    assert_equal true, settings["enabled"]
+    assert_equal false, settings["destructive_actions_enabled"]
+    assert_equal 12, settings["sleep_seconds"]
+    assert_equal 7, settings["max_actions_per_cycle"]
+    refute_includes settings, "model"
+    refute_includes settings, "base_url"
+    assert_nil user.settings.dig("local_agent", "model")
+    assert_nil user.settings.dig("local_agent", "base_url")
+    assert_nil user.settings.dig("local_agent", "hacker")
+  end
+
+  test "local agent live requires enabled settings and an active run" do
+    user = users(:one)
+    user.update!(settings: {})
+
+    refute user.local_agent_live?
+
+    user.update_local_agent_settings("enabled" => "1")
+    refute user.local_agent_live?
+
+    user.agent_runs.create!(
+      status: :running,
+      started_at: 1.minute.ago,
+      last_heartbeat_at: Time.current
+    )
+
+    assert user.local_agent_live?
+
+    user.update_local_agent_settings("enabled" => "0")
+    refute user.local_agent_live?
+  end
+
+  test "idea work token settings can be toggled" do
+    user = users(:one)
+
+    assert user.update_idea_work_token_settings("enabled" => "1", "hacker" => "bad")
+
+    assert user.idea_work_tokens_enabled?
+    assert_nil user.reload.settings.dig("idea_work_tokens", "hacker")
+
+    assert user.update_idea_work_token_settings("enabled" => "0")
+
+    refute user.reload.idea_work_tokens_enabled?
+  end
+
+  test "github token can be stored encrypted and cleared" do
+    user = users(:one)
+
+    assert user.update_github_settings("token" => "ghp_secret_token")
+
+    assert user.github_configured?
+    assert_equal "ghp_secret_token", user.github_token
+
+    raw_settings = user.reload.settings.fetch("github")
+    assert raw_settings["token_ciphertext"].present?
+    assert_nil raw_settings["token"]
+    refute_includes raw_settings["token_ciphertext"], "ghp_secret_token"
+
+    assert user.update_github_settings("clear_token" => "1")
+    refute user.reload.github_configured?
+    assert_nil user.github_token
+  end
+
   def setup
     @user = User.new(email: "test@example.com", name: "Test User")
+  end
+
+  test "display quote falls back to the default quote library" do
+    @user.settings = {}
+
+    assert_equal "", @user.custom_display_quote
+    assert_equal User::DEFAULT_DISPLAY_QUOTES.first, @user.display_quote
+    assert_includes User::DEFAULT_DISPLAY_QUOTES, "Simplicity is pre-requisite for reliability\n- Edgar Dijkstra"
   end
 
   test "should be valid with valid attributes" do
@@ -69,6 +348,21 @@ class UserTest < ActiveSupport::TestCase
     @user.update_topology_settings({ 'show_ideas' => false, 'hacker' => 'bad' })
     @user.reload
     assert_nil @user.settings.dig('topology_settings', 'hacker')
+  end
+
+  test "list_settings returns defaults when none stored" do
+    @user.save!
+
+    assert_equal User::DEFAULT_LIST_SETTINGS, @user.list_settings
+  end
+
+  test "update_list_settings persists allowed default view" do
+    @user.save!
+    @user.update_list_settings({ 'default_view' => 'named', 'hacker' => 'bad' })
+
+    @user.reload
+    assert_equal 'named', @user.list_settings['default_view']
+    assert_nil @user.settings.dig('list_settings', 'hacker')
   end
 
   test "topology_overrides_for returns global when no overrides" do

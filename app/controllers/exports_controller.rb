@@ -51,7 +51,7 @@ class ExportsController < ApplicationController
     Rails.logger.error "Failed to start export: #{e.message}"
     respond_to do |format|
       format.html { redirect_to exports_path, alert: "Failed to start export: #{e.message}" }
-      format.json { render json: { error: e.message }, status: :unprocessable_entity }
+      format.json { render json: { error: e.message }, status: :unprocessable_content }
     end
   end
 

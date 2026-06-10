@@ -3,16 +3,17 @@ source "https://rubygems.org"
 ruby "3.4.5"
 
 # Bundle edge Rails instead: gem "rails", github: "rails/rails", branch: "main"
-gem 'rails', '~> 8.0', '>= 8.0.2.1'
+gem "rails", "~> 8.1.3"
 
 # The original asset pipeline for Rails [https://github.com/rails/sprockets-rails]
 gem "sprockets-rails"
 
-# Use sqlite3 as the database for Active Record
-gem "sqlite3", "~> 2.7", ">= 2.7.3"
+# Use sqlite3 as the database for Active Record. Production databases require
+# SQLCipher, so build sqlite3 from source with the Bundler flags in .bundle/config.
+gem "sqlite3", "~> 2.7", ">= 2.7.3", force_ruby_platform: true
 
 # Use the Puma web server [https://github.com/puma/puma]
-gem "puma", ">= 5.0"
+gem "puma", "~> 8.0"
 
 # Use JavaScript with ESM import maps [https://github.com/rails/importmap-rails]
 gem "importmap-rails"
@@ -36,7 +37,7 @@ gem "jbuilder"
 # gem "kredis"
 
 # Use Active Model has_secure_password [https://guides.rubyonrails.org/active_model_basics.html#securepassword]
-gem "bcrypt", "~> 3.1.7"
+gem "bcrypt", "~> 3.1", ">= 3.1.22"
 
 # Solid Queue for background jobs [https://github.com/rails/solid_queue]
 gem "solid_queue"
@@ -45,10 +46,10 @@ gem "solid_queue"
 gem "solid_cache"
 
 # Action Mailbox for email processing
-gem "actionmailbox", "~> 8.0", '>= 8.0.2.1'
+gem "actionmailbox", "~> 8.1.3"
 
 # Action Text for rich text content
-gem "actiontext", "~> 8.0", '>= 8.0.2.1'
+gem "actiontext", "~> 8.1.3"
 
 # Image processing for Active Storage variants
 gem "image_processing", "~> 1.2"
@@ -62,6 +63,9 @@ gem "kaminari"
 # SHA3 digest for integrity hashing
 gem "sha3"
 
+# Local QR code rendering for authenticator app setup
+gem "rqrcode", "~> 2.2"
+
 # Resend for email delivery
 gem "resend"
 
@@ -73,6 +77,9 @@ gem "tzinfo-data", platforms: %i[ mswin mswin64 mingw x64_mingw jruby ]
 
 # Reduces boot times through caching; required in config/boot.rb
 gem "bootsnap", require: false
+
+# Formula evaluation for napkin calculations
+gem "dentaku", "~> 3.5"
 
 
 
@@ -95,5 +102,10 @@ end
 group :test do
   # Use system testing [https://guides.rubyonrails.org/testing.html#system-testing]
   gem "capybara"
+  gem "minitest", "~> 5.25"
   gem "selenium-webdriver"
 end
+
+gem "redcarpet", "~> 3.6"
+
+gem "rack-attack"

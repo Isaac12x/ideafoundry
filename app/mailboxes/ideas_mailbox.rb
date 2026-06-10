@@ -1,17 +1,15 @@
 class IdeasMailbox < ApplicationMailbox
   before_processing :authenticate_sender
 
-  PARTIAL_MATCH_MIN_LENGTH = 4
+  INTAKE_REFERENCE_PATTERN = /\bIDEA-TMP-\d{8}-[A-Z0-9]{4}\b/i
 
   def process
     idea_id = extract_idea_id_from_subject
 
     if idea_id
-      update_existing_idea(idea_id) || create_new_idea
-    elsif (matched_idea = find_partial_title_match)
-      store_pending_email(matched_idea)
+      update_existing_idea(idea_id) || create_or_update_submission
     else
-      create_new_idea
+      create_or_update_submission
     end
   end
 
@@ -32,63 +30,38 @@ class IdeasMailbox < ApplicationMailbox
     match ? match[1].to_i : nil
   end
 
+  def extract_intake_reference
+    searchable_content = [mail.subject, extract_body_content].join("\n")
+    match = searchable_content.match(INTAKE_REFERENCE_PATTERN)
+    match ? match[0].upcase : nil
+  end
+
   def extract_topology_from_body
     body_content = extract_body_content
-    match = body_content.match(/#topology:\s*(\w+)/i)
-    match ? match[1] : nil
+    match = body_content.match(/#topology:\s*([^\r\n]+)/i)
+    match ? match[1].strip : nil
   end
 
-  def find_partial_title_match
-    subject = mail.subject.to_s.gsub(/\[IDEA-\d+\]/, '').strip
-    return nil if subject.length < PARTIAL_MATCH_MIN_LENGTH
-
-    @user.ideas.find_each do |idea|
-      title = idea.title.to_s
-      next if title.length < PARTIAL_MATCH_MIN_LENGTH
-
-      if title.downcase.include?(subject.downcase) || subject.downcase.include?(title.downcase)
-        return idea
-      end
-    end
-
-    nil
+  def extract_priority_from_body
+    body_content = extract_body_content
+    match = body_content.match(/#priority:\s*(low|normal|high)\b/i)
+    match ? match[1].downcase : nil
   end
 
-  def store_pending_email(idea)
-    idea.metadata ||= {}
-    idea.metadata["pending_emails"] ||= []
-    idea.metadata["pending_emails"] << {
-      "from" => mail.from.first,
-      "subject" => mail.subject,
-      "body" => extract_body_content,
-      "received_at" => Time.current.iso8601,
-      "message_id" => mail.message_id
-    }
-    idea.save!
+  def create_or_update_submission
+    temporary_idea_id = extract_intake_reference
 
-    attach_files_to_idea(idea)
-  end
-
-  def create_new_idea
-    clean_title = mail.subject.to_s.gsub(/\[IDEA-\d+\]/, '').strip
-
-    idea = @user.ideas.create!(
-      title: clean_title,
-      description: extract_body_content,
-      state: :idea_new,
-      email_ingested: true
-    )
-
-    topology_name = extract_topology_from_body
-    if topology_name.present?
-      topology = @user.topologies.find_or_create_by!(name: topology_name)
-      idea.topologies << topology unless idea.topologies.include?(topology)
-    end
-
-    attach_files_to_idea(idea)
-    idea.compute_integrity_hash!
-
-    idea
+    IntakeSubmissionService.new(
+      user: @user,
+      title: temporary_idea_id.present? ? nil : clean_subject,
+      body: extract_body_content,
+      source: "email",
+      source_reference: email_source_reference,
+      priority: extract_priority_from_body,
+      raw_payload: email_raw_payload(temporary_idea_id),
+      attachments: normalized_attachments,
+      temporary_idea_id: temporary_idea_id
+    ).call
   end
 
   def update_existing_idea(idea_id)
@@ -117,21 +90,74 @@ class IdeasMailbox < ApplicationMailbox
     end
   end
 
+  def clean_subject
+    mail.subject.to_s
+        .gsub(/\[IDEA-\d+\]/i, "")
+        .gsub(INTAKE_REFERENCE_PATTERN, "")
+        .gsub(/\A\s*(re|fw|fwd):\s*/i, "")
+        .strip
+        .presence
+  end
+
+  def email_source_reference
+    mail.message_id.presence || "action_mailbox:#{inbound_email.id}"
+  end
+
+  def email_raw_payload(temporary_idea_id)
+    {
+      "from" => mail.from&.first,
+      "to" => Array(mail.to),
+      "cc" => Array(mail.cc),
+      "subject" => mail.subject.to_s,
+      "message_id" => mail.message_id,
+      "date" => mail.date&.iso8601,
+      "content_type" => mail.mime_type || mail.content_type,
+      "topology" => extract_topology_from_body,
+      "priority" => extract_priority_from_body,
+      "intake_reference" => temporary_idea_id,
+      "attachments" => attachment_metadata
+    }.compact
+  end
+
+  def attachment_metadata
+    mail.attachments.reject(&:inline?).map do |attachment|
+      {
+        "filename" => attachment.filename,
+        "content_type" => attachment.content_type,
+        "bytes" => decoded_attachment_body(attachment).bytesize
+      }
+    end
+  end
+
+  def normalized_attachments
+    mail.attachments.filter_map do |attachment|
+      next if attachment.inline?
+
+      {
+        io: StringIO.new(decoded_attachment_body(attachment)),
+        filename: attachment.filename,
+        content_type: attachment.content_type
+      }
+    end
+  end
+
   def attach_files_to_idea(idea)
     mail.attachments.each do |attachment|
       next if attachment.inline?
 
-      attachment_body = if attachment.body.respond_to?(:decoded)
-                         attachment.body.decoded
-                       else
-                         attachment.body.to_s
-                       end
-
       idea.attachments.attach(
-        io: StringIO.new(attachment_body),
+        io: StringIO.new(decoded_attachment_body(attachment)),
         filename: attachment.filename,
         content_type: attachment.content_type
       )
+    end
+  end
+
+  def decoded_attachment_body(attachment)
+    if attachment.body.respond_to?(:decoded)
+      attachment.body.decoded
+    else
+      attachment.body.to_s
     end
   end
 end

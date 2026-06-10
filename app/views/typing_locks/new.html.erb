@@ -1,0 +1,15 @@
+<% content_for :body_class, "typing-lock-page" %>
+
+<%= render "typing_locks/typing_panel",
+      mode: :unlock,
+      title: "Typing rhythm score",
+      subtitle: "Type this short passage to calculate your rhythm score.",
+      text: @challenge_text,
+      challenge_id: @challenge_id,
+      return_to: @return_to,
+      form_url: verify_typing_lock_path,
+      submit_label: "Unlock",
+      min_samples: TypingFingerprint::MIN_UNLOCK_SAMPLE_COUNT,
+      result: @unlock_result,
+      score_result: @unlock_failure,
+      redirect_url: @unlock_redirect_url %>

@@ -1,0 +1,21 @@
+<% if @upgrade_info.present? %>
+  <div class="upgrade-toast"
+       data-controller="upgrade-toast"
+       data-upgrade-toast-version-value="<%= @upgrade_info['latest_version'] %>"
+       data-upgrade-toast-severity-value="<%= @upgrade_info['severity'] %>"
+       data-upgrade-toast-settings-url-value="<%= settings_path %>#upgrade">
+    <div class="upgrade-toast__icon">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12 19V5M5 12l7-7 7 7"/>
+      </svg>
+    </div>
+    <div class="upgrade-toast__body">
+      <strong>Update available: <%= @upgrade_info['latest_version'] %></strong>
+      <% if @upgrade_info['release_body'].present? %>
+        <span class="upgrade-toast__note"> — <%= @upgrade_info['release_body'] %></span>
+      <% end %>
+    </div>
+    <a href="<%= settings_path %>#upgrade" class="upgrade-toast__link">View update</a>
+    <button class="upgrade-toast__dismiss" data-action="click->upgrade-toast#dismiss" aria-label="Dismiss">×</button>
+  </div>
+<% end %>

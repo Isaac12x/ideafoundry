@@ -1,0 +1,24 @@
+<% if @upgrade_info.present? %>
+  <div id="upgrade" class="upgrade-bar upgrade-bar--<%= @upgrade_info['severity'] %>"
+       data-controller="upgrade-button"
+       data-upgrade-button-upgrade-url-value="<%= upgrades_path %>"
+       data-upgrade-button-status-url-value="<%= upgrade_status_path %>"
+       data-upgrade-button-health-url-value="<%= rails_health_check_path %>">
+    <div class="upgrade-bar__info">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12 19V5M5 12l7-7 7 7"/>
+      </svg>
+      <span>
+        <strong>Update available: <%= @upgrade_info['latest_version'] %></strong>
+        <% if @upgrade_info['release_body'].present? %>
+          — <%= @upgrade_info['release_body'] %>
+        <% end %>
+      </span>
+    </div>
+    <button class="btn btn-sm upgrade-bar__btn"
+            data-upgrade-button-target="button"
+            data-action="click->upgrade-button#upgrade">
+      Upgrade
+    </button>
+  </div>
+<% end %>

@@ -1,0 +1,24 @@
+<% pending_count = defined?(@pending_count) && @pending_count ? @pending_count : @user.build_items.pending.size %>
+<% done_count = defined?(@done_count) && @done_count ? @done_count : @user.build_items.done.size %>
+<% total_count = pending_count + done_count %>
+
+<%= turbo_stream.replace "backlog_queued_count" do %>
+  <span class="backlog-stat-num" id="backlog_queued_count"><%= pending_count %></span>
+<% end %>
+
+<%= turbo_stream.replace "backlog_done_count" do %>
+  <span class="backlog-stat-num" id="backlog_done_count"><%= done_count %></span>
+<% end %>
+
+<%= turbo_stream.replace "backlog_progress_wrapper" do %>
+  <div id="backlog_progress_wrapper">
+    <% if total_count > 0 %>
+      <div class="backlog-progress">
+        <div class="backlog-progress-track">
+          <div class="backlog-progress-fill" style="width: <%= (done_count.to_f / total_count * 100).round %>%"></div>
+        </div>
+        <span class="backlog-progress-label"><%= (done_count.to_f / total_count * 100).round %>%</span>
+      </div>
+    <% end %>
+  </div>
+<% end %>
