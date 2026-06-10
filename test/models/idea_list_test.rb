@@ -14,6 +14,28 @@ class IdeaListTest < ActiveSupport::TestCase
     assert @idea_list.valid?
   end
 
+  test "should reject kanban membership below scorecard work threshold" do
+    template = Template.create!(
+      user: @user,
+      name: "Kanban Score Gate #{SecureRandom.hex(4)}",
+      field_definitions: [],
+      section_order: [],
+      tab_definitions: [{ "name" => "general", "label" => "General", "position" => 0 }],
+      scoring_system_ids: [User::FOUNDER_SCORECARD_SYSTEM_ID]
+    )
+    idea = Idea.create!(
+      user: @user,
+      title: "Below threshold",
+      template: template,
+      metadata: { Idea::SCORE_METADATA_KEY => { User::FOUNDER_SCORECARD_SYSTEM_ID => founder_scorecard_values(3) } }
+    )
+
+    membership = IdeaList.new(idea: idea, list: @list)
+
+    assert_not membership.valid?
+    assert_match(/below 24\/35/, membership.errors[:idea].join)
+  end
+
   test "should require idea" do
     @idea_list.idea = nil
     assert_not @idea_list.valid?
@@ -161,5 +183,13 @@ class IdeaListTest < ActiveSupport::TestCase
     assert_equal 1, il1.position
     assert_equal 2, il2.position
     assert_equal 3, il3.position
+  end
+
+  private
+
+  def founder_scorecard_values(value)
+    User::DEFAULT_SCORING_SYSTEMS[User::FOUNDER_SCORECARD_SYSTEM_ID]["criteria"].each_with_object({}) do |criterion, values|
+      values[criterion["key"]] = value
+    end
   end
 end

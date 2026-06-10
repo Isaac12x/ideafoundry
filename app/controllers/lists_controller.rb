@@ -100,6 +100,14 @@ class ListsController < ApplicationController
     idea = @user.ideas.find(idea_id)
     new_list = @user.lists.kanban.find(new_list_id)
 
+    unless idea.kanban_eligible?
+      respond_to do |format|
+        format.turbo_stream { head :unprocessable_content }
+        format.json { render json: { error: idea.kanban_ineligibility_message }, status: :unprocessable_content }
+      end
+      return
+    end
+
     old_list = nil
 
     ActiveRecord::Base.transaction do

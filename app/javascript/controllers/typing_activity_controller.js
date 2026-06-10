@@ -108,6 +108,7 @@ export default class extends Controller {
     if (this.locked) return;
 
     this.locked = true;
+    this.hideAskAgent();
 
     if (this.hasLockFormTarget) {
       if (typeof this.lockFormTarget.requestSubmit === "function") {
@@ -148,7 +149,21 @@ export default class extends Controller {
     if (this.locked) return;
 
     this.locked = true;
+    this.hideAskAgent();
     this.submitLockAction();
+  }
+
+  hideAskAgent() {
+    const shell = document.getElementById("ask-agent");
+    if (!shell) return;
+
+    shell.hidden = true;
+    shell.setAttribute("aria-hidden", "true");
+    shell.querySelectorAll("[data-ask-agent-target='backdrop'], [data-ask-agent-target='panel']").forEach((element) => {
+      element.hidden = true;
+    });
+    shell.querySelector("[data-ask-agent-target='launcher']")?.setAttribute("aria-expanded", "false");
+    document.body.classList.remove("ask-agent-open");
   }
 
   csrfToken() {
