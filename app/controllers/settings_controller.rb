@@ -195,8 +195,9 @@ class SettingsController < ApplicationController
     typing_lock_updated = @user.update_typing_lock_settings(typing_lock_params)
     authenticator_app_updated = @user.update_authenticator_app_settings(authenticator_app_params)
     voice_id_updated = @user.update_voice_id_settings(voice_id_params)
+    mobile_uplink_updated = @user.update_mobile_uplink_settings(mobile_uplink_params)
 
-    if typing_lock_updated && authenticator_app_updated && voice_id_updated
+    if typing_lock_updated && authenticator_app_updated && voice_id_updated && mobile_uplink_updated
       if @user.security_lock_enabled?
         unlock_typing_session!
       else
@@ -216,10 +217,8 @@ class SettingsController < ApplicationController
         end
       end
     else
-      @typing_lock_settings = @user.typing_lock_settings
-      @authenticator_app_settings = @user.authenticator_app_settings
-      @voice_id_settings = @user.voice_id_settings
-      @authenticator_app_qr_svg = AuthenticatorApp.qr_svg(@user.authenticator_app_provisioning_uri) if @user.authenticator_app_configured?
+      load_security_settings
+      load_database_encryption_status
       respond_to do |format|
         format.html do
           flash.now[:alert] = "Failed to update security settings."
@@ -503,7 +502,14 @@ class SettingsController < ApplicationController
     @typing_lock_settings = @user.typing_lock_settings
     @authenticator_app_settings = @user.authenticator_app_settings
     @voice_id_settings = @user.voice_id_settings
+    @mobile_uplink_settings = @user.mobile_uplink_settings
     @authenticator_app_qr_svg = AuthenticatorApp.qr_svg(@user.authenticator_app_provisioning_uri) if @user.authenticator_app_configured?
+    @mobile_uplink_install_url = MobileUplink.install_url
+    @mobile_uplink_install_qr_svg = MobileUplink.qr_svg(@mobile_uplink_install_url)
+    if @user.mobile_uplink_configured?
+      @mobile_uplink_pairing_payload = @user.mobile_uplink_pairing_payload(workspace_url: request.base_url)
+      @mobile_uplink_pairing_qr_svg = MobileUplink.qr_svg(@mobile_uplink_pairing_payload)
+    end
   end
 
   def load_local_agent_settings
@@ -618,6 +624,10 @@ class SettingsController < ApplicationController
 
   def voice_id_params
     params.fetch(:voice_id, {}).permit(:enabled)
+  end
+
+  def mobile_uplink_params
+    params.fetch(:mobile_uplink, {}).permit(:enabled)
   end
 
   def database_encryption_params
