@@ -158,7 +158,7 @@ SQLite3 with four database files in `storage/`:
 | `production.sqlite3` | Production database |
 | `queue.sqlite3` | Solid Queue job store |
 
-Backups: The app has built-in scheduled backups (configurable in Settings). Manual backup is just copying the `storage/` directory.
+Backups: The app has built-in scheduled backups (configurable in Settings). Manual backups should use `bin/backup`, which snapshots SQLite safely and archives local Active Storage files from `storage/` so uploaded files stay in the same backup set as database records. See `docs/file-storage.md` for the file storage contract.
 
 ### Local encryption model
 
