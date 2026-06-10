@@ -1,16 +1,16 @@
 # Graph Report - idea-app  (2026-06-10)
 
 ## Corpus Check
-- 309 files · ~295,652 words
+- 502 files · ~1,297,746 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 2580 nodes · 3347 edges · 299 communities (116 shown, 183 thin omitted)
-- Extraction: 85% EXTRACTED · 15% INFERRED · 0% AMBIGUOUS · INFERRED: 515 edges (avg confidence: 0.8)
+- 30208 nodes · 78530 edges · 832 communities (624 shown, 208 thin omitted)
+- Extraction: 97% EXTRACTED · 3% INFERRED · 0% AMBIGUOUS · INFERRED: 2649 edges (avg confidence: 0.8)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `2c11c07e`
+- Built from commit: `2f884fbf`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -22,6 +22,7 @@
 - [[_COMMUNITY_Community 4|Community 4]]
 - [[_COMMUNITY_Community 5|Community 5]]
 - [[_COMMUNITY_Community 6|Community 6]]
+- [[_COMMUNITY_Community 7|Community 7]]
 - [[_COMMUNITY_Community 8|Community 8]]
 - [[_COMMUNITY_Community 9|Community 9]]
 - [[_COMMUNITY_Community 10|Community 10]]
@@ -31,6 +32,7 @@
 - [[_COMMUNITY_Community 14|Community 14]]
 - [[_COMMUNITY_Community 15|Community 15]]
 - [[_COMMUNITY_Community 16|Community 16]]
+- [[_COMMUNITY_Community 17|Community 17]]
 - [[_COMMUNITY_Community 18|Community 18]]
 - [[_COMMUNITY_Community 19|Community 19]]
 - [[_COMMUNITY_Community 20|Community 20]]
@@ -77,6 +79,7 @@
 - [[_COMMUNITY_Community 61|Community 61]]
 - [[_COMMUNITY_Community 62|Community 62]]
 - [[_COMMUNITY_Community 63|Community 63]]
+- [[_COMMUNITY_Community 64|Community 64]]
 - [[_COMMUNITY_Community 65|Community 65]]
 - [[_COMMUNITY_Community 66|Community 66]]
 - [[_COMMUNITY_Community 67|Community 67]]
@@ -99,6 +102,7 @@
 - [[_COMMUNITY_Community 84|Community 84]]
 - [[_COMMUNITY_Community 85|Community 85]]
 - [[_COMMUNITY_Community 86|Community 86]]
+- [[_COMMUNITY_Community 87|Community 87]]
 - [[_COMMUNITY_Community 88|Community 88]]
 - [[_COMMUNITY_Community 89|Community 89]]
 - [[_COMMUNITY_Community 90|Community 90]]
@@ -111,6 +115,7 @@
 - [[_COMMUNITY_Community 97|Community 97]]
 - [[_COMMUNITY_Community 98|Community 98]]
 - [[_COMMUNITY_Community 99|Community 99]]
+- [[_COMMUNITY_Community 100|Community 100]]
 - [[_COMMUNITY_Community 101|Community 101]]
 - [[_COMMUNITY_Community 102|Community 102]]
 - [[_COMMUNITY_Community 103|Community 103]]
@@ -125,6 +130,7 @@
 - [[_COMMUNITY_Community 112|Community 112]]
 - [[_COMMUNITY_Community 113|Community 113]]
 - [[_COMMUNITY_Community 114|Community 114]]
+- [[_COMMUNITY_Community 115|Community 115]]
 - [[_COMMUNITY_Community 116|Community 116]]
 - [[_COMMUNITY_Community 117|Community 117]]
 - [[_COMMUNITY_Community 118|Community 118]]
@@ -150,6 +156,7 @@
 - [[_COMMUNITY_Community 138|Community 138]]
 - [[_COMMUNITY_Community 139|Community 139]]
 - [[_COMMUNITY_Community 140|Community 140]]
+- [[_COMMUNITY_Community 141|Community 141]]
 - [[_COMMUNITY_Community 142|Community 142]]
 - [[_COMMUNITY_Community 143|Community 143]]
 - [[_COMMUNITY_Community 144|Community 144]]
@@ -241,6 +248,7 @@
 - [[_COMMUNITY_Community 230|Community 230]]
 - [[_COMMUNITY_Community 231|Community 231]]
 - [[_COMMUNITY_Community 232|Community 232]]
+- [[_COMMUNITY_Community 233|Community 233]]
 - [[_COMMUNITY_Community 234|Community 234]]
 - [[_COMMUNITY_Community 235|Community 235]]
 - [[_COMMUNITY_Community 236|Community 236]]
@@ -263,7 +271,6 @@
 - [[_COMMUNITY_Community 253|Community 253]]
 - [[_COMMUNITY_Community 254|Community 254]]
 - [[_COMMUNITY_Community 255|Community 255]]
-- [[_COMMUNITY_Community 256|Community 256]]
 - [[_COMMUNITY_Community 257|Community 257]]
 - [[_COMMUNITY_Community 258|Community 258]]
 - [[_COMMUNITY_Community 259|Community 259]]
@@ -284,396 +291,2814 @@
 - [[_COMMUNITY_Community 274|Community 274]]
 - [[_COMMUNITY_Community 275|Community 275]]
 - [[_COMMUNITY_Community 276|Community 276]]
+- [[_COMMUNITY_Community 277|Community 277]]
+- [[_COMMUNITY_Community 278|Community 278]]
+- [[_COMMUNITY_Community 279|Community 279]]
+- [[_COMMUNITY_Community 280|Community 280]]
+- [[_COMMUNITY_Community 281|Community 281]]
+- [[_COMMUNITY_Community 282|Community 282]]
+- [[_COMMUNITY_Community 283|Community 283]]
+- [[_COMMUNITY_Community 284|Community 284]]
+- [[_COMMUNITY_Community 285|Community 285]]
+- [[_COMMUNITY_Community 286|Community 286]]
+- [[_COMMUNITY_Community 287|Community 287]]
+- [[_COMMUNITY_Community 289|Community 289]]
+- [[_COMMUNITY_Community 290|Community 290]]
+- [[_COMMUNITY_Community 291|Community 291]]
+- [[_COMMUNITY_Community 292|Community 292]]
+- [[_COMMUNITY_Community 293|Community 293]]
+- [[_COMMUNITY_Community 294|Community 294]]
+- [[_COMMUNITY_Community 295|Community 295]]
+- [[_COMMUNITY_Community 296|Community 296]]
+- [[_COMMUNITY_Community 297|Community 297]]
+- [[_COMMUNITY_Community 298|Community 298]]
+- [[_COMMUNITY_Community 299|Community 299]]
+- [[_COMMUNITY_Community 300|Community 300]]
+- [[_COMMUNITY_Community 301|Community 301]]
+- [[_COMMUNITY_Community 302|Community 302]]
+- [[_COMMUNITY_Community 303|Community 303]]
+- [[_COMMUNITY_Community 304|Community 304]]
+- [[_COMMUNITY_Community 305|Community 305]]
+- [[_COMMUNITY_Community 306|Community 306]]
+- [[_COMMUNITY_Community 307|Community 307]]
+- [[_COMMUNITY_Community 308|Community 308]]
+- [[_COMMUNITY_Community 309|Community 309]]
+- [[_COMMUNITY_Community 310|Community 310]]
+- [[_COMMUNITY_Community 311|Community 311]]
+- [[_COMMUNITY_Community 312|Community 312]]
+- [[_COMMUNITY_Community 313|Community 313]]
+- [[_COMMUNITY_Community 314|Community 314]]
+- [[_COMMUNITY_Community 316|Community 316]]
+- [[_COMMUNITY_Community 317|Community 317]]
+- [[_COMMUNITY_Community 319|Community 319]]
+- [[_COMMUNITY_Community 320|Community 320]]
+- [[_COMMUNITY_Community 323|Community 323]]
+- [[_COMMUNITY_Community 324|Community 324]]
+- [[_COMMUNITY_Community 325|Community 325]]
+- [[_COMMUNITY_Community 326|Community 326]]
+- [[_COMMUNITY_Community 327|Community 327]]
+- [[_COMMUNITY_Community 328|Community 328]]
+- [[_COMMUNITY_Community 329|Community 329]]
+- [[_COMMUNITY_Community 330|Community 330]]
+- [[_COMMUNITY_Community 331|Community 331]]
+- [[_COMMUNITY_Community 332|Community 332]]
+- [[_COMMUNITY_Community 333|Community 333]]
+- [[_COMMUNITY_Community 334|Community 334]]
+- [[_COMMUNITY_Community 335|Community 335]]
+- [[_COMMUNITY_Community 336|Community 336]]
+- [[_COMMUNITY_Community 337|Community 337]]
+- [[_COMMUNITY_Community 338|Community 338]]
+- [[_COMMUNITY_Community 339|Community 339]]
+- [[_COMMUNITY_Community 340|Community 340]]
+- [[_COMMUNITY_Community 341|Community 341]]
+- [[_COMMUNITY_Community 342|Community 342]]
+- [[_COMMUNITY_Community 343|Community 343]]
+- [[_COMMUNITY_Community 344|Community 344]]
+- [[_COMMUNITY_Community 345|Community 345]]
+- [[_COMMUNITY_Community 346|Community 346]]
+- [[_COMMUNITY_Community 347|Community 347]]
+- [[_COMMUNITY_Community 348|Community 348]]
+- [[_COMMUNITY_Community 349|Community 349]]
+- [[_COMMUNITY_Community 350|Community 350]]
+- [[_COMMUNITY_Community 351|Community 351]]
+- [[_COMMUNITY_Community 352|Community 352]]
+- [[_COMMUNITY_Community 353|Community 353]]
+- [[_COMMUNITY_Community 354|Community 354]]
+- [[_COMMUNITY_Community 355|Community 355]]
+- [[_COMMUNITY_Community 356|Community 356]]
+- [[_COMMUNITY_Community 357|Community 357]]
+- [[_COMMUNITY_Community 358|Community 358]]
+- [[_COMMUNITY_Community 359|Community 359]]
+- [[_COMMUNITY_Community 360|Community 360]]
+- [[_COMMUNITY_Community 361|Community 361]]
+- [[_COMMUNITY_Community 362|Community 362]]
+- [[_COMMUNITY_Community 363|Community 363]]
+- [[_COMMUNITY_Community 364|Community 364]]
+- [[_COMMUNITY_Community 365|Community 365]]
+- [[_COMMUNITY_Community 366|Community 366]]
+- [[_COMMUNITY_Community 367|Community 367]]
+- [[_COMMUNITY_Community 368|Community 368]]
+- [[_COMMUNITY_Community 369|Community 369]]
+- [[_COMMUNITY_Community 370|Community 370]]
+- [[_COMMUNITY_Community 371|Community 371]]
+- [[_COMMUNITY_Community 372|Community 372]]
+- [[_COMMUNITY_Community 373|Community 373]]
+- [[_COMMUNITY_Community 374|Community 374]]
+- [[_COMMUNITY_Community 375|Community 375]]
+- [[_COMMUNITY_Community 376|Community 376]]
+- [[_COMMUNITY_Community 377|Community 377]]
+- [[_COMMUNITY_Community 378|Community 378]]
+- [[_COMMUNITY_Community 379|Community 379]]
+- [[_COMMUNITY_Community 380|Community 380]]
+- [[_COMMUNITY_Community 381|Community 381]]
+- [[_COMMUNITY_Community 382|Community 382]]
+- [[_COMMUNITY_Community 384|Community 384]]
+- [[_COMMUNITY_Community 385|Community 385]]
+- [[_COMMUNITY_Community 386|Community 386]]
+- [[_COMMUNITY_Community 387|Community 387]]
+- [[_COMMUNITY_Community 388|Community 388]]
+- [[_COMMUNITY_Community 391|Community 391]]
+- [[_COMMUNITY_Community 393|Community 393]]
+- [[_COMMUNITY_Community 394|Community 394]]
+- [[_COMMUNITY_Community 395|Community 395]]
+- [[_COMMUNITY_Community 396|Community 396]]
+- [[_COMMUNITY_Community 397|Community 397]]
+- [[_COMMUNITY_Community 398|Community 398]]
+- [[_COMMUNITY_Community 399|Community 399]]
+- [[_COMMUNITY_Community 400|Community 400]]
+- [[_COMMUNITY_Community 401|Community 401]]
+- [[_COMMUNITY_Community 402|Community 402]]
+- [[_COMMUNITY_Community 403|Community 403]]
+- [[_COMMUNITY_Community 404|Community 404]]
+- [[_COMMUNITY_Community 405|Community 405]]
+- [[_COMMUNITY_Community 406|Community 406]]
+- [[_COMMUNITY_Community 407|Community 407]]
+- [[_COMMUNITY_Community 408|Community 408]]
+- [[_COMMUNITY_Community 409|Community 409]]
+- [[_COMMUNITY_Community 410|Community 410]]
+- [[_COMMUNITY_Community 411|Community 411]]
+- [[_COMMUNITY_Community 412|Community 412]]
+- [[_COMMUNITY_Community 413|Community 413]]
+- [[_COMMUNITY_Community 414|Community 414]]
+- [[_COMMUNITY_Community 415|Community 415]]
+- [[_COMMUNITY_Community 416|Community 416]]
+- [[_COMMUNITY_Community 417|Community 417]]
+- [[_COMMUNITY_Community 419|Community 419]]
+- [[_COMMUNITY_Community 420|Community 420]]
+- [[_COMMUNITY_Community 421|Community 421]]
+- [[_COMMUNITY_Community 422|Community 422]]
+- [[_COMMUNITY_Community 423|Community 423]]
+- [[_COMMUNITY_Community 424|Community 424]]
+- [[_COMMUNITY_Community 425|Community 425]]
+- [[_COMMUNITY_Community 426|Community 426]]
+- [[_COMMUNITY_Community 427|Community 427]]
+- [[_COMMUNITY_Community 428|Community 428]]
+- [[_COMMUNITY_Community 429|Community 429]]
+- [[_COMMUNITY_Community 430|Community 430]]
+- [[_COMMUNITY_Community 431|Community 431]]
+- [[_COMMUNITY_Community 432|Community 432]]
+- [[_COMMUNITY_Community 433|Community 433]]
+- [[_COMMUNITY_Community 434|Community 434]]
+- [[_COMMUNITY_Community 435|Community 435]]
+- [[_COMMUNITY_Community 438|Community 438]]
+- [[_COMMUNITY_Community 439|Community 439]]
+- [[_COMMUNITY_Community 440|Community 440]]
+- [[_COMMUNITY_Community 441|Community 441]]
+- [[_COMMUNITY_Community 442|Community 442]]
+- [[_COMMUNITY_Community 443|Community 443]]
+- [[_COMMUNITY_Community 444|Community 444]]
+- [[_COMMUNITY_Community 445|Community 445]]
+- [[_COMMUNITY_Community 446|Community 446]]
+- [[_COMMUNITY_Community 447|Community 447]]
+- [[_COMMUNITY_Community 448|Community 448]]
+- [[_COMMUNITY_Community 449|Community 449]]
+- [[_COMMUNITY_Community 450|Community 450]]
+- [[_COMMUNITY_Community 451|Community 451]]
+- [[_COMMUNITY_Community 452|Community 452]]
+- [[_COMMUNITY_Community 473|Community 473]]
+- [[_COMMUNITY_Community 474|Community 474]]
+- [[_COMMUNITY_Community 475|Community 475]]
+- [[_COMMUNITY_Community 476|Community 476]]
+- [[_COMMUNITY_Community 477|Community 477]]
+- [[_COMMUNITY_Community 478|Community 478]]
+- [[_COMMUNITY_Community 479|Community 479]]
+- [[_COMMUNITY_Community 480|Community 480]]
+- [[_COMMUNITY_Community 481|Community 481]]
+- [[_COMMUNITY_Community 482|Community 482]]
+- [[_COMMUNITY_Community 483|Community 483]]
+- [[_COMMUNITY_Community 484|Community 484]]
+- [[_COMMUNITY_Community 485|Community 485]]
+- [[_COMMUNITY_Community 486|Community 486]]
+- [[_COMMUNITY_Community 487|Community 487]]
+- [[_COMMUNITY_Community 488|Community 488]]
+- [[_COMMUNITY_Community 489|Community 489]]
+- [[_COMMUNITY_Community 490|Community 490]]
+- [[_COMMUNITY_Community 491|Community 491]]
+- [[_COMMUNITY_Community 492|Community 492]]
+- [[_COMMUNITY_Community 493|Community 493]]
+- [[_COMMUNITY_Community 494|Community 494]]
+- [[_COMMUNITY_Community 495|Community 495]]
+- [[_COMMUNITY_Community 496|Community 496]]
+- [[_COMMUNITY_Community 497|Community 497]]
+- [[_COMMUNITY_Community 498|Community 498]]
+- [[_COMMUNITY_Community 499|Community 499]]
+- [[_COMMUNITY_Community 500|Community 500]]
+- [[_COMMUNITY_Community 501|Community 501]]
+- [[_COMMUNITY_Community 502|Community 502]]
+- [[_COMMUNITY_Community 503|Community 503]]
+- [[_COMMUNITY_Community 504|Community 504]]
+- [[_COMMUNITY_Community 505|Community 505]]
+- [[_COMMUNITY_Community 506|Community 506]]
+- [[_COMMUNITY_Community 507|Community 507]]
+- [[_COMMUNITY_Community 508|Community 508]]
+- [[_COMMUNITY_Community 509|Community 509]]
+- [[_COMMUNITY_Community 510|Community 510]]
+- [[_COMMUNITY_Community 511|Community 511]]
+- [[_COMMUNITY_Community 512|Community 512]]
+- [[_COMMUNITY_Community 513|Community 513]]
+- [[_COMMUNITY_Community 514|Community 514]]
+- [[_COMMUNITY_Community 515|Community 515]]
+- [[_COMMUNITY_Community 516|Community 516]]
+- [[_COMMUNITY_Community 517|Community 517]]
+- [[_COMMUNITY_Community 518|Community 518]]
+- [[_COMMUNITY_Community 519|Community 519]]
+- [[_COMMUNITY_Community 520|Community 520]]
+- [[_COMMUNITY_Community 521|Community 521]]
+- [[_COMMUNITY_Community 522|Community 522]]
+- [[_COMMUNITY_Community 523|Community 523]]
+- [[_COMMUNITY_Community 524|Community 524]]
+- [[_COMMUNITY_Community 525|Community 525]]
+- [[_COMMUNITY_Community 526|Community 526]]
+- [[_COMMUNITY_Community 527|Community 527]]
+- [[_COMMUNITY_Community 528|Community 528]]
+- [[_COMMUNITY_Community 529|Community 529]]
+- [[_COMMUNITY_Community 530|Community 530]]
+- [[_COMMUNITY_Community 531|Community 531]]
+- [[_COMMUNITY_Community 532|Community 532]]
+- [[_COMMUNITY_Community 533|Community 533]]
+- [[_COMMUNITY_Community 534|Community 534]]
+- [[_COMMUNITY_Community 535|Community 535]]
+- [[_COMMUNITY_Community 536|Community 536]]
+- [[_COMMUNITY_Community 537|Community 537]]
+- [[_COMMUNITY_Community 538|Community 538]]
+- [[_COMMUNITY_Community 539|Community 539]]
+- [[_COMMUNITY_Community 540|Community 540]]
+- [[_COMMUNITY_Community 541|Community 541]]
+- [[_COMMUNITY_Community 542|Community 542]]
+- [[_COMMUNITY_Community 543|Community 543]]
+- [[_COMMUNITY_Community 544|Community 544]]
+- [[_COMMUNITY_Community 545|Community 545]]
+- [[_COMMUNITY_Community 546|Community 546]]
+- [[_COMMUNITY_Community 547|Community 547]]
+- [[_COMMUNITY_Community 548|Community 548]]
+- [[_COMMUNITY_Community 549|Community 549]]
+- [[_COMMUNITY_Community 550|Community 550]]
+- [[_COMMUNITY_Community 551|Community 551]]
+- [[_COMMUNITY_Community 552|Community 552]]
+- [[_COMMUNITY_Community 553|Community 553]]
+- [[_COMMUNITY_Community 554|Community 554]]
+- [[_COMMUNITY_Community 555|Community 555]]
+- [[_COMMUNITY_Community 556|Community 556]]
+- [[_COMMUNITY_Community 557|Community 557]]
+- [[_COMMUNITY_Community 558|Community 558]]
+- [[_COMMUNITY_Community 559|Community 559]]
+- [[_COMMUNITY_Community 560|Community 560]]
+- [[_COMMUNITY_Community 561|Community 561]]
+- [[_COMMUNITY_Community 562|Community 562]]
+- [[_COMMUNITY_Community 563|Community 563]]
+- [[_COMMUNITY_Community 564|Community 564]]
+- [[_COMMUNITY_Community 565|Community 565]]
+- [[_COMMUNITY_Community 566|Community 566]]
+- [[_COMMUNITY_Community 567|Community 567]]
+- [[_COMMUNITY_Community 568|Community 568]]
+- [[_COMMUNITY_Community 569|Community 569]]
+- [[_COMMUNITY_Community 570|Community 570]]
+- [[_COMMUNITY_Community 571|Community 571]]
+- [[_COMMUNITY_Community 572|Community 572]]
+- [[_COMMUNITY_Community 573|Community 573]]
+- [[_COMMUNITY_Community 574|Community 574]]
+- [[_COMMUNITY_Community 575|Community 575]]
+- [[_COMMUNITY_Community 576|Community 576]]
+- [[_COMMUNITY_Community 577|Community 577]]
+- [[_COMMUNITY_Community 578|Community 578]]
+- [[_COMMUNITY_Community 579|Community 579]]
+- [[_COMMUNITY_Community 580|Community 580]]
+- [[_COMMUNITY_Community 581|Community 581]]
+- [[_COMMUNITY_Community 582|Community 582]]
+- [[_COMMUNITY_Community 583|Community 583]]
+- [[_COMMUNITY_Community 584|Community 584]]
+- [[_COMMUNITY_Community 585|Community 585]]
+- [[_COMMUNITY_Community 586|Community 586]]
+- [[_COMMUNITY_Community 587|Community 587]]
+- [[_COMMUNITY_Community 588|Community 588]]
+- [[_COMMUNITY_Community 589|Community 589]]
+- [[_COMMUNITY_Community 590|Community 590]]
+- [[_COMMUNITY_Community 591|Community 591]]
+- [[_COMMUNITY_Community 592|Community 592]]
+- [[_COMMUNITY_Community 593|Community 593]]
+- [[_COMMUNITY_Community 594|Community 594]]
+- [[_COMMUNITY_Community 595|Community 595]]
+- [[_COMMUNITY_Community 596|Community 596]]
+- [[_COMMUNITY_Community 597|Community 597]]
+- [[_COMMUNITY_Community 598|Community 598]]
+- [[_COMMUNITY_Community 599|Community 599]]
+- [[_COMMUNITY_Community 600|Community 600]]
+- [[_COMMUNITY_Community 601|Community 601]]
+- [[_COMMUNITY_Community 602|Community 602]]
+- [[_COMMUNITY_Community 603|Community 603]]
+- [[_COMMUNITY_Community 604|Community 604]]
+- [[_COMMUNITY_Community 605|Community 605]]
+- [[_COMMUNITY_Community 606|Community 606]]
+- [[_COMMUNITY_Community 607|Community 607]]
+- [[_COMMUNITY_Community 608|Community 608]]
+- [[_COMMUNITY_Community 609|Community 609]]
+- [[_COMMUNITY_Community 610|Community 610]]
+- [[_COMMUNITY_Community 611|Community 611]]
+- [[_COMMUNITY_Community 612|Community 612]]
+- [[_COMMUNITY_Community 613|Community 613]]
+- [[_COMMUNITY_Community 614|Community 614]]
+- [[_COMMUNITY_Community 615|Community 615]]
+- [[_COMMUNITY_Community 616|Community 616]]
+- [[_COMMUNITY_Community 617|Community 617]]
+- [[_COMMUNITY_Community 618|Community 618]]
+- [[_COMMUNITY_Community 619|Community 619]]
+- [[_COMMUNITY_Community 620|Community 620]]
+- [[_COMMUNITY_Community 621|Community 621]]
+- [[_COMMUNITY_Community 622|Community 622]]
+- [[_COMMUNITY_Community 623|Community 623]]
+- [[_COMMUNITY_Community 624|Community 624]]
+- [[_COMMUNITY_Community 625|Community 625]]
+- [[_COMMUNITY_Community 626|Community 626]]
+- [[_COMMUNITY_Community 627|Community 627]]
+- [[_COMMUNITY_Community 628|Community 628]]
+- [[_COMMUNITY_Community 630|Community 630]]
+- [[_COMMUNITY_Community 631|Community 631]]
+- [[_COMMUNITY_Community 632|Community 632]]
+- [[_COMMUNITY_Community 633|Community 633]]
+- [[_COMMUNITY_Community 634|Community 634]]
+- [[_COMMUNITY_Community 635|Community 635]]
+- [[_COMMUNITY_Community 636|Community 636]]
+- [[_COMMUNITY_Community 637|Community 637]]
+- [[_COMMUNITY_Community 638|Community 638]]
+- [[_COMMUNITY_Community 639|Community 639]]
+- [[_COMMUNITY_Community 640|Community 640]]
+- [[_COMMUNITY_Community 641|Community 641]]
+- [[_COMMUNITY_Community 642|Community 642]]
+- [[_COMMUNITY_Community 643|Community 643]]
+- [[_COMMUNITY_Community 644|Community 644]]
+- [[_COMMUNITY_Community 645|Community 645]]
+- [[_COMMUNITY_Community 646|Community 646]]
+- [[_COMMUNITY_Community 647|Community 647]]
+- [[_COMMUNITY_Community 648|Community 648]]
+- [[_COMMUNITY_Community 649|Community 649]]
+- [[_COMMUNITY_Community 650|Community 650]]
+- [[_COMMUNITY_Community 651|Community 651]]
+- [[_COMMUNITY_Community 652|Community 652]]
+- [[_COMMUNITY_Community 653|Community 653]]
+- [[_COMMUNITY_Community 654|Community 654]]
+- [[_COMMUNITY_Community 655|Community 655]]
+- [[_COMMUNITY_Community 656|Community 656]]
+- [[_COMMUNITY_Community 657|Community 657]]
+- [[_COMMUNITY_Community 658|Community 658]]
+- [[_COMMUNITY_Community 659|Community 659]]
+- [[_COMMUNITY_Community 660|Community 660]]
+- [[_COMMUNITY_Community 661|Community 661]]
+- [[_COMMUNITY_Community 662|Community 662]]
+- [[_COMMUNITY_Community 663|Community 663]]
+- [[_COMMUNITY_Community 664|Community 664]]
+- [[_COMMUNITY_Community 665|Community 665]]
+- [[_COMMUNITY_Community 666|Community 666]]
+- [[_COMMUNITY_Community 667|Community 667]]
+- [[_COMMUNITY_Community 668|Community 668]]
+- [[_COMMUNITY_Community 669|Community 669]]
+- [[_COMMUNITY_Community 670|Community 670]]
+- [[_COMMUNITY_Community 671|Community 671]]
+- [[_COMMUNITY_Community 672|Community 672]]
+- [[_COMMUNITY_Community 673|Community 673]]
+- [[_COMMUNITY_Community 674|Community 674]]
+- [[_COMMUNITY_Community 675|Community 675]]
+- [[_COMMUNITY_Community 676|Community 676]]
+- [[_COMMUNITY_Community 677|Community 677]]
+- [[_COMMUNITY_Community 678|Community 678]]
+- [[_COMMUNITY_Community 679|Community 679]]
+- [[_COMMUNITY_Community 680|Community 680]]
+- [[_COMMUNITY_Community 681|Community 681]]
+- [[_COMMUNITY_Community 682|Community 682]]
+- [[_COMMUNITY_Community 683|Community 683]]
+- [[_COMMUNITY_Community 684|Community 684]]
+- [[_COMMUNITY_Community 685|Community 685]]
+- [[_COMMUNITY_Community 686|Community 686]]
+- [[_COMMUNITY_Community 687|Community 687]]
+- [[_COMMUNITY_Community 688|Community 688]]
+- [[_COMMUNITY_Community 689|Community 689]]
+- [[_COMMUNITY_Community 690|Community 690]]
+- [[_COMMUNITY_Community 691|Community 691]]
+- [[_COMMUNITY_Community 692|Community 692]]
+- [[_COMMUNITY_Community 693|Community 693]]
+- [[_COMMUNITY_Community 694|Community 694]]
+- [[_COMMUNITY_Community 695|Community 695]]
+- [[_COMMUNITY_Community 696|Community 696]]
+- [[_COMMUNITY_Community 697|Community 697]]
+- [[_COMMUNITY_Community 698|Community 698]]
+- [[_COMMUNITY_Community 699|Community 699]]
+- [[_COMMUNITY_Community 700|Community 700]]
+- [[_COMMUNITY_Community 701|Community 701]]
+- [[_COMMUNITY_Community 702|Community 702]]
+- [[_COMMUNITY_Community 703|Community 703]]
+- [[_COMMUNITY_Community 704|Community 704]]
+- [[_COMMUNITY_Community 705|Community 705]]
+- [[_COMMUNITY_Community 706|Community 706]]
+- [[_COMMUNITY_Community 707|Community 707]]
+- [[_COMMUNITY_Community 708|Community 708]]
+- [[_COMMUNITY_Community 709|Community 709]]
+- [[_COMMUNITY_Community 710|Community 710]]
+- [[_COMMUNITY_Community 711|Community 711]]
+- [[_COMMUNITY_Community 712|Community 712]]
+- [[_COMMUNITY_Community 713|Community 713]]
+- [[_COMMUNITY_Community 714|Community 714]]
+- [[_COMMUNITY_Community 715|Community 715]]
+- [[_COMMUNITY_Community 716|Community 716]]
+- [[_COMMUNITY_Community 717|Community 717]]
+- [[_COMMUNITY_Community 718|Community 718]]
+- [[_COMMUNITY_Community 719|Community 719]]
+- [[_COMMUNITY_Community 720|Community 720]]
+- [[_COMMUNITY_Community 721|Community 721]]
+- [[_COMMUNITY_Community 722|Community 722]]
+- [[_COMMUNITY_Community 723|Community 723]]
+- [[_COMMUNITY_Community 724|Community 724]]
+- [[_COMMUNITY_Community 725|Community 725]]
+- [[_COMMUNITY_Community 726|Community 726]]
+- [[_COMMUNITY_Community 727|Community 727]]
+- [[_COMMUNITY_Community 728|Community 728]]
+- [[_COMMUNITY_Community 729|Community 729]]
+- [[_COMMUNITY_Community 730|Community 730]]
+- [[_COMMUNITY_Community 731|Community 731]]
+- [[_COMMUNITY_Community 732|Community 732]]
+- [[_COMMUNITY_Community 733|Community 733]]
+- [[_COMMUNITY_Community 734|Community 734]]
+- [[_COMMUNITY_Community 735|Community 735]]
+- [[_COMMUNITY_Community 737|Community 737]]
+- [[_COMMUNITY_Community 738|Community 738]]
+- [[_COMMUNITY_Community 739|Community 739]]
+- [[_COMMUNITY_Community 740|Community 740]]
+- [[_COMMUNITY_Community 741|Community 741]]
+- [[_COMMUNITY_Community 742|Community 742]]
+- [[_COMMUNITY_Community 743|Community 743]]
+- [[_COMMUNITY_Community 744|Community 744]]
+- [[_COMMUNITY_Community 745|Community 745]]
+- [[_COMMUNITY_Community 746|Community 746]]
+- [[_COMMUNITY_Community 747|Community 747]]
+- [[_COMMUNITY_Community 748|Community 748]]
+- [[_COMMUNITY_Community 749|Community 749]]
+- [[_COMMUNITY_Community 750|Community 750]]
+- [[_COMMUNITY_Community 751|Community 751]]
+- [[_COMMUNITY_Community 752|Community 752]]
+- [[_COMMUNITY_Community 753|Community 753]]
+- [[_COMMUNITY_Community 754|Community 754]]
+- [[_COMMUNITY_Community 755|Community 755]]
+- [[_COMMUNITY_Community 756|Community 756]]
+- [[_COMMUNITY_Community 757|Community 757]]
+- [[_COMMUNITY_Community 758|Community 758]]
+- [[_COMMUNITY_Community 759|Community 759]]
+- [[_COMMUNITY_Community 761|Community 761]]
+- [[_COMMUNITY_Community 762|Community 762]]
+- [[_COMMUNITY_Community 763|Community 763]]
+- [[_COMMUNITY_Community 765|Community 765]]
+- [[_COMMUNITY_Community 766|Community 766]]
+- [[_COMMUNITY_Community 767|Community 767]]
+- [[_COMMUNITY_Community 768|Community 768]]
+- [[_COMMUNITY_Community 769|Community 769]]
+- [[_COMMUNITY_Community 770|Community 770]]
+- [[_COMMUNITY_Community 771|Community 771]]
+- [[_COMMUNITY_Community 772|Community 772]]
+- [[_COMMUNITY_Community 773|Community 773]]
+- [[_COMMUNITY_Community 776|Community 776]]
+- [[_COMMUNITY_Community 777|Community 777]]
+- [[_COMMUNITY_Community 785|Community 785]]
+- [[_COMMUNITY_Community 786|Community 786]]
+- [[_COMMUNITY_Community 789|Community 789]]
+- [[_COMMUNITY_Community 790|Community 790]]
+- [[_COMMUNITY_Community 791|Community 791]]
+- [[_COMMUNITY_Community 792|Community 792]]
+- [[_COMMUNITY_Community 793|Community 793]]
+- [[_COMMUNITY_Community 794|Community 794]]
+- [[_COMMUNITY_Community 795|Community 795]]
+- [[_COMMUNITY_Community 796|Community 796]]
+- [[_COMMUNITY_Community 797|Community 797]]
+- [[_COMMUNITY_Community 801|Community 801]]
+- [[_COMMUNITY_Community 803|Community 803]]
+- [[_COMMUNITY_Community 805|Community 805]]
+- [[_COMMUNITY_Community 806|Community 806]]
+- [[_COMMUNITY_Community 807|Community 807]]
+- [[_COMMUNITY_Community 808|Community 808]]
+- [[_COMMUNITY_Community 809|Community 809]]
+- [[_COMMUNITY_Community 810|Community 810]]
+- [[_COMMUNITY_Community 811|Community 811]]
+- [[_COMMUNITY_Community 812|Community 812]]
+- [[_COMMUNITY_Community 813|Community 813]]
+- [[_COMMUNITY_Community 814|Community 814]]
+- [[_COMMUNITY_Community 815|Community 815]]
+- [[_COMMUNITY_Community 816|Community 816]]
+- [[_COMMUNITY_Community 822|Community 822]]
+- [[_COMMUNITY_Community 823|Community 823]]
+- [[_COMMUNITY_Community 824|Community 824]]
+- [[_COMMUNITY_Community 825|Community 825]]
+- [[_COMMUNITY_Community 826|Community 826]]
+- [[_COMMUNITY_Community 827|Community 827]]
+- [[_COMMUNITY_Community 828|Community 828]]
+- [[_COMMUNITY_Community 829|Community 829]]
+- [[_COMMUNITY_Community 830|Community 830]]
+- [[_COMMUNITY_Community 831|Community 831]]
 
 ## God Nodes (most connected - your core abstractions)
-1. `User` - 117 edges
-2. `Idea` - 98 edges
-3. `SettingsController` - 68 edges
-4. `Toolbox` - 45 edges
-5. `IdeasController` - 37 edges
-6. `Version` - 36 edges
-7. `ApplicationController` - 34 edges
-8. `NoteImportService` - 33 edges
-9. `SqlcipherDatabaseMigrator` - 27 edges
-10. `Template` - 26 edges
+1. `push()` - 412 edges
+2. `push()` - 410 edges
+3. `get()` - 175 edges
+4. `get()` - 175 edges
+5. `get()` - 175 edges
+6. `e()` - 173 edges
+7. `get()` - 171 edges
+8. `get()` - 170 edges
+9. `get()` - 168 edges
+10. `push()` - 166 edges
 
 ## Surprising Connections (you probably didn't know these)
+- `snapshot()` --calls--> `draft`  [INFERRED]
+  app/assets/builds/excalidraw_app/index.js → test/javascript/idea_draft_store_test.mjs
+- `security_release?()` --calls--> `match?()`  [INFERRED]
+  lib/semver_compare.rb → app/models/voice_fingerprint.rb
 - `idea_for_media_history()` --calls--> `Idea`  [INFERRED]
   config/initializers/idea_history_active_storage.rb → app/models/idea.rb
-- `verifier()` --calls--> `Application`  [INFERRED]
-  app/services/note_import_service.rb → config/application.rb
-- `apply_sqlcipher_key!()` --calls--> `execute()`  [INFERRED]
-  config/initializers/sqlcipher.rb → test/services/sqlcipher_initializer_test.rb
-- `format_description()` --calls--> `match?()`  [INFERRED]
-  app/helpers/application_helper.rb → app/models/voice_fingerprint.rb
-- `sqlcipher_available?()` --calls--> `get_first_value()`  [INFERRED]
-  config/initializers/sqlcipher.rb → test/services/sqlcipher_initializer_test.rb
+- `BV()` --calls--> `FB()`  [INFERRED]
+  app/assets/builds/excalidraw_app/index.js → public/assets/graph/index-bd273b9e0ff0e8770a86f6911e04c3036d423312e6fb71e8cdf166481140d9c6.js
+- `pV()` --calls--> `FB()`  [INFERRED]
+  app/assets/builds/excalidraw_app/index.js → public/assets/graph/index-bd273b9e0ff0e8770a86f6911e04c3036d423312e6fb71e8cdf166481140d9c6.js
 
-## Communities (299 total, 183 thin omitted)
+## Communities (832 total, 208 thin omitted)
+
+### Community 0 - "Community 0"
+Cohesion: 0.00
+Nodes (673): _5t(), $8A(), _9e(), A3t(), a5e(), [A,e], [a,n], [a,n,o,s] (+665 more)
+
+### Community 1 - "Community 1"
+Cohesion: 0.01
+Nodes (239): _7(), a4(), AA(), addLayerUpdate(), addScaledSH(), _addVertexToFace(), aN(), aP() (+231 more)
 
 ### Community 2 - "Community 2"
-Cohesion: 0.06
-Nodes (31): [1.0.0] - 2026-02-24, [1.1.0] - 2026-03-16, [1.2.0] - 2026-03-24, [1.3.0] - 2026-03-28, [1.4.0] - 2026-05-12, Added, Added, Added (+23 more)
+Cohesion: 0.03
+Nodes (244): A6(), join2(), RF(), add(), addScalar(), addScaledVector(), addVectors(), AF() (+236 more)
 
 ### Community 3 - "Community 3"
-Cohesion: 0.12
-Nodes (15): code:bash (cd /home/devuser/ideafoundry), code:bash (npm view @excalidraw/excalidraw version dist-tags --json), code:bash (npm install @excalidraw/excalidraw@latest), code:bash (corepack yarn add @excalidraw/excalidraw@latest), code:tsx (import { Excalidraw, exportToBlob } from "@excalidraw/excali), code:bash (npm run build), code:bash (npm run verify:excalidraw-local-only), code:bash (git diff -- package.json package-lock.json yarn.lock esbuild) (+7 more)
+Cohesion: 0.02
+Nodes (190): m2(), Pi(), addContext(), addFlow(), addFlowCode(), addFlowCodeHierarchy(), addFlowTab(), addInclude() (+182 more)
 
 ### Community 4 - "Community 4"
-Cohesion: 0.16
-Nodes (4): install_url(), MobileUplink, pairing_payload(), qr_svg()
+Cohesion: 0.02
+Nodes (260): w2(), activeTexture(), addBundle(), addSequentialNode(), allocateQueriesForContext(), _applyHighlights(), B3(), begin() (+252 more)
 
 ### Community 5 - "Community 5"
+Cohesion: 0.01
+Nodes (85): animate(), Ap(), area(), bu(), clearViewOffset(), complete(), convertLinearToSRGB(), copyLinearToSRGB() (+77 more)
+
+### Community 6 - "Community 6"
 Cohesion: 0.06
-Nodes (8): ApplicationController, TypingLocksController, passed?(), enrollment_text(), random_enrollment_id(), random_unlock_id(), TypingTextLibrary, unlock_text()
+Nodes (64): _9(), ak(), _allocateTarget(), _allocateTargets(), _applyGGXFilter(), _applyPMREM(), b8(), _cleanup() (+56 more)
+
+### Community 7 - "Community 7"
+Cohesion: 0.04
+Nodes (161): A0A(), A4e(), Ace(), addPipelineComponent(), aoA(), AQe(), arc(), assign() (+153 more)
+
+### Community 8 - "Community 8"
+Cohesion: 0.02
+Nodes (143): zZ(), _, a7(), aL(), b7(), bA(), BD(), bias() (+135 more)
+
+### Community 9 - "Community 9"
+Cohesion: 0.07
+Nodes (62): addScaledVector(), angleTo(), at(), clampPoint(), closestPointToPoint(), _computeIntersections(), containsPoint(), copy() (+54 more)
+
+### Community 10 - "Community 10"
+Cohesion: 0.03
+Nodes (12): record_idea_history(), records_idea_history(), ocr_complete?(), ocr_parts(), record_idea_text_history(), idea_for_media_history(), record_idea_media_history(), CoolOffTransitionJob (+4 more)
+
+### Community 11 - "Community 11"
+Cohesion: 0.05
+Nodes (6): IdeasController, IdeasControllerTest, ListsController, ListsControllerTest, IdeaList, List
 
 ### Community 12 - "Community 12"
-Cohesion: 0.05
-Nodes (3): VersionsController, Version, VersionService
+Cohesion: 0.09
+Nodes (29): getFrameExtents(), getFrustum(), getViewport(), getWorldPosition(), makeRotation(), makeRotationX(), makeRotationY(), makeRotationZ() (+21 more)
 
 ### Community 13 - "Community 13"
-Cohesion: 0.15
-Nodes (3): Error, GithubClient, NotFound
+Cohesion: 0.00
+Nodes (591): [A,e], [a,n], [a,n,o,s], [a,n,o,s,l,g,C,B], aA, aCA(), addTrend(), Aft() (+583 more)
 
 ### Community 14 - "Community 14"
-Cohesion: 0.07
-Nodes (3): Toolbox, ToolsController, AgentRecommendation
+Cohesion: 0.17
+Nodes (4): encode_payload(), encoded_payload(), ImportError, NoteImportService
 
 ### Community 15 - "Community 15"
-Cohesion: 0.05
-Nodes (7): SerpApiAdapter, Application, BuildItemsControllerTest, DrawingsController, CheckAppUpgradeJob, Drawing, IdeaEnrichmentService
+Cohesion: 0.03
+Nodes (22): check_notification_triggers(), notification_metadata(), preset_for(), EventNotificationJob, IdeaDigestJob, ScheduledBackupNotificationJob, IdeaMailer, User (+14 more)
 
 ### Community 16 - "Community 16"
 Cohesion: 0.04
-Nodes (48): code:ruby (test "PATCH settings/security enabling voice id with valid s), code:ruby (def enroll_voice), code:ruby (def create_voice), code:ruby (def voice_id_samples), code:bash (rm app/views/typing_locks/enroll_voice.html.erb), code:ruby (redirect_for_typing_lock(enroll_voice_id_path(return_to: tar), code:ruby (redirect_for_typing_lock(settings_security_path)), code:bash (bin/rails routes | grep voice) (+40 more)
+Nodes (65): $(), ut, abort(), addEventListener(), addGroup(), Bh(), bind(), bm() (+57 more)
+
+### Community 17 - "Community 17"
+Cohesion: 0.01
+Nodes (282): _3(), _6(), _8(), addClass(), addLight(), addMaterial(), addToneMapping(), addType() (+274 more)
+
+### Community 18 - "Community 18"
+Cohesion: 0.06
+Nodes (80): cancel(), start(), addHiddenNodes(), addParents(), aNe(), AOe(), AUe(), beginGroup() (+72 more)
+
+### Community 19 - "Community 19"
+Cohesion: 0.04
+Nodes (5): Connection, SettingsController, SettingsControllerTest, CreateExportJobs, CreateApiKeys
+
+### Community 20 - "Community 20"
+Cohesion: 0.05
+Nodes (75): addEventListeners(), addMidpoint(), addPoints(), arePointsEqual(), clearImageShapeCache(), componentDidUpdate(), createPointAt(), deletePoints() (+67 more)
 
 ### Community 21 - "Community 21"
-Cohesion: 0.09
-Nodes (10): SubmissionImportsController, encode_payload(), encoded_payload(), import!(), ImportError, NoteImportService, raw_payload_for(), source_label_for() (+2 more)
+Cohesion: 0.06
+Nodes (49): _6e(), _8t(), art(), BRt(), crt(), D8(), d8t(), dRt() (+41 more)
 
 ### Community 22 - "Community 22"
+Cohesion: 0.01
+Nodes (270): _4(), _9(), AF(), aN(), aP(), _applyHighlights(), aV(), aX() (+262 more)
+
+### Community 23 - "Community 23"
 Cohesion: 0.04
-Nodes (47): code:ruby (test "display_contrast returns 100 by default" do), code:bash (git add app/models/user.rb test/controllers/settings_control), code:ruby (test "GET settings/display renders display page" do), code:block12 (bin/rails test test/controllers/settings_controller_test.rb), code:ruby (get 'settings/display', to: 'settings#display', as: :setting), code:ruby (def display), code:ruby (redirect_to settings_path, notice: 'Display quote updated.'), code:ruby (redirect_to settings_display_path, notice: 'Display settings) (+39 more)
+Nodes (48): Aut(), B3(), B8t(), Bn(), $c(), DD(), dut(), dyA() (+40 more)
+
+### Community 24 - "Community 24"
+Cohesion: 0.02
+Nodes (277): _2A(), A2A(), AAt(), AC(), addAccelerator(), addDeaccelerator(), AfA(), Aj() (+269 more)
 
 ### Community 25 - "Community 25"
-Cohesion: 0.04
-Nodes (45): Build Next Backlog — Implementation Plan, code:ruby (# test/models/build_item_test.rb), code:ruby (# test/controllers/build_items_controller_test.rb), code:bash (bin/rails test test/controllers/build_items_controller_test.), code:ruby (# Build Next backlog), code:ruby (# app/controllers/build_items_controller.rb), code:bash (bin/rails test test/controllers/build_items_controller_test.), code:bash (git add -A && git commit -m "feat: add BuildItemsController ) (+37 more)
+Cohesion: 0.07
+Nodes (8): ApplicationController, TypingLocksControllerTest, TypingLocksController, enrollment_text(), random_enrollment_id(), random_unlock_id(), TypingTextLibrary, unlock_text()
+
+### Community 26 - "Community 26"
+Cohesion: 0.08
+Nodes (4): TopologiesControllerTest, TopologiesController, IdeaTopology, Topology
+
+### Community 27 - "Community 27"
+Cohesion: 0.11
+Nodes (47): alternative(), assertion(), atom(), atomEscape(), characterClass(), characterClassEscape(), classAtom(), classEscape() (+39 more)
 
 ### Community 28 - "Community 28"
-Cohesion: 0.05
-Nodes (41): code:ruby (test "topology_settings returns defaults when none stored" d), code:erb (<%= link_to settings_topologies_path, class: "settings-row" ), code:bash (git add app/views/settings/topologies.html.erb app/views/set), code:ruby (require "test_helper"), code:ruby (# before:), code:ruby (# before:), code:ruby (def graph_settings_for_response(topology_id = nil)), code:bash (git add app/controllers/topologies_controller.rb test/contro) (+33 more)
+Cohesion: 0.10
+Nodes (5): ExportsController, UpgradesController, ScheduledBackupJob, BackupMailer, ExportJob
 
 ### Community 29 - "Community 29"
-Cohesion: 0.08
-Nodes (8): WebhooksController, find_by_reference(), normalize_reference_value(), Submission, created?(), IntakeSubmissionService, target_type(), SubmissionsController
+Cohesion: 0.01
+Nodes (327): _7e(), a(), evt(), fvt(), jbt(), A9t(), add(), addAnnotation() (+319 more)
 
 ### Community 30 - "Community 30"
-Cohesion: 0.06
-Nodes (32): Acceptance Criteria, Acceptance Criteria, Acceptance Criteria, Acceptance Criteria, Acceptance Criteria, Acceptance Criteria, Acceptance Criteria, Acceptance Criteria (+24 more)
+Cohesion: 0.03
+Nodes (110): ahA(), applyLatestChanges(), Axe(), boA(), bUe(), BW(), cancelWrite(), CEA() (+102 more)
 
 ### Community 31 - "Community 31"
-Cohesion: 0.06
-Nodes (31): 1. Version Model (`app/models/version.rb`), 2. Idea Model Updates (`app/models/idea.rb`), 3. VersionService (`app/services/version_service.rb`), 4. Database Schema, Atomic Update with Version, code:ruby (idea = Idea.find(1)), code:ruby (service = VersionService.new(idea)), code:ruby (old_version = idea.versions.find(5)) (+23 more)
-
-### Community 32 - "Community 32"
-Cohesion: 0.06
-Nodes (30): Adding a Background Job, Adding a New Feature, Adding a Stimulus Controller, Architecture Overview, Backend, Building the Graph Bundle, code:block1 (Inbound email → Resend webhook → Action Mailbox → IdeasMailb), code:ruby (class MyJob < ApplicationJob) (+22 more)
+Cohesion: 0.04
+Nodes (99): x2(), _4(), _8(), addChain(), addGroup(), _addPointer(), addUniformUpdateRange(), addUpdateRange() (+91 more)
 
 ### Community 33 - "Community 33"
-Cohesion: 0.06
-Nodes (30): code:ruby (# test/helpers/email_theme_helper_test.rb), code:ruby (def email), code:bash (git add app/controllers/settings_controller.rb test/controll), code:erb (<div style="margin-bottom: 1.5rem;">), code:bash (git add app/views/settings/email.html.erb), code:ruby (def share_idea(idea, recipient_email, sender_name: nil)), code:erb (<div style="max-width: 600px; margin: 0 auto; font-family: -), code:bash (git add app/mailers/idea_mailer.rb app/views/idea_mailer/sha) (+22 more)
+Cohesion: 0.01
+Nodes (248): _4(), aN(), aP(), _applyHighlights(), B3(), b4(), before(), Bz() (+240 more)
+
+### Community 34 - "Community 34"
+Cohesion: 0.09
+Nodes (33): je(), aD(), c9(), createCubeRenderTarget(), createRenderTarget(), getLightCoord(), getShadowFilterFn(), getSharedContext() (+25 more)
 
 ### Community 35 - "Community 35"
-Cohesion: 0.07
-Nodes (26): Access Control, Accessibility, Architecture, code:ruby (class IdeasController < ApplicationController), Components and Interfaces, Controller Layer, Data Models Integration, Design Document (+18 more)
+Cohesion: 0.08
+Nodes (17): TopologyGraphChannel, tick(), startAnimationLoop(), applyPatch(), subscribe(), buildClusterHulls(), clearHulls(), debouncedRebuildClusters() (+9 more)
+
+### Community 36 - "Community 36"
+Cohesion: 0.05
+Nodes (80): clearStoredDraft(), connect(), cryptoOptions(), discard(), dismiss(), hidePrompt(), queueResumePrompt(), queueSave() (+72 more)
 
 ### Community 37 - "Community 37"
-Cohesion: 0.09
-Nodes (22): dependencies, 3d-force-graph, @excalidraw/excalidraw, hyperformula, @rails/actioncable, react, react-dom, three (+14 more)
+Cohesion: 0.06
+Nodes (8): VersionsController, snapshot(), getSerializeChildren(), serialize(), Y4(), Version, VersionServiceTest, VersionService
 
 ### Community 38 - "Community 38"
 Cohesion: 0.09
-Nodes (22): Background Jobs, code:bash (# Clone the repo), code:bash (docker compose up --build), code:bash (RAILS_ENV=production \), code:bash (EDITOR="code --wait" bin/rails credentials:edit), code:yaml (resend:), code:bash (# Build and run only sidecar services: voice-id and OCR), code:bash (export VOICE_ID_SERVICE_URL=http://127.0.0.1:8000) (+14 more)
+Nodes (9): WebhooksController, CreateSubmissions, find_by_reference(), normalize_reference_value(), Submission, created?(), IntakeSubmissionService, target_type() (+1 more)
+
+### Community 39 - "Community 39"
+Cohesion: 0.01
+Nodes (236): activeDialogSelector, added, addToSet(), androidVersionMatch, _applyDecs(), _applyDecs2203R(), applyDecs2203RFactory(), _applyDecs2301() (+228 more)
 
 ### Community 40 - "Community 40"
-Cohesion: 0.09
-Nodes (21): Back-of-the-Napkin Calculations per Idea, code:ruby (add_column :ideas, :napkin_calculations, :json), code:json ({), Controller param handling, Data Model, Files, Form (create/edit), Formula Engine (+13 more)
+Cohesion: 0.02
+Nodes (162): _0A(), A5t(), acquireParserWorker(), addTokenUsingPush(), aP(), ayA(), B9e(), b$e() (+154 more)
 
 ### Community 41 - "Community 41"
-Cohesion: 0.26
-Nodes (20): Any, bytes, Image, int, block_metadata(), extract(), extract_image(), extract_images() (+12 more)
+Cohesion: 0.03
+Nodes (123): abort(), aC(), addEventListener(), addMaterial(), addPass(), addToneMapping(), addType(), bind() (+115 more)
 
 ### Community 43 - "Community 43"
-Cohesion: 0.10
-Nodes (19): 1. Data Model, 2. Background Job — `CheckAppUpgradeJob`, 3. Toast Notification, 4. Settings Upgrade Bar, 5. Upgrade Action, 6. Version Comparison Logic, 7. Files Touched / Created, App Upgrade Path — Design Spec (+11 more)
+Cohesion: 0.07
+Nodes (60): addScalar(), addVectors(), applyMatrix3(), applyMatrix4(), applyNormalMatrix(), center(), clampLength(), computeBoundingBox() (+52 more)
 
 ### Community 44 - "Community 44"
-Cohesion: 0.10
-Nodes (19): Architecture, Autonomy Policy, code:ruby ({), Continuous Loop, Current Context, Data Model, Error Handling, Goal (+11 more)
+Cohesion: 0.02
+Nodes (168): addActor(), addAll(), addAttributes(), addClass(), addClassesToNamespace(), addCssStyles(), addDescription(), addEntity() (+160 more)
 
 ### Community 45 - "Community 45"
-Cohesion: 0.11
-Nodes (18): `application_controller.rb`, code:block1 (if voice_id enabled:), code:ruby (elsif @user.voice_id_requested? && !@user.voice_id_configure), Controller (`settings_controller.rb#update_security`), Design, Goal, JS / Stimulus, Model (`user.rb`) (+10 more)
+Cohesion: 0.12
+Nodes (28): addOrUpdateField(), addTab(), applyDataToChip(), buildChip(), cancelEditField(), chipDragEnd(), _clearAllDragOver(), clearFieldForm() (+20 more)
+
+### Community 46 - "Community 46"
+Cohesion: 0.06
+Nodes (33): Rails Database Configuration, Docker Compose OCR Service, Docker Compose Voice ID Service, Docker Compose Web Service, File Storage Contract, apply_sqlcipher_key!(), configure_connection(), database_path() (+25 more)
+
+### Community 47 - "Community 47"
+Cohesion: 0.01
+Nodes (255): activeDialogSelector, added, addToSet(), androidVersionMatch, applyClassDecs(), _applyDecs(), _applyDecs2203(), applyDecs2203Factory() (+247 more)
 
 ### Community 48 - "Community 48"
-Cohesion: 0.11
-Nodes (17): Backend Logic, code:bash (# On macOS with Homebrew), code:bash (# Run all drag-and-drop system tests), ✅ Completed Components, Drag and Drop Implementation - Task 4, Drag Controller Features, Files Modified/Created, Implementation Details (+9 more)
+Cohesion: 0.14
+Nodes (25): J5t(), X6t(), bg(), bk(), ek(), eV(), GG(), jG() (+17 more)
+
+### Community 49 - "Community 49"
+Cohesion: 0.10
+Nodes (27): ac(), au(), ceil(), closePath(), equals(), extractPoints(), floor(), getCurveLengths() (+19 more)
+
+### Community 50 - "Community 50"
+Cohesion: 0.02
+Nodes (276): add(), addLayerUpdate(), addScalar(), addScaledSH(), addScaledVector(), addVectors(), ambientOcclusion(), angleTo() (+268 more)
 
 ### Community 51 - "Community 51"
-Cohesion: 0.16
-Nodes (14): blobToDataUrl(), csrfToken(), ExcalidrawApp(), LOCAL_ONLY_UI_OPTIONS, mount(), parseInitialContent(), postJSON(), Props (+6 more)
+Cohesion: 0.08
+Nodes (37): absarc(), absellipse(), arc(), bezierCurveTo(), Bo(), bs(), $c(), ce() (+29 more)
 
 ### Community 52 - "Community 52"
-Cohesion: 0.15
-Nodes (5): record_idea_history(), records_idea_history(), record_idea_text_history(), idea_for_media_history(), record_idea_media_history()
+Cohesion: 0.16
+Nodes (28): addCol(), addRow(), applyFormat(), cellMouseDown(), cellRef(), computeDisplay(), connect(), editCell() (+20 more)
 
 ### Community 53 - "Community 53"
-Cohesion: 0.12
-Nodes (15): Attack Executed, code:bash (cat storage/recovery_passphrase.key), code:ruby (session[RECOVERY_SECRET_SESSION_KEY] = passphrase  # raw pas), code:ruby (# config/initializers/rack_attack.rb), code:ruby (SCRYPT_N = 2**14   # 16,384 — below current recommendations), code:ruby (@raw_connection.execute(%(PRAGMA key = "x'#{RecoverySecret.s), CRITICAL — Passphrase co-located with encrypted database, HIGH — No rate limiting on passphrase entry endpoint (+7 more)
+Cohesion: 0.02
+Nodes (206): a0(), add(), addLayerUpdate(), addScaledSH(), addScaledVector(), addVectors(), AM(), ambientOcclusion() (+198 more)
+
+### Community 54 - "Community 54"
+Cohesion: 0.02
+Nodes (254): add(), addLayerUpdate(), addScalar(), addScaledSH(), addScaledVector(), addVectors(), ambientOcclusion(), angleTo() (+246 more)
 
 ### Community 55 - "Community 55"
-Cohesion: 0.21
-Nodes (3): FileBackend, RecoveryKeychain, select_backend()
-
-### Community 56 - "Community 56"
-Cohesion: 0.16
-Nodes (5): EncryptUserSecuritySettings, MigrationUser, decrypt(), encrypt(), SecureSettingsPayload
+Cohesion: 0.02
+Nodes (272): activeTexture(), addBundle(), addClass(), addEventListener(), addLight(), allocateQueriesForContext(), begin(), beginCompute() (+264 more)
 
 ### Community 57 - "Community 57"
-Cohesion: 0.13
-Nodes (14): code:bash (bin/rails test test/models/idea_work_link_test.rb test/contr), Current App Findings, Feature Slices, First PR Proposal: External Work Links + Export Coverage Prep, IP Continuity and Relatedness Implementation Plan, Open Product Decisions, Slice 1: External Work / Plan Links, Slice 2: IP Asset Registry and Registration Loop Closure (+6 more)
+Cohesion: 0.05
+Nodes (144): _0e(), _2e(), _7t(), a2e(), a7t(), A8t(), Ade(), AlA() (+136 more)
+
+### Community 58 - "Community 58"
+Cohesion: 0.14
+Nodes (25): add(), applyCrop(), cancel(), cancelCrop(), _clearCropState(), connect(), _drawCropOverlay(), _ensureViewportRoot() (+17 more)
 
 ### Community 59 - "Community 59"
-Cohesion: 0.18
-Nodes (13): COMPOSE_PROJECT_NAME, detect_compose_cmd(), docker_available(), OCR_SERVICE_PORT, OCR_SERVICE_TIMEOUT, OCR_SERVICE_URL, PATH, podman_available() (+5 more)
+Cohesion: 0.02
+Nodes (262): activeTexture(), addBundle(), allocateQueriesForContext(), begin(), beginBundle(), beginCompute(), beginQuery(), beginRender() (+254 more)
 
 ### Community 60 - "Community 60"
-Cohesion: 0.14
-Nodes (13): Calendar Reminder per Idea, code:block1 (BEGIN:VCALENDAR), code:block2 (https://calendar.google.com/calendar/render?action=TEMPLATE), Event Content, Files Changed, Google Calendar Link, .ics Generation (client-side), Implementation (+5 more)
+Cohesion: 0.02
+Nodes (252): _2A(), A2A(), AAt(), AC(), addAccelerator(), addDeaccelerator(), Aj(), AmA() (+244 more)
 
 ### Community 61 - "Community 61"
-Cohesion: 0.14
-Nodes (13): Architecture, Attachment System Design, code:ruby (resources :attachments, only: [:create, :destroy, :update], ), code:html (<dialog data-controller="attachment-viewer" ...>), Controller: `IdeaAttachmentsController`, Data flow: Replace file, Goals, Key Invariants (+5 more)
+Cohesion: 0.13
+Nodes (23): r9t(), _allocateTargets(), _applyGGXFilter(), _applyPMREM(), _blur(), _cleanup(), compileCubemapShader(), compileEquirectangularShader() (+15 more)
 
 ### Community 62 - "Community 62"
+Cohesion: 0.02
+Nodes (229): addChain(), addContext(), addFlowCode(), addFlowCodeHierarchy(), addFlowTab(), addInclude(), addLineFlowCode(), addLineFlowCodeBlock() (+221 more)
+
+### Community 63 - "Community 63"
+Cohesion: 0.01
+Nodes (257): w, _3t(), activationCount(), addDocument(), addEdge(), addMessage(), addNote(), addSignal() (+249 more)
+
+### Community 64 - "Community 64"
+Cohesion: 0.12
+Nodes (21): Attachment System Design, IdeaAttachmentsController, backdropClose(), close(), confirmDelete(), open(), openDelete(), _populate() (+13 more)
+
+### Community 65 - "Community 65"
+Cohesion: 0.02
+Nodes (274): activeTexture(), addBundle(), allocateQueriesForContext(), As(), $B(), beginBundle(), beginCompute(), beginQuery() (+266 more)
+
+### Community 66 - "Community 66"
+Cohesion: 0.02
+Nodes (128): $7(), aA, addALink(), addBox(), addDetails(), addLinks(), addProperties(), aH() (+120 more)
+
+### Community 67 - "Community 67"
+Cohesion: 0.02
+Nodes (188): aA(), addChain(), addContext(), addFlow(), addFlowCode(), addFlowCodeHierarchy(), addFlowTab(), addInclude() (+180 more)
+
+### Community 68 - "Community 68"
+Cohesion: 0.31
+Nodes (10): dV(), FR(), fV(), H3A(), hV(), IV(), kR(), pV() (+2 more)
+
+### Community 69 - "Community 69"
+Cohesion: 0.03
+Nodes (77): addElement(), addPipelineComponent(), addRequirement(), alternatives(), BQA(), BQt(), buildTerminalToken(), canvas() (+69 more)
+
+### Community 70 - "Community 70"
+Cohesion: 0.02
+Nodes (128): ake(), AMe(), bd(), Bke(), buildLeftRecursionError(), buildLookaheadForAlternation(), buildLookaheadForOptional(), C5() (+120 more)
+
+### Community 71 - "Community 71"
+Cohesion: 0.02
+Nodes (207): addChain(), addContext(), addFlow(), addFlowCode(), addFlowCodeHierarchy(), addFlowTab(), addInclude(), addLineFlowCode() (+199 more)
+
+### Community 72 - "Community 72"
+Cohesion: 0.03
+Nodes (113): AGe(), Aje(), Aw(), bIA(), Bje(), Bne(), c2(), cje() (+105 more)
+
+### Community 73 - "Community 73"
+Cohesion: 0.02
+Nodes (165): _, _7(), a, a4(), a7(), AA(), aL(), applyEuler() (+157 more)
+
+### Community 74 - "Community 74"
+Cohesion: 0.15
+Nodes (6): EncryptUserSecuritySettings, MigrationUser, EncryptUserSecuritySettingsTest, decrypt(), encrypt(), SecureSettingsPayload
+
+### Community 75 - "Community 75"
+Cohesion: 0.01
+Nodes (267): $9t(), _7e(), $9t(), add(), addAttributes(), addClass(), addClassesToNamespace(), addCssStyles() (+259 more)
+
+### Community 76 - "Community 76"
+Cohesion: 0.03
+Nodes (102): _8e(), accept(), aiA(), aL(), ase(), B6A(), BA, bb() (+94 more)
+
+### Community 77 - "Community 77"
+Cohesion: 0.01
+Nodes (272): _3t(), $7(), A5t(), activationCount(), addActor(), addBox(), addEdge(), addHiddenNodes() (+264 more)
+
+### Community 78 - "Community 78"
+Cohesion: 0.01
+Nodes (233): _, _7(), _8(), a, a4(), a7(), AA(), addGroup() (+225 more)
+
+### Community 79 - "Community 79"
+Cohesion: 0.01
+Nodes (89): animate(), ao(), area(), complete(), convertLinearToSRGB(), copyLinearToSRGB(), copySampleValue_(), cu() (+81 more)
+
+### Community 80 - "Community 80"
+Cohesion: 0.10
+Nodes (35): a, applyEuler(), aq(), B0(), bh(), D3(), Dq(), eq() (+27 more)
+
+### Community 81 - "Community 81"
+Cohesion: 0.06
+Nodes (51): connect(), disconnect(), _execCommand(), _initDragDrop(), _initEditor(), _initToolbar(), _insertLink(), _pickImage() (+43 more)
+
+### Community 82 - "Community 82"
+Cohesion: 0.01
+Nodes (84): Al(), animate(), area(), complete(), convertLinearToSRGB(), copyLinearToSRGB(), copySampleValue_(), cu() (+76 more)
+
+### Community 83 - "Community 83"
+Cohesion: 0.03
+Nodes (107): ACTION(), AdA(), addExportedSymbol(), addLocalSymbol(), addPoint(), addPointToPath(), after(), bDt() (+99 more)
+
+### Community 84 - "Community 84"
+Cohesion: 0.04
+Nodes (74): _8e(), addAnnotation(), addNote(), ase(), B6A(), Bhe(), buildKeywordPattern(), buildKeywordToken() (+66 more)
+
+### Community 85 - "Community 85"
+Cohesion: 0.04
+Nodes (56): At(), BS(), cB(), clearAsync(), clearColorAsync(), clearDepthAsync(), clearStencilAsync(), compile() (+48 more)
+
+### Community 86 - "Community 86"
+Cohesion: 0.01
+Nodes (77): ah(), am(), area(), ch(), convertLinearToSRGB(), copyLinearToSRGB(), copySampleValue_(), eg() (+69 more)
+
+### Community 87 - "Community 87"
+Cohesion: 0.02
+Nodes (215): A4(), A5(), abort(), addEventListener(), _addPointer(), AF(), aH(), _allocateTarget() (+207 more)
+
+### Community 88 - "Community 88"
+Cohesion: 0.17
+Nodes (21): activateKey(), completeUnlockTransition(), connect(), deactivateKey(), hideDecoyScore(), input(), isComplete(), keydown() (+13 more)
+
+### Community 89 - "Community 89"
+Cohesion: 0.01
+Nodes (284): $2t(), a(), addAll(), addMembers(), ADt(), Ae(), ahe(), Aje() (+276 more)
+
+### Community 90 - "Community 90"
+Cohesion: 0.02
+Nodes (172): abort(), aC(), addMaterial(), addPass(), addToneMapping(), addType(), _allocateTarget(), _applyGGXFilter() (+164 more)
+
+### Community 91 - "Community 91"
+Cohesion: 0.03
+Nodes (154): _0e(), _2e(), _7t(), a2e(), a5e(), a7t(), A8t(), AlA() (+146 more)
+
+### Community 92 - "Community 92"
+Cohesion: 0.01
+Nodes (239): $8A(), AdA(), addAstNodeRegionWithAssignmentsTo(), addDocument(), addExportedSymbol(), addLocalSymbol(), addPoint(), addPointToPath() (+231 more)
+
+### Community 93 - "Community 93"
+Cohesion: 0.11
+Nodes (13): connect(), getDragAfterElement(), handleDragOver(), handleDrop(), saveOrder(), setupDragAndDrop(), calculateNewPosition(), connect() (+5 more)
+
+### Community 94 - "Community 94"
+Cohesion: 0.19
+Nodes (20): _audioSamplingSupported(), _blockEnrollment(), calculateRms(), connect(), csrfHeaders(), _enrollmentUnavailableMessage(), _handleLocalAudioError(), _handleRecordingUnavailable() (+12 more)
+
+### Community 97 - "Community 97"
+Cohesion: 0.03
+Nodes (12): _applyDecoratedDescriptor(), Block, Document, endOfRange(), getBlockConfig(), getLastElement(), getListAttributeNames(), SplittableList (+4 more)
+
+### Community 98 - "Community 98"
+Cohesion: 0.17
+Nodes (3): ApiKey, IdeaDocumentsController, Api::V1::IdeaDocumentsControllerTest
+
+### Community 99 - "Community 99"
+Cohesion: 0.03
+Nodes (10): Block, Document, endOfRange(), getBlockConfig(), getLastElement(), getListAttributeNames(), LineBreakInsertion, SplittableList (+2 more)
+
+### Community 100 - "Community 100"
+Cohesion: 0.11
+Nodes (23): hasDependencies(), dependencies, 3d-force-graph, @excalidraw/excalidraw, hyperformula, @rails/actioncable, react, react-dom (+15 more)
+
+### Community 101 - "Community 101"
+Cohesion: 0.09
+Nodes (6): LocalAgentSupervisorJob, LocalAgentSupervisorJobTest, ToolsController, AgentRecommendation, AgentRecommendationTest, AgentRun
+
+### Community 102 - "Community 102"
+Cohesion: 0.17
+Nodes (16): close(), _closeMount(), closeOnBackdrop(), closeOnEsc(), _csrf(), delete(), disconnect(), edit() (+8 more)
+
+### Community 103 - "Community 103"
+Cohesion: 0.04
+Nodes (67): acquireParserWorker(), blockquote(), blockTokens(), bp(), buildRootNode(), checkbox(), code(), codespan() (+59 more)
+
+### Community 104 - "Community 104"
+Cohesion: 0.03
+Nodes (92): ahA(), applyLatestChanges(), B2(), Ble(), boA(), bUe(), BW(), Cg() (+84 more)
+
+### Community 105 - "Community 105"
+Cohesion: 0.02
+Nodes (92): [Ae,et], Ag(), b1(), bo, Bv(), Cc(), [Ce,Oe,De], cv() (+84 more)
+
+### Community 106 - "Community 106"
+Cohesion: 0.05
+Nodes (112): _0A(), A0A(), A4e(), AQe(), b0A(), b$e(), BQe(), buildAlternationAmbiguityError() (+104 more)
+
+### Community 107 - "Community 107"
+Cohesion: 0.02
+Nodes (88): [Ae,et], Ag(), b1(), Bc(), [bd,bl], bo, c0(), cc() (+80 more)
+
+### Community 108 - "Community 108"
+Cohesion: 0.19
+Nodes (15): addToList(), applyMembership(), close(), closeOnClick(), closeOnKeydown(), emptyItem(), ensureMenu(), listIdsFor() (+7 more)
+
+### Community 109 - "Community 109"
+Cohesion: 0.02
+Nodes (99): addTrailingSlash(), AppearanceObserver, around(), buildFormData(), buildResourceAndBody(), cached, clickCaptured(), Config (+91 more)
+
+### Community 110 - "Community 110"
+Cohesion: 0.02
+Nodes (108): a1(), [Ae,et], Ag(), ah(), B0(), b1(), bd(), bo (+100 more)
+
+### Community 111 - "Community 111"
+Cohesion: 0.02
+Nodes (84): a1(), [Ae,et], Ag(), ah(), bd(), bo, Cc(), [Ce,Oe,De] (+76 more)
+
+### Community 112 - "Community 112"
+Cohesion: 0.20
+Nodes (7): clamp01(), easeInOut(), easeOutCubic(), easeOutQuint(), roundedRectShape(), ShackleCurve, TypingUnlockAnimation
+
+### Community 113 - "Community 113"
+Cohesion: 0.19
+Nodes (15): buildFieldHtml(), captureCurrentValues(), change(), connect(), defaultTabDefinitions(), escapeHtml(), handleDrop(), hideOrphaned() (+7 more)
+
+### Community 114 - "Community 114"
+Cohesion: 0.09
+Nodes (3): TodoItemsController, IdeasMailbox, TodoItem
+
+### Community 115 - "Community 115"
+Cohesion: 0.34
+Nodes (18): animateScoreChange(), calculateScore(), connect(), debouncedSave(), disconnect(), resetScores(), saveScoreToServer(), showSaveIndicator() (+10 more)
+
+### Community 116 - "Community 116"
+Cohesion: 0.03
+Nodes (94): A3t(), accept(), addToResyncTokens(), AF(), aL(), ale(), atLeastOneInternalLogic(), atLeastOneSepFirstInternalLogic() (+86 more)
+
+### Community 117 - "Community 117"
+Cohesion: 0.03
+Nodes (19): _checkPrivateRedeclaration(), _classPrivateFieldGet(), _classPrivateFieldInitSpec(), _classPrivateFieldSet(), _classPrivateMethodGet(), _classPrivateMethodInitSpec(), ElementInternalsDelegate, ElementStore (+11 more)
+
+### Community 118 - "Community 118"
+Cohesion: 0.04
+Nodes (12): ArrowLeft(), ArrowRight(), Composition, dragend(), dragstart(), Editor, formatRemove(), insertText() (+4 more)
+
+### Community 119 - "Community 119"
+Cohesion: 0.03
+Nodes (11): _applyDecoratedDescriptor(), AttachmentPiece, copy(), Hash, normalizeNewlines(), Piece, StringPiece, _taggedTemplateLiteral() (+3 more)
+
+### Community 120 - "Community 120"
+Cohesion: 0.17
+Nodes (12): appendItems(), connect(), destroyItem(), drop(), moveDown(), _moveItemsToMatchingSections(), moveUp(), persist() (+4 more)
+
+### Community 121 - "Community 121"
+Cohesion: 0.04
+Nodes (44): $(), c(), constructor(), disabledChanged(), elementAppearedInViewport(), et(), formSubmissionFinished(), g() (+36 more)
+
+### Community 122 - "Community 122"
+Cohesion: 0.03
+Nodes (105): addMidpoint(), addPoints(), arePointsEqual(), Aut(), B3(), $c(), c9A(), cancelWrite() (+97 more)
+
+### Community 123 - "Community 123"
+Cohesion: 0.10
+Nodes (4): BuildItemsController, BuildItemsControllerTest, setPosition(), BuildItem
+
+### Community 124 - "Community 124"
+Cohesion: 0.03
+Nodes (17): cut(), dragenter(), dragEventHasFiles(), dragover(), drop(), EditorController, innerElementIsActive(), InputController (+9 more)
+
+### Community 125 - "Community 125"
+Cohesion: 0.03
+Nodes (104): ACTION(), after(), ake(), AMe(), bd(), before(), Bke(), buildCompositeNode() (+96 more)
+
+### Community 126 - "Community 126"
+Cohesion: 0.22
+Nodes (18): QlA(), am(), cm(), em(), ge(), im(), ja(), Jp() (+10 more)
+
+### Community 128 - "Community 128"
+Cohesion: 0.19
+Nodes (3): IdeaAttachmentsController, IdeaAttachmentsControllerTest, AttachmentOcrJob
+
+### Community 129 - "Community 129"
+Cohesion: 0.04
+Nodes (10): ArrowLeft(), ArrowRight(), Composition, dragend(), dragstart(), formatRemove(), insertText(), left() (+2 more)
+
+### Community 130 - "Community 130"
+Cohesion: 0.02
+Nodes (166): _9(), abort(), aC(), addClass(), addEventListener(), addLight(), addMaterial(), addPass() (+158 more)
+
+### Community 131 - "Community 131"
+Cohesion: 0.02
+Nodes (111): addElement(), addRequirement(), alternatives(), BQt(), Bse(), buildDuplicateRuleNameError(), buildTerminalToken(), calculate() (+103 more)
+
+### Community 132 - "Community 132"
+Cohesion: 0.03
+Nodes (87): addALink(), addDetails(), addLinks(), addProperties(), aH(), analyzePath(), apply(), B3t() (+79 more)
+
+### Community 133 - "Community 133"
+Cohesion: 0.04
+Nodes (19): _checkPrivateRedeclaration(), _classPrivateFieldGet(), _classPrivateFieldInitSpec(), _classPrivateFieldSet(), _classPrivateMethodGet(), _classPrivateMethodInitSpec(), ElementInternalsDelegate, ElementStore (+11 more)
+
+### Community 134 - "Community 134"
+Cohesion: 0.07
+Nodes (9): f(), formSubmissionErrored(), formSubmissionFailedWithResponse(), formSubmissionStarted(), formSubmissionSucceededWithResponse(), ie, linkClickIntercepted(), requestStarted() (+1 more)
+
+### Community 135 - "Community 135"
+Cohesion: 0.16
+Nodes (14): w, blobToDataUrl(), csrfToken(), ExcalidrawApp(), LOCAL_ONLY_UI_OPTIONS, mount(), parseInitialContent(), postJSON() (+6 more)
+
+### Community 136 - "Community 136"
+Cohesion: 0.02
+Nodes (141): $1(), addClass(), addLight(), aX(), beginBundle(), byteLength(), ceil(), clearLayerUpdates() (+133 more)
+
+### Community 137 - "Community 137"
+Cohesion: 0.13
+Nodes (27): close(), closeOnEscape(), connect(), currentInventionDay(), dailyInvention(), disconnect(), hashString(), initialInventionIndex() (+19 more)
+
+### Community 139 - "Community 139"
+Cohesion: 0.05
+Nodes (12): Attachment, AttachmentPiece, AttachmentView, _classExtractFieldDescriptor(), _classPrivateFieldDestructureSet(), createCursorTarget(), extensionForFile(), formatter() (+4 more)
+
+### Community 140 - "Community 140"
+Cohesion: 0.04
+Nodes (9): entryHasDescriptionAndContext(), ManagedAttachment, normalizeNewlines(), Piece, snapshotsAreEqual(), StringPiece, TrixObject, UndoManager (+1 more)
+
+### Community 141 - "Community 141"
+Cohesion: 0.31
+Nodes (10): dV(), FR(), fV(), H3A(), hV(), IV(), kR(), pV() (+2 more)
+
+### Community 142 - "Community 142"
+Cohesion: 0.06
+Nodes (7): AttachmentEditorController, CompositionController, defer(), DocumentView, elementsHaveEqualHTML(), findStoredElements(), ignoreSpaces()
+
+### Community 143 - "Community 143"
+Cohesion: 0.08
+Nodes (6): ah(), b, p(), $s(), $v(), z1()
+
+### Community 144 - "Community 144"
+Cohesion: 0.05
+Nodes (56): abort(), addEventListener(), attach(), clear(), clearLayerUpdates(), clearViewOffset(), connect(), constructor() (+48 more)
+
+### Community 145 - "Community 145"
+Cohesion: 0.03
+Nodes (38): backspace(), beforeinput(), compositionend(), CompositionInput, compositionstart(), compositionupdate(), d(), dataTransferIsMsOfficePaste() (+30 more)
+
+### Community 146 - "Community 146"
+Cohesion: 0.07
+Nodes (3): ErrorRenderer, FrameRenderer, StreamElement
+
+### Community 147 - "Community 147"
+Cohesion: 0.05
+Nodes (16): close(), Connection, ConnectionMonitor, Consumer, error(), handleHeadElement(), LimitedSet, log() (+8 more)
+
+### Community 148 - "Community 148"
+Cohesion: 0.08
+Nodes (39): $1(), beginBundle(), _completeCompile(), createBundleEncoder(), createComputePipeline(), createRenderPipeline(), determinant(), ee() (+31 more)
+
+### Community 149 - "Community 149"
+Cohesion: 0.05
+Nodes (79): applyAxisAngle(), applyMatrix3(), applyMatrix4(), applyNormalMatrix(), applyQuaternion(), attach(), clampScalar(), clear() (+71 more)
+
+### Community 150 - "Community 150"
+Cohesion: 0.05
+Nodes (15): close(), Connection, ConnectionMonitor, Consumer, createWebSocketURL(), error(), log(), message() (+7 more)
+
+### Community 151 - "Community 151"
+Cohesion: 0.05
+Nodes (15): close(), Connection, ConnectionMonitor, Consumer, createWebSocketURL(), error(), log(), message() (+7 more)
+
+### Community 152 - "Community 152"
+Cohesion: 0.04
+Nodes (13): AttachmentManager, cut(), EditorController, formatIndent(), formatOutdent(), historyRedo(), historyUndo(), insertFromDrop() (+5 more)
+
+### Community 153 - "Community 153"
+Cohesion: 0.05
+Nodes (78): add(), addLayerUpdate(), addScaledVector(), angleTo(), at(), buildScene(), buildSparks(), clamp() (+70 more)
+
+### Community 154 - "Community 154"
+Cohesion: 0.04
+Nodes (76): abort(), addEventListener(), addGroup(), animate(), Bc(), Be(), bind(), clear() (+68 more)
+
+### Community 155 - "Community 155"
+Cohesion: 0.06
+Nodes (81): addScaledVector(), angleTo(), ar(), at(), clamp(), clampLength(), clampPoint(), clampScalar() (+73 more)
+
+### Community 156 - "Community 156"
+Cohesion: 0.05
+Nodes (5): getAnchor(), getRequestURL(), isSuccessful(), View, Visit
+
+### Community 157 - "Community 157"
+Cohesion: 0.04
+Nodes (69): abort(), addEventListener(), addGroup(), Bh(), bind(), bm(), Bt(), cl() (+61 more)
+
+### Community 158 - "Community 158"
+Cohesion: 0.05
+Nodes (59): applyAxisAngle(), applyEuler(), applyQuaternion(), compose(), conjugate(), decompose(), determinant(), extractBasis() (+51 more)
+
+### Community 159 - "Community 159"
+Cohesion: 0.08
+Nodes (38): _addAdjoiningFace(), _addNewFaces(), _addVertexToHull(), cm(), _computeExtremes(), _computeHorizon(), _computeInitialHull(), create() (+30 more)
+
+### Community 160 - "Community 160"
+Cohesion: 0.06
+Nodes (80): addScaledVector(), angleTo(), at(), bezierCurveTo(), clamp(), clampLength(), clampPoint(), clampScalar() (+72 more)
+
+### Community 161 - "Community 161"
 Cohesion: 0.14
 Nodes (13): compilerOptions, baseUrl, esModuleInterop, jsx, module, moduleResolution, outDir, paths (+5 more)
 
-### Community 63 - "Community 63"
-Cohesion: 0.14
-Nodes (13): Acceptance Criteria, Acceptance Criteria, Acceptance Criteria, Acceptance Criteria, Acceptance Criteria, Introduction, Requirement 1, Requirement 2 (+5 more)
+### Community 162 - "Community 162"
+Cohesion: 0.06
+Nodes (26): ask_agent_question_threads(), backlog_checklist_button(), backlog_description_list_item(), format_backlog_description(), format_description(), idea_context_kanban_boards_json(), GithubRepository, average() (+18 more)
 
-### Community 66 - "Community 66"
-Cohesion: 0.15
-Nodes (12): code:ruby ("topology_settings" => {), code:json ({ "nodes": [...], "links": [...], "settings": { "dag_mode": ), Controller: Settings, Controller: Topologies, Decision, JS: topology_graph_controller, Model: User, Per-Topology Overrides (+4 more)
+### Community 163 - "Community 163"
+Cohesion: 0.05
+Nodes (53): _addAdjoiningFace(), _addNewFaces(), _addVertexToHull(), close(), _computeHorizon(), confirmSubscription(), connectionIsStale(), dA() (+45 more)
 
-### Community 67 - "Community 67"
-Cohesion: 0.15
-Nodes (12): code:ruby (require "test_helper"), code:ruby (class CreateIdeaAgentTokens < ActiveRecord::Migration[8.0]), code:ruby (class IdeaAgentToken < ApplicationRecord), code:ruby (has_many :idea_agent_tokens, dependent: :destroy), code:ruby (require "test_helper"), code:ruby (require "test_helper"), code:bash (git add app db test config docs CHANGELOG.md), Idea Agent Document Access Implementation Plan (+4 more)
+### Community 164 - "Community 164"
+Cohesion: 0.06
+Nodes (9): Attachment, AttachmentView, _classExtractFieldDescriptor(), _classPrivateFieldDestructureSet(), createCursorTarget(), formatter(), _getRequireWildcardCache(), _interopRequireWildcard() (+1 more)
 
-### Community 68 - "Community 68"
-Cohesion: 0.15
-Nodes (12): Already cloned?, code:bash (git clone <repo-url> idea-app && cd idea-app && bin/install), code:bash (bin/dev              # starts Rails + esbuild watcher (dev m), code:bash (bin/install), Design Philosophy, Development, Features, Idea Foundry (+4 more)
+### Community 165 - "Community 165"
+Cohesion: 0.03
+Nodes (11): clearBusyState(), debounce(), dispatch(), extendURLWithDeprecatedProperties(), FetchRequest, fetchWithTurboHeaders(), locationIsVisitable(), markAsBusy() (+3 more)
 
-### Community 70 - "Community 70"
-Cohesion: 0.18
-Nodes (4): check_notification_triggers(), notification_metadata(), IdeaDigestJob, IdeaList
+### Community 166 - "Community 166"
+Cohesion: 0.04
+Nodes (40): backspace(), beforeinput(), compositionend(), CompositionInput, compositionstart(), compositionupdate(), _createForOfIteratorHelper(), d() (+32 more)
 
-### Community 71 - "Community 71"
-Cohesion: 0.35
-Nodes (11): average(), build(), canonical_phrase?(), duration_matches?(), duration_tolerance(), empty_fingerprint(), match?(), normalize_phrase() (+3 more)
+### Community 167 - "Community 167"
+Cohesion: 0.09
+Nodes (40): _(), a(), ae(), be(), c(), Ce(), D(), De() (+32 more)
 
-### Community 72 - "Community 72"
+### Community 168 - "Community 168"
+Cohesion: 0.04
+Nodes (12): clearCache(), expandURL(), FormLinkClickObserver, FrameController, FrameRedirector, FrameView, getAction$1(), getFrameElementById() (+4 more)
+
+### Community 169 - "Community 169"
+Cohesion: 0.13
+Nodes (25): addScalar(), addVectors(), center(), computeBoundingBox(), depth(), expandByObject(), expandByPoint(), expandByScalar() (+17 more)
+
+### Community 170 - "Community 170"
+Cohesion: 0.10
+Nodes (17): showIndicator(), toggleChanged(), onDrop(), saveOrder(), connect(), csrfToken(), handleShortcut(), hideAskAgent() (+9 more)
+
+### Community 171 - "Community 171"
+Cohesion: 0.07
+Nodes (41): allModifiers, bless(), blessDefinition(), camelize(), capitalize(), ClassPropertiesBlessing(), dasherize(), defaultActionDescriptorFilters (+33 more)
+
+### Community 172 - "Community 172"
+Cohesion: 0.09
+Nodes (40): $(), ae(), be(), c(), Ce(), D(), De(), E() (+32 more)
+
+### Community 173 - "Community 173"
+Cohesion: 0.09
+Nodes (10): HTMLParser, HTMLSanitizer, leftTrimBreakableWhitespace(), nodeEndsWithNonWhitespace(), nodeIsAttachmentElement(), ObjectMap, parseTrixDataAttribute(), removeNode() (+2 more)
+
+### Community 174 - "Community 174"
 Cohesion: 0.23
-Nodes (8): AuthenticatorApp, base32_decode(), base32_encode(), generate_secret(), hotp(), provisioning_uri(), url_encode(), verify_code()
+Nodes (9): App Upgrade Path Design Spec, CheckAppUpgradeJob, GitHub Releases API, UpgradesController, CheckAppUpgradeJob, distance(), parse(), security_release?() (+1 more)
 
-### Community 73 - "Community 73"
-Cohesion: 0.22
-Nodes (6): ask_agent_question_threads(), backlog_checklist_button(), backlog_description_list_item(), format_backlog_description(), format_description(), idea_context_kanban_boards_json()
+### Community 175 - "Community 175"
+Cohesion: 0.09
+Nodes (38): $(), ae(), be(), c(), Ce(), D(), De(), E() (+30 more)
 
-### Community 74 - "Community 74"
+### Community 176 - "Community 176"
+Cohesion: 0.06
+Nodes (10): add(), DataMap, del(), fetch(), getControllerAndEnsureConnectedScope(), getOutletController(), prune(), Router (+2 more)
+
+### Community 177 - "Community 177"
+Cohesion: 0.02
+Nodes (166): $d(), _, a8(), addGroup(), addPass(), addUniformUpdateRange(), addUpdateRange(), ax() (+158 more)
+
+### Community 178 - "Community 178"
+Cohesion: 0.33
+Nodes (6): createNode(), getNode(), setLights(), setupEnvironment(), setupLightMap(), setupLights()
+
+### Community 179 - "Community 179"
+Cohesion: 0.06
+Nodes (7): canRefreshFrame(), getPermanentElementById(), getPermanentElementMapForFragment(), MorphingPageRenderer, queryPermanentElementsAll(), Renderer, Snapshot
+
+### Community 180 - "Community 180"
+Cohesion: 0.05
+Nodes (4): $, q, w, z()
+
+### Community 181 - "Community 181"
+Cohesion: 0.08
+Nodes (8): a(), b, g(), lh(), _m(), P(), $s(), w()
+
+### Community 182 - "Community 182"
+Cohesion: 0.11
+Nodes (47): alternative(), assertion(), atom(), atomEscape(), characterClass(), characterClassEscape(), classAtom(), classEscape() (+39 more)
+
+### Community 183 - "Community 183"
+Cohesion: 0.08
+Nodes (8): a(), b, g(), lh(), _m(), P(), $s(), w()
+
+### Community 184 - "Community 184"
+Cohesion: 0.06
+Nodes (13): Editor, entryHasDescriptionAndContext(), formatIndent(), formatOutdent(), historyRedo(), historyUndo(), perform(), snapshotsAreEqual() (+5 more)
+
+### Community 185 - "Community 185"
+Cohesion: 0.06
+Nodes (56): a1(), Aa(), au(), br(), c1(), Cl(), cv(), D0() (+48 more)
+
+### Community 186 - "Community 186"
 Cohesion: 0.35
 Nodes (10): currency_symbol(), format_napkin_cell(), napkin_bold?(), napkin_detect_cycles(), napkin_evaluate(), napkin_extract_refs(), napkin_translate_formula(), number_with_delimiter_and_precision() (+2 more)
 
-### Community 75 - "Community 75"
-Cohesion: 0.36
-Nodes (10): build(), canonical_key(), compare_group(), compare_stat(), flight_features(), grouped_stats(), match(), normalize_events() (+2 more)
+### Community 187 - "Community 187"
+Cohesion: 0.08
+Nodes (34): addUniform(), byteLength(), ceil(), _copyCompressedBufferToTexture(), generateFilteredTexture(), generateTexture(), generateTextureDimension(), generateTextureLevel() (+26 more)
 
-### Community 76 - "Community 76"
-Cohesion: 0.22
-Nodes (3): CreateTopologiesAndIdeaTopologies, BackfillInstanceIdsOnFieldDefinitions, execute()
+### Community 188 - "Community 188"
+Cohesion: 0.07
+Nodes (14): b, $g(), _m(), $p(), _s(), w(), "../../node_modules/.pnpm/vscode-jsonrpc@8.2.0/node_modules/vscode-jsonrpc/lib/common/cancellation.js"(), "../../node_modules/.pnpm/vscode-jsonrpc@8.2.0/node_modules/vscode-jsonrpc/lib/common/connection.js"() (+6 more)
 
-### Community 81 - "Community 81"
-Cohesion: 0.20
-Nodes (9): code:bash (docker compose build voice-id web), code:bash (docker compose up), code:bash (docker compose up voice-id), code:bash (VOICE_ID_SERVICE_URL=http://localhost:8000 bin/rails server), Configuration, Local Voice ID, Offline behavior, Running Rails outside Docker (+1 more)
+### Community 189 - "Community 189"
+Cohesion: 0.06
+Nodes (52): $1(), am(), ap(), au(), Bh(), br(), Ch(), Da() (+44 more)
 
-### Community 82 - "Community 82"
-Cohesion: 0.20
-Nodes (9): code:block1 (Page header: "Display" + back link → settings_path), Contrast Storage, CSS, Display Settings Page — Design Spec, Goal, Out of Scope, Route & Controller, Settings Index Changes (+1 more)
+### Community 190 - "Community 190"
+Cohesion: 0.09
+Nodes (10): HTMLParser, HTMLSanitizer, leftTrimBreakableWhitespace(), nodeEndsWithNonWhitespace(), nodeIsAttachmentElement(), ObjectMap, parseTrixDataAttribute(), removeNode() (+2 more)
 
-### Community 83 - "Community 83"
-Cohesion: 0.22
-Nodes (4): BraveSearchAdapter, code(), Error, OcrClient
+### Community 191 - "Community 191"
+Cohesion: 0.08
+Nodes (11): at, connect(), disconnect(), formSubmitted(), me, prepareRequest(), Qt(), submittedFormLinkToLocation() (+3 more)
 
-### Community 85 - "Community 85"
+### Community 192 - "Community 192"
+Cohesion: 0.06
+Nodes (6): ce, changeHistory(), error(), extractForeignFrameElement(), ft, v()
+
+### Community 193 - "Community 193"
+Cohesion: 0.07
+Nodes (8): BlockView, endsWithWhitespace(), getTextConfig(), ObjectGroup, ObjectGroupView, ObjectView, PieceView, TextView
+
+### Community 194 - "Community 194"
+Cohesion: 0.07
+Nodes (37): $2t(), ADt(), BYe(), cK(), cwt(), cYe(), D0A(), dQA() (+29 more)
+
+### Community 195 - "Community 195"
+Cohesion: 0.07
+Nodes (8): BlockView, endsWithWhitespace(), getTextConfig(), ObjectGroup, ObjectGroupView, ObjectView, PieceView, TextView
+
+### Community 196 - "Community 196"
+Cohesion: 0.04
+Nodes (48): code:ruby (test "PATCH settings/security enabling voice id with valid s), code:ruby (def enroll_voice), code:ruby (def create_voice), code:ruby (def voice_id_samples), code:bash (rm app/views/typing_locks/enroll_voice.html.erb), code:ruby (redirect_for_typing_lock(enroll_voice_id_path(return_to: tar), code:ruby (redirect_for_typing_lock(settings_security_path)), code:bash (bin/rails routes | grep voice) (+40 more)
+
+### Community 197 - "Community 197"
+Cohesion: 0.08
+Nodes (33): $1(), addFlow(), _completeCompile(), createComputePipeline(), createRenderPipeline(), ee(), fromMaterial(), generateSnippet() (+25 more)
+
+### Community 199 - "Community 199"
+Cohesion: 0.04
+Nodes (47): code:ruby (test "display_contrast returns 100 by default" do), code:bash (git add app/models/user.rb test/controllers/settings_control), code:ruby (test "GET settings/display renders display page" do), code:block12 (bin/rails test test/controllers/settings_controller_test.rb), code:ruby (get 'settings/display', to: 'settings#display', as: :setting), code:ruby (def display), code:ruby (redirect_to settings_path, notice: 'Display quote updated.'), code:ruby (redirect_to settings_display_path, notice: 'Display settings) (+39 more)
+
+### Community 200 - "Community 200"
+Cohesion: 0.23
+Nodes (12): build(), canonical_key(), compare_group(), compare_stat(), flight_features(), grouped_stats(), match(), normalize_events() (+4 more)
+
+### Community 201 - "Community 201"
+Cohesion: 0.07
+Nodes (34): applyAxisAngle(), applyEuler(), applyQuaternion(), clamp(), clampScalar(), co(), getHSL(), lerpHSL() (+26 more)
+
+### Community 202 - "Community 202"
+Cohesion: 0.08
+Nodes (10): close(), cs, forget(), guarantee(), hs, log(), message(), open() (+2 more)
+
+### Community 203 - "Community 203"
+Cohesion: 0.27
+Nodes (4): downloadIcs(), _escapeIcsText(), _formatDateUTC(), openGoogle()
+
+### Community 204 - "Community 204"
+Cohesion: 0.05
+Nodes (65): _1(), _2(), a2(), ac(), am(), Ap(), Bf(), br() (+57 more)
+
+### Community 205 - "Community 205"
+Cohesion: 0.07
+Nodes (46): _addAdjoiningFace(), _addNewFaces(), _addVertexToFace(), _addVertexToHull(), append(), appendChain(), applyMatrix3(), applyNormalMatrix() (+38 more)
+
+### Community 206 - "Community 206"
+Cohesion: 0.04
+Nodes (45): Build Next Backlog — Implementation Plan, code:ruby (# test/models/build_item_test.rb), code:ruby (# test/controllers/build_items_controller_test.rb), code:bash (bin/rails test test/controllers/build_items_controller_test.), code:ruby (# Build Next backlog), code:ruby (# app/controllers/build_items_controller.rb), code:bash (bin/rails test test/controllers/build_items_controller_test.), code:bash (git add -A && git commit -m "feat: add BuildItemsController ) (+37 more)
+
+### Community 207 - "Community 207"
+Cohesion: 0.07
+Nodes (46): _0(), a0(), am(), Bf(), br(), D0(), Da(), dl() (+38 more)
+
+### Community 208 - "Community 208"
+Cohesion: 0.06
+Nodes (45): ac(), au(), Bo(), bs(), bu(), $c(), ce(), ci() (+37 more)
+
+### Community 210 - "Community 210"
+Cohesion: 0.06
+Nodes (7): AttachmentEditorController, CompositionController, defer(), DocumentView, elementsHaveEqualHTML(), findStoredElements(), ignoreSpaces()
+
+### Community 211 - "Community 211"
+Cohesion: 0.06
+Nodes (3): b(), dt, n()
+
+### Community 212 - "Community 212"
+Cohesion: 0.07
+Nodes (4): elementWithoutNonce(), FrameElement, hasAttribute(), Preloader
+
+### Community 213 - "Community 213"
+Cohesion: 0.25
+Nodes (21): Any, bytes, Image, int, block_metadata(), extract(), extract_image(), extract_images() (+13 more)
+
+### Community 214 - "Community 214"
+Cohesion: 0.28
+Nodes (3): onCancel(), onUp(), reset()
+
+### Community 215 - "Community 215"
+Cohesion: 0.06
+Nodes (59): add(), addLayerUpdate(), applyMatrix4(), attach(), cg(), compose(), conjugate(), connect() (+51 more)
+
+### Community 217 - "Community 217"
+Cohesion: 0.07
+Nodes (12): innerElementIsActive(), keypress(), LocationMapper, MutationObserver, nodeIsBlockContainer(), nodeIsBlockStartComment(), nodeIsCommentNode(), nodeIsEmptyTextNode() (+4 more)
+
+### Community 218 - "Community 218"
+Cohesion: 0.05
+Nodes (9): Cache, FormSubmission, getCookieValue(), getMetaContent(), getMetaElement(), LinkPrefetchObserver, PrefetchCache, responseSucceededWithoutRedirect() (+1 more)
+
+### Community 219 - "Community 219"
+Cohesion: 0.09
+Nodes (4): PageSnapshot, PageView, parseHTMLDocument(), ViewTransitioner
+
+### Community 220 - "Community 220"
+Cohesion: 0.25
+Nodes (5): buildEnrollmentController(), controller, fakeVariantItem(), loadVoiceIdController(), restoreBrowser
+
+### Community 221 - "Community 221"
 Cohesion: 0.31
 Nodes (7): Bool, Data, legacyCLIDelete(), makeAccess(), retrieve(), store(), SecAccess
 
-### Community 86 - "Community 86"
-Cohesion: 0.42
-Nodes (7): apply_sqlcipher_key!(), configure_connection(), encrypted_sqlcipher_database?(), plaintext_sqlite_database?(), sqlcipher_available?(), verify_sqlcipher_database_unlock!(), get_first_value()
-
-### Community 88 - "Community 88"
-Cohesion: 0.22
-Nodes (8): Architecture, Email Template Themes Design, Files Changed, Scope, Settings UI, Storage, Summary, Themes
-
-### Community 89 - "Community 89"
-Cohesion: 0.22
-Nodes (6): controller, invention, now, previousInvention, restoreStorage, stored
-
-### Community 90 - "Community 90"
+### Community 223 - "Community 223"
 Cohesion: 0.25
-Nodes (4): buildEnrollmentController(), controller, fakeVariantItem(), restoreBrowser
+Nodes (8): AgentEvent, AgentRecommendation, AgentRun, Rails Domain Tools, Hermes AIAgent, Idea Foundry Agent Runner, Local Idea Foundry Agent, Rails Local Agent Control Plane
 
-### Community 91 - "Community 91"
-Cohesion: 0.22
-Nodes (9): Clusters Controller, code:ruby (class IdeasMailbox < ApplicationMailbox), Components and Interfaces, Controllers Architecture, Email Integration, Ideas Controller, Ideas Mailbox, Lists Controller (+1 more)
+### Community 224 - "Community 224"
+Cohesion: 0.43
+Nodes (6): add(), connect(), extractDomain(), remove(), render(), sync()
 
-### Community 92 - "Community 92"
-Cohesion: 0.22
-Nodes (9): code:ruby (class User < ApplicationRecord), code:ruby (class Idea < ApplicationRecord), code:ruby (class Version < ApplicationRecord), code:ruby (class List < ApplicationRecord), Core Models, Idea Model, List Model, User Model (+1 more)
-
-### Community 97 - "Community 97"
-Cohesion: 0.36
-Nodes (3): Error, LocalVoiceIdClient, transcribe()
-
-### Community 99 - "Community 99"
+### Community 225 - "Community 225"
 Cohesion: 0.25
 Nodes (4): CreateKanbanBoards, MigrationKanbanBoard, MigrationList, MigrationUser
 
-### Community 104 - "Community 104"
-Cohesion: 0.29
-Nodes (6): Build Next Backlog — Design, Data Model, Interactions, Purpose, Styling, UI
+### Community 226 - "Community 226"
+Cohesion: 0.05
+Nodes (41): code:ruby (test "topology_settings returns defaults when none stored" d), code:erb (<%= link_to settings_topologies_path, class: "settings-row" ), code:bash (git add app/views/settings/topologies.html.erb app/views/set), code:ruby (require "test_helper"), code:ruby (# before:), code:ruby (# before:), code:ruby (def graph_settings_for_response(topology_id = nil)), code:bash (git add app/controllers/topologies_controller.rb test/contro) (+33 more)
 
-### Community 105 - "Community 105"
-Cohesion: 0.29
-Nodes (6): code:block1 (db/migrate/<ts>_add_napkin_calculations_to_ideas.rb        N), code:javascript (addRow() {), code:bash (git add app/javascript/controllers/napkin_controller.js), Napkin Calculations Implementation Plan, Self-Review Checklist (run before merging), Task 12: Add/remove rows and columns
+### Community 227 - "Community 227"
+Cohesion: 0.12
+Nodes (30): Ao(), b2(), Bg(), Cf(), cg(), Cs(), Es(), Ff() (+22 more)
 
-### Community 106 - "Community 106"
-Cohesion: 0.29
-Nodes (6): Architecture, code:mermaid (graph TB), Design Document, High-Level Architecture, Overview, Technology Stack
+### Community 228 - "Community 228"
+Cohesion: 0.12
+Nodes (27): _0(), cm(), d2(), E1(), g0(), id(), lf(), lm() (+19 more)
 
-### Community 107 - "Community 107"
-Cohesion: 0.29
-Nodes (7): code:ruby (def napkin_calculations_within_limits), code:bash (git add app/models/idea.rb test/models/idea_napkin_test.rb), code:ruby (require "test_helper"), code:ruby (# JSON serialization), code:ruby (validate :napkin_calculations_within_limits), code:ruby (# Napkin calculations helpers), Task 3: Idea model — serialize, helpers, size validation (TDD)
+### Community 229 - "Community 229"
+Cohesion: 0.07
+Nodes (32): bind(), bm(), Bt(), convertSRGBToLinear(), copySRGBToLinear(), findNode(), fromArray(), fromJSON() (+24 more)
 
-### Community 108 - "Community 108"
-Cohesion: 0.29
-Nodes (7): Application-Level Error Handling, Background Job Failures, Data Integrity, Email Processing Errors, Error Handling, File Upload Errors, Validation Errors
+### Community 232 - "Community 232"
+Cohesion: 0.33
+Nodes (7): Contrast Stimulus Controller, CSS Contrast Custom Property, Display Settings Page Design Spec, Display Settings Page Implementation Plan, SettingsController, Settings Display Page, User Model
 
-### Community 109 - "Community 109"
-Cohesion: 0.29
-Nodes (7): Background Jobs, code:ruby (class CreateVersionJob < ApplicationJob), code:ruby (class ExportWorkspaceJob < ApplicationJob), code:ruby (class CoolOffTransitionJob < ApplicationJob), Cool-off Transition Job, Export Workspace Job, Version Creation Job
+### Community 233 - "Community 233"
+Cohesion: 0.43
+Nodes (4): connect(), toggleTrigger(), updateGroupCounts(), updateRecipientChips()
 
-### Community 110 - "Community 110"
-Cohesion: 0.29
-Nodes (7): Frontend Architecture, Hotwire Integration, Progressive Enhancement, Stimulus Controllers, Turbo Drive, Turbo Frames, Turbo Streams
+### Community 234 - "Community 234"
+Cohesion: 0.08
+Nodes (3): get(), h(), j
 
-### Community 111 - "Community 111"
+### Community 235 - "Community 235"
+Cohesion: 0.09
+Nodes (31): B0(), b1(), Bv(), c1(), Cu(), dl(), el(), Gv() (+23 more)
+
+### Community 236 - "Community 236"
+Cohesion: 0.06
+Nodes (5): activateScriptElement(), copyElementAttributes(), HeadSnapshot, PageRenderer, waitForLoad()
+
+### Community 237 - "Community 237"
+Cohesion: 0.13
+Nodes (23): A0(), Bv(), dh(), g0(), Gu(), h1(), hu(), Iu() (+15 more)
+
+### Community 238 - "Community 238"
+Cohesion: 0.33
+Nodes (7): getHSL(), ho(), kh(), lerpHSL(), offsetHSL(), setHSL(), so()
+
+### Community 239 - "Community 239"
+Cohesion: 0.08
+Nodes (3): Context, Controller, namespaceCamelize()
+
+### Community 241 - "Community 241"
+Cohesion: 0.09
+Nodes (42): addScalar(), addVectors(), center(), computeBoundingBox(), computeBoundingSphere(), _computeIntersections(), computeTangents(), computeVertexNormals() (+34 more)
+
+### Community 242 - "Community 242"
+Cohesion: 0.08
+Nodes (4): attributeValueContainsToken(), OutletSet, Scope, TargetSet
+
+### Community 243 - "Community 243"
+Cohesion: 0.08
+Nodes (3): copy(), Hash, UTF16String
+
+### Community 244 - "Community 244"
+Cohesion: 0.09
+Nodes (3): BrowserAdapter, getCspNonce(), ProgressBar
+
+### Community 245 - "Community 245"
+Cohesion: 0.04
+Nodes (72): addElementsFromMixedContentPaste(), addEntry(), addTextFromPaste(), B8t(), Bn(), calculateHorizontalSpace(), calculateSpace(), calculateSpaceIfDrawnHorizontally() (+64 more)
+
+### Community 246 - "Community 246"
+Cohesion: 0.07
+Nodes (48): _2(), A0(), a1(), a2(), ac(), b0(), bm(), Bs() (+40 more)
+
+### Community 247 - "Community 247"
+Cohesion: 0.06
+Nodes (6): ge, ht, mt(), us(), ut, willRenderFrame()
+
+### Community 248 - "Community 248"
+Cohesion: 0.12
+Nodes (29): ak(), _allocateTargets(), bg(), bk(), eC(), ek(), eV(), iP() (+21 more)
+
+### Community 249 - "Community 249"
+Cohesion: 0.33
+Nodes (7): FastAPI, Faster Whisper, OCR Service Dependencies, PyMuPDF, Pytesseract, Uvicorn, Voice ID Service Dependencies
+
+### Community 250 - "Community 250"
 Cohesion: 0.29
 Nodes (6): bundleDir, content, filePath, filesToScan, forbiddenPatterns, match
 
-### Community 120 - "Community 120"
+### Community 251 - "Community 251"
+Cohesion: 0.38
+Nodes (7): Export Job Fixtures, Idea List Join Fixtures, Idea Fixtures, Kanban Board Fixtures, List Fixtures, Template Fixtures, User Fixtures
+
+### Community 252 - "Community 252"
+Cohesion: 0.08
+Nodes (37): _6e(), _8t(), art(), BRt(), D8(), dRt(), eRt(), fRt() (+29 more)
+
+### Community 254 - "Community 254"
+Cohesion: 0.16
+Nodes (13): COMPOSE_PROJECT_NAME, detect_compose_cmd(), docker_available(), OCR_SERVICE_PORT, OCR_SERVICE_TIMEOUT, OCR_SERVICE_URL, PATH, podman_available() (+5 more)
+
+### Community 255 - "Community 255"
+Cohesion: 0.47
+Nodes (3): connect(), _setOpen(), toggleCollapse()
+
+### Community 257 - "Community 257"
+Cohesion: 0.60
+Nodes (5): connect(), select(), _showForm(), _showStep(), skip()
+
+### Community 260 - "Community 260"
+Cohesion: 0.10
+Nodes (33): _2(), a2(), ac(), Ap(), cv(), d2(), Ea(), fm() (+25 more)
+
+### Community 261 - "Community 261"
+Cohesion: 0.08
+Nodes (36): af(), b2(), Bh(), Cf(), cm(), ct(), dm(), ds() (+28 more)
+
+### Community 262 - "Community 262"
+Cohesion: 0.10
+Nodes (27): ac(), au(), ceil(), closePath(), equals(), extractPoints(), floor(), getCurveLengths() (+19 more)
+
+### Community 264 - "Community 264"
+Cohesion: 0.07
+Nodes (6): get(), gt, i, preloadOnLoadLinksForView(), pt, x()
+
+### Community 265 - "Community 265"
+Cohesion: 0.08
+Nodes (36): af(), b2(), Bh(), Cf(), cm(), ct(), dm(), ds() (+28 more)
+
+### Community 266 - "Community 266"
 Cohesion: 0.40
 Nodes (5): builds, common, excalidrawLocalOnlyPlugin(), findExcalidrawConnectorEnvChunks(), watch
 
-### Community 122 - "Community 122"
+### Community 268 - "Community 268"
+Cohesion: 0.54
+Nodes (3): Error, LocalVoiceIdClient, transcribe()
+
+### Community 269 - "Community 269"
 Cohesion: 0.40
 Nodes (4): str, UploadFile, _float_or_none(), transcribe()
 
-### Community 129 - "Community 129"
-Cohesion: 0.40
-Nodes (4): currentDraft, draft, serialized, storedRecord
+### Community 270 - "Community 270"
+Cohesion: 0.47
+Nodes (4): Dentaku, Hyperformula, Back-of-the-Napkin Calculations Design Spec, NapkinCalculationsTest
 
-### Community 130 - "Community 130"
+### Community 272 - "Community 272"
+Cohesion: 0.60
+Nodes (4): connect(), dismiss(), hide(), show()
+
+### Community 274 - "Community 274"
+Cohesion: 0.06
+Nodes (7): createWebSocketURL(), getHistoryMethodForAction(), History, interpolate(), PageObserver, ScrollObserver, unindent()
+
+### Community 275 - "Community 275"
+Cohesion: 0.09
+Nodes (34): $A(), addSequentialNode(), bias(), _blur(), buildUpdateNodes(), C0(), clone(), compare() (+26 more)
+
+### Community 276 - "Community 276"
+Cohesion: 0.09
+Nodes (36): addScalar(), bf(), c3(), cF(), Cm(), Df(), expandByScalar(), Ff() (+28 more)
+
+### Community 277 - "Community 277"
+Cohesion: 0.07
+Nodes (43): absarc(), absellipse(), arc(), bezierCurveTo(), Bo(), bs(), bu(), $c() (+35 more)
+
+### Community 279 - "Community 279"
+Cohesion: 0.12
+Nodes (28): addOrUpdateField(), addTab(), applyDataToChip(), buildChip(), cancelEditField(), chipDragEnd(), _clearAllDragOver(), clearFieldForm() (+20 more)
+
+### Community 280 - "Community 280"
+Cohesion: 0.06
+Nodes (32): Acceptance Criteria, Acceptance Criteria, Acceptance Criteria, Acceptance Criteria, Acceptance Criteria, Acceptance Criteria, Acceptance Criteria, Acceptance Criteria (+24 more)
+
+### Community 281 - "Community 281"
+Cohesion: 0.06
+Nodes (31): 1. Version Model (`app/models/version.rb`), 2. Idea Model Updates (`app/models/idea.rb`), 3. VersionService (`app/services/version_service.rb`), 4. Database Schema, Atomic Update with Version, code:ruby (idea = Idea.find(1)), code:ruby (service = VersionService.new(idea)), code:ruby (old_version = idea.versions.find(5)) (+23 more)
+
+### Community 282 - "Community 282"
+Cohesion: 0.10
+Nodes (32): au(), du(), fu(), Gc(), gu(), Hc(), hu(), iu() (+24 more)
+
+### Community 283 - "Community 283"
+Cohesion: 0.10
+Nodes (3): getOwnStaticObjectPairs(), StringMapObserver, ValueObserver
+
+### Community 284 - "Community 284"
+Cohesion: 0.06
+Nodes (30): Adding a Background Job, Adding a New Feature, Adding a Stimulus Controller, Architecture Overview, Backend, Building the Graph Bundle, code:block1 (Inbound email → Resend webhook → Action Mailbox → IdeasMailb), code:ruby (class MyJob < ApplicationJob) (+22 more)
+
+### Community 286 - "Community 286"
+Cohesion: 0.50
+Nodes (4): Calendar Reminder Design Spec, Google Calendar Link, .ics Generation, Reminder Stimulus Controller
+
+### Community 291 - "Community 291"
+Cohesion: 0.83
+Nodes (3): connect(), showTab(), switch()
+
+### Community 294 - "Community 294"
+Cohesion: 0.06
+Nodes (30): code:ruby (# test/helpers/email_theme_helper_test.rb), code:ruby (def email), code:bash (git add app/controllers/settings_controller.rb test/controll), code:erb (<div style="margin-bottom: 1.5rem;">), code:bash (git add app/views/settings/email.html.erb), code:ruby (def share_idea(idea, recipient_email, sender_name: nil)), code:erb (<div style="max-width: 600px; margin: 0 auto; font-family: -), code:bash (git add app/mailers/idea_mailer.rb app/views/idea_mailer/sha) (+22 more)
+
+### Community 295 - "Community 295"
+Cohesion: 0.08
+Nodes (39): addUniformUpdateRange(), AF(), bind(), convertLinearToSRGB(), convertSRGBToLinear(), copyLinearToSRGB(), copySRGBToLinear(), cX() (+31 more)
+
+### Community 297 - "Community 297"
+Cohesion: 0.08
+Nodes (3): fe, ne, oe()
+
+### Community 298 - "Community 298"
+Cohesion: 0.16
+Nodes (28): addCol(), addRow(), applyFormat(), cellMouseDown(), cellRef(), computeDisplay(), connect(), editCell() (+20 more)
+
+### Community 299 - "Community 299"
+Cohesion: 0.09
+Nodes (33): _1(), Bs(), c0(), Cl(), d1(), f1(), Fg(), gh() (+25 more)
+
+### Community 300 - "Community 300"
+Cohesion: 0.16
+Nodes (21): applyMatrix3(), applyNormalMatrix(), computeTangents(), computeVertexNormals(), fromBufferAttribute(), getAttribute(), getComponent(), getW() (+13 more)
+
+### Community 301 - "Community 301"
+Cohesion: 0.11
+Nodes (26): aD(), createCubeRenderTarget(), createRenderTarget(), getLightVector(), getShadowFilterFn(), getSharedContext(), getSpotAttenuation(), getValueFromReference() (+18 more)
+
+### Community 303 - "Community 303"
+Cohesion: 0.10
+Nodes (4): FetchResponse, get(), SnapshotCache, toCacheKey()
+
+### Community 310 - "Community 310"
+Cohesion: 1.00
+Nodes (3): VoiceFingerprint, Voice ID Stimulus Controller, Voice ID Inline Enrollment
+
+### Community 311 - "Community 311"
+Cohesion: 0.67
+Nodes (3): 400 Bad Request Error Page, 406 Unsupported Browser Error Page, 422 Unprocessable Entity Error Page
+
+### Community 317 - "Community 317"
+Cohesion: 0.67
+Nodes (3): Idea Foundry Changelog, Keep a Changelog, Semantic Versioning
+
+### Community 334 - "Community 334"
+Cohesion: 0.10
+Nodes (3): ae(), d(), te
+
+### Community 335 - "Community 335"
+Cohesion: 0.13
+Nodes (27): close(), closeOnEscape(), connect(), currentInventionDay(), dailyInvention(), disconnect(), hashString(), initialInventionIndex() (+19 more)
+
+### Community 336 - "Community 336"
+Cohesion: 0.14
+Nodes (25): add(), applyCrop(), cancel(), cancelCrop(), _clearCropState(), connect(), _drawCropOverlay(), _ensureViewportRoot() (+17 more)
+
+### Community 337 - "Community 337"
+Cohesion: 0.05
+Nodes (65): addStack(), addToStack(), addToStackBefore(), Case(), computeTangents(), _createInstanceMatrixNode(), _createLeadingZerosBaseLayout(), _createMainLayout() (+57 more)
+
+### Community 338 - "Community 338"
+Cohesion: 0.09
+Nodes (4): bt, je, w(), y()
+
+### Community 339 - "Community 339"
+Cohesion: 0.14
+Nodes (23): add(), applyCrop(), cancel(), cancelCrop(), _clearCropState(), _drawCropOverlay(), _getPoint(), _hide() (+15 more)
+
+### Community 340 - "Community 340"
+Cohesion: 0.17
+Nodes (26): addCol(), addRow(), applyFormat(), cellMouseDown(), cellRef(), computeDisplay(), connect(), editCell() (+18 more)
+
+### Community 341 - "Community 341"
+Cohesion: 0.12
+Nodes (26): Ah(), Bh(), bu(), ct(), cu(), et(), Fo(), Gf() (+18 more)
+
+### Community 342 - "Community 342"
+Cohesion: 0.16
+Nodes (21): Aa(), Ao(), D0(), eh(), Hf(), iu(), Jp(), kh() (+13 more)
+
+### Community 343 - "Community 343"
+Cohesion: 0.10
+Nodes (28): aD(), createCubeRenderTarget(), createRenderTarget(), getLightVector(), getShadowFilterFn(), getSharedContext(), getSpotAttenuation(), getValueFromReference() (+20 more)
+
+### Community 344 - "Community 344"
+Cohesion: 0.15
+Nodes (25): ak(), _allocateTargets(), bg(), bk(), eC(), ek(), eV(), jk() (+17 more)
+
+### Community 345 - "Community 345"
+Cohesion: 0.10
+Nodes (23): applyAxisAngle(), applyEuler(), applyQuaternion(), makeRotationFromQuaternion(), _onChangeCallback(), order(), reorder(), rotateOnWorldAxis() (+15 more)
+
+### Community 346 - "Community 346"
+Cohesion: 0.06
+Nodes (66): add(), addGroup(), addLayerUpdate(), addScalar(), addVectors(), applyMatrix3(), applyMatrix4(), applyNormalMatrix() (+58 more)
+
+### Community 347 - "Community 347"
+Cohesion: 0.08
+Nodes (5): Action, Binding, error(), getDefaultEventNameForElement(), stringifyEventTarget()
+
+### Community 348 - "Community 348"
+Cohesion: 0.10
+Nodes (3): a(), p, y()
+
+### Community 349 - "Community 349"
+Cohesion: 0.26
+Nodes (17): AppleNotesImportService, columns_for(), decode_blob(), extract_notes(), first_present(), folder_name(), inflate(), note_body() (+9 more)
+
+### Community 350 - "Community 350"
+Cohesion: 0.13
+Nodes (18): AFe(), BFe(), e8e(), fBe(), Fit(), ft(), Gr(), hvA() (+10 more)
+
+### Community 377 - "Community 377"
+Cohesion: 1.00
+Nodes (3): esbuild.config.mjs, @excalidraw/excalidraw, Update Excalidraw Package Skill
+
+### Community 378 - "Community 378"
+Cohesion: 1.00
+Nodes (3): Printable Idea Page Design, Printable Idea Page Requirements, Printable Idea Page Tasks
+
+### Community 394 - "Community 394"
+Cohesion: 0.12
+Nodes (27): Af(), b2(), cf(), ct(), ds(), Em(), et(), fh() (+19 more)
+
+### Community 396 - "Community 396"
+Cohesion: 0.15
+Nodes (26): aq(), B0(), bh(), Dq(), eq(), Fq(), _getContainerDimensions(), gl() (+18 more)
+
+### Community 397 - "Community 397"
+Cohesion: 0.03
+Nodes (91): addGroup(), _addPointer(), addSequentialNode(), addUpdateRange(), aV(), b, buildCode(), buildUpdateNodes() (+83 more)
+
+### Community 398 - "Community 398"
+Cohesion: 0.21
+Nodes (16): disable(), enable(), setBlending(), setColorMask(), setCullFace(), setDepthFunc(), setDepthMask(), setDepthTest() (+8 more)
+
+### Community 399 - "Community 399"
+Cohesion: 0.07
+Nodes (26): Access Control, Accessibility, Architecture, code:ruby (class IdeasController < ApplicationController), Components and Interfaces, Controller Layer, Data Models Integration, Design Document (+18 more)
+
+### Community 400 - "Community 400"
+Cohesion: 0.10
+Nodes (12): didSubmitForm(), didSubmitRemoteElement(), handleFormSubmissionEvent(), hex(), md51(), md51_array(), md5blk(), md5blk_array() (+4 more)
+
+### Community 401 - "Community 401"
+Cohesion: 0.10
+Nodes (12): didSubmitForm(), didSubmitRemoteElement(), handleFormSubmissionEvent(), hex(), md51(), md51_array(), md5blk(), md5blk_array() (+4 more)
+
+### Community 403 - "Community 403"
+Cohesion: 0.11
+Nodes (3): n(), R, v()
+
+### Community 404 - "Community 404"
+Cohesion: 0.12
+Nodes (12): ee(), i(), ie, l(), ne, o(), re, s (+4 more)
+
+### Community 405 - "Community 405"
+Cohesion: 0.09
+Nodes (9): LocationMapper, MutationObserver, nodeIsBlockContainer(), nodeIsBlockStartComment(), nodeIsCommentNode(), nodeIsEmptyTextNode(), nodeIsTextNode(), normalizeSpaces() (+1 more)
+
+### Community 406 - "Community 406"
+Cohesion: 0.20
+Nodes (23): _audioSamplingSupported(), _blockEnrollment(), _captureLocalAudioSample(), connect(), _enrollmentUnavailableMessage(), _handleLocalAudioError(), _handleRecordingUnavailable(), _isEnrollment() (+15 more)
+
+### Community 407 - "Community 407"
+Cohesion: 0.18
+Nodes (26): At(), Bt(), Er(), fr(), ht(), Ir(), It(), Jt() (+18 more)
+
+### Community 408 - "Community 408"
+Cohesion: 0.06
+Nodes (52): _2(), ad(), af(), am(), ap(), Bf(), bm(), c2() (+44 more)
+
+### Community 409 - "Community 409"
+Cohesion: 0.18
+Nodes (26): At(), Bt(), Er(), fr(), ht(), Ir(), It(), Jt() (+18 more)
+
+### Community 410 - "Community 410"
+Cohesion: 0.18
+Nodes (26): At(), Bt(), Er(), fr(), ht(), Ir(), It(), Jt() (+18 more)
+
+### Community 411 - "Community 411"
+Cohesion: 0.18
+Nodes (26): At(), Bt(), Er(), fr(), ht(), Ir(), It(), Jt() (+18 more)
+
+### Community 412 - "Community 412"
+Cohesion: 0.16
+Nodes (27): aq(), B0(), bh(), Dq(), eq(), Fq(), _getContainerDimensions(), gl() (+19 more)
+
+### Community 413 - "Community 413"
+Cohesion: 0.10
+Nodes (12): didSubmitForm(), didSubmitRemoteElement(), handleFormSubmissionEvent(), hex(), md51(), md51_array(), md5blk(), md5blk_array() (+4 more)
+
+### Community 414 - "Community 414"
+Cohesion: 0.10
+Nodes (12): didSubmitForm(), didSubmitRemoteElement(), handleFormSubmissionEvent(), hex(), md51(), md51_array(), md5blk(), md5blk_array() (+4 more)
+
+### Community 415 - "Community 415"
+Cohesion: 0.11
+Nodes (13): autostart(), didSubmitForm(), didSubmitRemoteElement(), handleFormSubmissionEvent(), hex(), md51(), md51_array(), md5blk() (+5 more)
+
+### Community 416 - "Community 416"
+Cohesion: 0.11
+Nodes (13): autostart(), didSubmitForm(), didSubmitRemoteElement(), handleFormSubmissionEvent(), hex(), md51(), md51_array(), md5blk() (+5 more)
+
+### Community 475 - "Community 475"
+Cohesion: 0.11
+Nodes (13): autostart(), didSubmitForm(), didSubmitRemoteElement(), handleFormSubmissionEvent(), hex(), md51(), md51_array(), md5blk() (+5 more)
+
+### Community 476 - "Community 476"
+Cohesion: 0.11
+Nodes (13): autostart(), didSubmitForm(), didSubmitRemoteElement(), handleFormSubmissionEvent(), hex(), md51(), md51_array(), md5blk() (+5 more)
+
+### Community 477 - "Community 477"
+Cohesion: 0.11
+Nodes (4): ct, lt, pe, s
+
+### Community 478 - "Community 478"
+Cohesion: 0.12
+Nodes (15): code:bash (cd /home/devuser/ideafoundry), code:bash (npm view @excalidraw/excalidraw version dist-tags --json), code:bash (npm install @excalidraw/excalidraw@latest), code:bash (corepack yarn add @excalidraw/excalidraw@latest), code:tsx (import { Excalidraw, exportToBlob } from "@excalidraw/excali), code:bash (npm run build), code:bash (npm run verify:excalidraw-local-only), code:bash (git diff -- package.json package-lock.json yarn.lock esbuild) (+7 more)
+
+### Community 479 - "Community 479"
+Cohesion: 0.04
+Nodes (64): $(), Ace(), ai(), aoA(), arc(), Au(), bezierCurveTo(), bH() (+56 more)
+
+### Community 480 - "Community 480"
+Cohesion: 0.24
+Nodes (15): _0(), Da(), ep(), ff(), Fh(), hi(), ks(), lp() (+7 more)
+
+### Community 481 - "Community 481"
+Cohesion: 0.21
+Nodes (7): create(), new(), preview(), SubmissionImportsController, MemoryUpload, SubmissionImportsControllerTest, source_options()
+
+### Community 482 - "Community 482"
+Cohesion: 0.16
+Nodes (21): activateKey(), completeUnlockTransition(), connect(), deactivateKey(), hideDecoyScore(), input(), isComplete(), keydown() (+13 more)
+
+### Community 483 - "Community 483"
+Cohesion: 0.16
+Nodes (21): activateKey(), completeUnlockTransition(), connect(), deactivateKey(), hideDecoyScore(), input(), isComplete(), keydown() (+13 more)
+
+### Community 484 - "Community 484"
+Cohesion: 0.15
+Nodes (24): Aa(), Ao(), au(), Ch(), eh(), Gf(), Ia(), ip() (+16 more)
+
+### Community 485 - "Community 485"
+Cohesion: 0.15
+Nodes (24): Aa(), Ao(), au(), Ch(), eh(), Gf(), Ia(), ip() (+16 more)
+
+### Community 486 - "Community 486"
+Cohesion: 0.10
+Nodes (26): _5(), createCubeRenderTarget(), createRenderTarget(), g5(), getShadowFilterFn(), getSharedContext(), getSpotAttenuation(), getValueFromReference() (+18 more)
+
+### Community 487 - "Community 487"
+Cohesion: 0.09
+Nodes (3): ds, r, sourceURLReloaded()
+
+### Community 488 - "Community 488"
+Cohesion: 0.23
+Nodes (21): _audioSamplingSupported(), _blockEnrollment(), _captureLocalAudioSample(), connect(), _enrollmentUnavailableMessage(), _handleLocalAudioError(), _handleRecordingUnavailable(), _isEnrollment() (+13 more)
+
+### Community 489 - "Community 489"
+Cohesion: 0.23
+Nodes (19): bIA(), buildLookaheadForAlternation(), buildLookaheadForOptional(), c2(), eW(), gNe(), hNe(), kIA() (+11 more)
+
+### Community 490 - "Community 490"
+Cohesion: 0.08
+Nodes (40): _(), a(), ae(), be(), c(), Ce(), De(), E() (+32 more)
+
+### Community 491 - "Community 491"
+Cohesion: 0.09
+Nodes (22): Background Jobs, code:bash (# Clone the repo), code:bash (docker compose up --build), code:bash (RAILS_ENV=production \), code:bash (EDITOR="code --wait" bin/rails credentials:edit), code:yaml (resend:), code:bash (# Build and run only sidecar services: voice-id and OCR), code:bash (export VOICE_ID_SERVICE_URL=http://127.0.0.1:8000) (+14 more)
+
+### Community 492 - "Community 492"
+Cohesion: 0.22
+Nodes (18): bp(), Fp(), gm(), gt(), Hp(), Jp(), kp(), _m() (+10 more)
+
+### Community 493 - "Community 493"
+Cohesion: 0.13
+Nodes (22): ceil(), cl(), closePath(), equals(), extractPoints(), floor(), getCurveLengths(), getLength() (+14 more)
+
+### Community 494 - "Community 494"
+Cohesion: 0.13
+Nodes (23): ah(), _allocateTargets(), _applyGGXFilter(), _applyPMREM(), _blur(), _cleanup(), compileCubemapShader(), compileEquirectangularShader() (+15 more)
+
+### Community 495 - "Community 495"
+Cohesion: 0.13
+Nodes (23): _allocateTargets(), _applyGGXFilter(), _applyPMREM(), _blur(), _cleanup(), compileCubemapShader(), compileEquirectangularShader(), _compileMaterial() (+15 more)
+
+### Community 496 - "Community 496"
+Cohesion: 0.06
+Nodes (31): [1.0.0] - 2026-02-24, [1.1.0] - 2026-03-16, [1.2.0] - 2026-03-24, [1.3.0] - 2026-03-28, [1.4.0] - 2026-05-12, Added, Added, Added (+23 more)
+
+### Community 497 - "Community 497"
+Cohesion: 0.19
+Nodes (20): _audioSamplingSupported(), _blockEnrollment(), calculateRms(), connect(), csrfHeaders(), _enrollmentUnavailableMessage(), _handleLocalAudioError(), _handleRecordingUnavailable() (+12 more)
+
+### Community 498 - "Community 498"
+Cohesion: 0.19
+Nodes (20): _audioSamplingSupported(), _blockEnrollment(), calculateRms(), connect(), csrfHeaders(), _enrollmentUnavailableMessage(), _handleLocalAudioError(), _handleRecordingUnavailable() (+12 more)
+
+### Community 499 - "Community 499"
+Cohesion: 0.09
+Nodes (21): Back-of-the-Napkin Calculations per Idea, code:ruby (add_column :ideas, :napkin_calculations, :json), code:json ({), Controller param handling, Data Model, Files, Form (create/edit), Formula Engine (+13 more)
+
+### Community 500 - "Community 500"
+Cohesion: 0.11
+Nodes (25): absarc(), absellipse(), arc(), ceil(), closePath(), ellipse(), equals(), extractPoints() (+17 more)
+
+### Community 501 - "Community 501"
+Cohesion: 0.17
+Nodes (19): close(), closeOnEscape(), connect(), disconnect(), initialInventionIndex(), isOpen(), open(), prefersReducedMotion() (+11 more)
+
+### Community 502 - "Community 502"
+Cohesion: 0.20
+Nodes (19): _audioSamplingSupported(), _blockEnrollment(), calculateRms(), connect(), csrfHeaders(), _enrollmentUnavailableMessage(), _handleLocalAudioError(), _handleRecordingUnavailable() (+11 more)
+
+### Community 503 - "Community 503"
+Cohesion: 0.17
+Nodes (21): $0(), $1(), Da(), ef(), g2(), hi(), Ia(), im() (+13 more)
+
+### Community 504 - "Community 504"
+Cohesion: 0.15
+Nodes (21): b5e(), BO(), cO(), D5e(), dh(), f5e(), hh(), jcA() (+13 more)
+
+### Community 506 - "Community 506"
+Cohesion: 0.10
+Nodes (21): applyEuler(), conjugate(), extractBasis(), fromArray(), fromJSON(), _onChangeCallback(), order(), reorder() (+13 more)
+
+### Community 507 - "Community 507"
+Cohesion: 0.17
+Nodes (16): close(), _closeMount(), closeOnBackdrop(), closeOnEsc(), _csrf(), delete(), disconnect(), edit() (+8 more)
+
+### Community 508 - "Community 508"
+Cohesion: 0.19
+Nodes (15): buildFieldHtml(), captureCurrentValues(), change(), connect(), defaultTabDefinitions(), escapeHtml(), handleDrop(), hideOrphaned() (+7 more)
+
+### Community 509 - "Community 509"
+Cohesion: 0.10
+Nodes (19): 1. Data Model, 2. Background Job — `CheckAppUpgradeJob`, 3. Toast Notification, 4. Settings Upgrade Bar, 5. Upgrade Action, 6. Version Comparison Logic, 7. Files Touched / Created, App Upgrade Path — Design Spec (+11 more)
+
+### Community 510 - "Community 510"
+Cohesion: 0.10
+Nodes (19): Architecture, Autonomy Policy, code:ruby ({), Continuous Loop, Current Context, Data Model, Error Handling, Goal (+11 more)
+
+### Community 511 - "Community 511"
+Cohesion: 0.13
+Nodes (20): _allocateTargets(), _applyGGXFilter(), _applyPMREM(), _blur(), $c(), _cleanup(), compileCubemapShader(), compileEquirectangularShader() (+12 more)
+
+### Community 512 - "Community 512"
+Cohesion: 0.07
+Nodes (45): add(), addLayerUpdate(), attach(), buildScene(), buildSparks(), compose(), conjugate(), connect() (+37 more)
+
+### Community 513 - "Community 513"
+Cohesion: 0.18
+Nodes (17): close(), closeOnEscape(), connect(), disconnect(), initialInventionIndex(), isOpen(), open(), resize() (+9 more)
+
+### Community 514 - "Community 514"
+Cohesion: 0.19
+Nodes (15): addToList(), applyMembership(), close(), closeOnClick(), closeOnKeydown(), emptyItem(), ensureMenu(), listIdsFor() (+7 more)
+
+### Community 515 - "Community 515"
+Cohesion: 0.11
+Nodes (18): `application_controller.rb`, code:block1 (if voice_id enabled:), code:ruby (elsif @user.voice_id_requested? && !@user.voice_id_configure), Controller (`settings_controller.rb#update_security`), Design, Goal, JS / Stimulus, Model (`user.rb`) (+10 more)
+
+### Community 516 - "Community 516"
+Cohesion: 0.14
+Nodes (14): Bxt(), txt(), vfe(), _xt(), yxt(), BFt(), Bxt(), c8e() (+6 more)
+
+### Community 517 - "Community 517"
+Cohesion: 0.12
+Nodes (4): allowsImmediateRender(), le, viewInvalidated(), viewRenderedSnapshot()
+
+### Community 518 - "Community 518"
+Cohesion: 0.17
+Nodes (11): appendItems(), connect(), drop(), moveDown(), _moveItemsToMatchingSections(), moveUp(), persist(), _setStatus() (+3 more)
+
+### Community 519 - "Community 519"
+Cohesion: 0.26
+Nodes (16): animateScoreChange(), calculateScore(), connect(), debouncedSave(), resetScores(), saveScoreToServer(), showSaveIndicator(), updateAllValues() (+8 more)
+
+### Community 520 - "Community 520"
+Cohesion: 0.26
+Nodes (16): animateScoreChange(), calculateScore(), connect(), debouncedSave(), resetScores(), saveScoreToServer(), showSaveIndicator(), updateAllValues() (+8 more)
+
+### Community 521 - "Community 521"
+Cohesion: 0.26
+Nodes (16): animateScoreChange(), calculateScore(), connect(), debouncedSave(), resetScores(), saveScoreToServer(), showSaveIndicator(), updateAllValues() (+8 more)
+
+### Community 522 - "Community 522"
+Cohesion: 0.20
+Nodes (13): buildFieldHtml(), captureCurrentValues(), change(), connect(), defaultTabDefinitions(), escapeHtml(), handleDrop(), hideOrphaned() (+5 more)
+
+### Community 523 - "Community 523"
+Cohesion: 0.22
+Nodes (15): activateKey(), connect(), deactivateKey(), input(), isComplete(), keydown(), keyup(), renderPrompt() (+7 more)
+
+### Community 524 - "Community 524"
+Cohesion: 0.05
+Nodes (60): _8(), _addAdjoiningFace(), _addNewFaces(), _addVertexToFace(), _addVertexToHull(), append(), appendChain(), applyMatrix3() (+52 more)
+
+### Community 525 - "Community 525"
+Cohesion: 0.11
+Nodes (17): Backend Logic, code:bash (# On macOS with Homebrew), code:bash (# Run all drag-and-drop system tests), ✅ Completed Components, Drag and Drop Implementation - Task 4, Drag Controller Features, Files Modified/Created, Implementation Details (+9 more)
+
+### Community 526 - "Community 526"
+Cohesion: 0.06
+Nodes (4): Guide, IndexedMultimap, Multimap, TargetObserver
+
+### Community 527 - "Community 527"
+Cohesion: 0.14
+Nodes (6): activateElement(), connectStreamSource(), disconnectStreamSource(), StreamSourceElement, TurboCableStreamSourceElement, urlsAreEqual()
+
+### Community 528 - "Community 528"
+Cohesion: 0.18
+Nodes (11): _acceptsFiles(), _ajaxUpload(), _buildFileList(), dragenter(), drop(), _filterAccepted(), _handleFiles(), _renderGrid() (+3 more)
+
+### Community 529 - "Community 529"
+Cohesion: 0.07
+Nodes (32): Ai, ci(), d2(), Di(), g1(), Gn(), Ho(), I2() (+24 more)
+
+### Community 530 - "Community 530"
+Cohesion: 0.24
+Nodes (17): _customWheelEvent(), _getSecondPointerPosition(), _handleKeyDown(), _handleTouchMoveDolly(), _handleTouchMoveDollyPan(), _handleTouchMoveDollyRotate(), _handleTouchMovePan(), _handleTouchMoveRotate() (+9 more)
+
+### Community 531 - "Community 531"
+Cohesion: 0.14
+Nodes (16): determinant(), extractBasis(), extractRotation(), fo(), fromArray(), fromJSON(), _g(), getParameter() (+8 more)
+
+### Community 532 - "Community 532"
+Cohesion: 0.24
+Nodes (17): am(), cm(), em(), ge(), im(), Jp(), kp(), me() (+9 more)
+
+### Community 533 - "Community 533"
+Cohesion: 0.24
+Nodes (17): am(), cm(), em(), ge(), im(), ja(), Jp(), kp() (+9 more)
+
+### Community 534 - "Community 534"
+Cohesion: 0.17
+Nodes (3): DirectUpload, DirectUploadController, dispatchEvent()
+
+### Community 535 - "Community 535"
+Cohesion: 0.17
+Nodes (3): DirectUpload, DirectUploadController, dispatchEvent()
+
+### Community 537 - "Community 537"
+Cohesion: 0.21
+Nodes (16): disable(), enable(), setBlending(), setColorMask(), setCullFace(), setDepthFunc(), setDepthMask(), setDepthTest() (+8 more)
+
+### Community 538 - "Community 538"
+Cohesion: 0.21
+Nodes (16): disable(), enable(), setBlending(), setColorMask(), setCullFace(), setDepthFunc(), setDepthMask(), setDepthTest() (+8 more)
+
+### Community 539 - "Community 539"
+Cohesion: 0.10
+Nodes (31): disable(), enable(), enableSubGroups(), generateSnippet(), generateTextureBias(), generateTextureCompare(), generateTextureGrad(), _getBlendFactor() (+23 more)
+
+### Community 540 - "Community 540"
+Cohesion: 0.12
+Nodes (15): Attack Executed, code:bash (cat storage/recovery_passphrase.key), code:ruby (session[RECOVERY_SECRET_SESSION_KEY] = passphrase  # raw pas), code:ruby (# config/initializers/rack_attack.rb), code:ruby (SCRYPT_N = 2**14   # 16,384 — below current recommendations), code:ruby (@raw_connection.execute(%(PRAGMA key = "x'#{RecoverySecret.s), CRITICAL — Passphrase co-located with encrypted database, HIGH — No rate limiting on passphrase entry endpoint (+7 more)
+
+### Community 542 - "Community 542"
+Cohesion: 0.22
+Nodes (13): close(), closeOnEscape(), connect(), disconnect(), isOpen(), open(), resize(), resizeWithKeyboard() (+5 more)
+
+### Community 543 - "Community 543"
+Cohesion: 0.20
+Nodes (9): _acceptsFiles(), _buildFileList(), dragenter(), drop(), _filterAccepted(), _handleFiles(), _renderGrid(), _renderHero() (+1 more)
+
+### Community 544 - "Community 544"
+Cohesion: 0.26
+Nodes (13): activateKey(), connect(), deactivateKey(), input(), isComplete(), keydown(), keyup(), renderPrompt() (+5 more)
+
+### Community 545 - "Community 545"
+Cohesion: 0.13
+Nodes (14): code:bash (bin/rails test test/models/idea_work_link_test.rb test/contr), Current App Findings, Feature Slices, First PR Proposal: External Work Links + Export Coverage Prep, IP Continuity and Relatedness Implementation Plan, Open Product Decisions, Slice 1: External Work / Plan Links, Slice 2: IP Asset Registry and Registration Loop Closure (+6 more)
+
+### Community 546 - "Community 546"
+Cohesion: 0.20
+Nodes (7): Ai, ci(), Gn(), In(), Ka(), lo(), wi()
+
+### Community 547 - "Community 547"
+Cohesion: 0.15
+Nodes (14): c2(), Cu(), E2(), f1(), Ff(), gh(), j2(), k2() (+6 more)
+
+### Community 548 - "Community 548"
+Cohesion: 0.19
+Nodes (8): Ai, ci(), Di(), Gn(), In(), Ka(), lo(), wi()
+
+### Community 549 - "Community 549"
+Cohesion: 0.14
+Nodes (15): absarc(), absellipse(), ai(), arc(), bezierCurveTo(), bg(), buildScene(), clone() (+7 more)
+
+### Community 550 - "Community 550"
+Cohesion: 0.22
+Nodes (3): Bardo, createPlaceholderForPermanentElement(), StreamMessageRenderer
+
+### Community 551 - "Community 551"
+Cohesion: 0.14
+Nodes (5): createDocumentFragment(), importStreamElements(), renderStreamMessage(), StreamMessage, StreamObserver
+
+### Community 552 - "Community 552"
+Cohesion: 0.19
+Nodes (6): calculateNewPosition(), connect(), handleDrop(), setupDragAndDrop(), showError(), updatePosition()
+
+### Community 553 - "Community 553"
+Cohesion: 0.20
+Nodes (6): calculateNewPosition(), connect(), handleDrop(), setupDragAndDrop(), showError(), updatePosition()
+
+### Community 554 - "Community 554"
+Cohesion: 0.21
+Nodes (8): _acceptsFiles(), _buildFileList(), dragenter(), drop(), _filterAccepted(), _renderGrid(), _renderHero(), _renderPreviews()
+
+### Community 555 - "Community 555"
+Cohesion: 0.27
+Nodes (11): connect(), csrfToken(), handleShortcut(), hideAskAgent(), isLockShortcut(), lock(), manualLock(), recordActivity() (+3 more)
+
+### Community 556 - "Community 556"
+Cohesion: 0.14
+Nodes (13): Calendar Reminder per Idea, code:block1 (BEGIN:VCALENDAR), code:block2 (https://calendar.google.com/calendar/render?action=TEMPLATE), Event Content, Files Changed, Google Calendar Link, .ics Generation (client-side), Implementation (+5 more)
+
+### Community 557 - "Community 557"
+Cohesion: 0.14
+Nodes (13): Architecture, Attachment System Design, code:ruby (resources :attachments, only: [:create, :destroy, :update], ), code:html (<dialog data-controller="attachment-viewer" ...>), Controller: `IdeaAttachmentsController`, Data flow: Replace file, Goals, Key Invariants (+5 more)
+
+### Community 558 - "Community 558"
+Cohesion: 0.19
+Nodes (8): Ai, ci(), Di(), Gn(), In(), Ka(), lo(), wi()
+
+### Community 559 - "Community 559"
+Cohesion: 0.14
+Nodes (13): Acceptance Criteria, Acceptance Criteria, Acceptance Criteria, Acceptance Criteria, Acceptance Criteria, Introduction, Requirement 1, Requirement 2 (+5 more)
+
+### Community 562 - "Community 562"
+Cohesion: 0.26
+Nodes (11): canRegisterController(), controllerFilename(), eagerLoadControllersFrom(), lazyLoadControllersFrom(), lazyLoadExistingControllers(), lazyLoadNewControllers(), loadController(), parseImportmapJson() (+3 more)
+
+### Community 563 - "Community 563"
+Cohesion: 0.26
+Nodes (10): connect(), _execCommand(), _initDragDrop(), _initEditor(), _initToolbar(), _insertLink(), _pickImage(), restoreFromIdeaDraft() (+2 more)
+
+### Community 564 - "Community 564"
+Cohesion: 0.27
+Nodes (10): buildFieldHtml(), captureCurrentValues(), change(), connect(), escapeHtml(), handleDrop(), hideOrphaned(), removeAllTabPanels() (+2 more)
+
+### Community 565 - "Community 565"
+Cohesion: 0.28
+Nodes (10): connect(), csrfToken(), handleShortcut(), isLockShortcut(), lock(), manualLock(), recordActivity(), scheduleLock() (+2 more)
+
+### Community 566 - "Community 566"
+Cohesion: 0.27
+Nodes (10): connect(), csrfToken(), handleShortcut(), isLockShortcut(), lock(), manualLock(), recordActivity(), scheduleLock() (+2 more)
+
+### Community 567 - "Community 567"
+Cohesion: 0.15
+Nodes (12): code:ruby ("topology_settings" => {), code:json ({ "nodes": [...], "links": [...], "settings": { "dag_mode": ), Controller: Settings, Controller: Topologies, Decision, JS: topology_graph_controller, Model: User, Per-Topology Overrides (+4 more)
+
+### Community 568 - "Community 568"
+Cohesion: 0.15
+Nodes (12): code:ruby (require "test_helper"), code:ruby (class CreateIdeaAgentTokens < ActiveRecord::Migration[8.0]), code:ruby (class IdeaAgentToken < ApplicationRecord), code:ruby (has_many :idea_agent_tokens, dependent: :destroy), code:ruby (require "test_helper"), code:ruby (require "test_helper"), code:bash (git add app db test config docs CHANGELOG.md), Idea Agent Document Access Implementation Plan (+4 more)
+
+### Community 569 - "Community 569"
+Cohesion: 0.15
+Nodes (12): Already cloned?, code:bash (git clone <repo-url> idea-app && cd idea-app && bin/install), code:bash (bin/dev              # starts Rails + esbuild watcher (dev m), code:bash (bin/install), Design Philosophy, Development, Features, Idea Foundry (+4 more)
+
+### Community 578 - "Community 578"
+Cohesion: 0.23
+Nodes (5): drop(), moveDown(), moveUp(), persist(), _setStatus()
+
+### Community 579 - "Community 579"
+Cohesion: 0.27
+Nodes (9): connect(), _execCommand(), _initDragDrop(), _initEditor(), _initToolbar(), _insertLink(), _pickImage(), _syncToHidden() (+1 more)
+
+### Community 580 - "Community 580"
+Cohesion: 0.41
+Nodes (11): _blockEnrollment(), connect(), _enrollmentUnavailableMessage(), _handleRecordingUnavailable(), _isEnrollment(), _recognitionConstructor(), _recognitionSupported(), record() (+3 more)
+
+### Community 581 - "Community 581"
+Cohesion: 0.20
+Nodes (4): BlobRecord, findElement(), getMetaValue(), submitForm()
+
+### Community 582 - "Community 582"
+Cohesion: 0.20
+Nodes (4): BlobRecord, findElement(), getMetaValue(), submitForm()
+
+### Community 583 - "Community 583"
+Cohesion: 0.20
+Nodes (4): BlobRecord, findElement(), getMetaValue(), submitForm()
+
+### Community 584 - "Community 584"
+Cohesion: 0.20
+Nodes (4): BlobRecord, findElement(), getMetaValue(), submitForm()
+
+### Community 585 - "Community 585"
+Cohesion: 0.27
+Nodes (11): e0(), Ei(), Fc(), i0(), n0(), o0(), r0(), s1() (+3 more)
+
+### Community 593 - "Community 593"
+Cohesion: 0.29
+Nodes (5): drop(), moveDown(), moveUp(), persist(), _setStatus()
+
+### Community 594 - "Community 594"
+Cohesion: 0.27
+Nodes (6): connect(), getDragAfterElement(), handleDragOver(), handleDrop(), saveOrder(), setupDragAndDrop()
+
+### Community 595 - "Community 595"
+Cohesion: 0.27
+Nodes (4): downloadIcs(), _escapeIcsText(), _formatDateUTC(), openGoogle()
+
+### Community 596 - "Community 596"
+Cohesion: 0.27
+Nodes (4): downloadIcs(), _escapeIcsText(), _formatDateUTC(), openGoogle()
+
+### Community 598 - "Community 598"
+Cohesion: 0.20
+Nodes (9): code:bash (docker compose build voice-id web), code:bash (docker compose up), code:bash (docker compose up voice-id), code:bash (VOICE_ID_SERVICE_URL=http://localhost:8000 bin/rails server), Configuration, Local Voice ID, Offline behavior, Running Rails outside Docker (+1 more)
+
+### Community 599 - "Community 599"
+Cohesion: 0.20
+Nodes (9): code:block1 (Page header: "Display" + back link → settings_path), Contrast Storage, CSS, Display Settings Page — Design Spec, Goal, Out of Scope, Route & Controller, Settings Index Changes (+1 more)
+
+### Community 602 - "Community 602"
+Cohesion: 0.42
+Nodes (3): Error, GithubClient, NotFound
+
+### Community 603 - "Community 603"
+Cohesion: 0.22
+Nodes (8): files, excalidraw_app/index.js-470d53c5674869c7e379676b3015c29dedf437901197e3990104a9fdc0ffdc2e.map, stimulus-autoloader-c584942b568ba74879da31c7c3d51366737bacaf6fbae659383c0a5653685693.js, digest, integrity, logical_path, mtime, size
+
+### Community 604 - "Community 604"
+Cohesion: 0.28
+Nodes (6): application, autoloadControllersWithin(), controllerFilename(), loadController(), queryControllerNamesWithin(), registeredControllers
+
+### Community 608 - "Community 608"
+Cohesion: 0.39
+Nodes (8): backdropClose(), close(), confirmDelete(), open(), openDelete(), _populate(), _renderPreview(), save()
+
+### Community 609 - "Community 609"
+Cohesion: 0.39
+Nodes (8): backdropClose(), close(), confirmDelete(), open(), openDelete(), _populate(), _renderPreview(), save()
+
+### Community 610 - "Community 610"
+Cohesion: 0.28
+Nodes (3): onCancel(), onUp(), reset()
+
+### Community 611 - "Community 611"
+Cohesion: 0.28
+Nodes (3): onCancel(), onUp(), reset()
+
+### Community 612 - "Community 612"
+Cohesion: 0.31
+Nodes (4): downloadIcs(), _escapeIcsText(), _formatDateUTC(), openGoogle()
+
+### Community 613 - "Community 613"
+Cohesion: 0.36
+Nodes (6): connect(), csrfToken(), lock(), recordActivity(), scheduleLock(), sendActivity()
+
+### Community 614 - "Community 614"
+Cohesion: 0.22
+Nodes (8): Architecture, Email Template Themes Design, Files Changed, Scope, Settings UI, Storage, Summary, Themes
+
+### Community 615 - "Community 615"
+Cohesion: 0.26
+Nodes (13): g3(), _getSecondPointerPosition(), _handleTouchMoveDolly(), _handleTouchMoveDollyPan(), _handleTouchMoveDollyRotate(), _handleTouchMoveRotate(), _handleTouchStartDolly(), _handleTouchStartDollyPan() (+5 more)
+
+### Community 616 - "Community 616"
+Cohesion: 0.22
+Nodes (6): controller, invention, now, previousInvention, restoreStorage, stored
+
+### Community 617 - "Community 617"
+Cohesion: 0.22
+Nodes (9): Clusters Controller, code:ruby (class IdeasMailbox < ApplicationMailbox), Components and Interfaces, Controllers Architecture, Email Integration, Ideas Controller, Ideas Mailbox, Lists Controller (+1 more)
+
+### Community 618 - "Community 618"
+Cohesion: 0.22
+Nodes (9): code:ruby (class User < ApplicationRecord), code:ruby (class Idea < ApplicationRecord), code:ruby (class Version < ApplicationRecord), code:ruby (class List < ApplicationRecord), Core Models, Idea Model, List Model, User Model (+1 more)
+
+### Community 626 - "Community 626"
+Cohesion: 0.18
+Nodes (6): preview(), import!(), note_key(), preview_from_notes(), raw_payload_for(), source_label_for()
+
+### Community 627 - "Community 627"
+Cohesion: 0.43
+Nodes (6): add(), connect(), extractDomain(), remove(), render(), sync()
+
+### Community 630 - "Community 630"
+Cohesion: 0.43
+Nodes (4): connect(), toggleTrigger(), updateGroupCounts(), updateRecipientChips()
+
+### Community 631 - "Community 631"
+Cohesion: 0.29
+Nodes (6): Build Next Backlog — Design, Data Model, Interactions, Purpose, Styling, UI
+
+### Community 632 - "Community 632"
+Cohesion: 0.29
+Nodes (6): code:block1 (db/migrate/<ts>_add_napkin_calculations_to_ideas.rb        N), code:javascript (addRow() {), code:bash (git add app/javascript/controllers/napkin_controller.js), Napkin Calculations Implementation Plan, Self-Review Checklist (run before merging), Task 12: Add/remove rows and columns
+
+### Community 633 - "Community 633"
+Cohesion: 0.21
+Nodes (17): _customWheelEvent(), _getSecondPointerPosition(), _handleKeyDown(), _handleTouchMoveDolly(), _handleTouchMoveDollyPan(), _handleTouchMoveDollyRotate(), _handleTouchMovePan(), _handleTouchMoveRotate() (+9 more)
+
+### Community 634 - "Community 634"
+Cohesion: 0.29
+Nodes (6): Architecture, code:mermaid (graph TB), Design Document, High-Level Architecture, Overview, Technology Stack
+
+### Community 635 - "Community 635"
+Cohesion: 0.29
+Nodes (7): code:ruby (def napkin_calculations_within_limits), code:bash (git add app/models/idea.rb test/models/idea_napkin_test.rb), code:ruby (require "test_helper"), code:ruby (# JSON serialization), code:ruby (validate :napkin_calculations_within_limits), code:ruby (# Napkin calculations helpers), Task 3: Idea model — serialize, helpers, size validation (TDD)
+
+### Community 636 - "Community 636"
+Cohesion: 0.29
+Nodes (7): Application-Level Error Handling, Background Job Failures, Data Integrity, Email Processing Errors, Error Handling, File Upload Errors, Validation Errors
+
+### Community 637 - "Community 637"
+Cohesion: 0.29
+Nodes (7): Background Jobs, code:ruby (class CreateVersionJob < ApplicationJob), code:ruby (class ExportWorkspaceJob < ApplicationJob), code:ruby (class CoolOffTransitionJob < ApplicationJob), Cool-off Transition Job, Export Workspace Job, Version Creation Job
+
+### Community 638 - "Community 638"
+Cohesion: 0.29
+Nodes (7): Frontend Architecture, Hotwire Integration, Progressive Enhancement, Stimulus Controllers, Turbo Drive, Turbo Frames, Turbo Streams
+
+### Community 639 - "Community 639"
+Cohesion: 0.32
+Nodes (11): agent_recommendation_additions(), agent_recommendation_comparable_value(), agent_recommendation_current_idea_value(), agent_recommendation_diff_lines(), agent_recommendation_display_value(), agent_recommendation_field_changes(), agent_recommendation_file_additions(), agent_recommendation_line_diff() (+3 more)
+
+### Community 640 - "Community 640"
+Cohesion: 0.33
+Nodes (7): co(), getHSL(), io(), lerpHSL(), offsetHSL(), setHSL(), Vh()
+
+### Community 641 - "Community 641"
+Cohesion: 0.40
+Nodes (3): DirectUploadsController, findElements(), toArray()
+
+### Community 643 - "Community 643"
+Cohesion: 0.40
+Nodes (3): DirectUploadsController, findElements(), toArray()
+
+### Community 644 - "Community 644"
+Cohesion: 0.40
+Nodes (3): DirectUploadsController, findElements(), toArray()
+
+### Community 645 - "Community 645"
+Cohesion: 0.40
+Nodes (3): DirectUploadsController, findElements(), toArray()
+
+### Community 647 - "Community 647"
+Cohesion: 0.40
+Nodes (3): DirectUploadsController, findElements(), toArray()
+
+### Community 649 - "Community 649"
+Cohesion: 0.40
+Nodes (3): DirectUploadsController, findElements(), toArray()
+
+### Community 650 - "Community 650"
+Cohesion: 0.40
+Nodes (3): DirectUploadsController, findElements(), toArray()
+
+### Community 652 - "Community 652"
+Cohesion: 0.40
+Nodes (3): DirectUploadsController, findElements(), toArray()
+
+### Community 653 - "Community 653"
+Cohesion: 0.33
+Nodes (6): digest, integrity, logical_path, mtime, size, actioncable-323d156a10054ee2c94ba8a17c20458f542a17234f934ea53d16e0e1899fda5e.js
+
+### Community 654 - "Community 654"
+Cohesion: 0.33
+Nodes (6): digest, integrity, logical_path, mtime, size, actioncable.esm-b66d83871f0a453b10ba8b4c147c2bafa655caaa5d13fa34e9bf361c1c2aedb7.js
+
+### Community 655 - "Community 655"
+Cohesion: 0.33
+Nodes (6): digest, integrity, logical_path, mtime, size, actiontext-00e65dd67653dc5941040d6729477c290250931b7607cd52553337b78c82643b.css
+
+### Community 656 - "Community 656"
+Cohesion: 0.33
+Nodes (6): digest, integrity, logical_path, mtime, size, actiontext-0bc07717019da448e4a7abda9b2718ef0a4a8399bc1949280d76e308a795be6e.js
+
+### Community 657 - "Community 657"
+Cohesion: 0.33
+Nodes (6): digest, integrity, logical_path, mtime, size, actiontext.esm-8386a561a026b3cbe8b226bf99965ba3e0d76c7ac6c97ef80a5dfec240795708.js
+
+### Community 658 - "Community 658"
+Cohesion: 0.33
+Nodes (6): digest, integrity, logical_path, mtime, size, activestorage-b739665c00c484e89aa1fbed0f6c6956e04e31da358a7661a16fea46775b3cc2.js
+
+### Community 659 - "Community 659"
+Cohesion: 0.33
+Nodes (6): digest, integrity, logical_path, mtime, size, activestorage.esm-67701f2a2743709337889a5447ee87325b56054627c1b736725d69f247f79992.js
+
+### Community 660 - "Community 660"
+Cohesion: 0.33
+Nodes (6): digest, integrity, logical_path, mtime, size, application-0b21778d175486dbb6ffd43d189aa7068cf27106e2b21dceb498a27754a82a47.css
+
+### Community 661 - "Community 661"
+Cohesion: 0.33
+Nodes (6): digest, integrity, logical_path, mtime, size, application-1c919cc0f60ab5b2d77f6acf219a807af845c46c2f8bc50cb870a038b8534ff7.css
+
+### Community 662 - "Community 662"
+Cohesion: 0.33
+Nodes (6): digest, integrity, logical_path, mtime, size, application-49dedf012695e1a2020aa3441f3a11fec3cb0070cea6237eb9917f198280cfeb.css
+
+### Community 663 - "Community 663"
+Cohesion: 0.33
+Nodes (6): digest, integrity, logical_path, mtime, size, application-51de36e6d4fea49dd06c786123ec5c3fdc3d9ed0405ec09b55a74f0d31cf70aa.css
+
+### Community 664 - "Community 664"
+Cohesion: 0.33
+Nodes (6): digest, integrity, logical_path, mtime, size, application-66ce7505c61e3e4910ff16e7c220e1fbfb39251cd82e4bab8d325b3aae987cf9.js
+
+### Community 665 - "Community 665"
+Cohesion: 0.33
+Nodes (6): digest, integrity, logical_path, mtime, size, application-7735bbda167ae857336de4f5713ead61db44bd051bfff851c4a689963021523d.css
+
+### Community 666 - "Community 666"
+Cohesion: 0.33
+Nodes (6): digest, integrity, logical_path, mtime, size, application-7916f60ea88648e1e13b05d602076360254ff191aa9f4fbec0e1331b3c6abf56.css
+
+### Community 667 - "Community 667"
+Cohesion: 0.33
+Nodes (6): digest, integrity, logical_path, mtime, size, application-8725046e527eea5bbcdc90f9977408e2b65dfd192afe54bf4a741fbd0973e457.css
+
+### Community 668 - "Community 668"
+Cohesion: 0.33
+Nodes (6): digest, integrity, logical_path, mtime, size, application-b76db87629587bd8d74585fff7373eeab8e943028fcc8bf2a9270f613c297e67.css
+
+### Community 669 - "Community 669"
+Cohesion: 0.33
+Nodes (6): digest, integrity, logical_path, mtime, size, application-c19e27e9c2c7b18fa1af8578a7c43f4e2a11983a79393e2d1123ff8b8ed1e92b.css
+
+### Community 670 - "Community 670"
+Cohesion: 0.33
+Nodes (6): digest, integrity, logical_path, mtime, size, application-de45775214baac338ebdee523c6f6c70efda41f93ba8757250d764e52cd3a917.css
+
+### Community 671 - "Community 671"
+Cohesion: 0.33
+Nodes (6): digest, integrity, logical_path, mtime, size, application-e2c0be7213448e0fa2135582a100640a3338dc68212c05a7af89757bb86488bf.css
+
+### Community 672 - "Community 672"
+Cohesion: 0.33
+Nodes (6): digest, integrity, logical_path, mtime, size, build_items-00d859a4616f328597ee35a4887ec91614203777aea79d521b4de205764b6ef8.css
+
+### Community 673 - "Community 673"
+Cohesion: 0.33
+Nodes (6): digest, integrity, logical_path, mtime, size, build_items-8288b020e9375dd6ef23b867813d4072cd21882d84691d7d85620effdec67ecf.css
+
+### Community 674 - "Community 674"
+Cohesion: 0.33
+Nodes (6): digest, integrity, logical_path, mtime, size, controllers/application-992de401b2daa10b774ececa0f4b3a9a17784229cf80053802bb0278bea09c8d.js
+
+### Community 675 - "Community 675"
+Cohesion: 0.33
+Nodes (6): digest, integrity, logical_path, mtime, size, controllers/backlog_links_controller-5bf03c7a6b156113172f62bc67e2ef64c93535dbd7bd723a09bef96514e9f385.js
+
+### Community 676 - "Community 676"
+Cohesion: 0.33
+Nodes (6): digest, integrity, logical_path, mtime, size, controllers/build_item_form_controller-6ce16a3069645f28763936319a0a395bd3e7531837382b9bf70fafa90ee5df6b.js
+
+### Community 677 - "Community 677"
+Cohesion: 0.33
+Nodes (6): digest, integrity, logical_path, mtime, size, controllers/build_item_sort_controller-b1791190c67b980187e5c9f29cb06dfc9e540f0466d191cc3e7202014c034c17.js
+
+### Community 678 - "Community 678"
+Cohesion: 0.33
+Nodes (6): digest, integrity, logical_path, mtime, size, controllers/completed_toggle_controller-08d7cfbb33f60f154a7a6d0ad9f253a6c504d6a510b6ecbe87ab7bc6beaeff3d.js
+
+### Community 679 - "Community 679"
+Cohesion: 0.33
+Nodes (6): digest, integrity, logical_path, mtime, size, controllers/drag_controller-c832ec4f94a1c90271b226b09983e6e55c240c0adb5ad440005226f3a79c71de.js
+
+### Community 680 - "Community 680"
+Cohesion: 0.33
+Nodes (6): digest, integrity, logical_path, mtime, size, controllers/dropzone_controller-187757769cbefb24c48e7a3ebb184fcdeb899e3262eb3a03e89e07564998eda6.js
+
+### Community 681 - "Community 681"
+Cohesion: 0.33
+Nodes (6): digest, integrity, logical_path, mtime, size, controllers/dropzone_controller-e2001f6fb8495752e6b022222c2d9b984f1e87e61f75c384fec2944bd9677841.js
+
+### Community 682 - "Community 682"
+Cohesion: 0.33
+Nodes (6): digest, integrity, logical_path, mtime, size, controllers/editor_controller-7ed4861d4180e977abed951fd55b6bde6d49a27728be24fc449e6f36e89eac39.js
+
+### Community 683 - "Community 683"
+Cohesion: 0.33
+Nodes (6): digest, integrity, logical_path, mtime, size, controllers/email_settings_controller-d6086a111405ea3796c2a9f09bdb738b39537bd5f882d04fc81e3ecb378e170c.js
+
+### Community 684 - "Community 684"
+Cohesion: 0.33
+Nodes (6): digest, integrity, logical_path, mtime, size, controllers/idea_entry_form_controller-f96c76b534491c965b975ddd09968b84087539877ab34a7bdcd0bad9a494052e.js
+
+### Community 685 - "Community 685"
+Cohesion: 0.33
+Nodes (6): digest, integrity, logical_path, mtime, size, controllers/image_editor_controller-2b07ecfbb32dd989c4d9ef81944b7baa762db50e15b971638c05b2c9ff00bc12.js
+
+### Community 686 - "Community 686"
+Cohesion: 0.33
+Nodes (6): digest, integrity, logical_path, mtime, size, controllers/index-119fad9e0503eb4359d76d77249cb804e097f5d0c1d6fca03446f1485c1a57a9.js
+
+### Community 687 - "Community 687"
+Cohesion: 0.33
+Nodes (6): digest, integrity, logical_path, mtime, size, controllers/inline_edit_controller-7ae04b7cb247fd59807d974556d9a88f0eb3da3eeb861dc4eee89fca38473576.js
+
+### Community 688 - "Community 688"
+Cohesion: 0.33
+Nodes (6): digest, integrity, logical_path, mtime, size, controllers/note_form_controller-e45ffee207eaa03c5f62cc5fd57167de80569ee41956d15b2ef15c41914741b8.js
+
+### Community 689 - "Community 689"
+Cohesion: 0.33
+Nodes (6): digest, integrity, logical_path, mtime, size, controllers/note_tree_controller-665e82361b37f37bd8b54b459f17bbe0c5e73e17e49ad17f25a64faada0fc99e.js
+
+### Community 690 - "Community 690"
+Cohesion: 0.33
+Nodes (6): digest, integrity, logical_path, mtime, size, controllers/reminder_controller-66122de8900039056e241c01cffea67381ac99fd2ea8d8bc6dee08335476f9eb.js
+
+### Community 691 - "Community 691"
+Cohesion: 0.33
+Nodes (6): digest, integrity, logical_path, mtime, size, controllers/reminder_controller-bb25bf943d61cfa12f281049c8f8d98b73f5a311c180128e2440892f0d568e4d.js
+
+### Community 692 - "Community 692"
+Cohesion: 0.33
+Nodes (6): digest, integrity, logical_path, mtime, size, controllers/reminder_controller-f636b22281726e1be77f42520297bdeb08b73588fd4f861e130134fe006d4a91.js
+
+### Community 693 - "Community 693"
+Cohesion: 0.33
+Nodes (6): digest, integrity, logical_path, mtime, size, controllers/score_controller-154f73ce896fbc7bf10e6ba3355e4a5f983b991bf5d89740d0ddb49a70485d11.js
+
+### Community 694 - "Community 694"
+Cohesion: 0.33
+Nodes (6): digest, integrity, logical_path, mtime, size, controllers/score_controller-a1568a5c63b25c60a4efb59bdbeff4b9b8cc2dafce5d48b819b280bc95468d94.js
+
+### Community 695 - "Community 695"
+Cohesion: 0.33
+Nodes (6): digest, integrity, logical_path, mtime, size, controllers/section_reorder_controller-74107efdcbb3d37ec459c9386f69d289a26a4284023eb9fa5cebb53dc60eace1.js
+
+### Community 696 - "Community 696"
+Cohesion: 0.33
+Nodes (6): digest, integrity, logical_path, mtime, size, controllers/tabs_controller-3929498c6433aef897da99f24d9feaa31fe321f641a6209d77d21d5823bf25f0.js
+
+### Community 697 - "Community 697"
+Cohesion: 0.33
+Nodes (6): digest, integrity, logical_path, mtime, size, controllers/template_form_controller-ef4ed4b2d92b846831679cfa3ec324247d1112d2c07919d85c61364ae36a62dd.js
+
+### Community 698 - "Community 698"
+Cohesion: 0.33
+Nodes (6): digest, integrity, logical_path, mtime, size, controllers/template_step_controller-6624b0345596f1f824900e4f43abb4fa149f58de9571cdb5431ee8a4a3574a9d.js
+
+### Community 699 - "Community 699"
+Cohesion: 0.33
+Nodes (6): digest, integrity, logical_path, mtime, size, controllers/template_switch_controller-13f00acdbc9a8221e064b0f99b00b8a7a08dc36ae908fea61ac3888d8200a7cb.js
+
+### Community 700 - "Community 700"
+Cohesion: 0.33
+Nodes (6): digest, integrity, logical_path, mtime, size, controllers/todo_form_controller-877745789056027b825e2c2d2e11331dfc7eecf3c7df64595aaeb461d702df5c.js
+
+### Community 701 - "Community 701"
+Cohesion: 0.33
+Nodes (6): digest, integrity, logical_path, mtime, size, controllers/todo_sort_controller-2458eb8ce46befca5c15882cc5ba14c5c0d5df7c17a4e8c79a36f3c29cde8a31.js
+
+### Community 702 - "Community 702"
+Cohesion: 0.33
+Nodes (6): digest, integrity, logical_path, mtime, size, controllers/topology_graph_controller-3e41285de9acf289f21807e847907f3056ac4aa2e00c3dbefef1ef1c6d1905d4.js
+
+### Community 703 - "Community 703"
+Cohesion: 0.33
+Nodes (6): digest, integrity, logical_path, mtime, size, controllers/version_history_controller-b59f238b6f839ca14c30b5120aa74398470921d9e6611840cdbc92b7a8313442.js
+
+### Community 704 - "Community 704"
+Cohesion: 0.33
+Nodes (6): digest, integrity, logical_path, mtime, size, drag_and_drop-8602cd2bc549e1133683d395fb34d51d9afe0adf20c02bf7b0d2f8afd64467e9.css
+
+### Community 705 - "Community 705"
+Cohesion: 0.33
+Nodes (6): digest, integrity, logical_path, mtime, size, drawings-baee50ce685340b86697f02e24586492c415fa75ebc34ecdf3b08ab9f809dfe8.css
+
+### Community 706 - "Community 706"
+Cohesion: 0.33
+Nodes (6): digest, integrity, logical_path, mtime, size, excalidraw_app/index-2a8a86188fa8e4a22689dcdda9c03e7856533e2fbf50cbd9ff63d6b2ff03c2f7.js
+
+### Community 707 - "Community 707"
+Cohesion: 0.33
+Nodes (6): graph/index-bd273b9e0ff0e8770a86f6911e04c3036d423312e6fb71e8cdf166481140d9c6.js, digest, integrity, logical_path, mtime, size
+
+### Community 708 - "Community 708"
+Cohesion: 0.33
+Nodes (6): graph/index.js-e276a3d5bda0304de8ff9c3f4b27b6416169019db368fd5b17cce39605a5f7a8.map, digest, integrity, logical_path, mtime, size
+
+### Community 709 - "Community 709"
+Cohesion: 0.33
+Nodes (6): idea_detail-bd7e3335d6c847a60a43a7998bcbf8bc4ac05a04fee516a3cd1235df9f21372e.css, digest, integrity, logical_path, mtime, size
+
+### Community 710 - "Community 710"
+Cohesion: 0.33
+Nodes (6): idea_entries-2bde95a6fa89d251d919e11d9e21f893f5d63eba175badf94e8c4f1daaebc47d.css, digest, integrity, logical_path, mtime, size
+
+### Community 711 - "Community 711"
+Cohesion: 0.33
+Nodes (6): idea_entries-ada11a8d75aef6a3820409e2a156ce519d767a71032aab18aea6ec313297d56b.css, digest, integrity, logical_path, mtime, size
+
+### Community 712 - "Community 712"
+Cohesion: 0.33
+Nodes (6): image_editor-0c6da45c71ef8d75b3bb170671c888536518c175f052307a8c7d028ec77232bf.css, digest, integrity, logical_path, mtime, size
+
+### Community 713 - "Community 713"
+Cohesion: 0.33
+Nodes (6): manifest-2f0ac84ec540eb753a59078be1e78cb9bb00e12a9a8d6d826039a818a0008610.js, digest, integrity, logical_path, mtime, size
+
+### Community 714 - "Community 714"
+Cohesion: 0.33
+Nodes (6): notes-31dd0f0df274191bad12ea6bd0be060c5d1b9a253782e715afac72bf20d47b62.css, digest, integrity, logical_path, mtime, size
+
+### Community 715 - "Community 715"
+Cohesion: 0.33
+Nodes (6): notes-5e907bf8ef9932078a0f33d5ab5948609f29bbe619d6c7b77dfc0717df9b5d06.css, digest, integrity, logical_path, mtime, size
+
+### Community 716 - "Community 716"
+Cohesion: 0.33
+Nodes (6): notes-d7c289958008b6950e345b3c0418fecd76f20dfe7de318b362d2e2c0504c6071.css, digest, integrity, logical_path, mtime, size
+
+### Community 717 - "Community 717"
+Cohesion: 0.33
+Nodes (6): scoring-d2830fc14e11c17241abc984de2d33f3728c2ba2c79b17b094986dd992446c82.css, digest, integrity, logical_path, mtime, size
+
+### Community 718 - "Community 718"
+Cohesion: 0.33
+Nodes (6): settings-2a7558160a27f25ffcd5cdfec528d7efbf5f2831cb2742c6fb23cf45f377cbc9.css, digest, integrity, logical_path, mtime, size
+
+### Community 719 - "Community 719"
+Cohesion: 0.33
+Nodes (6): settings-b7a710f50723423bcc934e76bf839cf89a41a15d74dfc4dd9acd67105c42336a.css, digest, integrity, logical_path, mtime, size
+
+### Community 720 - "Community 720"
+Cohesion: 0.33
+Nodes (6): stimulus-f75215805563870a61ee9dc5a207ce46d4675c7e667558a54344fd1e7baa697f.js, digest, integrity, logical_path, mtime, size
+
+### Community 721 - "Community 721"
+Cohesion: 0.33
+Nodes (6): stimulus-importmap-autoloader-db2076c783bf2dbee1226e2add52fef290b5d31b5bcd1edd999ac8a6dd31c44a.js, digest, integrity, logical_path, mtime, size
+
+### Community 722 - "Community 722"
+Cohesion: 0.33
+Nodes (6): stimulus-loading-3576ce92b149ad5d6959438c6f291e2426c86df3b874c525b30faad51b0d96b3.js, digest, integrity, logical_path, mtime, size
+
+### Community 723 - "Community 723"
+Cohesion: 0.33
+Nodes (6): stimulus.min-dd364f16ec9504dfb72672295637a1c8838773b01c0b441bd41008124c407894.js, digest, integrity, logical_path, mtime, size
+
+### Community 724 - "Community 724"
+Cohesion: 0.33
+Nodes (6): stimulus.min.js-2cc63625fa177963b45da974806e7aee846cbf1d4930815733d0fdf3fb232325.map, digest, integrity, logical_path, mtime, size
+
+### Community 725 - "Community 725"
+Cohesion: 0.33
+Nodes (6): submissions-594f14ac4b879c16c25d06968b4c409ac07c4fe5ad47ecabbc9491d3b9fbda3a.css, digest, integrity, logical_path, mtime, size
+
+### Community 726 - "Community 726"
+Cohesion: 0.33
+Nodes (6): todo_items-1f5562380d19054dde1118bcd679af69c5769eaac3657da092a527888b18bf0f.css, digest, integrity, logical_path, mtime, size
+
+### Community 727 - "Community 727"
+Cohesion: 0.33
+Nodes (6): todo_items-ed23daa93a834b351b474a38bfdefa1892e0327fc9d1c866721cad05bb54cfdf.css, digest, integrity, logical_path, mtime, size
+
+### Community 728 - "Community 728"
+Cohesion: 0.33
+Nodes (6): topology-50e294c5324dffc83ecb5e39ea22700e7d5183bd18f8a176d5d1833eca4dc6f3.css, digest, integrity, logical_path, mtime, size
+
+### Community 729 - "Community 729"
+Cohesion: 0.33
+Nodes (6): trix-27b67936197943926cb14d19903e2a81f4ed2cb745aec0e8f198e70ddf292774.css, digest, integrity, logical_path, mtime, size
+
+### Community 730 - "Community 730"
+Cohesion: 0.33
+Nodes (6): trix-7440030d033208cfbb65a8d2bb8ad8908099faa351e0cd3bcf9dc24b510c3a91.js, digest, integrity, logical_path, mtime, size
+
+### Community 731 - "Community 731"
+Cohesion: 0.33
+Nodes (6): turbo-c69e22a49dcb166659137ec1b5c5feddd68aaa75b2095acf4d013b1084c38d9b.js, digest, integrity, logical_path, mtime, size
+
+### Community 732 - "Community 732"
+Cohesion: 0.33
+Nodes (6): turbo.min-38d030897e3554a265d3a3b6bdf4fb7509b08197ba2b6e3761683c07e776c1bc.js, digest, integrity, logical_path, mtime, size
+
+### Community 733 - "Community 733"
+Cohesion: 0.33
+Nodes (6): turbo.min.js-c24bd7b6c8385de986e1594010354afea50ec32ff67eacee1ac1150f2ed08f8f.map, digest, integrity, logical_path, mtime, size
+
+### Community 734 - "Community 734"
+Cohesion: 0.33
+Nodes (6): versions-20795d773f079b289ea4b874c53e5283be8573b45382f1fef1d26d06a8daf8ac.css, digest, integrity, logical_path, mtime, size
+
+### Community 735 - "Community 735"
+Cohesion: 0.47
+Nodes (3): connect(), _setOpen(), toggleCollapse()
+
+### Community 737 - "Community 737"
+Cohesion: 0.60
+Nodes (5): connect(), select(), _showForm(), _showStep(), skip()
+
+### Community 738 - "Community 738"
+Cohesion: 0.52
+Nodes (7): _getSecondPointerPosition(), _handleTouchStartDolly(), _handleTouchStartDollyPan(), _handleTouchStartDollyRotate(), _handleTouchStartPan(), _handleTouchStartRotate(), kX()
+
+### Community 746 - "Community 746"
+Cohesion: 0.60
+Nodes (4): connect(), dismiss(), hide(), show()
+
+### Community 747 - "Community 747"
+Cohesion: 0.60
+Nodes (3): connect(), storeEnrollmentSample(), _updateEnrollProgress()
+
+### Community 748 - "Community 748"
+Cohesion: 0.40
+Nodes (4): Backup Contract, File Storage, Restore Notes, Storage Location
+
+### Community 749 - "Community 749"
 Cohesion: 0.40
 Nodes (5): code:javascript (async ensureParserLoaded() {), code:javascript (setCell(ref, cell) {), code:javascript (computeDisplay(ref, cell) {), code:bash (git add app/javascript/controllers/napkin_controller.js), Task 10: Lazy-load `hyperformula` and wire formula evaluation
 
-### Community 131 - "Community 131"
+### Community 750 - "Community 750"
 Cohesion: 0.40
 Nodes (5): code:javascript (cellMouseDown(e) {), code:javascript (applyFormat() {), code:javascript (this.element.addEventListener("keydown", (e) => {), code:bash (git add app/javascript/controllers/napkin_controller.js), Task 11: Range selection + format toolbar
 
-### Community 132 - "Community 132"
+### Community 751 - "Community 751"
 Cohesion: 0.40
 Nodes (5): Authentication, Data Protection, Email Security, Export Security, Security Considerations
 
-### Community 133 - "Community 133"
+### Community 752 - "Community 752"
 Cohesion: 0.40
 Nodes (5): Caching Strategy, Database Optimization, File Handling, Frontend Performance, Performance Optimization
 
-### Community 134 - "Community 134"
+### Community 753 - "Community 753"
 Cohesion: 0.40
 Nodes (5): Integration Testing, Performance Testing, System Testing, Testing Strategy, Unit Testing
 
-### Community 152 - "Community 152"
+### Community 754 - "Community 754"
+Cohesion: 0.50
+Nodes (3): findElement(), getMetaValue(), submitForm()
+
+### Community 755 - "Community 755"
+Cohesion: 0.50
+Nodes (3): findElement(), getMetaValue(), submitForm()
+
+### Community 756 - "Community 756"
+Cohesion: 0.50
+Nodes (3): findElement(), getMetaValue(), submitForm()
+
+### Community 757 - "Community 757"
+Cohesion: 0.50
+Nodes (3): findElement(), getMetaValue(), submitForm()
+
+### Community 761 - "Community 761"
+Cohesion: 0.83
+Nodes (3): connect(), showTab(), switch()
+
+### Community 765 - "Community 765"
 Cohesion: 0.50
 Nodes (4): code:ruby (require "test_helper"), code:ruby (def idea_params), code:bash (git add app/controllers/ideas_controller.rb test/controllers), Task 4: Controller — permit and parse JSON param (TDD)
 
-### Community 153 - "Community 153"
+### Community 766 - "Community 766"
 Cohesion: 0.50
 Nodes (4): code:ruby (require "test_helper"), code:ruby (module NapkinHelper), code:bash (git add app/helpers/napkin_helper.rb test/helpers/napkin_hel), Task 5: NapkinHelper — server-side eval + cell formatter (TDD)
 
-### Community 154 - "Community 154"
+### Community 767 - "Community 767"
 Cohesion: 0.50
 Nodes (4): code:erb (<%# Renders idea.napkin_calculations as a static evaluated g), code:erb (<% if @idea.napkin_present? %>), code:bash (git add app/views/ideas/_napkin_readonly.html.erb app/views/), Task 6: Show-page partial `_napkin_readonly`
 
-### Community 155 - "Community 155"
+### Community 768 - "Community 768"
 Cohesion: 0.50
 Nodes (4): code:erb (<%# Locals: idea, form %>), code:erb (<!-- Back-of-the-napkin Calculations -->), code:bash (git add app/views/ideas/_napkin.html.erb app/views/ideas/_fo), Task 7: Form partial `_napkin` skeleton (collapsed by default)
 
-### Community 156 - "Community 156"
+### Community 769 - "Community 769"
 Cohesion: 0.50
 Nodes (4): code:javascript (import { Controller } from "@hotwired/stimulus"), code:javascript (import NapkinController from "./napkin_controller"), code:bash (git add app/javascript/controllers/napkin_controller.js app/), Task 8: Stimulus controller — initial render & toggle (no eval yet)
 
-### Community 157 - "Community 157"
+### Community 770 - "Community 770"
 Cohesion: 0.50
 Nodes (4): code:css (.napkin-panel { padding: 0; }), code:css (*= require napkin), code:bash (git add app/assets/stylesheets/napkin.css app/assets/stylesh), Task 13: CSS styling
 
-### Community 158 - "Community 158"
+### Community 771 - "Community 771"
 Cohesion: 0.50
 Nodes (4): Core Tables, Data Models, Database Schema, Relationships and Constraints
 
-### Community 224 - "Community 224"
+### Community 790 - "Community 790"
 Cohesion: 0.67
 Nodes (3): code:ruby (gem "dentaku", "~> 3.5"), code:bash (git add Gemfile Gemfile.lock package.json yarn.lock), Task 1: Add `dentaku` gem and `hyperformula` package
 
-### Community 225 - "Community 225"
+### Community 791 - "Community 791"
 Cohesion: 0.67
 Nodes (3): code:ruby (class AddNapkinCalculationsToIdeas < ActiveRecord::Migration), code:bash (git add db/migrate/*napkin* db/schema.rb), Task 2: Migration — add `napkin_calculations` JSON column
 
-### Community 226 - "Community 226"
+### Community 792 - "Community 792"
 Cohesion: 0.67
 Nodes (3): code:ruby (require "application_system_test_case"), code:bash (git add test/system/napkin_calculations_test.rb), Task 14: System test — full round-trip
 
+### Community 822 - "Community 822"
+Cohesion: 0.17
+Nodes (12): IA, ncr(), ao(), getDataURL(), getHex(), getHexString(), Iu(), Mg() (+4 more)
+
+### Community 823 - "Community 823"
+Cohesion: 0.20
+Nodes (3): AttachmentManager, ManagedAttachment, unmarkBlockBreakPiece()
+
+### Community 826 - "Community 826"
+Cohesion: 0.20
+Nodes (10): bm(), Dh(), gm(), Gu(), oc(), qu(), Ri(), Xf() (+2 more)
+
+### Community 827 - "Community 827"
+Cohesion: 0.31
+Nodes (10): a0(), Ei(), Fc(), i0(), Kp(), n0(), o0(), r0() (+2 more)
+
 ## Knowledge Gaps
-- **674 isolated node(s):** `name`, `private`, `build`, `build:watch`, `verify:excalidraw-local-only` (+669 more)
+- **1898 isolated node(s):** `name`, `private`, `build`, `build:watch`, `verify:excalidraw-local-only` (+1893 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **183 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **208 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `User` connect `Community 0` to `Community 1`, `Community 4`, `Community 5`, `Community 6`, `Community 7`, `Community 8`, `Community 10`, `Community 11`, `Community 13`, `Community 141`, `Community 15`, `Community 17`, `Community 19`, `Community 23`, `Community 24`, `Community 26`, `Community 39`, `Community 42`, `Community 56`, `Community 70`, `Community 72`, `Community 73`, `Community 79`, `Community 98`, `Community 113`?**
-  _High betweenness centrality (0.076) - this node is a cross-community bridge._
-- **Why does `Idea` connect `Community 27` to `Community 64`, `Community 65`, `Community 58`, `Community 69`, `Community 39`, `Community 7`, `Community 12`, `Community 112`, `Community 49`, `Community 114`, `Community 115`, `Community 52`, `Community 29`, `Community 87`, `Community 23`, `Community 26`, `Community 125`?**
-  _High betweenness centrality (0.069) - this node is a cross-community bridge._
-- **Why does `match?()` connect `Community 71` to `Community 65`, `Community 34`, `Community 5`, `Community 8`, `Community 73`, `Community 74`, `Community 72`, `Community 136`, `Community 137`, `Community 75`, `Community 47`, `Community 21`, `Community 55`, `Community 29`?**
-  _High betweenness centrality (0.052) - this node is a cross-community bridge._
-- **Are the 13 inferred relationships involving `User` (e.g. with `.perform()` and `.perform()`) actually correct?**
-  _`User` has 13 INFERRED edges - model-reasoned connections that need verification._
-- **Are the 5 inferred relationships involving `Idea` (e.g. with `idea_for_media_history()` and `.github_candidates()`) actually correct?**
-  _`Idea` has 5 INFERRED edges - model-reasoned connections that need verification._
+- **Why does `EB()` connect `Community 75` to `Community 65`, `Community 1`, `Community 73`, `Community 78`, `Community 177`, `Community 17`, `Community 24`, `Community 60`, `Community 29`?**
+  _High betweenness centrality (0.122) - this node is a cross-community bridge._
+- **Why does `_p()` connect `Community 77` to `Community 71`, `Community 8`, `Community 110`, `Community 111`, `Community 531`, `Community 86`, `Community 24`, `Community 60`, `Community 62`, `Community 63`?**
+  _High betweenness centrality (0.046) - this node is a cross-community bridge._
+- **Why does `snapshot()` connect `Community 37` to `Community 0`, `Community 11`, `Community 36`?**
+  _High betweenness centrality (0.030) - this node is a cross-community bridge._
 - **What connects `name`, `private`, `build` to the rest of the system?**
-  _674 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _1898 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Community 0` be split into smaller, more focused modules?**
-  _Cohesion score 0.06025369978858351 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.0025710462597170894 - nodes in this community are weakly interconnected._
+- **Should `Community 1` be split into smaller, more focused modules?**
+  _Cohesion score 0.005589995341670549 - nodes in this community are weakly interconnected._
+- **Should `Community 2` be split into smaller, more focused modules?**
+  _Cohesion score 0.02934628617688727 - nodes in this community are weakly interconnected._
