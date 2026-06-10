@@ -12,16 +12,19 @@ class Template < ApplicationRecord
   validate :valid_field_instance_ids
   validate :valid_section_order_format
   validate :valid_tab_definitions_format
+  validate :valid_scoring_system_ids
 
   # JSON serialization
   serialize :field_definitions, coder: JSON
   serialize :section_order, coder: JSON
   serialize :tab_definitions, coder: JSON
+  serialize :scoring_system_ids, coder: JSON
 
   # Scopes
   scope :default_for_user, ->(user) { where(user: user, is_default: true) }
 
   # Callbacks
+  before_validation :normalize_scoring_system_ids
   before_save :ensure_single_default
 
   def self.default_for(user)
@@ -91,6 +94,17 @@ class Template < ApplicationRecord
     # Sort fields within each tab by position
     grouped.each { |_, fields| fields.sort_by! { |f| f['position'].to_i } }
     grouped
+  end
+
+  def enabled_scoring_system_ids
+    ids = Array(scoring_system_ids).map(&:to_s).reject(&:blank?)
+    ids.presence || [User::LEGACY_SCORING_SYSTEM_ID]
+  end
+
+  def scoring_systems
+    return [] unless user
+
+    enabled_scoring_system_ids.filter_map { |id| user.scoring_system(id) }
   end
 
   private
@@ -178,6 +192,18 @@ class Template < ApplicationRecord
         errors.add(:tab_definitions, "tab at index #{index} must have a name")
       end
     end
+  end
+
+  def valid_scoring_system_ids
+    return unless user
+
+    unknown_ids = enabled_scoring_system_ids - user.scoring_system_ids
+    errors.add(:scoring_system_ids, "contain unknown scoring systems") if unknown_ids.any?
+  end
+
+  def normalize_scoring_system_ids
+    self.scoring_system_ids = enabled_scoring_system_ids & (user&.scoring_system_ids || User::DEFAULT_SCORING_SYSTEMS.keys)
+    self.scoring_system_ids = [User::LEGACY_SCORING_SYSTEM_ID] if scoring_system_ids.blank?
   end
 
   def valid_field_instance_ids
