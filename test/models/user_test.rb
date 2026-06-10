@@ -110,6 +110,28 @@ class UserTest < ActiveSupport::TestCase
     assert_nil user.authenticator_app_secret
   end
 
+  test "mobile uplink settings generate and clear a connection id" do
+    user = users(:one)
+
+    assert user.update_mobile_uplink_settings("enabled" => "1")
+
+    assert user.mobile_uplink_enabled?
+    assert user.mobile_uplink_configured?
+    assert_match(/\A[A-Za-z0-9_-]{24}\z/, user.mobile_uplink_id)
+    assert_includes user.mobile_uplink_pairing_payload(workspace_url: "https://ideas.local:8443"), user.mobile_uplink_id
+    assert_includes user.mobile_uplink_pairing_payload(workspace_url: "https://ideas.local:8443"), "super-secure"
+
+    connect_id = user.mobile_uplink_id
+
+    assert user.update_mobile_uplink_settings("enabled" => "1")
+    assert_equal connect_id, user.mobile_uplink_id
+
+    assert user.update_mobile_uplink_settings("enabled" => "0")
+    refute user.reload.mobile_uplink_enabled?
+    refute user.mobile_uplink_configured?
+    assert_nil user.mobile_uplink_id
+  end
+
   test "voice id stores a derived fingerprint and can be disabled without raw audio" do
     user = users(:one)
     samples = [

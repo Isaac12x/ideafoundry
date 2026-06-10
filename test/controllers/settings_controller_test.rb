@@ -194,7 +194,40 @@ class SettingsControllerTest < ActionDispatch::IntegrationTest
     assert_select "input[name=?][value=?]", "typing_lock[failed_unlock_cooldown_minutes]", "5"
     assert_select "input[name=?]", "authenticator_app[enabled]"
     assert_select "input[name=?]", "voice_id[enabled]"
+    assert_select "input[name=?]", "mobile_uplink[enabled]"
     assert_match(/Voice ID/, response.body)
+    assert_match(/Mobile Uplink/, response.body)
+  end
+
+  test "PATCH settings/security enabling mobile uplink renders install and pairing QR setup" do
+    patch settings_security_path, params: {
+      typing_lock: {
+        enabled: "0",
+        lock_after_minutes: "5"
+      },
+      authenticator_app: {
+        enabled: "0"
+      },
+      voice_id: {
+        enabled: "0"
+      },
+      mobile_uplink: {
+        enabled: "1"
+      }
+    }
+
+    assert_redirected_to settings_security_path
+    assert @user.reload.mobile_uplink_enabled?
+    assert_match(/\A[A-Za-z0-9_-]{24}\z/, @user.mobile_uplink_id)
+
+    get settings_security_path
+
+    assert_response :success
+    assert_select ".mobile-uplink-install-qr svg"
+    assert_select ".mobile-uplink-pairing-qr svg"
+    assert_match(/Install the mobile uplink app/, response.body)
+    assert_match(@user.mobile_uplink_id, response.body)
+    assert_match(/encrypts data multiple times before it leaves/, response.body)
   end
 
   test "GET settings/security renders passphrase and backup acknowledgements for plaintext SQLite" do
