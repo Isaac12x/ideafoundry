@@ -104,8 +104,13 @@ group :test do
   gem "capybara"
   gem "minitest", "~> 5.25"
   gem "selenium-webdriver"
+  # Generate .xlsx fixtures for KB rendering tests (roo reads, caxlsx writes)
+  gem "caxlsx"
 end
 
 gem "redcarpet", "~> 3.6"
+
+# Read .xlsx spreadsheets for KB rendering (converted to HTML tables)
+gem "roo", "~> 2.10"
 
 gem "rack-attack"

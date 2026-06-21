@@ -205,6 +205,7 @@ Rails.application.routes.draw do
   get 'kb', to: redirect('/knowledge-base')
   get 'knowledge-base/file', to: 'kb#file', as: :kb_file
   get 'kb/file', to: redirect('/knowledge-base/file')
+  get 'knowledge-base/raw', to: 'kb#raw', as: :kb_raw
   resources :facts, only: [:create, :destroy]
   resources :maxims, only: [:create, :destroy]
 
@@ -217,10 +218,12 @@ Rails.application.routes.draw do
     member do
       patch :toggle
       patch :toggle_checklist_item
+      patch :pin
       get :cancel_edit
     end
     collection do
       patch :reorder
+      patch :join
     end
   end
 
@@ -231,6 +234,10 @@ Rails.application.routes.draw do
   # Defines the root path route ("/")
   root "lists#index"
 
-  # Catch-all: redirect unmatched routes to root (exclude Rails internal paths like ActiveStorage)
-  get "*path", to: redirect("/"), constraints: ->(req) { !req.path.start_with?("/rails/") }
+  # Catch-all: redirect unmatched routes to root. Use a TEMPORARY (302) redirect so
+  # browsers never cache it — a 301 here makes transiently-unmatched paths resolve to
+  # "/" forever. Exclude Rails internals and assets so missing assets/source maps 404
+  # cleanly instead of returning the home page's HTML (which breaks dynamic imports).
+  get "*path", to: redirect("/", status: 302),
+      constraints: ->(req) { !req.path.start_with?("/rails/", "/assets/") }
 end

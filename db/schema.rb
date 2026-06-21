@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_02_120000) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_19_130000) do
   create_table "action_mailbox_inbound_emails", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "message_checksum", null: false
@@ -135,11 +135,13 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_02_120000) do
     t.datetime "created_at", null: false
     t.text "description"
     t.text "links"
+    t.boolean "pinned", default: false, null: false
     t.integer "position"
     t.string "title", null: false
     t.datetime "updated_at", null: false
     t.integer "user_id", null: false
     t.index ["user_id", "completed"], name: "index_build_items_on_user_id_and_completed"
+    t.index ["user_id", "pinned", "position"], name: "index_build_items_on_user_id_and_pinned_and_position"
     t.index ["user_id", "position"], name: "index_build_items_on_user_id_and_position"
     t.index ["user_id"], name: "index_build_items_on_user_id"
   end
@@ -249,6 +251,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_02_120000) do
 
   create_table "ideas", force: :cascade do |t|
     t.integer "attempt_count"
+    t.string "category"
     t.decimal "computed_score"
     t.datetime "cool_off_until"
     t.datetime "created_at", null: false

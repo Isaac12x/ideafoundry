@@ -329,6 +329,7 @@ class User < ApplicationRecord
   def update_scoring_weights(weights)
     self.settings ||= {}
     self.settings['scoring_weights'] = weights.slice('trl', 'difficulty', 'opportunity', 'timing')
+                                              .transform_values(&:to_f)
     save!
   end
 
