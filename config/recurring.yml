@@ -31,7 +31,7 @@ production:
     class: IdeaDigestJob
     queue: default
     args: ["weekly"]
-    schedule: at 8am on Monday
+    schedule: "0 8 * * 1"
 
   # Automated backups
   scheduled_backup:
