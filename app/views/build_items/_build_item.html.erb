@@ -1,7 +1,8 @@
 <% index ||= 0 %>
 <% completion_blocked = build_item.checklist_blocking_completion? %>
-<div class="backlog-item <%= 'backlog-item--completed' if build_item.completed? %>"
+<div class="backlog-item <%= 'backlog-item--completed' if build_item.completed? %> <%= 'backlog-item--pinned' if build_item.pinned? %>"
      id="build_item_<%= build_item.id %>"
+     data-controller="optimistic"
      data-build-item-sort-target="item"
      data-item-id="<%= build_item.id %>"
      data-position="<%= build_item.position %>"
@@ -26,7 +27,7 @@
                   class: ["backlog-check-btn", ("backlog-check-btn--blocked" if completion_blocked)].compact.join(" "),
                   disabled: completion_blocked,
                   title: (completion_blocked ? "Complete subitems first" : nil),
-                  data: { turbo_stream: true } do %>
+                  data: { turbo_stream: true, action: "click->optimistic#sync" } do %>
       <% if build_item.completed? %>
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="4" fill="var(--success)" stroke="var(--success)" stroke-width="2"/><polyline points="9 12 11.5 14.5 15.5 10" stroke="var(--bg-base)" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
       <% else %>
@@ -75,11 +76,22 @@
 
   <div class="backlog-actions">
     <% unless build_item.completed? %>
+      <%= button_to pin_build_item_path(build_item),
+                    method: :patch,
+                    class: ["backlog-action-btn", ("backlog-action-btn--active" if build_item.pinned?)].compact.join(" "),
+                    title: (build_item.pinned? ? "Unpin" : "Pin to top"),
+                    data: { turbo_stream: true } do %>
+        <% if build_item.pinned? %>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/></svg>
+        <% else %>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/></svg>
+        <% end %>
+      <% end %>
       <button type="button" class="backlog-action-btn" data-controller="inline-edit" data-action="click->inline-edit#start" data-build-item-id="<%= build_item.id %>" title="Edit">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
       </button>
     <% end %>
-    <%= button_to build_item_path(build_item), method: :delete, class: "backlog-action-btn backlog-action-btn--danger", data: { turbo_stream: true, turbo_confirm: "Delete this item?" }, title: "Delete" do %>
+    <%= button_to build_item_path(build_item), method: :delete, class: "backlog-action-btn backlog-action-btn--danger", form: { data: { action: "turbo:submit-start->optimistic#remove" } }, data: { turbo_stream: true, turbo_confirm: "Delete this item?" }, title: "Delete" do %>
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
     <% end %>
   </div>

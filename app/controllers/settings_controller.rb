@@ -34,10 +34,11 @@ class SettingsController < ApplicationController
     if valid_scoring_weights?(weights)
       @user.update_scoring_weights(weights)
       @user.update_scoring_systems(scoring_system_params) if params.key?(:scoring_systems)
-      
+
       # Recalculate all idea scores with new weights
       recalculate_all_scores
-      
+      ActivityLog.record_settings!(user: @user, setting: "Scoring")
+
       respond_to do |format|
         format.html { redirect_to settings_scoring_path, notice: 'Scoring weights updated successfully. All idea scores have been recalculated.' }
         format.json { 
@@ -198,6 +199,8 @@ class SettingsController < ApplicationController
     mobile_uplink_updated = @user.update_mobile_uplink_settings(mobile_uplink_params)
 
     if typing_lock_updated && authenticator_app_updated && voice_id_updated && mobile_uplink_updated
+      ActivityLog.record_settings!(user: @user, setting: "Security")
+
       if @user.security_lock_enabled?
         unlock_typing_session!
       else
@@ -355,6 +358,7 @@ class SettingsController < ApplicationController
 
   def update_github
     if @user.update_github_settings(github_params)
+      ActivityLog.record_settings!(user: @user, setting: "GitHub")
       redirect_to settings_github_path, notice: "GitHub settings updated."
     else
       @github_settings = @user.github_settings
@@ -470,12 +474,21 @@ class SettingsController < ApplicationController
   def update_kb
     paths = Array(params[:kb_folders]).reject(&:blank?)
     if @user.update_kb_folders(paths)
+      ActivityLog.record_settings!(user: @user, setting: "KB Folders", details: { paths: paths })
       redirect_to settings_kb_path, notice: "KB folders updated."
     else
       @kb_folders = paths
       flash.now[:alert] = "Failed to update KB folders."
       render :kb, status: :unprocessable_content
     end
+  end
+
+  def activity
+    @filter = params[:filter].presence
+    logs = @user.activity_logs.recent
+    logs = logs.for_trackable_type(@filter) if @filter.present?
+    @activity_logs = logs.limit(100)
+    @trackable_types = @user.activity_logs.select(:trackable_type).distinct.pluck(:trackable_type).compact.sort
   end
 
   def api_keys

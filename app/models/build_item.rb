@@ -15,7 +15,7 @@ class BuildItem < ApplicationRecord
     super || []
   end
 
-  scope :pending, -> { where(completed: false).order(:position) }
+  scope :pending, -> { where(completed: false).order(pinned: :desc, position: :asc) }
   scope :done, -> { where(completed: true).order(completed_at: :desc) }
 
   before_validation :set_position, on: :create
@@ -26,6 +26,15 @@ class BuildItem < ApplicationRecord
 
   def mark_pending!
     update!(completed: false, completed_at: nil)
+  end
+
+  # Aggregate checklist (subitem) counts across an already-loaded collection.
+  # Returns { total:, done: } so callers avoid extra queries.
+  def self.subitem_totals(items)
+    items.reduce(total: 0, done: 0) do |acc, item|
+      total = item.checklist_total_count
+      { total: acc[:total] + total, done: acc[:done] + (total - item.checklist_remaining_count) }
+    end
   end
 
   def self.parse_checklist_line(line)
@@ -63,6 +72,33 @@ class BuildItem < ApplicationRecord
 
   def checklist_blocking_completion?
     checklist_total_count.positive? && !checklist_complete?
+  end
+
+  # Soft-delete used by file-import reconciliation: drop the item to the "done"
+  # section without running the checklist-completion validation or callbacks.
+  def archive!
+    update_columns(completed: true, completed_at: completed_at || Time.current, updated_at: Time.current)
+  end
+
+  # Join: absorb +other+ into this item as a checklist subitem, preserving its
+  # own checklist lines (indented), links and images, then destroy +other+.
+  def absorb!(other)
+    raise ArgumentError, "cannot absorb self" if other.id == id
+
+    appended = ["- [ ] #{other.title}"]
+    other.description.to_s.lines(chomp: true).each do |line|
+      appended << (line.empty? ? "" : "  #{line}")
+    end
+
+    base = description.to_s.sub(/\n+\z/, "")
+    new_description = [base.presence, *appended].compact.join("\n")
+    merged_links = (links + other.links).uniq { |link| link["url"] }
+
+    transaction do
+      other.images_attachments.update_all(record_id: id, record_type: "BuildItem") if other.images.attached?
+      update!(description: new_description, links: merged_links)
+      other.reload.destroy!
+    end
   end
 
   def toggle_checklist_item!(line_index)
