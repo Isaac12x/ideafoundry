@@ -7,10 +7,17 @@ class BuildItemsControllerTest < ActionDispatch::IntegrationTest
     @user = User.first
     @previous_backlog_enabled = Rails.application.config.x.backlog_enabled
     Rails.application.config.x.backlog_enabled = true
+
+    # Isolate the backup file so sync never touches the real storage/backlog.md.
+    @previous_backup_path = Rails.application.config.x.backlog_backup_path
+    @backup_file = Rails.root.join("tmp", "test_backlog_#{SecureRandom.hex(4)}.md")
+    Rails.application.config.x.backlog_backup_path = @backup_file.to_s
   end
 
   def teardown
     Rails.application.config.x.backlog_enabled = @previous_backlog_enabled
+    Rails.application.config.x.backlog_backup_path = @previous_backup_path
+    File.delete(@backup_file) if File.exist?(@backup_file)
   end
 
   test "GET index" do
@@ -151,6 +158,66 @@ class BuildItemsControllerTest < ActionDispatch::IntegrationTest
     assert_equal 1, i3.reload.position
     assert_equal 2, i1.reload.position
     assert_equal 3, i2.reload.position
+  end
+
+  test "PATCH pin toggles pinned and floats item to top of pending list" do
+    a = BuildItem.create!(user: @user, title: "Alpha", position: 1)
+    b = BuildItem.create!(user: @user, title: "Bravo", position: 2)
+
+    patch pin_build_item_path(b), as: :turbo_stream
+
+    assert_response :success
+    assert b.reload.pinned?
+    # Pinned item now sorts ahead of the unpinned one.
+    assert_equal [b.id, a.id], @user.build_items.pending.pluck(:id)
+  end
+
+  test "PATCH pin again unpins" do
+    item = BuildItem.create!(user: @user, title: "Alpha", pinned: true)
+    patch pin_build_item_path(item), as: :turbo_stream
+    assert_response :success
+    assert_not item.reload.pinned?
+  end
+
+  test "PATCH join folds source into target as a checklist subitem" do
+    target = BuildItem.create!(user: @user, title: "Parent", position: 1)
+    source = BuildItem.create!(user: @user, title: "Child", position: 2, description: "- [ ] nested")
+
+    assert_difference("BuildItem.count", -1) do
+      patch join_build_items_path, params: { source_id: source.id, target_id: target.id }, as: :turbo_stream
+    end
+
+    assert_response :success
+    assert_not BuildItem.exists?(source.id)
+    assert_includes target.reload.description, "- [ ] Child"
+    assert_includes target.description, "nested"
+  end
+
+  test "PATCH join rejects joining completed items" do
+    target = BuildItem.create!(user: @user, title: "Parent")
+    source = BuildItem.create!(user: @user, title: "Done", completed: true, completed_at: Time.current)
+
+    assert_no_difference("BuildItem.count") do
+      patch join_build_items_path, params: { source_id: source.id, target_id: target.id }, as: :turbo_stream
+    end
+    assert_response :unprocessable_entity
+  end
+
+  test "stats counts include checklist subitems" do
+    BuildItem.create!(user: @user, title: "Has subs", description: "- [ ] one\n- [x] two")
+
+    get build_items_path
+
+    assert_response :success
+    # 1 pending item + 1 unchecked subitem = 2 queued; 1 checked subitem = 1 done.
+    assert_select "#backlog_queued_count", text: "2"
+    assert_select "#backlog_done_count", text: "1"
+  end
+
+  test "mutations export the backlog to the backup file" do
+    post build_items_path, params: { build_item: { title: "Backed up" } }, as: :turbo_stream
+    assert File.exist?(@backup_file)
+    assert_includes File.read(@backup_file), "Backed up"
   end
 
   test "GET index redirects when backlog is disabled" do
