@@ -23,7 +23,7 @@ class IdeaAttachmentsController < ApplicationController
     @idea.record_history!("Updated media", automatic: true) if new_attachments.any?
 
     html = new_attachments.map { |attachment|
-      render_to_string(partial: "idea_attachments/item", locals: { attachment: attachment, idea: @idea })
+      render_to_string(partial: "idea_attachments/item", formats: [:html], locals: { attachment: attachment, idea: @idea })
     }.join
 
     render json: { success: true, html: html }
@@ -51,7 +51,7 @@ class IdeaAttachmentsController < ApplicationController
       attachment.update!(position: position)
     end
 
-    html = render_to_string(partial: "idea_attachments/item", locals: { attachment: attachment, idea: @idea })
+    html = render_to_string(partial: "idea_attachments/item", formats: [:html], locals: { attachment: attachment, idea: @idea })
     render json: { success: true, html: html }
   end
 

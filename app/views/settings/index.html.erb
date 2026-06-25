@@ -107,6 +107,14 @@
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
     <% end %>
 
+    <%= link_to settings_activity_path, class: "settings-row" do %>
+      <div class="settings-row-info">
+        <h3>Activity</h3>
+        <p>Audit log of changes to ideas, lists, boards, topologies, and settings</p>
+      </div>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+    <% end %>
+
     <div class="settings-group-label">Security</div>
 
     <%= link_to settings_security_path, class: "settings-row settings-row--last" do %>

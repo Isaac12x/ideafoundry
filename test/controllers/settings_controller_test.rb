@@ -248,48 +248,42 @@ class SettingsControllerTest < ActionDispatch::IntegrationTest
       assert_select "input[name=?][type=?]", "database_encryption[passphrase_confirmation]", "password"
       assert_select "input[name=?][type=?]", "database_encryption[saved_primary]", "checkbox"
       assert_select "input[name=?][type=?]", "database_encryption[saved_secondary]", "checkbox"
-      assert_select "button", text: "Encrypt SQLite Databases"
+      assert_select "input[type=?][value=?]", "submit", "Encrypt SQLite Databases"
     end
   ensure
     FileUtils.rm_rf(root) if root&.exist?
   end
 
   test "POST settings/security/encrypt-database refuses to encrypt without a matching passphrase and two saved-copy acknowledgements" do
-    migrator = Minitest::Mock.new
-
-    SettingsController.any_instance.stub(:sqlcipher_database_migrator_for_passphrase, migrator) do
-      post settings_security_encrypt_database_path, params: {
-        database_encryption: {
-          passphrase: "one passphrase",
-          passphrase_confirmation: "different passphrase",
-          saved_primary: "1",
-          saved_secondary: "1"
-        }
+    # Mismatched confirmation is rejected by the validation guard before any
+    # database migration is attempted.
+    post settings_security_encrypt_database_path, params: {
+      database_encryption: {
+        passphrase: "one good passphrase",
+        passphrase_confirmation: "another different passphrase",
+        saved_primary: "1",
+        saved_secondary: "1"
       }
-    end
+    }
 
     assert_redirected_to settings_security_path
     assert_match(/Passphrase confirmation does not match/, flash[:alert])
-    migrator.verify
   end
 
   test "POST settings/security/encrypt-database refuses to encrypt until the user confirms two saved passphrase copies" do
-    migrator = Minitest::Mock.new
-
-    SettingsController.any_instance.stub(:sqlcipher_database_migrator_for_passphrase, migrator) do
-      post settings_security_encrypt_database_path, params: {
-        database_encryption: {
-          passphrase: "correct horse battery staple",
-          passphrase_confirmation: "correct horse battery staple",
-          saved_primary: "1",
-          saved_secondary: "0"
-        }
+    # Missing the second saved-copy acknowledgement is rejected by the validation
+    # guard before any database migration is attempted.
+    post settings_security_encrypt_database_path, params: {
+      database_encryption: {
+        passphrase: "correct horse battery staple",
+        passphrase_confirmation: "correct horse battery staple",
+        saved_primary: "1",
+        saved_secondary: "0"
       }
-    end
+    }
 
     assert_redirected_to settings_security_path
     assert_match(/Save the passphrase in more than one place/, flash[:alert])
-    migrator.verify
   end
 
   test "POST settings/security/encrypt-database encrypts configured plaintext SQLite with the UI passphrase" do

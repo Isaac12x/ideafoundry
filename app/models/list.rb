@@ -1,4 +1,7 @@
 class List < ApplicationRecord
+  include TracksActivity
+  tracks_activity
+
   KINDS = %w[kanban named].freeze
 
   belongs_to :user
