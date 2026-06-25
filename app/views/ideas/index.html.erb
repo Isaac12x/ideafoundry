@@ -1,5 +1,5 @@
 <div class="ideas-container"
-     data-controller="idea-context-menu"
+     data-controller="idea-context-menu infinite-scroll"
      data-idea-context-menu-add-url-template-value="/ideas/__IDEA_ID__/add_to_list"
      data-idea-context-menu-kanban-boards-value="<%= idea_context_kanban_boards_json(@kanban_boards) %>"
      data-idea-context-menu-named-lists-value="<%= idea_context_named_lists_json(@named_lists) %>">
@@ -14,14 +14,6 @@
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
         </button>
       </div>
-      <%= link_to archived_ideas_path, class: "btn" do %>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4"/></svg>
-        Archive
-      <% end %>
-      <%= link_to lists_path, class: "btn" do %>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
-        Lists
-      <% end %>
       <%= link_to new_idea_path, class: "btn btn-primary" do %>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
         New Idea
@@ -34,7 +26,7 @@
   <% end %>
 
   <%= turbo_frame_tag "ideas_list" do %>
-    <div class="ideas-grid">
+    <div class="ideas-grid" id="ideas-grid">
       <% @ideas.each do |idea| %>
         <%= render 'idea_card', idea: idea %>
       <% end %>
@@ -48,11 +40,7 @@
       <% end %>
     </div>
 
-    <% if @ideas.respond_to?(:total_pages) && @ideas.total_pages > 1 %>
-      <div class="pagination">
-        <%= paginate @ideas %>
-      </div>
-    <% end %>
+    <%= render 'infinite_scroll_sentinel', ideas: @ideas %>
   <% end %>
 </div>
 

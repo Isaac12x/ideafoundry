@@ -1,0 +1,14 @@
+<% if ideas.next_page %>
+  <div id="infinite-scroll-sentinel"
+       class="infinite-scroll-sentinel"
+       data-infinite-scroll-target="sentinel"
+       data-url="<%= ideas_path(request.query_parameters.merge("page" => ideas.next_page)) %>">
+    <div class="infinite-scroll-loader">
+      <div class="infinite-scroll-spinner"></div>
+    </div>
+  </div>
+<% else %>
+  <div id="infinite-scroll-sentinel"
+       class="infinite-scroll-sentinel"
+       data-infinite-scroll-target="sentinel"></div>
+<% end %>
