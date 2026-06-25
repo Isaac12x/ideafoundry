@@ -4,25 +4,24 @@
       <h2>Backlog</h2>
       <p class="backlog-subtitle">Prioritize what to build next</p>
       <div id="backlog_progress_wrapper">
-        <% total = @build_items.size + @completed_items.size %>
-        <% if total > 0 %>
+        <% if @total_display > 0 %>
           <div class="backlog-progress">
             <div class="backlog-progress-track">
-              <div class="backlog-progress-fill" style="width: <%= (@completed_items.size.to_f / total * 100).round %>%"></div>
+              <div class="backlog-progress-fill" style="width: <%= (@done_display.to_f / @total_display * 100).round %>%"></div>
             </div>
-            <span class="backlog-progress-label"><%= (@completed_items.size.to_f / total * 100).round %>%</span>
+            <span class="backlog-progress-label"><%= (@done_display.to_f / @total_display * 100).round %>%</span>
           </div>
         <% end %>
       </div>
     </div>
     <div class="backlog-stats">
       <span class="backlog-stat">
-        <span class="backlog-stat-num" id="backlog_queued_count"><%= @build_items.size %></span>
+        <span class="backlog-stat-num" id="backlog_queued_count"><%= @queued_display %></span>
         <span class="backlog-stat-label">queued</span>
       </span>
       <span class="backlog-stat-divider"></span>
       <span class="backlog-stat">
-        <span class="backlog-stat-num" id="backlog_done_count"><%= @completed_items.size %></span>
+        <span class="backlog-stat-num" id="backlog_done_count"><%= @done_display %></span>
         <span class="backlog-stat-label">done</span>
       </span>
     </div>
@@ -35,7 +34,8 @@
   <div id="build_items_list"
        class="backlog-list"
        data-controller="build-item-sort"
-       data-build-item-sort-url-value="<%= reorder_build_items_path %>">
+       data-build-item-sort-url-value="<%= reorder_build_items_path %>"
+       data-build-item-sort-join-url-value="<%= join_build_items_path %>">
     <% @build_items.each_with_index do |item, i| %>
       <%= render "build_item", build_item: item, index: i %>
     <% end %>

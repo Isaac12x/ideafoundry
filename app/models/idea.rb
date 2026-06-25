@@ -1,5 +1,7 @@
 class Idea < ApplicationRecord
   include Notifiable
+  include TracksActivity
+  tracks_activity name_method: :title
 
   belongs_to :user
   belongs_to :template, optional: true
