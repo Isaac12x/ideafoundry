@@ -81,12 +81,33 @@ The sidecar services bind to localhost only:
 - Voice ID: `http://127.0.0.1:8000` (configurable via `VOICE_ID_PORT`)
 - OCR: `http://127.0.0.1:8001/extract` (configurable via `OCR_SERVICE_PORT`)
 
-OCR uses Surya with a local `llama.cpp` inference backend. The first OCR request downloads
-the Surya model into the `ocr-model-cache` compose volume and can take several minutes.
+OCR uses Surya with a local `llama.cpp` inference backend. The OCR image downloads a
+prebuilt `llama-server` release binary during `docker compose build` (no source compile).
+
+The first OCR request downloads the Surya model into the `ocr-model-cache` compose volume
+and can take several minutes.
 The service returns complete plain text for saving plus Surya HTML blocks in metadata for
 rendering extracted pages.
 
-When Rails runs directly under launchd/systemd, `bin/start_idea_app.sh` starts the default compose sidecar graph in detached mode before Rails. It uses the first available running runtime from `docker compose`, `docker-compose`, `podman compose`, or `podman-compose`; set `IDEA_APP_COMPOSE_CMD` to override that detection. The script also points Rails at the host-side service URLs:
+When Rails runs directly under launchd/systemd, `bin/start_idea_app.sh` starts compose sidecars in the background **without blocking Rails**. Sidecar startup uses existing images only (`docker compose up -d --no-build` per service); it does not rebuild OCR on every boot. Voice ID and OCR are optional — if a sidecar image is missing or fails to start, the app still comes up and only that feature is unavailable until you build or fix the service manually.
+
+Sidecar logs: `log/compose-sidecars.log`. Useful environment variables:
+
+| Variable | Purpose |
+|----------|---------|
+| `IDEA_APP_SKIP_COMPOSE=1` | Skip compose entirely |
+| `IDEA_APP_COMPOSE_BUILD=1` | Rebuild images during startup (slow; OCR is memory-heavy) |
+| `IDEA_APP_COMPOSE_CMD` | Override compose command detection |
+
+Build sidecars manually when needed:
+
+```bash
+docker compose build voice-id
+docker compose build --no-cache ocr   # first build or after Dockerfile changes
+docker compose up -d --no-build voice-id ocr
+```
+
+The script uses the first available running runtime from `docker compose`, `docker-compose`, `podman compose`, or `podman-compose`. It also points Rails at the host-side service URLs:
 
 ```bash
 export VOICE_ID_SERVICE_URL=http://127.0.0.1:8000
@@ -185,6 +206,8 @@ Use the same recovery passphrase when moving the encrypted database to another c
 For advanced deployments that need the app to read/write the passphrase at a specific path, set `IDEA_FOUNDRY_RECOVERY_PASSPHRASE_FILE=/path/outside/idea-foundry-recovery-passphrase.txt` in the Rails process environment before using `/settings/security`; do not add a required interpolation to `docker-compose.yml`, because Podman Compose evaluates it even when the Rails app profile is not selected.
 
 Set `IDEA_FOUNDRY_SQLCIPHER_BACKUP_DIR=/path/outside/app` before starting the app to choose a different backup location. After you have verified your encrypted database, move long-term plaintext backups to secure offline storage or delete them according to your backup policy.
+
+> ⚠️ **Backlog Markdown backup is plaintext.** The Backlog feature continuously mirrors items to a human-editable Markdown file (default `storage/backlog.md`) and re-imports external edits to that file on load. This file is **not** SQLCipher-encrypted, so it exposes backlog titles, notes, and links in plaintext on disk. `storage/` is gitignored, but treat this file like any other plaintext export. Override the location with `config.x.backlog_backup_path` (e.g. point it at an offline/synced folder), or delete the file to disable round-tripping until the next mutation recreates it.
 
 If the UI is unavailable, the same migration can still be run from the Rails task:
 

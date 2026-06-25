@@ -52,7 +52,7 @@ class NoteImportService
 
       source = normalize_source!(data["source"])
       source_label = source_label_for(source)
-Add a check to ensure `selected_note_keys` is not nil before proceeding.
+      notes = selected_notes(Array(data["notes"]), selected_folder_keys: selected_keys, selected_note_keys: selected_note_keys)
       raise ImportError, "No notes matched the selected folders or notes." if notes.empty?
 
       batch_id = data["batch_id"].presence || SecureRandom.uuid
