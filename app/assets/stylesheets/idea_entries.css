@@ -341,3 +341,32 @@ a.idea-entry-summary__chip:hover {
 .idea-entry-summary__form {
   margin-top: 0.5rem;
 }
+
+/* Inline (card) mode — chips visible without collapse, no form */
+.idea-entry-summary--inline {
+  border-bottom: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 0;
+}
+
+.idea-entry-summary__label {
+  color: var(--text-muted, rgba(255,255,255,0.45));
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.idea-card-structured-entries {
+  border-top: 1px solid var(--border-subtle, rgba(255,255,255,0.08));
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  padding: 0.75rem 1.25rem 0.85rem;
+}
+
+.idea-card-structured-entries:empty {
+  display: none;
+}
