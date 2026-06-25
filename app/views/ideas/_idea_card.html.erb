@@ -38,10 +38,20 @@
 
   <% entry_kinds = (idea.user&.enabled_idea_tabs || []) & User::IDEA_ENTRY_TABS %>
   <% if entry_kinds.any? %>
-    <div class="idea-card-structured-entries">
-      <% entry_kinds.each do |kind| %>
-        <%= render "idea_entries/card_summary", idea: idea, kind: kind %>
-      <% end %>
-    </div>
+    <%
+      card_entries =
+        if idea.association(:idea_entries).loaded?
+          idea.idea_entries.select { |e| entry_kinds.include?(e.kind) }
+        else
+          idea.idea_entries.where(kind: entry_kinds).to_a
+        end
+    %>
+    <% if card_entries.any? %>
+      <div class="idea-card-structured-entries">
+        <% entry_kinds.each do |kind| %>
+          <%= render "idea_entries/card_summary", idea: idea, kind: kind, inline: true %>
+        <% end %>
+      </div>
+    <% end %>
   <% end %>
 </div>

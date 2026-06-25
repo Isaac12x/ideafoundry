@@ -1,5 +1,6 @@
 <% form_entry = local_assigns[:idea_entry] || IdeaEntry.new(kind: kind) %>
 <% details_open = local_assigns.fetch(:open, false) || form_entry.errors.any? %>
+<% inline = local_assigns.fetch(:inline, false) %>
 <%
   entries =
     if idea.association(:idea_entries).loaded?
@@ -10,14 +11,10 @@
     end
 %>
 
-<div class="idea-entry-summary" id="idea_entry_summary_<%= idea.id %>_<%= kind %>">
-  <details class="idea-entry-summary__details" <%= "open" if details_open %>>
-    <summary class="idea-entry-summary__summary">
-      <span><%= IdeaEntry.label_for(kind) %></span>
-      <span class="idea-entry-summary__count"><%= entries.size %></span>
-    </summary>
-
-    <% if entries.any? %>
+<% if inline %>
+  <% if entries.any? %>
+    <div class="idea-entry-summary idea-entry-summary--inline" id="idea_entry_summary_<%= idea.id %>_<%= kind %>">
+      <span class="idea-entry-summary__label"><%= IdeaEntry.label_for(kind) %></span>
       <div class="idea-entry-summary__chips">
         <% entries.each do |entry| %>
           <% if entry.url.present? %>
@@ -27,12 +24,33 @@
           <% end %>
         <% end %>
       </div>
-    <% else %>
-      <p class="idea-entry-summary__empty">No <%= IdeaEntry.label_for(kind).downcase %> yet.</p>
-    <% end %>
-
-    <div class="idea-entry-summary__form" id="idea_entry_summary_form_<%= idea.id %>_<%= kind %>">
-      <%= render "idea_entries/form", idea: idea, kind: kind, idea_entry: form_entry, compact: true %>
     </div>
-  </details>
-</div>
+  <% end %>
+<% else %>
+  <div class="idea-entry-summary" id="idea_entry_summary_<%= idea.id %>_<%= kind %>">
+    <details class="idea-entry-summary__details" <%= "open" if details_open %>>
+      <summary class="idea-entry-summary__summary">
+        <span><%= IdeaEntry.label_for(kind) %></span>
+        <span class="idea-entry-summary__count"><%= entries.size %></span>
+      </summary>
+
+      <% if entries.any? %>
+        <div class="idea-entry-summary__chips">
+          <% entries.each do |entry| %>
+            <% if entry.url.present? %>
+              <%= link_to entry.name, entry.url, target: "_blank", rel: "noopener noreferrer", class: "idea-entry-summary__chip", data: { turbo: false } %>
+            <% else %>
+              <span class="idea-entry-summary__chip"><%= entry.name %></span>
+            <% end %>
+          <% end %>
+        </div>
+      <% else %>
+        <p class="idea-entry-summary__empty">No <%= IdeaEntry.label_for(kind).downcase %> yet.</p>
+      <% end %>
+
+      <div class="idea-entry-summary__form" id="idea_entry_summary_form_<%= idea.id %>_<%= kind %>">
+        <%= render "idea_entries/form", idea: idea, kind: kind, idea_entry: form_entry, compact: true %>
+      </div>
+    </details>
+  </div>
+<% end %>
