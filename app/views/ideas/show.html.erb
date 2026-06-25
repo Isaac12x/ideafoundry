@@ -124,44 +124,16 @@
 
   <%= render "agent_recommendations", idea: @idea, recommendations: @inline_agent_recommendations %>
 
-  <!-- Hero Image + Scores At-a-Glance -->
+  <!-- Hero Image -->
   <% hero_drawing = @idea.hero_drawing %>
   <% has_hero = @idea.hero_image.attached? || (hero_drawing && hero_drawing.rendered_png.attached?) %>
   <% if has_hero %>
-    <div class="hero-scores-row">
-      <div class="hero-image-container">
-        <% if hero_drawing && hero_drawing.rendered_png.attached? %>
-          <%= image_tag hero_drawing.rendered_png, class: "detail-hero-image", alt: hero_drawing.title %>
-        <% else %>
-          <%= image_tag @idea.hero_image, class: "detail-hero-image", alt: @idea.title %>
-        <% end %>
-      </div>
-      <div class="hero-scores-panel">
-        <div class="hero-score-main">
-          <span class="metric-card-label">Score</span>
-          <span class="hero-score-value <%= (@idea.computed_score || 0) >= 0 ? 'positive' : 'negative' %>">
-            <%= number_with_precision(@idea.computed_score || 0, precision: 1) %>
-          </span>
-        </div>
-        <div class="hero-scores-grid">
-          <div class="hero-score-item trl">
-            <span class="hero-score-label">TRL</span>
-            <span class="hero-score-num"><%= @idea.trl || 0 %></span>
-          </div>
-          <div class="hero-score-item opportunity">
-            <span class="hero-score-label">Opp</span>
-            <span class="hero-score-num"><%= @idea.opportunity || 0 %></span>
-          </div>
-          <div class="hero-score-item timing">
-            <span class="hero-score-label">Time</span>
-            <span class="hero-score-num"><%= @idea.timing || 0 %></span>
-          </div>
-          <div class="hero-score-item difficulty">
-            <span class="hero-score-label">Diff</span>
-            <span class="hero-score-num"><%= @idea.difficulty || 0 %></span>
-          </div>
-        </div>
-      </div>
+    <div class="hero-image-container">
+      <% if hero_drawing && hero_drawing.rendered_png.attached? %>
+        <%= image_tag hero_drawing.rendered_png, class: "detail-hero-image", alt: hero_drawing.title %>
+      <% else %>
+        <%= image_tag @idea.hero_image, class: "detail-hero-image", alt: @idea.title %>
+      <% end %>
     </div>
   <% end %>
 
