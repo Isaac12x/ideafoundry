@@ -2062,6 +2062,38 @@ select.form-control {
   color: var(--text-on-accent);
 }
 
+/* ---- Infinite Scroll Sentinel ---- */
+.infinite-scroll-sentinel {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 60px;
+  padding: 1rem;
+}
+
+.infinite-scroll-loader {
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+
+.infinite-scroll-sentinel.is-loading .infinite-scroll-loader {
+  display: flex;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.infinite-scroll-spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--border-default);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.65s linear infinite;
+}
+
 /* ---- Text Utilities ---- */
 .text-muted { color: var(--text-muted); }
 

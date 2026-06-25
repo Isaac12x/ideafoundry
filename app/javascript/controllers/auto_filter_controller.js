@@ -8,7 +8,7 @@ export default class extends Controller {
 
   connect() {
     const stored = localStorage.getItem(STORAGE_KEY)
-    const open = this.filtersActiveValue || stored !== 'false'
+    const open = this.filtersActiveValue || stored === 'true'
     this._setOpen(open, false)
   }
 
