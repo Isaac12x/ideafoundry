@@ -8,6 +8,7 @@ export default class extends Controller {
   ]
 
   connect() {
+    this._ensureViewportRoot()
     this._resolve = null
     this._originalFile = null
     this._modified = false
@@ -24,6 +25,12 @@ export default class extends Controller {
     this._onPointerMove = this._onPointerMove.bind(this)
     this._onPointerUp = this._onPointerUp.bind(this)
     this._onKeyDown = this._onKeyDown.bind(this)
+  }
+
+  _ensureViewportRoot() {
+    if (this.element.parentElement !== document.body) {
+      document.body.appendChild(this.element)
+    }
   }
 
   // ── Public API (called by dropzone via outlet) ──────────────

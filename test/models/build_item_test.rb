@@ -120,4 +120,57 @@ class BuildItemTest < ActiveSupport::TestCase
     end
     assert_not item.reload.completed
   end
+
+  test "pending scope floats pinned items to the top" do
+    a = BuildItem.create!(user: @user, title: "A", position: 1)
+    b = BuildItem.create!(user: @user, title: "B", position: 2, pinned: true)
+    c = BuildItem.create!(user: @user, title: "C", position: 3)
+
+    assert_equal [b, a, c], @user.build_items.pending.to_a
+  end
+
+  test "subitem_totals sums checklist lines across a collection" do
+    i1 = BuildItem.new(description: "- [ ] one\n- [x] two")
+    i2 = BuildItem.new(description: "- [x] three")
+    i3 = BuildItem.new(description: "no checklist here")
+
+    totals = BuildItem.subitem_totals([i1, i2, i3])
+    assert_equal 3, totals[:total]
+    assert_equal 2, totals[:done]
+  end
+
+  test "archive! marks completed without running checklist validation" do
+    item = BuildItem.create!(user: @user, title: "Has open subs", description: "- [ ] open")
+    item.archive!
+    assert item.reload.completed
+    assert_not_nil item.completed_at
+  end
+
+  test "absorb! folds another item in as a checklist subitem and destroys it" do
+    target = BuildItem.create!(user: @user, title: "Parent", description: "intro")
+    source = BuildItem.create!(user: @user, title: "Child", description: "- [ ] nested\nnote",
+                               links: [{ "url" => "https://x.test", "label" => "X" }])
+
+    target.absorb!(source)
+    target.reload
+
+    assert_not BuildItem.exists?(source.id)
+    assert_includes target.description, "- [ ] Child"
+    assert_includes target.description, "  - [ ] nested"
+    assert_equal [{ "url" => "https://x.test", "label" => "X" }], target.links
+  end
+
+  test "absorb! merges links without duplicating by url" do
+    link = { "url" => "https://dup.test", "label" => "Dup" }
+    target = BuildItem.create!(user: @user, title: "Parent", links: [link])
+    source = BuildItem.create!(user: @user, title: "Child", links: [link])
+
+    target.absorb!(source)
+    assert_equal 1, target.reload.links.size
+  end
+
+  test "absorb! refuses to absorb itself" do
+    item = BuildItem.create!(user: @user, title: "Self")
+    assert_raises(ArgumentError) { item.absorb!(item) }
+  end
 end

@@ -172,39 +172,41 @@ class WorkspaceExportJob < ApplicationJob
   def export_files(user, temp_dir)
     files_dir = temp_dir.join('files')
     FileUtils.mkdir_p(files_dir)
-    
-    # Export all attachments for user's ideas
-    user.ideas.each do |idea|
-      export_idea_files(idea, files_dir)
-    end
-  end
 
-  def export_idea_files(idea, files_dir)
-    # Export hero image
-    if idea.hero_image.attached?
-      export_attachment(idea.hero_image, files_dir)
-    end
-    
-    # Export attachments
-    idea.attachments.each do |attachment|
+    user_active_storage_attachments(user).each do |attachment|
       export_attachment(attachment, files_dir)
     end
   end
 
   def export_attachment(attachment, files_dir)
-    return unless attachment.attached?
-    
     # Create subdirectory based on attachment key for organization
-    key_dir = files_dir.join(attachment.key[0..1])
+    key = attachment.blob.key
+    key_dir = files_dir.join(key[0..1])
     FileUtils.mkdir_p(key_dir)
-    
-    # Copy the file
-    source_path = attachment.blob.service.path_for(attachment.key)
-    dest_path = key_dir.join(attachment.key)
-    
-    if File.exist?(source_path)
-      FileUtils.cp(source_path, dest_path)
+
+    dest_path = key_dir.join(key)
+
+    File.open(dest_path, "wb") do |file|
+      attachment.blob.download { |chunk| file.write(chunk) }
     end
+  end
+
+  def user_active_storage_attachments(user)
+    ActiveStorage::Attachment.includes(:blob).select do |attachment|
+      record_owned_by_user?(attachment.record, user)
+    end
+  end
+
+  def record_owned_by_user?(record, user)
+    return false unless record
+    return record.user_id == user.id if record.respond_to?(:user_id)
+    return record.idea.user_id == user.id if record.respond_to?(:idea) && record.idea
+
+    if defined?(ActionText::RichText) && record.is_a?(ActionText::RichText)
+      return record_owned_by_user?(record.record, user)
+    end
+
+    false
   end
 
   def create_manifest(user, temp_dir)
@@ -234,12 +236,7 @@ class WorkspaceExportJob < ApplicationJob
   end
 
   def count_user_attachments(user)
-    count = 0
-    user.ideas.each do |idea|
-      count += 1 if idea.hero_image.attached?
-      count += idea.attachments.count
-    end
-    count
+    user_active_storage_attachments(user).size
   end
 
   def create_readme(temp_dir)

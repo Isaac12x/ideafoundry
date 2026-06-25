@@ -1,4 +1,7 @@
 class Submission < ApplicationRecord
+  include TracksActivity
+  tracks_activity name_method: :title, ignore_fields: [:raw_data, :reviewed_at]
+
   INTAKE_REFERENCE_PREFIX = "IDEA-TMP".freeze
 
   belongs_to :user

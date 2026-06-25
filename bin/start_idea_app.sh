@@ -29,11 +29,18 @@ docker_available() {
 
 podman_available() {
   command -v podman >/dev/null 2>&1 || return 1
-  podman info >/dev/null 2>&1 && return 0
 
-  echo "==> Podman is installed but not running; trying to start the default machine..."
-  podman machine start >/dev/null 2>&1 || return 1
-  podman info >/dev/null 2>&1
+  if ! podman info >/dev/null 2>&1; then
+    echo "==> Podman is installed but not running; trying to start the default machine..."
+    podman machine start >/dev/null 2>&1 || return 1
+    podman info >/dev/null 2>&1 || return 1
+  fi
+
+  # Refresh DOCKER_HOST to the machine's live socket (guards against stale env after VM type change)
+  local _sock
+  _sock=$(podman machine inspect --format '{{.ConnectionInfo.PodmanSocket.Path}}' 2>/dev/null)
+  [[ -n "$_sock" && -S "$_sock" ]] && export DOCKER_HOST="unix://${_sock}"
+  return 0
 }
 
 detect_compose_cmd() {
@@ -66,16 +73,39 @@ detect_compose_cmd() {
 }
 
 start_compose_services() {
-  if detect_compose_cmd; then
-    echo "==> Starting Docker/Podman compose sidecar services with: ${(j: :)COMPOSE_CMD} up -d --build"
-    if "${COMPOSE_CMD[@]}" up -d --build; then
-      echo "==> Compose sidecar services are starting."
-    else
-      echo "==> Compose sidecar startup failed; continuing without local sidecar services."
-    fi
-  else
-    echo "==> No running Docker/Podman compose runtime found; skipping local sidecar services."
+  if [[ "${IDEA_APP_SKIP_COMPOSE:-}" == "1" ]]; then
+    echo "==> IDEA_APP_SKIP_COMPOSE=1; skipping local sidecar services."
+    return 0
   fi
+
+  if ! detect_compose_cmd; then
+    echo "==> No running Docker/Podman compose runtime found; skipping local sidecar services."
+    return 0
+  fi
+
+  mkdir -p "$APP_DIR/log"
+  local compose_log="$APP_DIR/log/compose-sidecars.log"
+  local -a up_args=(-d)
+  if [[ "${IDEA_APP_COMPOSE_BUILD:-}" == "1" ]]; then
+    up_args+=(--build)
+    echo "==> Starting compose sidecars in background with image rebuild (see $compose_log)."
+  else
+    up_args+=(--no-build)
+    echo "==> Starting compose sidecars in background without rebuild (see $compose_log)."
+    echo "==> Set IDEA_APP_COMPOSE_BUILD=1 to rebuild images on startup."
+  fi
+
+  # Sidecars are optional. Never block Rails on compose — OCR builds are slow and
+  # often fail on memory-limited Docker hosts.
+  (
+    set +e
+    for svc in voice-id ocr; do
+      echo "==> $(date '+%Y-%m-%d %H:%M:%S') starting $svc"
+      if ! "${COMPOSE_CMD[@]}" up "${up_args[@]}" "$svc"; then
+        echo "==> $(date '+%Y-%m-%d %H:%M:%S') $svc unavailable; continuing without it."
+      fi
+    done
+  ) >>"$compose_log" 2>&1 &
 }
 
 start_compose_services
@@ -102,13 +132,20 @@ else
   echo "$JOBS_PID" > tmp/pids/solid_queue.pid
 fi
 
-# Start Caddy reverse proxy (HTTPS on ideas.local → localhost:$PORT)
-caddy start --config "$APP_DIR/Caddyfile" --pidfile "$APP_DIR/tmp/pids/caddy.pid"
-CADDY_PID=$(cat "$APP_DIR/tmp/pids/caddy.pid" 2>/dev/null)
+# HTTPS for ideas.local is handled by the system Caddy on :8443
+# (/opt/homebrew/etc/Caddyfile → localhost:$PORT). Skip the app-local
+# Caddy unless explicitly re-enabled for standalone runs.
+if [[ "${IDEA_APP_SKIP_CADDY:-1}" == "1" ]]; then
+  echo "==> IDEA_APP_SKIP_CADDY=1; using system Caddy for ideas.local:${PORT}."
+else
+  caddy start --config "$APP_DIR/Caddyfile" --pidfile "$APP_DIR/tmp/pids/caddy.pid"
+fi
 
 cleanup() {
-  echo "==> Shutting down Caddy..."
-  caddy stop --config "$APP_DIR/Caddyfile" 2>/dev/null || true
+  if [[ "${IDEA_APP_SKIP_CADDY:-1}" != "1" ]]; then
+    echo "==> Shutting down Caddy..."
+    caddy stop --config "$APP_DIR/Caddyfile" 2>/dev/null || true
+  fi
   if [[ -n "$JOBS_PID" ]]; then
     echo "==> Shutting down SolidQueue (PID $JOBS_PID)..."
     kill "$JOBS_PID" 2>/dev/null || true
@@ -116,6 +153,9 @@ cleanup() {
   fi
 }
 trap cleanup EXIT INT TERM
+
+# Required on macOS: Puma forks workers and the ObjC runtime crashes otherwise
+export OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES
 
 # Start Puma (foreground — LaunchAgent manages the process)
 bin/rails server -p $PORT
