@@ -49,6 +49,7 @@ class Version < ApplicationRecord
     {
       "title" => idea.title,
       "state" => idea.state,
+      "category" => idea.category,
       "template_id" => idea.template_id,
       "topology_ids" => idea.idea_topologies.order(:topology_id).pluck(:topology_id),
       "list_memberships" => idea.idea_lists.order(:list_id).map { |membership| idea_list_snapshot(membership) },
@@ -349,6 +350,7 @@ class Version < ApplicationRecord
     idea.assign_attributes(
       title: snapshot_data["title"],
       state: snapshot_data["state"],
+      category: snapshot_data["category"],
       template_id: snapshot_data["template_id"],
       trl: snapshot_data["trl"],
       difficulty: snapshot_data["difficulty"],

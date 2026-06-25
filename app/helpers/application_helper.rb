@@ -132,4 +132,15 @@ module ApplicationHelper
       end
     end
   end
+
+  def activity_type_label(trackable_type)
+    case trackable_type
+    when "Idea"        then "Ideas"
+    when "List"        then "Lists"
+    when "KanbanBoard" then "Boards"
+    when "Topology"    then "Topologies"
+    when "Settings"    then "Settings"
+    else trackable_type.to_s.humanize.pluralize
+    end
+  end
 end

@@ -1,4 +1,7 @@
 class Topology < ApplicationRecord
+  include TracksActivity
+  tracks_activity
+
   FIELD_TYPES = Template::FIELD_TYPES
   SOFTWARE_GITHUB_FIELD = {
     "name" => "github_url",

@@ -1,0 +1,8 @@
+<%# Source absorbed into target: drop the source card, refresh the target, update stats. %>
+<%= turbo_stream.remove "build_item_#{@source_id}" %>
+
+<%= turbo_stream.replace "build_item_#{@target.id}" do %>
+  <%= render "build_item", build_item: @target, index: @pending_index %>
+<% end %>
+
+<%= render "stats" %>
