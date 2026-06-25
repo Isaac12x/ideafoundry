@@ -9,13 +9,19 @@ class IdeasController < ApplicationController
     @kanban_boards = @user.kanban_boards.ordered.includes(:lists)
     @named_lists = @user.lists.named.ordered
 
-    # Apply filters
     @ideas = apply_filters(@ideas)
-
-    # Apply sorting
     @ideas = apply_sorting(@ideas)
-
     @ideas = @ideas.page(params[:page]).per(20)
+
+    respond_to do |format|
+      format.html
+      format.turbo_stream do
+        render turbo_stream: [
+          turbo_stream.append("ideas-grid", partial: "ideas/ideas_batch", locals: { ideas: @ideas }),
+          turbo_stream.replace("infinite-scroll-sentinel", partial: "ideas/infinite_scroll_sentinel", locals: { ideas: @ideas })
+        ]
+      end
+    end
   end
 
   def show
@@ -474,15 +480,15 @@ class IdeasController < ApplicationController
     
     # Filter by TRL range
     if params[:trl_min].present? || params[:trl_max].present?
-      trl_min = params[:trl_min].presence || 0
-      trl_max = params[:trl_max].presence || 10
+      trl_min = (params[:trl_min].presence || 0).to_i
+      trl_max = (params[:trl_max].presence || 10).to_i
       ideas = ideas.where(trl: trl_min..trl_max)
     end
-    
+
     # Filter by score range
     if params[:score_min].present? || params[:score_max].present?
-      score_min = params[:score_min].presence || -10
-      score_max = params[:score_max].presence || 10
+      score_min = (params[:score_min].presence || -10).to_f
+      score_max = (params[:score_max].presence || 10).to_f
       ideas = ideas.by_score_range(score_min, score_max)
     end
     
