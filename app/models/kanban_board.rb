@@ -1,4 +1,7 @@
 class KanbanBoard < ApplicationRecord
+  include TracksActivity
+  tracks_activity
+
   belongs_to :user
   has_many :lists, -> { kanban.ordered }, dependent: :destroy
 

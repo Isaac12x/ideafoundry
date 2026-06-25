@@ -15,6 +15,7 @@ class User < ApplicationRecord
   has_many :agent_runs, dependent: :destroy
   has_many :agent_events, dependent: :destroy
   has_many :agent_recommendations, dependent: :destroy
+  has_many :activity_logs, dependent: :destroy
 
   # Single-user application - one user per instance
   validates :email, presence: true, uniqueness: true

@@ -212,6 +212,7 @@ Rails.application.routes.draw do
   # Settings - KB folders
   get 'settings/kb', to: 'settings#kb', as: :settings_kb
   patch 'settings/kb', to: 'settings#update_kb'
+  get 'settings/activity', to: 'settings#activity', as: :settings_activity
 
   # Backlog
   resources :build_items, path: "backlog", except: [:show] do
