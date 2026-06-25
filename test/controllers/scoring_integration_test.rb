@@ -2,22 +2,25 @@ require "test_helper"
 
 class ScoringIntegrationTest < ActionDispatch::IntegrationTest
   def setup
-    @user = users(:one)
+    # The app is single-user: the current user is always User.first. Align the
+    # fixtures so the idea under test belongs to that user.
+    @user = User.first
     @idea = ideas(:one)
+    @idea.update!(user: @user) unless @idea.user_id == @user.id
   end
 
   test "should update idea scores via AJAX" do
-    patch idea_path(@idea), 
-          params: { 
-            idea: { 
-              trl: 8, 
-              difficulty: 3, 
-              opportunity: 9, 
-              timing: 7 
-            } 
+    patch idea_path(@idea),
+          params: {
+            idea: {
+              trl: 8,
+              difficulty: 3,
+              opportunity: 9,
+              timing: 7
+            }
           },
-          headers: { 'X-Requested-With' => 'XMLHttpRequest' }
-    
+          as: :json
+
     assert_response :success
     
     response_data = JSON.parse(response.body)
@@ -96,8 +99,8 @@ class ScoringIntegrationTest < ActionDispatch::IntegrationTest
               timing: 0.15
             }
           },
-          headers: { 'X-Requested-With' => 'XMLHttpRequest' }
-    
+          as: :json
+
     assert_response :success
     
     response_data = JSON.parse(response.body)

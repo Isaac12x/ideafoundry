@@ -2,14 +2,14 @@
 
 one:
   user: one
-  name: MyString
+  name: Template One
   is_default: false
-  field_definitions: MyText
-  section_order: MyText
+  field_definitions: "[]"
+  section_order: "[]"
 
 two:
   user: two
-  name: MyString
+  name: Template Two
   is_default: false
-  field_definitions: MyText
-  section_order: MyText
+  field_definitions: "[]"
+  section_order: "[]"

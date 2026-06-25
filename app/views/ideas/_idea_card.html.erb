@@ -35,4 +35,13 @@
       </div>
     </div>
   <% end %>
+
+  <% entry_kinds = (idea.user&.enabled_idea_tabs || []) & User::IDEA_ENTRY_TABS %>
+  <% if entry_kinds.any? %>
+    <div class="idea-card-structured-entries">
+      <% entry_kinds.each do |kind| %>
+        <%= render "idea_entries/card_summary", idea: idea, kind: kind %>
+      <% end %>
+    </div>
+  <% end %>
 </div>

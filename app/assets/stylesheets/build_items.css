@@ -853,6 +853,41 @@
   border-top: 2px solid var(--accent);
 }
 
+/* Join target hint (drop one item onto another) */
+.backlog-item--drop-target {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent) inset;
+  background: var(--accent-bg, rgba(99, 102, 241, 0.08));
+}
+
+/* ---- Pinned ---- */
+.backlog-item--pinned {
+  border-color: var(--accent);
+}
+
+.backlog-item--pinned::after {
+  opacity: 1;
+  background: var(--accent);
+}
+
+.backlog-action-btn--active {
+  color: var(--accent);
+}
+
+/* ---- Optimistic UI feedback ---- */
+.backlog-item--removing {
+  opacity: 0.35;
+  pointer-events: none;
+  transform: scale(0.98);
+  transition: opacity 0.12s ease, transform 0.12s ease;
+}
+
+.backlog-item--syncing {
+  opacity: 0.6;
+  pointer-events: none;
+  transition: opacity 0.1s ease;
+}
+
 /* ---- Empty State ---- */
 .backlog-empty {
   text-align: center;

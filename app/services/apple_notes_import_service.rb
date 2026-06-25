@@ -9,7 +9,7 @@ class AppleNotesImportService
     "~/Library/Containers/com.apple.Notes/Data/Library/Notes/NotesV6.storedata"
   ].freeze
 
-Add error handling to raise a clear exception if no database path is found.
+  def initialize(database_path: nil)
     @database_path = database_path.presence || self.class.discover_database_path
   end
 
