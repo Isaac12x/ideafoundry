@@ -1,7 +1,15 @@
-<% if content_html.present? %>
+<% kind = content&.kind %>
+<% if kind == :markdown && content.html.present? %>
   <article class="kb-markdown rich-text-content">
-    <%= content_html %>
+    <%= content.html %>
   </article>
+<% elsif kind == :embed %>
+  <iframe class="kb-embed"
+          src="<%= content.raw_url %>"
+          sandbox
+          referrerpolicy="no-referrer"
+          loading="lazy"
+          title="<%= selected_file %>"></iframe>
 <% elsif defined?(selected_file) && selected_file.present? %>
   <div class="kb-content-empty">
     <p>File not found or could not be read.</p>
