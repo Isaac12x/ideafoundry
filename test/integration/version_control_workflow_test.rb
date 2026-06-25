@@ -13,8 +13,6 @@ class VersionControlWorkflowTest < ActionDispatch::IntegrationTest
       opportunity: 8,
       timing: 6
     )
-    @idea.description = "Initial description of the product"
-    @idea.save!
   end
 
   test "complete version control workflow" do

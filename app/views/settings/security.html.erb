@@ -13,7 +13,7 @@
       <section class="tab-toggle-section">
         <header class="tab-toggle-section__header">
           <h3>Protection</h3>
-          <p>Use keyboard rhythm and an authenticator app as local unlock checks for this single-user app.</p>
+          <p>Use local unlock checks and trusted-device uplink pairing for this single-user app.</p>
         </header>
 
         <%= form_with url: settings_security_path, method: :patch, local: true, class: "typing-settings-form", data: { controller: "settings-autosave" } do %>
@@ -52,6 +52,20 @@
             </div>
             <span class="tab-toggle__switch">
               <%= check_box_tag "voice_id[enabled]", "1", @user.voice_id_requested?, id: "voice_id_enabled", class: "tab-toggle__input", data: { action: "change->settings-autosave#toggleChanged" } %>
+              <span class="tab-toggle__track" aria-hidden="true">
+                <span class="tab-toggle__thumb"></span>
+              </span>
+            </span>
+          </label>
+
+          <%= hidden_field_tag "mobile_uplink[enabled]", "0" %>
+          <label class="tab-toggle" for="mobile_uplink_enabled">
+            <div class="tab-toggle__text">
+              <span class="tab-toggle__name">Mobile Uplink</span>
+              <span class="tab-toggle__description">Pair a phone or other device by QR so uploads leave that device through the encrypted uplink path.</span>
+            </div>
+            <span class="tab-toggle__switch">
+              <%= check_box_tag "mobile_uplink[enabled]", "1", @user.mobile_uplink_enabled?, id: "mobile_uplink_enabled", class: "tab-toggle__input", data: { action: "change->settings-autosave#toggleChanged" } %>
               <span class="tab-toggle__track" aria-hidden="true">
                 <span class="tab-toggle__thumb"></span>
               </span>
@@ -239,6 +253,39 @@
             <%= link_to "Redo Voice ID", enroll_voice_id_path(return_to: settings_security_path), class: "btn btn-secondary btn-sm" %>
           <% elsif @user.voice_id_requested? %>
             <%= link_to "Set Up Voice ID", enroll_voice_id_path(return_to: settings_security_path), class: "btn btn-primary btn-sm" %>
+          <% end %>
+        </div>
+      </section>
+
+      <section class="security-fingerprint-row security-fingerprint-row--mobile-uplink">
+        <div class="security-fingerprint-row__content">
+          <span class="typing-settings-status__label">Mobile Uplink</span>
+          <% if @user.mobile_uplink_enabled? %>
+            <strong>Ready</strong>
+            <p>Install the mobile uplink app, then scan the pairing QR to share this workspace id.</p>
+
+            <div class="mobile-uplink-setup">
+              <div class="mobile-uplink-setup__step">
+                <span class="mobile-uplink-setup__label">1. Install app</span>
+                <div class="mobile-uplink-setup__qr mobile-uplink-install-qr" aria-label="Mobile uplink install QR code">
+                  <%= raw @mobile_uplink_install_qr_svg %>
+                </div>
+                <code class="mobile-uplink-setup__code"><%= @mobile_uplink_install_url %></code>
+              </div>
+
+              <div class="mobile-uplink-setup__step">
+                <span class="mobile-uplink-setup__label">2. Connect to this app</span>
+                <div class="mobile-uplink-setup__qr mobile-uplink-pairing-qr" aria-label="Mobile uplink pairing QR code">
+                  <%= raw @mobile_uplink_pairing_qr_svg %>
+                </div>
+                <code class="mobile-uplink-setup__code mobile-uplink-id"><%= @user.mobile_uplink_id %></code>
+              </div>
+            </div>
+
+            <p class="mobile-uplink-secure-copy">Super secure mode encrypts data multiple times before it leaves the phone or other device, and only this user's Idea Foundry app decodes it.</p>
+          <% else %>
+            <strong>Off</strong>
+            <p>Enable Mobile Uplink and save to generate install and pairing QR codes.</p>
           <% end %>
         </div>
       </section>

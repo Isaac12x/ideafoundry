@@ -29,8 +29,8 @@
   <body class="<%= body_class %>"
         data-contrast="<%= display_contrast.presence || 'normal' %>"
         style="--contrast: <%= (@user&.display_contrast || 100) %>%"
+        data-controller="activity-panel<%= typing_activity_enabled ? ' typing-activity' : '' %>"
         <% if typing_activity_enabled %>
-          data-controller="typing-activity"
           data-typing-activity-url-value="<%= typing_lock_activity_path %>"
           data-typing-activity-lock-url-value="<%= root_path %>"
           data-typing-activity-lock-action-url-value="<%= lock_typing_lock_path(return_to: request.fullpath) %>"
@@ -81,6 +81,16 @@
             Settings
           <% end %>
 
+          <button class="nav-pill nav-activity-trigger"
+                  title="Activity log"
+                  aria-label="Open activity log"
+                  data-action="click->activity-panel#open">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <polyline points="12 6 12 12 16 14"/>
+            </svg>
+          </button>
+
           <% if typing_activity_enabled %>
             <%= button_to lock_typing_lock_path(return_to: request.fullpath),
                   method: :post,
@@ -125,5 +135,7 @@
 
       <%= yield %>
     </main>
+
+    <%= render "layouts/activity_panel" %>
   </body>
 </html>
