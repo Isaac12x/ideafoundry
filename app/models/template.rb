@@ -1,4 +1,7 @@
 class Template < ApplicationRecord
+  include TracksActivity
+  tracks_activity name_method: :name
+
   FIELD_TYPES = %w[text textarea number select boolean date url].freeze
 
   belongs_to :user

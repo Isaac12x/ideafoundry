@@ -1,9 +1,18 @@
-<% pending_count = defined?(@pending_count) && @pending_count ? @pending_count : @user.build_items.pending.size %>
-<% done_count = defined?(@done_count) && @done_count ? @done_count : @user.build_items.done.size %>
-<% total_count = pending_count + done_count %>
+<% if defined?(@total_display) && @total_display
+     queued_count = @queued_display
+     done_count = @done_display
+     total_count = @total_display
+   else
+     pending_items = @user.build_items.pending.to_a
+     done_items = @user.build_items.done.to_a
+     subitems = BuildItem.subitem_totals(pending_items + done_items)
+     done_count = done_items.size + subitems[:done]
+     queued_count = pending_items.size + (subitems[:total] - subitems[:done])
+     total_count = done_count + queued_count
+   end %>
 
 <%= turbo_stream.replace "backlog_queued_count" do %>
-  <span class="backlog-stat-num" id="backlog_queued_count"><%= pending_count %></span>
+  <span class="backlog-stat-num" id="backlog_queued_count"><%= queued_count %></span>
 <% end %>
 
 <%= turbo_stream.replace "backlog_done_count" do %>
