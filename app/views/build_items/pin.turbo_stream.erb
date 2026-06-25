@@ -1,0 +1,16 @@
+<%# Pinning reorders the pending list, so re-render the whole list container. %>
+<%= turbo_stream.replace "build_items_list" do %>
+  <div id="build_items_list"
+       class="backlog-list"
+       data-controller="build-item-sort"
+       data-build-item-sort-url-value="<%= reorder_build_items_path %>"
+       data-build-item-sort-join-url-value="<%= join_build_items_path %>">
+    <% @build_items.each_with_index do |item, i| %>
+      <%= render "build_item", build_item: item, index: i %>
+    <% end %>
+
+    <% if @build_items.empty? %>
+      <%= render "empty" %>
+    <% end %>
+  </div>
+<% end %>
