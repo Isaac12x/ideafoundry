@@ -50,7 +50,7 @@
     "semantic_hash": "89d9c1ecea8c9220adebe5db7ab89fe7"
   },
   "/Users/iamin/Sync/code@business/idea-app/app/models/build_item.rb": {
-    "mtime": 1781957428.4569592,
+    "mtime": 1782393355.0941608,
     "ast_hash": "3d6831d849226c2fe2d8f1cbba56b666",
     "semantic_hash": ""
   },
@@ -120,7 +120,7 @@
     "semantic_hash": "e71a5268086a97b78b9e0052a8ea5a67"
   },
   "/Users/iamin/Sync/code@business/idea-app/app/models/version.rb": {
-    "mtime": 1781957428.4574504,
+    "mtime": 1782393355.0945318,
     "ast_hash": "0349b0571d85a3275e9cc9d967e1a21e",
     "semantic_hash": ""
   },
@@ -155,7 +155,7 @@
     "semantic_hash": "cb796b240c8eca83d7744d461b581c33"
   },
   "/Users/iamin/Sync/code@business/idea-app/app/models/user.rb": {
-    "mtime": 1781957428.4571462,
+    "mtime": 1782393355.0942934,
     "ast_hash": "d7332a44c0757e46034289d5b45ad3e5",
     "semantic_hash": ""
   },
@@ -180,7 +180,7 @@
     "semantic_hash": "d9c775bad349a42b648ec399ecfb6d9a"
   },
   "/Users/iamin/Sync/code@business/idea-app/app/javascript/application.js": {
-    "mtime": 1781957428.4566438,
+    "mtime": 1782393355.093889,
     "ast_hash": "847ade43996337a13357d23cb82ee18a",
     "semantic_hash": ""
   },
@@ -295,7 +295,7 @@
     "semantic_hash": "297af76330e154e5271f8bb337121693"
   },
   "/Users/iamin/Sync/code@business/idea-app/app/javascript/controllers/build_item_sort_controller.js": {
-    "mtime": 1781957428.456802,
+    "mtime": 1782393355.0940158,
     "ast_hash": "f2536586cb9d97f6154458ff01358554",
     "semantic_hash": ""
   },
@@ -570,7 +570,7 @@
     "semantic_hash": "04553d5a0b401954d1997e632c6a6372"
   },
   "/Users/iamin/Sync/code@business/idea-app/app/controllers/build_items_controller.rb": {
-    "mtime": 1781957428.4552996,
+    "mtime": 1782393355.0933082,
     "ast_hash": "558fb510e33c3481408e9f55d819effd",
     "semantic_hash": ""
   },
@@ -630,12 +630,12 @@
     "semantic_hash": "e97b3c02d2df78ca044d791ec057988e"
   },
   "/Users/iamin/Sync/code@business/idea-app/app/controllers/idea_attachments_controller.rb": {
-    "mtime": 1781957428.4559336,
+    "mtime": 1782393355.0934055,
     "ast_hash": "bb294f5204752bcfacdf3672ab1ee8e0",
     "semantic_hash": ""
   },
   "/Users/iamin/Sync/code@business/idea-app/app/controllers/submission_imports_controller.rb": {
-    "mtime": 1781957428.4564707,
+    "mtime": 1782393355.0937662,
     "ast_hash": "dd508c27b3c4aef1735a2d5d1b45a02b",
     "semantic_hash": ""
   },
@@ -650,7 +650,7 @@
     "semantic_hash": "3688b06edebbc4635c33f11a11fa8296"
   },
   "/Users/iamin/Sync/code@business/idea-app/app/controllers/kb_controller.rb": {
-    "mtime": 1781957428.4562993,
+    "mtime": 1782393355.0935433,
     "ast_hash": "9ece15906d1bbf7ca79ff4c88b3edd58",
     "semantic_hash": ""
   },
@@ -695,17 +695,17 @@
     "semantic_hash": "3418ec710eda063baaa1efb59f00c2f2"
   },
   "/Users/iamin/Sync/code@business/idea-app/app/assets/builds/excalidraw_app/index.js": {
-    "mtime": 1782032165.7656212,
+    "mtime": 1782393381.9111352,
     "ast_hash": "f7bc0c346c44fb07557d4dfd36226839",
     "semantic_hash": "f7bc0c346c44fb07557d4dfd36226839"
   },
   "/Users/iamin/Sync/code@business/idea-app/app/assets/builds/graph/index.js": {
-    "mtime": 1782032165.637151,
+    "mtime": 1782393381.7558622,
     "ast_hash": "b7ca0b086f28b18bc9afe985e17bd3fb",
     "semantic_hash": "b7ca0b086f28b18bc9afe985e17bd3fb"
   },
   "/Users/iamin/Sync/code@business/idea-app/app/assets/builds/typing_unlock_animation/index.js": {
-    "mtime": 1782032165.613628,
+    "mtime": 1782393381.7377455,
     "ast_hash": "157d75427fd99b77d7b4666b8f50c155",
     "semantic_hash": "157d75427fd99b77d7b4666b8f50c155"
   },
@@ -795,7 +795,7 @@
     "semantic_hash": "da9d2ef87229b060813506140bc9d8f2"
   },
   "/Users/iamin/Sync/code@business/idea-app/app/services/note_import_service.rb": {
-    "mtime": 1781957428.4577909,
+    "mtime": 1782393355.095363,
     "ast_hash": "fa2e4ea6781163669e5b3ae1de562bcd",
     "semantic_hash": ""
   },
@@ -865,7 +865,7 @@
     "semantic_hash": "8496c80fe840b85e8c83df16508c4871"
   },
   "/Users/iamin/Sync/code@business/idea-app/test/integration/version_control_workflow_test.rb": {
-    "mtime": 1781957428.5122302,
+    "mtime": 1782393355.1421466,
     "ast_hash": "f5df91772956c090aae6eba2b18c436b",
     "semantic_hash": ""
   },
@@ -910,7 +910,7 @@
     "semantic_hash": "7d764162e84f8d9e7ff7e2a6d6e5422d"
   },
   "/Users/iamin/Sync/code@business/idea-app/test/models/build_item_test.rb": {
-    "mtime": 1781957428.5125644,
+    "mtime": 1782393355.1422594,
     "ast_hash": "bc25430613225712c5d007835edb8725",
     "semantic_hash": ""
   },
@@ -1035,7 +1035,7 @@
     "semantic_hash": "80a9f5ae3ee05e849f8194a2133ff6a4"
   },
   "/Users/iamin/Sync/code@business/idea-app/test/controllers/templates_controller_test.rb": {
-    "mtime": 1781957428.5117197,
+    "mtime": 1782393355.141845,
     "ast_hash": "2bfba5709c9f87ddbbfb9807456ae332",
     "semantic_hash": ""
   },
@@ -1055,17 +1055,17 @@
     "semantic_hash": "35fa520c0d391405156797bfec1c411f"
   },
   "/Users/iamin/Sync/code@business/idea-app/test/controllers/scoring_integration_test.rb": {
-    "mtime": 1781957428.5110085,
+    "mtime": 1782393355.1415958,
     "ast_hash": "ea53a63e0da1e48b66cd8dbf5500cdb5",
     "semantic_hash": ""
   },
   "/Users/iamin/Sync/code@business/idea-app/test/controllers/build_items_controller_test.rb": {
-    "mtime": 1781957428.5107803,
+    "mtime": 1782393355.14134,
     "ast_hash": "7d342a9f52a9dc3338cbb5994d38e099",
     "semantic_hash": ""
   },
   "/Users/iamin/Sync/code@business/idea-app/test/controllers/settings_controller_test.rb": {
-    "mtime": 1781957428.5114043,
+    "mtime": 1782393355.141733,
     "ast_hash": "8107b5a1e5610d942f93682a42d2ef84",
     "semantic_hash": ""
   },
@@ -1185,7 +1185,7 @@
     "semantic_hash": "6159bb9c31baa9c5984462aa41c558c4"
   },
   "/Users/iamin/Sync/code@business/idea-app/test/services/note_import_service_test.rb": {
-    "mtime": 1781957428.5127616,
+    "mtime": 1782393355.142833,
     "ast_hash": "f6caab223b083ed965f4164913867556",
     "semantic_hash": ""
   },
@@ -1200,7 +1200,7 @@
     "semantic_hash": "f36a0f1c1f3f64517a5a32a51cd099e6"
   },
   "/Users/iamin/Sync/code@business/idea-app/bin/start_idea_app.sh": {
-    "mtime": 1781957428.4589548,
+    "mtime": 1782393355.096797,
     "ast_hash": "878594a170aef8389cb021136404a06b",
     "semantic_hash": ""
   },
@@ -1255,7 +1255,7 @@
     "semantic_hash": "39ebb68cb694fcb19c823a0397db68cb"
   },
   "/Users/iamin/Sync/code@business/idea-app/config/routes.rb": {
-    "mtime": 1781957428.4594424,
+    "mtime": 1782393355.0971906,
     "ast_hash": "df824e021ec36604baa7a9fcb491bfd0",
     "semantic_hash": ""
   },
@@ -1390,7 +1390,7 @@
     "semantic_hash": "1b85a58892ec60c722ef321e59a5b04d"
   },
   "/Users/iamin/Sync/code@business/idea-app/db/schema.rb": {
-    "mtime": 1781957428.4596078,
+    "mtime": 1782393355.0974472,
     "ast_hash": "ab72c016bf6c9bbcb012ea13e835bb34",
     "semantic_hash": ""
   },
@@ -1675,8 +1675,8 @@
     "semantic_hash": ""
   },
   "/Users/iamin/Sync/code@business/idea-app/public/assets/.sprockets-manifest-8e2b1c7282ca5c27b590c9aa96353786.json": {
-    "mtime": 1781904596.8042545,
-    "ast_hash": "956fbb968cf4af305a91c13896b53651",
+    "mtime": 1782393382.1748402,
+    "ast_hash": "78267108691bb693931a6cc45ed79866",
     "semantic_hash": ""
   },
   "/Users/iamin/Sync/code@business/idea-app/public/assets/turbo-c69e22a49dcb166659137ec1b5c5feddd68aaa75b2095acf4d013b1084c38d9b.js": {
@@ -2240,7 +2240,7 @@
     "semantic_hash": ""
   },
   "/Users/iamin/Sync/code@business/idea-app/SETUP.md": {
-    "mtime": 1781957470.6884596,
+    "mtime": 1782393355.0928674,
     "ast_hash": "6758bb2f261189734f196462d8ca4ad6",
     "semantic_hash": ""
   },
@@ -2250,7 +2250,7 @@
     "semantic_hash": ""
   },
   "/Users/iamin/Sync/code@business/idea-app/docker-compose.yml": {
-    "mtime": 1781957428.4597614,
+    "mtime": 1782393355.097566,
     "ast_hash": "3c5a17240981b2cf2f8b41c1be310edf",
     "semantic_hash": ""
   },
@@ -2300,7 +2300,7 @@
     "semantic_hash": ""
   },
   "/Users/iamin/Sync/code@business/idea-app/test/fixtures/templates.yml": {
-    "mtime": 1781957428.5119317,
+    "mtime": 1782393355.14195,
     "ast_hash": "3e7152c34652c7adca6413315e16b6d6",
     "semantic_hash": ""
   },
@@ -2320,7 +2320,7 @@
     "semantic_hash": ""
   },
   "/Users/iamin/Sync/code@business/idea-app/config/recurring.yml": {
-    "mtime": 1781957428.459218,
+    "mtime": 1782393355.0970244,
     "ast_hash": "27f258145cc78379de5c71f68edbd4c4",
     "semantic_hash": ""
   },
@@ -2330,7 +2330,7 @@
     "semantic_hash": ""
   },
   "/Users/iamin/Sync/code@business/idea-app/config/database.yml": {
-    "mtime": 1781957428.4590883,
+    "mtime": 1782393355.096904,
     "ast_hash": "f22cdc89bb417adf2051c8f35b822a57",
     "semantic_hash": ""
   },
@@ -2670,7 +2670,7 @@
     "semantic_hash": ""
   },
   "/Users/iamin/Sync/code@business/idea-app/app/services/apple_notes_import_service.rb": {
-    "mtime": 1781957428.4576526,
+    "mtime": 1782393355.0948207,
     "ast_hash": "0f5d4e83909acc5ebf902e49374e5fd2",
     "semantic_hash": ""
   },
@@ -2685,22 +2685,22 @@
     "semantic_hash": ""
   },
   "/Users/iamin/Sync/code@business/idea-app/test/controllers/idea_attachments_json_format_test.rb": {
-    "mtime": 1781847455.825539,
+    "mtime": 1782393355.1414175,
     "ast_hash": "2c6bd2b3a9c748d61dc50633c8c471cc",
     "semantic_hash": ""
   },
   "/Users/iamin/Sync/code@business/idea-app/test/integration/catch_all_redirect_test.rb": {
-    "mtime": 1781848292.1881976,
+    "mtime": 1782393355.142033,
     "ast_hash": "ff6cc91c58c8db343e9b3bd134e89dcd",
     "semantic_hash": ""
   },
   "/Users/iamin/Sync/code@business/idea-app/app/services/kb_document_renderer.rb": {
-    "mtime": 1781865141.9891891,
+    "mtime": 1782393355.0949829,
     "ast_hash": "28650c4b3166f510a0eea4f7e3b3040b",
     "semantic_hash": ""
   },
   "/Users/iamin/Sync/code@business/idea-app/test/controllers/kb_multi_format_test.rb": {
-    "mtime": 1781865044.85128,
+    "mtime": 1782393355.1414917,
     "ast_hash": "b9838db82271a1e24abef7623ec2bb35",
     "semantic_hash": ""
   },
@@ -2710,12 +2710,12 @@
     "semantic_hash": ""
   },
   "/Users/iamin/Sync/code@business/idea-app/app/services/backlog_file_sync.rb": {
-    "mtime": 1781887168.6016912,
+    "mtime": 1782393355.0949097,
     "ast_hash": "5c53c59d47d3eade937bc80dec6d5fbf",
     "semantic_hash": ""
   },
   "/Users/iamin/Sync/code@business/idea-app/test/services/backlog_file_sync_test.rb": {
-    "mtime": 1781957284.105896,
+    "mtime": 1782393355.1423335,
     "ast_hash": "cdf7f0645447cd11257a36d3a4f8d674",
     "semantic_hash": ""
   },
@@ -2735,18 +2735,23 @@
     "semantic_hash": ""
   },
   "/Users/iamin/Sync/code@business/idea-app/db/migrate/20260619130000_add_pinned_to_build_items.rb": {
-    "mtime": 1781872342.6171236,
+    "mtime": 1782393355.0973315,
     "ast_hash": "3a4c8d62ae8d4340d5859985d8d2197c",
     "semantic_hash": ""
   },
   "/Users/iamin/Sync/code@business/idea-app/db/migrate/20260619120000_add_category_to_ideas.rb": {
-    "mtime": 1781872056.9126403,
+    "mtime": 1782393355.0972662,
     "ast_hash": "35491ab919b94e740942b59a4ced22ff",
     "semantic_hash": ""
   },
   "/Users/iamin/Sync/code@business/idea-app/storage/backlog.md": {
-    "mtime": 1781960980.161102,
-    "ast_hash": "d6d29ce8501e0e791af831322db74dba",
+    "mtime": 1782154732.1225045,
+    "ast_hash": "154776f9e1a6de5e083f97c93c1a7aac",
+    "semantic_hash": ""
+  },
+  "/Users/iamin/Sync/code@business/idea-app/public/assets/application-277415af5cc868c783cb261fecc6824b6b46ab6e18fbcd9a1e0f298dc446ff6e.js": {
+    "mtime": 1782034332.0831718,
+    "ast_hash": "847ade43996337a13357d23cb82ee18a",
     "semantic_hash": ""
   }
 }

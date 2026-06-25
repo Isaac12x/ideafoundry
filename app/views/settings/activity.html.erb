@@ -1,0 +1,84 @@
+<%= render 'settings/upgrade_bar' %>
+<div class="settings-container">
+  <div class="page-header">
+    <h2>Activity</h2>
+    <%= link_to settings_path, class: "btn btn-sm" do %>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      Back to Settings
+    <% end %>
+  </div>
+
+  <%= turbo_frame_tag "activity_panel" do %>
+    <div class="activity-feed-wrap">
+      <% if @trackable_types.any? %>
+        <div class="activity-filter-bar">
+          <%= link_to "All", settings_activity_path,
+                class: "activity-filter-pill #{"activity-filter-pill--active" if @filter.blank?}" %>
+          <% @trackable_types.each do |type| %>
+            <%= link_to activity_type_label(type), settings_activity_path(filter: type),
+                  class: "activity-filter-pill #{"activity-filter-pill--active" if @filter == type}" %>
+          <% end %>
+        </div>
+      <% end %>
+
+      <% if @activity_logs.empty? %>
+        <div class="activity-empty">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <circle cx="12" cy="12" r="10"/>
+            <polyline points="12 6 12 12 16 14"/>
+          </svg>
+          <p>No activity recorded yet.</p>
+        </div>
+      <% else %>
+        <%
+          grouped = @activity_logs.group_by do |log|
+            date = log.created_at.in_time_zone.to_date
+            today = Date.current
+            if   date == today     then "Today"
+            elsif date == today - 1 then "Yesterday"
+            else date.strftime("%B %-d, %Y")
+            end
+          end
+        %>
+        <% grouped.each do |label, logs| %>
+          <div class="activity-group">
+            <div class="activity-group-label"><%= label %></div>
+            <div class="activity-feed">
+              <% logs.each do |log| %>
+                <div class="activity-entry">
+                  <span class="activity-entry__actor activity-entry__actor--<%= log.actor %>">
+                    <%= log.actor_label %>
+                  </span>
+                  <span class="activity-entry__body">
+                    <span class="activity-entry__verb"><%= log.action_verb %></span>
+                    <% if log.trackable_kind_label.present? %>
+                      <span class="activity-entry__kind"><%= log.trackable_kind_label %></span>
+                    <% end %>
+                    <% if log.trackable_name.present? %>
+                      &ldquo;<span class="activity-entry__name"><%= log.trackable_name %></span>&rdquo;
+                    <% end %>
+                    <% if log.details.is_a?(Hash) && log.details["changed"].present? %>
+                      <span class="activity-entry__fields">
+                        &mdash; <%= Array(log.details["changed"]).map { |f| f.humanize.downcase }.to_sentence %>
+                      </span>
+                    <% end %>
+                    <% if log.details.is_a?(Hash) && log.details["paths"].present? %>
+                      <span class="activity-entry__fields">
+                        &mdash; <%= Array(log.details["paths"]).join(", ") %>
+                      </span>
+                    <% end %>
+                  </span>
+                  <time class="activity-entry__time"
+                        datetime="<%= log.created_at.iso8601 %>"
+                        title="<%= log.created_at.strftime("%B %-d, %Y at %-I:%M %p") %>">
+                    <%= time_ago_in_words(log.created_at) %> ago
+                  </time>
+                </div>
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+      <% end %>
+    </div>
+  <% end %>
+</div>
