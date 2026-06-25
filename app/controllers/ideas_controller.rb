@@ -19,7 +19,7 @@ class IdeasController < ApplicationController
   end
 
   def show
-    # Detailed view of a single idea
+    @inline_agent_recommendations = @user.agent_recommendations.pending.where(target: @idea).recent.limit(8)
   end
 
   def new

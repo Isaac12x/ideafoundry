@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 
-# Online backup for SQLite databases using VACUUM INTO.
-# Safe to run while the app is serving requests (uses WAL snapshot).
+# Online backup for SQLite databases and local Active Storage files.
+# SQLite is copied with VACUUM INTO, which is safe while the app is serving
+# requests. Active Storage files are archived from storage/ so uploaded data is
+# backed up with the same care as the database.
 # Usage: bin/backup [destination_dir]
 
 set -e
@@ -23,6 +25,14 @@ for db in storage/production.sqlite3 storage/queue.sqlite3; do
   echo "Backed up ${db} → ${dest}"
 done
 
+files_dest="${BACKUP_DIR}/active_storage_${TIMESTAMP}.tar.gz"
+tar -czf "$files_dest" \
+  -C "${APP_DIR}/storage" \
+  --exclude='*.sqlite3*' \
+  --exclude='recovery_passphrase.key' \
+  .
+echo "Backed up Active Storage files → ${files_dest}"
+
 # Prune backups older than 7 days
-find "$BACKUP_DIR" -name "*.sqlite3" -mtime +7 -delete 2>/dev/null || true
+find "$BACKUP_DIR" \( -name "*.sqlite3" -o -name "active_storage_*.tar.gz" \) -mtime +7 -delete 2>/dev/null || true
 echo "Backup complete. Pruned files older than 7 days."

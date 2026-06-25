@@ -19,7 +19,6 @@ class NoteImportService
   }.freeze
 
   Folder = Struct.new(:key, :name, :count, keyword_init: true)
-
   Preview = Struct.new(:source, :source_label, :batch_id, :folders, :notes, :payload, keyword_init: true) do
     def total_notes
       notes.size
@@ -45,20 +44,19 @@ class NoteImportService
       verifier.generate(payload)
     end
 
-    def import!(user:, payload:, selected_folder_keys:)
+    def import!(user:, payload:, selected_folder_keys:, selected_note_keys: [])
       data = verifier.verify(payload.to_s)
       selected_keys = Array(selected_folder_keys).map(&:to_s).reject(&:blank?).uniq
-      raise ImportError, "Select at least one folder to import." if selected_keys.empty?
+      selected_note_keys = Array(selected_note_keys).map(&:to_s).reject(&:blank?).uniq
+      raise ImportError, "Select at least one folder or note to import." if selected_keys.empty? && selected_note_keys.empty?
 
       source = normalize_source!(data["source"])
       source_label = source_label_for(source)
-      notes = Array(data["notes"]).select do |note|
-        (Array(note["folder_keys"]) & selected_keys).any?
-      end
-      raise ImportError, "No notes matched the selected folders." if notes.empty?
+      notes = selected_notes(Array(data["notes"]), selected_folder_keys: selected_keys, selected_note_keys: selected_note_keys)
+      raise ImportError, "No notes matched the selected folders or notes." if notes.empty?
 
       batch_id = data["batch_id"].presence || SecureRandom.uuid
-      matched_folder_count = notes.flat_map { |note| Array(note["folder_keys"]) & selected_keys }.uniq.size
+      matched_folder_count = notes.flat_map { |note| Array(note["folder_keys"]) }.uniq.size
 
       ActiveRecord::Base.transaction do
         notes.each do |note|
@@ -84,6 +82,40 @@ class NoteImportService
       raise ImportError, "Import preview expired or could not be verified."
     end
 
+    def preview_from_notes(source:, notes:)
+      source = normalize_source!(source)
+      source_label = source_label_for(source)
+      notes = Array(notes).compact.first(MAX_NOTES)
+      raise ImportError, "No supported notes were found in that import." if notes.empty?
+
+      batch_id = SecureRandom.uuid
+      notes = notes.each_with_index.map do |note, index|
+        note.merge(
+          "import_index" => index,
+          "note_key" => note["note_key"].presence || note_key(note, index)
+        )
+      end
+      payload = {
+        "source" => source,
+        "source_label" => source_label,
+        "batch_id" => batch_id,
+        "notes" => notes
+      }
+
+      Preview.new(
+        source: source,
+        source_label: source_label,
+        batch_id: batch_id,
+        folders: build_folders(notes),
+        notes: notes,
+        payload: payload
+      )
+    end
+
+    def build_import_note(title:, body:, folders:, source_path:, metadata: {})
+      new(source: "apple_notes", files: []).send(:build_note, title:, body:, folders:, source_path:, metadata:)
+    end
+
     private
 
     def verifier
@@ -101,6 +133,21 @@ class NoteImportService
         },
         "metadata" => note["metadata"].presence
       }.compact
+    end
+
+    def selected_notes(notes, selected_folder_keys:, selected_note_keys:)
+      notes.select do |note|
+        (Array(note["folder_keys"]) & selected_folder_keys).any? ||
+          selected_note_keys.include?(note["note_key"].to_s)
+      end
+    end
+
+    def note_key(note, index)
+      Digest::SHA256.hexdigest([
+        note["source_path"],
+        note["title"],
+        index
+      ].join(":"))[0, 16]
     end
   end
 
@@ -123,23 +170,7 @@ class NoteImportService
     notes = notes.first(MAX_NOTES)
     raise ImportError, "No supported notes were found in that import." if notes.empty?
 
-    batch_id = SecureRandom.uuid
-    notes = notes.each_with_index.map { |note, index| note.merge("import_index" => index) }
-    payload = {
-      "source" => source,
-      "source_label" => source_label,
-      "batch_id" => batch_id,
-      "notes" => notes
-    }
-
-    Preview.new(
-      source: source,
-      source_label: source_label,
-      batch_id: batch_id,
-      folders: build_folders(notes),
-      notes: notes,
-      payload: payload
-    )
+    self.class.preview_from_notes(source: source, notes: notes)
   end
 
   private
@@ -388,7 +419,7 @@ class NoteImportService
     }
   end
 
-  def build_folders(notes)
+  def self.build_folders(notes)
     counts = Hash.new(0)
     names = {}
 

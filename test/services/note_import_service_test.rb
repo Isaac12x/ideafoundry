@@ -66,6 +66,59 @@ class NoteImportServiceTest < ActiveSupport::TestCase
     assert_equal "Inventions", submission.raw_data.dig("events", 0, "payload", "import", "folders").first
   end
 
+  test "imports only selected notes when note keys are provided" do
+    preview = NoteImportService.new(
+      source: "evernote",
+      files: [
+        MemoryUpload.new("Notebook/Clamp idea.txt", "Adjustable clamp"),
+        MemoryUpload.new("Notebook/Shade idea.txt", "Clip-on shade")
+      ]
+    ).preview
+
+    selected = preview.notes.find { |note| note["title"] == "Shade idea" }
+
+    assert_difference -> { @user.submissions.count }, 1 do
+      NoteImportService.import!(
+        user: @user,
+        payload: preview.encoded_payload,
+        selected_folder_keys: [],
+        selected_note_keys: [selected["note_key"]]
+      )
+    end
+
+    assert_equal "Shade idea", @user.submissions.recent.first.title
+  end
+
+  test "imports selected folders plus explicitly selected notes" do
+    preview = NoteImportService.new(
+      source: "evernote",
+      files: [
+        MemoryUpload.new("Inventions/Clamp idea.txt", "Adjustable clamp"),
+        MemoryUpload.new("Personal/Shade idea.txt", "Clip-on shade"),
+        MemoryUpload.new("Personal/Grocery list.txt", "Milk")
+      ]
+    ).preview
+
+    inventions = preview.folders.find { |folder| folder.name == "Inventions" }
+    shade = preview.notes.find { |note| note["title"] == "Shade idea" }
+
+    assert_difference -> { @user.submissions.count }, 2 do
+      result = NoteImportService.import!(
+        user: @user,
+        payload: preview.encoded_payload,
+        selected_folder_keys: [inventions.key],
+        selected_note_keys: [shade["note_key"]]
+      )
+
+      assert_equal 2, result.imported_count
+      assert_equal 2, result.folder_count
+    end
+
+    titles = @user.submissions.recent.limit(2).map(&:title)
+    assert_includes titles, "Clamp idea"
+    assert_includes titles, "Shade idea"
+  end
+
   test "uses Google Keep labels as selectable folders" do
     keep_note = {
       title: "Foldable shade",
@@ -79,5 +132,35 @@ class NoteImportServiceTest < ActiveSupport::TestCase
     ).preview
 
     assert_equal ["Garden", "Prototype"], preview.folders.map(&:name)
+  end
+
+  test "previews Apple Notes from a local sqlite database" do
+    path = Rails.root.join("tmp/apple_notes_import_test.sqlite3")
+    FileUtils.rm_f(path)
+
+    SQLite3::Database.new(path.to_s) do |db|
+      db.execute <<~SQL
+        CREATE TABLE ZICCLOUDSYNCINGOBJECT (
+          Z_PK INTEGER PRIMARY KEY,
+          ZFOLDER INTEGER,
+          ZTITLE1 TEXT,
+          ZTITLE2 TEXT,
+          ZSNIPPET TEXT,
+          ZIDENTIFIER TEXT,
+          ZMARKEDFORDELETION INTEGER
+        )
+      SQL
+      db.execute "INSERT INTO ZICCLOUDSYNCINGOBJECT (Z_PK, ZTITLE2) VALUES (1, 'Ideas')"
+      db.execute "INSERT INTO ZICCLOUDSYNCINGOBJECT (Z_PK, ZFOLDER, ZTITLE1, ZSNIPPET, ZIDENTIFIER, ZMARKEDFORDELETION) VALUES (2, 1, 'Solar shelf', 'Window-mounted collector', 'note-1', 0)"
+    end
+
+    preview = AppleNotesImportService.new(database_path: path.to_s).preview
+
+    assert_equal "apple_notes", preview.source
+    assert_equal ["Ideas"], preview.folders.map(&:name)
+    assert_equal "Solar shelf", preview.notes.first["title"]
+    assert_equal "Window-mounted collector", preview.notes.first["body"]
+  ensure
+    FileUtils.rm_f(path)
   end
 end
