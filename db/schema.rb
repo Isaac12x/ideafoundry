@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_02_120000) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_25_130000) do
   create_table "action_mailbox_inbound_emails", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "message_checksum", null: false
@@ -63,6 +63,19 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_02_120000) do
     t.bigint "blob_id", null: false
     t.string "variation_digest", null: false
     t.index ["blob_id", "variation_digest"], name: "index_active_storage_variant_records_uniqueness", unique: true
+  end
+
+  create_table "activity_logs", force: :cascade do |t|
+    t.string "action", null: false
+    t.string "actor", default: "user", null: false
+    t.datetime "created_at", null: false
+    t.text "details"
+    t.integer "trackable_id"
+    t.string "trackable_name"
+    t.string "trackable_type"
+    t.integer "user_id", null: false
+    t.index ["trackable_type", "trackable_id"], name: "index_activity_logs_on_trackable_type_and_trackable_id"
+    t.index ["user_id", "created_at"], name: "index_activity_logs_on_user_id_and_created_at"
   end
 
   create_table "agent_events", force: :cascade do |t|
@@ -135,11 +148,13 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_02_120000) do
     t.datetime "created_at", null: false
     t.text "description"
     t.text "links"
+    t.boolean "pinned", default: false, null: false
     t.integer "position"
     t.string "title", null: false
     t.datetime "updated_at", null: false
     t.integer "user_id", null: false
     t.index ["user_id", "completed"], name: "index_build_items_on_user_id_and_completed"
+    t.index ["user_id", "pinned", "position"], name: "index_build_items_on_user_id_and_pinned_and_position"
     t.index ["user_id", "position"], name: "index_build_items_on_user_id_and_position"
     t.index ["user_id"], name: "index_build_items_on_user_id"
   end
@@ -249,6 +264,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_02_120000) do
 
   create_table "ideas", force: :cascade do |t|
     t.integer "attempt_count"
+    t.string "category"
     t.decimal "computed_score"
     t.datetime "cool_off_until"
     t.datetime "created_at", null: false
