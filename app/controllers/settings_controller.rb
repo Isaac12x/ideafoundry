@@ -34,10 +34,11 @@ class SettingsController < ApplicationController
     if valid_scoring_weights?(weights)
       @user.update_scoring_weights(weights)
       @user.update_scoring_systems(scoring_system_params) if params.key?(:scoring_systems)
-      
+
       # Recalculate all idea scores with new weights
       recalculate_all_scores
-      
+      ActivityLog.record_settings!(user: @user, setting: "Scoring")
+
       respond_to do |format|
         format.html { redirect_to settings_scoring_path, notice: 'Scoring weights updated successfully. All idea scores have been recalculated.' }
         format.json { 
@@ -178,16 +179,16 @@ class SettingsController < ApplicationController
     recommendation = @user.agent_recommendations.pending.find(params[:id])
 
     if recommendation.approve!
-      redirect_to settings_local_agent_path, notice: "Recommendation applied."
+      redirect_to local_agent_recommendation_return_path, notice: "Recommendation applied."
     else
-      redirect_to settings_local_agent_path, alert: "Recommendation could not be applied."
+      redirect_to local_agent_recommendation_return_path, alert: "Recommendation could not be applied."
     end
   end
 
   def dismiss_local_agent_recommendation
     recommendation = @user.agent_recommendations.pending.find(params[:id])
     recommendation.dismiss!
-    redirect_to settings_local_agent_path, notice: "Recommendation dismissed."
+    redirect_to local_agent_recommendation_return_path, notice: "Recommendation dismissed."
   end
 
   def update_security
@@ -195,8 +196,11 @@ class SettingsController < ApplicationController
     typing_lock_updated = @user.update_typing_lock_settings(typing_lock_params)
     authenticator_app_updated = @user.update_authenticator_app_settings(authenticator_app_params)
     voice_id_updated = @user.update_voice_id_settings(voice_id_params)
+    mobile_uplink_updated = @user.update_mobile_uplink_settings(mobile_uplink_params)
 
-    if typing_lock_updated && authenticator_app_updated && voice_id_updated
+    if typing_lock_updated && authenticator_app_updated && voice_id_updated && mobile_uplink_updated
+      ActivityLog.record_settings!(user: @user, setting: "Security")
+
       if @user.security_lock_enabled?
         unlock_typing_session!
       else
@@ -216,10 +220,8 @@ class SettingsController < ApplicationController
         end
       end
     else
-      @typing_lock_settings = @user.typing_lock_settings
-      @authenticator_app_settings = @user.authenticator_app_settings
-      @voice_id_settings = @user.voice_id_settings
-      @authenticator_app_qr_svg = AuthenticatorApp.qr_svg(@user.authenticator_app_provisioning_uri) if @user.authenticator_app_configured?
+      load_security_settings
+      load_database_encryption_status
       respond_to do |format|
         format.html do
           flash.now[:alert] = "Failed to update security settings."
@@ -356,6 +358,7 @@ class SettingsController < ApplicationController
 
   def update_github
     if @user.update_github_settings(github_params)
+      ActivityLog.record_settings!(user: @user, setting: "GitHub")
       redirect_to settings_github_path, notice: "GitHub settings updated."
     else
       @github_settings = @user.github_settings
@@ -471,12 +474,21 @@ class SettingsController < ApplicationController
   def update_kb
     paths = Array(params[:kb_folders]).reject(&:blank?)
     if @user.update_kb_folders(paths)
+      ActivityLog.record_settings!(user: @user, setting: "KB Folders", details: { paths: paths })
       redirect_to settings_kb_path, notice: "KB folders updated."
     else
       @kb_folders = paths
       flash.now[:alert] = "Failed to update KB folders."
       render :kb, status: :unprocessable_content
     end
+  end
+
+  def activity
+    @filter = params[:filter].presence
+    logs = @user.activity_logs.recent
+    logs = logs.for_trackable_type(@filter) if @filter.present?
+    @activity_logs = logs.limit(100)
+    @trackable_types = @user.activity_logs.select(:trackable_type).distinct.pluck(:trackable_type).compact.sort
   end
 
   def api_keys
@@ -503,7 +515,14 @@ class SettingsController < ApplicationController
     @typing_lock_settings = @user.typing_lock_settings
     @authenticator_app_settings = @user.authenticator_app_settings
     @voice_id_settings = @user.voice_id_settings
+    @mobile_uplink_settings = @user.mobile_uplink_settings
     @authenticator_app_qr_svg = AuthenticatorApp.qr_svg(@user.authenticator_app_provisioning_uri) if @user.authenticator_app_configured?
+    @mobile_uplink_install_url = MobileUplink.install_url
+    @mobile_uplink_install_qr_svg = MobileUplink.qr_svg(@mobile_uplink_install_url)
+    if @user.mobile_uplink_configured?
+      @mobile_uplink_pairing_payload = @user.mobile_uplink_pairing_payload(workspace_url: request.base_url)
+      @mobile_uplink_pairing_qr_svg = MobileUplink.qr_svg(@mobile_uplink_pairing_payload)
+    end
   end
 
   def load_local_agent_settings
@@ -513,6 +532,18 @@ class SettingsController < ApplicationController
     @latest_agent_event = @user.agent_events.recent.first
     @pending_agent_recommendations = @user.agent_recommendations.pending.recent.limit(25)
     @recent_agent_events = @user.agent_events.recent.limit(20)
+  end
+
+  def local_agent_recommendation_return_path
+    raw_path = params[:return_to].to_s
+    return settings_local_agent_path if raw_path.blank?
+
+    uri = URI.parse(raw_path)
+    return settings_local_agent_path if uri.host.present? || uri.scheme.present? || !raw_path.start_with?("/")
+
+    raw_path
+  rescue URI::InvalidURIError
+    settings_local_agent_path
   end
 
   def load_database_encryption_status
@@ -606,6 +637,10 @@ class SettingsController < ApplicationController
 
   def voice_id_params
     params.fetch(:voice_id, {}).permit(:enabled)
+  end
+
+  def mobile_uplink_params
+    params.fetch(:mobile_uplink, {}).permit(:enabled)
   end
 
   def database_encryption_params

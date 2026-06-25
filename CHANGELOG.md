@@ -28,16 +28,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Markdown responses for scoped idea document API reads via Rails 8.1's native markdown renderer.
 - Structured Rails event reporting for scoped idea document reads and updates.
 - App-wide Ask Agent chat sidebar for queuing local-agent questions from any page.
+- Inline local-agent recommendation hints on idea pages with full diff previews and collapsed addition/file review.
 - Intake batch imports for Apple Notes, Notion, Google Keep, and Evernote exports with selectable folders before import.
 - OS keychain-backed recovery passphrase storage with an external file fallback and legacy storage migration.
 - Rack::Attack throttling for recovery secret and local upgrade endpoints.
 - Active Storage upgrade migrations and idea TLDR persistence.
 - Static 400 and unsupported-browser error pages with app icons.
+- Mobile Uplink security setting with install and encrypted pairing QR codes.
+- File storage backup contract documenting local durable storage beside the app.
 - Default page quote fallbacks and additional typing-lock unlock prompts inspired by Ford, Feynman, and Create or Perish.
 - LaunchAgent startup now brings up the Docker/Podman Compose sidecar services before Rails.
 
 ### Changed
 
+- Batch imports now discover local Apple Notes databases directly, preview folders and individual notes, and route cloud note apps through OAuth-oriented connection flows.
 - Local attachment OCR now uses Surya with block HTML metadata while preserving complete extracted text for saving.
 - Idea creation no longer asks for Kanban board or named-list placement; placement remains available after the idea exists.
 - Updated the app to resolve Rails 8.1.3 and Puma 8, with Rails 8.1 local CI and framework-default upgrade prep.
@@ -51,10 +55,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - On/off settings toggles now autosave without requiring an extra settings form submission.
 - SQLCipher recovery keys can rekey to stronger scrypt defaults and plaintext migration backups are removed after encryption.
 - Setup, development, production, and CI configuration now target the Rails 8.1 and SQLCipher app runtime.
+- Manual and scheduled backups now treat every user-owned Active Storage blob as first-class data.
 - Settings pages now group related sections, combine display and idea-tab controls, and present scoring systems in dedicated panels.
 
 ### Fixed
 
+- Local HTTPS access through `ideas.local:8443` is allowed by Rails host authorization.
+- Batch import export uploads are available again for note apps without OAuth support, and individual note selections no longer override folder selections.
 - Ask Agent now only renders while the local agent is enabled and live, and its launcher icon changes at most once per day.
 - Local agent harness probes to `/local-agent/tools` now receive JSON tool discovery instead of falling through to the app catch-all.
 - Resend inbound email setup now uses the mounted `/rails/action_mailbox/resend/inbound_emails` webhook route.
@@ -68,6 +75,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Idea media controls now keep Ask Agent out of navigation, show extracted attachment parts in the form sidebar, and separate image thumbnails from document attachments.
 - Development now uses its own Solid Queue database so encrypted production queue data does not break local page loads.
 - User settings are normalized after security-settings encryption so local security lock checks do not crash on double-encoded settings.
+- Idea image editor uploads now center the editing modal in the viewport and keep actions visible while page scrolling is locked.
 
 ### Security
 

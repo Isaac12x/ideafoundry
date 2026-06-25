@@ -183,6 +183,55 @@ class IdeasControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
   end
 
+  test "show renders inline agent recommendation diff previews" do
+    @idea.update!(description: "Original line\nKeep line")
+    recommendation = @user.agent_recommendations.create!(
+      target: @idea,
+      action: "update_idea",
+      risk_level: "medium",
+      reasoning: "Tighten the idea copy",
+      payload: {
+        "idea_id" => @idea.id,
+        "title" => "Sharper Test Idea",
+        "description" => "Proposed line\nKeep line"
+      }
+    )
+
+    get idea_url(@idea)
+
+    assert_response :success
+    assert_select "#agent-suggestions"
+    assert_select "[data-agent-recommendation-id=?]", recommendation.id.to_s
+    assert_select "form[action=?]", settings_local_agent_recommendation_approve_path(recommendation)
+    assert_select "form[action=?]", settings_local_agent_recommendation_dismiss_path(recommendation)
+    assert_select ".agent-diff__line--delete code", text: "Original line"
+    assert_select ".agent-diff__line--insert code", text: "Proposed line"
+  end
+
+  test "show renders collapsed agent addition and file previews" do
+    recommendation = @user.agent_recommendations.create!(
+      target: @idea,
+      action: "create_note",
+      risk_level: "low",
+      reasoning: "Capture a research note",
+      payload: {
+        "idea_id" => @idea.id,
+        "body" => "Investigate channel pricing",
+        "files" => [
+          { "path" => "research/channel.md", "content" => "Pricing notes" }
+        ]
+      }
+    )
+
+    get idea_url(@idea)
+
+    assert_response :success
+    assert_select "[data-agent-recommendation-id=?]", recommendation.id.to_s
+    assert_select ".agent-addition summary strong", text: "New note"
+    assert_select ".agent-addition--file summary strong", text: "research/channel.md"
+    assert_match "Pricing notes", response.body
+  end
+
   test "show hides agent access while idea work tokens are disabled" do
     @user.update_idea_work_token_settings("enabled" => "0")
 

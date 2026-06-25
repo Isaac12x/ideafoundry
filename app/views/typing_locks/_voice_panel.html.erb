@@ -93,7 +93,11 @@
         <% end %>
       </div>
 
-      <% unless mode == :enroll %>
+      <% if mode == :enroll %>
+        <p class="typing-lock-noscript">
+          Voice ID needs browser speech recording. If recording is not working, try again later and turn Voice ID off in <%= link_to "Security settings", settings_security_path %> for now.
+        </p>
+      <% else %>
         <p class="typing-lock-noscript">
           If local microphone capture is unavailable, enter the spoken transcript manually for local development:
           <%= text_field_tag :voice_transcript,

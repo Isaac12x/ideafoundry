@@ -202,6 +202,7 @@ For recurring jobs, add to `config/recurring.yml`.
 
 - **No authentication** — Single-user app. `ApplicationController#set_user` returns `User.first`. Secure at the network level.
 - **SQLite everywhere** — Zero-config database. Main DB, queue DB, and cache all use SQLite. Simplifies deployment.
+- **Files are data** — Active Storage files live under `storage/` beside SQLite data and are included in manual and scheduled backups.
 - **Dual JS pipelines** — Importmap for lightweight Stimulus controllers (no build step), esbuild only for the heavy Three.js graph bundle.
 - **Version snapshots as JSON** — Full idea state serialized to JSON on each save. Enables diff and restore without complex schema versioning.
 - **Topology = hierarchical tags** — Self-referential tree structure with color and type. More expressive than flat tags.

@@ -194,7 +194,40 @@ class SettingsControllerTest < ActionDispatch::IntegrationTest
     assert_select "input[name=?][value=?]", "typing_lock[failed_unlock_cooldown_minutes]", "5"
     assert_select "input[name=?]", "authenticator_app[enabled]"
     assert_select "input[name=?]", "voice_id[enabled]"
+    assert_select "input[name=?]", "mobile_uplink[enabled]"
     assert_match(/Voice ID/, response.body)
+    assert_match(/Mobile Uplink/, response.body)
+  end
+
+  test "PATCH settings/security enabling mobile uplink renders install and pairing QR setup" do
+    patch settings_security_path, params: {
+      typing_lock: {
+        enabled: "0",
+        lock_after_minutes: "5"
+      },
+      authenticator_app: {
+        enabled: "0"
+      },
+      voice_id: {
+        enabled: "0"
+      },
+      mobile_uplink: {
+        enabled: "1"
+      }
+    }
+
+    assert_redirected_to settings_security_path
+    assert @user.reload.mobile_uplink_enabled?
+    assert_match(/\A[A-Za-z0-9_-]{24}\z/, @user.mobile_uplink_id)
+
+    get settings_security_path
+
+    assert_response :success
+    assert_select ".mobile-uplink-install-qr svg"
+    assert_select ".mobile-uplink-pairing-qr svg"
+    assert_match(/Install the mobile uplink app/, response.body)
+    assert_match(@user.mobile_uplink_id, response.body)
+    assert_match(/encrypts data multiple times before it leaves/, response.body)
   end
 
   test "GET settings/security renders passphrase and backup acknowledgements for plaintext SQLite" do
@@ -215,48 +248,42 @@ class SettingsControllerTest < ActionDispatch::IntegrationTest
       assert_select "input[name=?][type=?]", "database_encryption[passphrase_confirmation]", "password"
       assert_select "input[name=?][type=?]", "database_encryption[saved_primary]", "checkbox"
       assert_select "input[name=?][type=?]", "database_encryption[saved_secondary]", "checkbox"
-      assert_select "button", text: "Encrypt SQLite Databases"
+      assert_select "input[type=?][value=?]", "submit", "Encrypt SQLite Databases"
     end
   ensure
     FileUtils.rm_rf(root) if root&.exist?
   end
 
   test "POST settings/security/encrypt-database refuses to encrypt without a matching passphrase and two saved-copy acknowledgements" do
-    migrator = Minitest::Mock.new
-
-    SettingsController.any_instance.stub(:sqlcipher_database_migrator_for_passphrase, migrator) do
-      post settings_security_encrypt_database_path, params: {
-        database_encryption: {
-          passphrase: "one passphrase",
-          passphrase_confirmation: "different passphrase",
-          saved_primary: "1",
-          saved_secondary: "1"
-        }
+    # Mismatched confirmation is rejected by the validation guard before any
+    # database migration is attempted.
+    post settings_security_encrypt_database_path, params: {
+      database_encryption: {
+        passphrase: "one good passphrase",
+        passphrase_confirmation: "another different passphrase",
+        saved_primary: "1",
+        saved_secondary: "1"
       }
-    end
+    }
 
     assert_redirected_to settings_security_path
     assert_match(/Passphrase confirmation does not match/, flash[:alert])
-    migrator.verify
   end
 
   test "POST settings/security/encrypt-database refuses to encrypt until the user confirms two saved passphrase copies" do
-    migrator = Minitest::Mock.new
-
-    SettingsController.any_instance.stub(:sqlcipher_database_migrator_for_passphrase, migrator) do
-      post settings_security_encrypt_database_path, params: {
-        database_encryption: {
-          passphrase: "correct horse battery staple",
-          passphrase_confirmation: "correct horse battery staple",
-          saved_primary: "1",
-          saved_secondary: "0"
-        }
+    # Missing the second saved-copy acknowledgement is rejected by the validation
+    # guard before any database migration is attempted.
+    post settings_security_encrypt_database_path, params: {
+      database_encryption: {
+        passphrase: "correct horse battery staple",
+        passphrase_confirmation: "correct horse battery staple",
+        saved_primary: "1",
+        saved_secondary: "0"
       }
-    end
+    }
 
     assert_redirected_to settings_security_path
     assert_match(/Save the passphrase in more than one place/, flash[:alert])
-    migrator.verify
   end
 
   test "POST settings/security/encrypt-database encrypts configured plaintext SQLite with the UI passphrase" do
@@ -518,6 +545,22 @@ class SettingsControllerTest < ActionDispatch::IntegrationTest
     assert_select "[data-agent-recommendation-id=?]", recommendation.id.to_s
     assert_select "form[action=?]", settings_local_agent_recommendation_approve_path(recommendation)
     assert_select "form[action=?]", settings_local_agent_recommendation_dismiss_path(recommendation)
+  end
+
+  test "POST dismiss local agent recommendation redirects to safe return path" do
+    idea = @user.ideas.create!(title: "Inline recommendation target", state: :triage)
+    recommendation = @user.agent_recommendations.create!(
+      target: idea,
+      action: "update_idea",
+      risk_level: "medium",
+      reasoning: "Needs review",
+      payload: { "idea_id" => idea.id, "title" => "Updated" }
+    )
+
+    post settings_local_agent_recommendation_dismiss_path(recommendation),
+         params: { return_to: idea_path(idea, anchor: "agent-suggestions") }
+
+    assert_redirected_to idea_path(idea, anchor: "agent-suggestions")
   end
 
   test "GET settings/lists renders page" do
