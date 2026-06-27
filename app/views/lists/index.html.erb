@@ -80,6 +80,28 @@
                      id="list_<%= list.id %>_ideas">
                   <%= render 'ideas', list: list, ideas: list.ideas.includes(:idea_lists, :idea_entries).order('idea_lists.position') %>
                 </div>
+                <div class="kanban-search-section"
+                     data-controller="idea-search"
+                     data-idea-search-search-url-value="<%= search_ideas_path %>"
+                     data-idea-search-add-url-template-value="/ideas/__IDEA_ID__/add_to_list"
+                     data-idea-search-list-id-value="<%= list.id %>">
+                  <button type="button" class="btn btn-sm kanban-search-toggle" data-action="click->idea-search#toggleSearch">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+                    Add idea
+                  </button>
+                  <div class="kanban-search-panel" data-idea-search-target="panel" hidden>
+                    <div class="list-search-input-row">
+                      <svg class="list-search-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                      <input type="text"
+                             class="form-control"
+                             placeholder="Search ideas…"
+                             data-idea-search-target="input"
+                             data-action="input->idea-search#search"
+                             autocomplete="off">
+                    </div>
+                    <div class="idea-search-results" data-idea-search-target="results" hidden></div>
+                  </div>
+                </div>
               </div>
             <% end %>
 
