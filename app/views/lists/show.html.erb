@@ -14,19 +14,22 @@
   </div>
 
   <% if @list.named? %>
-    <div class="config-section">
-      <h3>Add Idea</h3>
-      <% if @available_ideas.any? %>
-        <%= form_with url: add_idea_list_path(@list), method: :post, local: true, class: "inline-list-form" do |form| %>
-          <%= form.select :idea_id,
-              options_from_collection_for_select(@available_ideas, :id, :title),
-              {},
-              class: "form-control" %>
-          <%= form.submit "Add", class: "btn btn-primary" %>
-        <% end %>
-      <% else %>
-        <p class="text-muted">All current ideas are already in this list.</p>
-      <% end %>
+    <div class="list-search-section"
+         data-controller="idea-search"
+         data-idea-search-search-url-value="<%= search_ideas_path %>"
+         data-idea-search-add-url-template-value="/ideas/__IDEA_ID__/add_to_list"
+         data-idea-search-list-id-value="<%= @list.id %>">
+      <h3 class="list-search-heading">Add idea</h3>
+      <div class="list-search-input-row">
+        <svg class="list-search-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <input type="text"
+               class="form-control"
+               placeholder="Search by title, tldr, or description…"
+               data-idea-search-target="input"
+               data-action="input->idea-search#search"
+               autocomplete="off">
+      </div>
+      <div class="idea-search-results" data-idea-search-target="results" hidden></div>
     </div>
   <% end %>
 
