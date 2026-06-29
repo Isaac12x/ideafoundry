@@ -7,7 +7,7 @@ from typing import Any
 
 import fitz
 from bs4 import BeautifulSoup
-from fastapi import FastAPI, Header, Request
+from fastapi import FastAPI, Header, HTTPException, Query, Request, Response
 from PIL import Image
 
 app = FastAPI(title="Idea Foundry Local OCR")
@@ -23,7 +23,54 @@ def int_env(name: str, default: int) -> int:
 PDF_DPI = max(72, int_env("OCR_PDF_DPI", 192))
 PAGE_BATCH_SIZE = max(1, int_env("OCR_PAGE_BATCH_SIZE", 4))
 SURYA_MODEL = os.environ.get("SURYA_MODEL_CHECKPOINT", "datalab-to/surya-ocr-2")
+# Documents with more pages than this are routed to the heavy on-demand
+# Unlimited-OCR pipeline instead of the synchronous Surya path.
+LONG_DOC_PAGE_THRESHOLD = max(1, int_env("OCR_LONG_DOC_PAGE_THRESHOLD", 10))
+# Rasterization DPI for the heavy pipeline (kept moderate to bound VLM image size).
+LONG_RENDER_DPI = max(72, int_env("OCR_LONG_RENDER_DPI", 144))
 surya_lock = threading.Lock()
+
+PDF_FILENAMES = (".pdf",)
+IMAGE_FILENAMES = (".png", ".jpg", ".jpeg", ".webp", ".tif", ".tiff")
+
+
+def is_pdf(kind: str, filename: str) -> bool:
+    return kind == "application/pdf" or filename.lower().endswith(PDF_FILENAMES)
+
+
+def is_image(kind: str, filename: str) -> bool:
+    return kind.startswith("image/") or filename.lower().endswith(IMAGE_FILENAMES)
+
+
+def page_count_for(data: bytes, kind: str, filename: str) -> int:
+    if is_pdf(kind, filename):
+        doc = fitz.open(stream=data, filetype="pdf")
+        try:
+            return doc.page_count
+        finally:
+            doc.close()
+    if is_image(kind, filename):
+        return 1
+    return 0
+
+
+def render_single_page(data: bytes, kind: str, filename: str, page: int, dpi: int) -> bytes:
+    if is_pdf(kind, filename):
+        doc = fitz.open(stream=data, filetype="pdf")
+        try:
+            if page < 1 or page > doc.page_count:
+                raise HTTPException(status_code=404, detail="page out of range")
+            pix = doc.load_page(page - 1).get_pixmap(dpi=dpi, alpha=False)
+            return pix.tobytes("png")
+        finally:
+            doc.close()
+    if is_image(kind, filename):
+        if page != 1:
+            raise HTTPException(status_code=404, detail="page out of range")
+        buffer = io.BytesIO()
+        load_image(data).save(buffer, format="PNG")
+        return buffer.getvalue()
+    raise HTTPException(status_code=415, detail="unsupported document type")
 
 
 def split_parts(text: str) -> list[str]:
@@ -175,6 +222,40 @@ def extract_image(data: bytes) -> tuple[str, str, list[dict[str, Any]]]:
 @app.get("/health")
 def health() -> dict[str, str]:
     return {"status": "ok", "engine": "surya"}
+
+
+@app.post("/probe")
+async def probe(
+    request: Request,
+    content_type: str | None = Header(default=None),
+    x_filename: str | None = Header(default=None),
+) -> dict[str, Any]:
+    data = await request.body()
+    filename = x_filename or "attachment"
+    kind = (content_type or "").split(";")[0].lower()
+    pages = page_count_for(data, kind, filename)
+    return {
+        "filename": filename,
+        "content_type": kind,
+        "page_count": pages,
+        "threshold": LONG_DOC_PAGE_THRESHOLD,
+        "needs_long": pages > LONG_DOC_PAGE_THRESHOLD,
+    }
+
+
+@app.post("/render")
+async def render(
+    request: Request,
+    page: int = Query(1, ge=1),
+    dpi: int | None = Query(default=None, ge=72, le=600),
+    content_type: str | None = Header(default=None),
+    x_filename: str | None = Header(default=None),
+) -> Response:
+    data = await request.body()
+    filename = x_filename or "attachment"
+    kind = (content_type or "").split(";")[0].lower()
+    png = render_single_page(data, kind, filename, page, dpi or LONG_RENDER_DPI)
+    return Response(content=png, media_type="image/png")
 
 
 @app.post("/extract")

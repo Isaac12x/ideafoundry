@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_25_130000) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_29_120000) do
   create_table "action_mailbox_inbound_emails", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "message_checksum", null: false
@@ -307,6 +307,30 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_25_130000) do
     t.index ["user_id"], name: "index_kanban_boards_on_user_id"
   end
 
+  create_table "knowledge_extractions", force: :cascade do |t|
+    t.bigint "attachment_id"
+    t.string "backend"
+    t.datetime "created_at", null: false
+    t.text "error"
+    t.datetime "finished_at"
+    t.integer "idea_id"
+    t.integer "kb_folder_index"
+    t.string "kb_path"
+    t.text "markdown"
+    t.bigint "output_attachment_id"
+    t.string "output_path"
+    t.integer "page_count"
+    t.integer "pages_done", default: 0, null: false
+    t.string "source_filename"
+    t.string "source_kind", null: false
+    t.datetime "started_at"
+    t.integer "status", default: 0, null: false
+    t.datetime "updated_at", null: false
+    t.index ["attachment_id"], name: "index_knowledge_extractions_on_attachment_id"
+    t.index ["idea_id"], name: "index_knowledge_extractions_on_idea_id"
+    t.index ["status"], name: "index_knowledge_extractions_on_status"
+  end
+
   create_table "lists", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.integer "kanban_board_id"
@@ -451,6 +475,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_25_130000) do
   add_foreign_key "ideas", "templates"
   add_foreign_key "ideas", "users"
   add_foreign_key "kanban_boards", "users"
+  add_foreign_key "knowledge_extractions", "ideas"
   add_foreign_key "lists", "kanban_boards"
   add_foreign_key "lists", "users"
   add_foreign_key "notes", "ideas"
