@@ -3,10 +3,17 @@ default: &default
     - polling_interval: 1
       batch_size: 500
   workers:
-    - queues: "*"
+    # Main worker: every queue except the heavy long-document OCR queue, so a
+    # book/patent extraction can never tie up the default threads.
+    - queues: [ default, mailers ]
       threads: 3
       processes: <%= ENV.fetch("JOB_CONCURRENCY", 1) %>
       polling_interval: 0.1
+    # Dedicated, single-threaded worker for the on-demand Unlimited-OCR pipeline.
+    - queues: long_ocr
+      threads: <%= ENV.fetch("LONG_OCR_CONCURRENCY", 1) %>
+      processes: 1
+      polling_interval: 0.5
 
 development:
   <<: *default

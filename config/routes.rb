@@ -78,9 +78,12 @@ Rails.application.routes.draw do
     resources :attachments, only: [:create, :destroy, :update], controller: :idea_attachments do
       collection do
         patch :reorder
+        get :search
       end
       member do
         post :ocr
+        post :extract_knowledge
+        get :extraction_status
         patch :update
       end
     end
@@ -206,6 +209,7 @@ Rails.application.routes.draw do
   get 'knowledge-base/file', to: 'kb#file', as: :kb_file
   get 'kb/file', to: redirect('/knowledge-base/file')
   get 'knowledge-base/raw', to: 'kb#raw', as: :kb_raw
+  post 'knowledge-base/extract', to: 'kb#extract', as: :kb_extract
   resources :facts, only: [:create, :destroy]
   resources :maxims, only: [:create, :destroy]
 

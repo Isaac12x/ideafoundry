@@ -356,6 +356,7 @@
             <% attachment_drawings = @idea.attachment_drawings %>
             <% image_attachments = @idea.image_attachments %>
             <% document_attachments = @idea.document_attachments %>
+            <%= render "ideas/knowledge_sidebar", idea: @idea %>
             <% if image_attachments.any? || document_attachments.any? || attachment_drawings.any? %>
               <% if image_attachments.any? || attachment_drawings.any? %>
                 <div class="media-section__group media-section__group--images">

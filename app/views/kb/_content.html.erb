@@ -10,6 +10,38 @@
           referrerpolicy="no-referrer"
           loading="lazy"
           title="<%= selected_file %>"></iframe>
+<% elsif kind == :long_doc %>
+  <% extraction = content.extraction %>
+  <article class="kb-long-doc">
+    <header class="kb-long-doc__header">
+      <h2 class="kb-long-doc__title"><%= content.filename %></h2>
+      <p class="kb-long-doc__hint">Extended document — run on-demand OCR to extract its knowledge as markdown beside this file.</p>
+    </header>
+
+    <% if extraction&.in_flight? %>
+      <div class="kb-long-doc__status"
+           data-controller="extraction-status"
+           data-extraction-status-url-value="<%= kb_file_path(src: content.src, file: content.rel) %>"
+           data-extraction-status-active-value="true">
+        <p><strong><%= extraction.status.humanize %></strong>
+          <% if extraction.page_count.to_i.positive? %>
+            — page <%= extraction.pages_done %>/<%= extraction.page_count %> (<%= extraction.progress_percent %>%)
+          <% end %>
+        </p>
+        <progress max="100" value="<%= extraction.progress_percent %>"></progress>
+      </div>
+    <% else %>
+      <% if extraction&.failed? %>
+        <p class="kb-long-doc__error">Last extraction failed: <%= extraction.error %></p>
+      <% end %>
+      <%= button_to "Extract knowledge", kb_extract_path(src: content.src, file: content.rel),
+            method: :post, class: "btn btn-primary" %>
+      <% if content.output_rel.present? %>
+        <%= link_to "View extracted knowledge", kb_file_path(src: content.src, file: content.output_rel),
+              data: { turbo_frame: "kb-content" }, class: "btn btn-sm" %>
+      <% end %>
+    <% end %>
+  </article>
 <% elsif defined?(selected_file) && selected_file.present? %>
   <div class="kb-content-empty">
     <p>File not found or could not be read.</p>

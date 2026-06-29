@@ -77,7 +77,66 @@ class IdeaAttachmentsController < ApplicationController
     redirect_to edit_idea_path(@idea), notice: "OCR extraction queued for #{attachment.filename}."
   end
 
+  # Manual override: force the heavy long-document pipeline regardless of size.
+  def extract_knowledge
+    attachment = @idea.attachments.attachments.find(params[:id])
+    extraction = KnowledgeExtraction.enqueue_for_attachment(attachment)
+
+    respond_to do |format|
+      format.html { redirect_to edit_idea_path(@idea), notice: "Knowledge extraction queued for #{attachment.filename}." }
+      format.json { render json: { success: true, extraction_id: extraction.id, status: extraction.status } }
+    end
+  end
+
+  # Live progress for the knowledge sidebar / item status (polled).
+  def extraction_status
+    attachment = @idea.attachments.attachments.find(params[:id])
+    extraction = KnowledgeExtraction.where(attachment_id: attachment.id).recent.first
+
+    render json: {
+      status: extraction&.status || attachment.ocr_status,
+      pages_done: extraction&.pages_done,
+      page_count: extraction&.page_count,
+      progress: extraction&.progress_percent,
+      error: extraction&.error
+    }
+  end
+
+  # Attachment search across extracted OCR / knowledge text for this idea.
+  def search
+    query = params[:q].to_s.strip.downcase
+    results = query.present? ? search_attachments(query) : []
+    render json: { results: results }
+  end
+
   private
+
+  def search_attachments(query)
+    @idea.ordered_attachments.filter_map do |attachment|
+      text = attachment.ocr_text.to_s
+      next if text.blank?
+
+      index = text.downcase.index(query)
+      next if index.nil?
+
+      {
+        attachment_id: attachment.id,
+        filename: attachment.filename.to_s,
+        kind: attachment.image? ? "image" : "document",
+        url: rails_blob_path(attachment, disposition: "inline"),
+        snippet: snippet_for(text, index, query.length)
+      }
+    end
+  end
+
+  def snippet_for(text, index, length, window: 60)
+    start = [index - window, 0].max
+    finish = [index + length + window, text.length].min
+    snippet = text[start...finish].to_s.gsub(/\s+/, " ").strip
+    snippet = "…#{snippet}" if start.positive?
+    snippet = "#{snippet}…" if finish < text.length
+    snippet
+  end
 
   def set_user
     @user = User.first
