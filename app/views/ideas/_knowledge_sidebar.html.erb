@@ -1,0 +1,52 @@
+<%# Knowledge sidebar: in-flight long-document extractions (live progress) plus
+    search over extracted OCR/knowledge text for this idea's attachments. %>
+<% extractions = KnowledgeExtraction.where(idea_id: idea.id).active.recent %>
+<% knowledge_attachments = idea.ordered_attachments.select(&:ocr_complete?) %>
+<% if extractions.any? || knowledge_attachments.any? %>
+  <section class="knowledge-sidebar"
+           data-controller="attachment-search"
+           data-attachment-search-search-url-value="<%= search_idea_attachments_path(idea) %>">
+    <div class="knowledge-sidebar__header">
+      <h4>Extracted knowledge</h4>
+    </div>
+
+    <% if extractions.any? %>
+      <ul class="knowledge-sidebar__jobs">
+        <% extractions.each do |ext| %>
+          <li class="knowledge-sidebar__job"
+              <% if ext.attachment_id %>
+                data-controller="extraction-status"
+                data-extraction-status-url-value="<%= extraction_status_idea_attachment_path(idea, ext.attachment_id) %>"
+                data-extraction-status-active-value="true"
+                data-extraction-status-mode-value="json"
+              <% end %>>
+            <span class="knowledge-sidebar__job-name"><%= ext.display_name %></span>
+            <span class="knowledge-sidebar__job-status" data-extraction-status-target="label">
+              <%= ext.status.humanize %><% if ext.page_count.to_i.positive? %> — page <%= ext.pages_done %>/<%= ext.page_count %><% end %>
+            </span>
+            <progress max="100" value="<%= ext.progress_percent %>" data-extraction-status-target="progress"></progress>
+          </li>
+        <% end %>
+      </ul>
+    <% end %>
+
+    <div class="knowledge-sidebar__search">
+      <input type="search"
+             class="knowledge-sidebar__input"
+             placeholder="Search extracted text…"
+             data-attachment-search-target="input"
+             data-action="input->attachment-search#search">
+      <div class="attachment-search-results" data-attachment-search-target="results" hidden></div>
+    </div>
+
+    <% if knowledge_attachments.any? %>
+      <ul class="knowledge-sidebar__docs">
+        <% knowledge_attachments.each do |att| %>
+          <li class="knowledge-sidebar__doc">
+            <%= link_to att.filename, rails_blob_path(att, disposition: "inline"), target: "_blank", rel: "noopener" %>
+          </li>
+        <% end %>
+      </ul>
+    <% end %>
+  </section>
+<% end %>
