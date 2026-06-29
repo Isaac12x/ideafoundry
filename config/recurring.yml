@@ -55,3 +55,10 @@ production:
     class: CheckAppUpgradeJob
     queue: default
     schedule: every hour at minute 30
+
+  # Stop the on-demand heavy OCR backend once it has been idle (no active
+  # extractions for OCR_LONG_IDLE_TIMEOUT seconds).
+  long_ocr_idle_stop:
+    class: LongOcrIdleStopJob
+    queue: default
+    schedule: every 2 minutes

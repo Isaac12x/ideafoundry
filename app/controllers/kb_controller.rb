@@ -6,13 +6,17 @@ class KbController < ApplicationController
   # converted to HTML and shown in a sandboxed iframe via the +raw+ action.
   MARKDOWN_EXTENSIONS = %w[.md].freeze
   EMBED_EXTENSIONS = %w[.html .htm .docx .xlsx].freeze
+  # Extended documents (books, patents) surfaced for on-demand knowledge
+  # extraction instead of inline rendering.
+  LONG_DOC_EXTENSIONS = %w[.pdf .png .jpg .jpeg .tif .tiff .webp].freeze
   KB_EXTENSIONS = (MARKDOWN_EXTENSIONS + EMBED_EXTENSIONS).freeze
+  ALL_EXTENSIONS = (KB_EXTENSIONS + LONG_DOC_EXTENSIONS).freeze
 
   # Locked-down CSP for embedded documents: no scripts, no network access,
   # only inline styles and data: images/fonts (pandoc inlines media as data URIs).
   EMBED_CSP = "default-src 'none'; img-src data:; style-src 'unsafe-inline'; font-src data:".freeze
 
-  KbContent = Struct.new(:kind, :html, :raw_url, keyword_init: true)
+  KbContent = Struct.new(:kind, :html, :raw_url, :rel, :src, :filename, :extraction, :output_rel, keyword_init: true)
 
   before_action :set_user
 
@@ -56,6 +60,18 @@ class KbController < ApplicationController
     head :unprocessable_entity
   end
 
+  # Queue on-demand knowledge extraction for an extended KB document. The
+  # produced "<book>.md" is written beside the source and appears in the tree.
+  def extract
+    folder_index = params[:src].to_i
+    abs = resolve_kb_path(folder_index, params[:file], extensions: LONG_DOC_EXTENSIONS)
+    return head(:not_found) if abs.nil?
+
+    KnowledgeExtraction.enqueue_for_kb(folder_index: folder_index, kb_path: abs)
+    redirect_to kb_path(src: folder_index, file: params[:file]),
+                notice: "Knowledge extraction queued for #{File.basename(abs)}."
+  end
+
   private
 
   def build_folder_tree
@@ -65,7 +81,7 @@ class KbController < ApplicationController
       files = []
       if Dir.exist?(expanded)
         files = Dir.glob(File.join(expanded, "**", "*"))
-                   .select { |f| File.file?(f) && KB_EXTENSIONS.include?(File.extname(f).downcase) }
+                   .select { |f| File.file?(f) && ALL_EXTENSIONS.include?(File.extname(f).downcase) }
                    .sort
                    .map { |f| { rel: f.sub("#{expanded}/", ""), abs: f } }
       end
@@ -116,7 +132,7 @@ class KbController < ApplicationController
   def render_file(folder_index, rel_path)
     return nil if rel_path.blank?
 
-    abs = resolve_kb_path(folder_index, rel_path)
+    abs = resolve_kb_path(folder_index, rel_path, extensions: ALL_EXTENSIONS)
     return KbContent.new(kind: :missing) if abs.nil?
 
     ext = File.extname(abs).downcase
@@ -124,9 +140,32 @@ class KbController < ApplicationController
       KbContent.new(kind: :markdown, html: render_markdown(File.read(abs)))
     elsif EMBED_EXTENSIONS.include?(ext)
       KbContent.new(kind: :embed, raw_url: kb_raw_path(src: folder_index, file: rel_path))
+    elsif LONG_DOC_EXTENSIONS.include?(ext)
+      KbContent.new(
+        kind: :long_doc,
+        rel: rel_path,
+        src: folder_index,
+        filename: File.basename(abs),
+        extraction: KnowledgeExtraction.where(kb_path: abs).recent.first,
+        output_rel: output_rel_for(abs, rel_path)
+      )
     else
       KbContent.new(kind: :missing)
     end
+  end
+
+  # Relative path of the produced "<book>.md" if it already exists on disk.
+  def output_rel_for(abs, rel_path)
+    dir = File.dirname(abs)
+    base = File.basename(abs, File.extname(abs))
+    %W[#{base}.md #{base}.extracted.md].each do |name|
+      candidate = File.join(dir, name)
+      next unless File.exist?(candidate)
+
+      rel_dir = File.dirname(rel_path)
+      return rel_dir == "." ? name : File.join(rel_dir, name)
+    end
+    nil
   end
 
   # Resolves a folder-relative path to an absolute path, rejecting anything that
