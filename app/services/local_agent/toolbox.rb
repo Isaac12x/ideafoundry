@@ -4,10 +4,10 @@ module LocalAgent
       update_idea create_note create_todo update_todo update_build_item
       approve_submission reject_submission transition_idea assign_list
       assign_topology create_fact create_maxim run_enrichment
-      create_recommendation record_event
+      create_recommendation record_event write_kb
     ].freeze
 
-    READ_TOOLS = %w[get_settings list_work read_record].freeze
+    READ_TOOLS = %w[get_settings list_work read_record list_kb read_kb].freeze
     TERMINAL_IDEA_STATES = %w[rejected shipped].freeze
     TOOL_DESCRIPTIONS = {
       "get_settings" => "Read current Rails local-agent settings and status.",
@@ -27,7 +27,10 @@ module LocalAgent
       "create_maxim" => "Create a knowledge-base maxim.",
       "run_enrichment" => "Request Rails enrichment for an idea.",
       "create_recommendation" => "Create a reviewable AgentRecommendation.",
-      "record_event" => "Record an AgentEvent summary, heartbeat, skip, recommendation, error, or action."
+      "record_event" => "Record an AgentEvent summary, heartbeat, skip, recommendation, error, or action.",
+      "list_kb" => "List markdown files in the user's knowledge-base sources (the same tree shown at /knowledge-base).",
+      "read_kb" => "Read a knowledge-base markdown file by source index and relative path.",
+      "write_kb" => "Create or update a knowledge-base markdown file so it appears in the user's KB tree."
     }.freeze
 
     def self.supported_tool_names
@@ -300,6 +303,106 @@ module LocalAgent
 
       agent_run&.heartbeat!(args["payload"] || {}) if args["event_type"].to_s == "heartbeat"
       ok(event: serialize_record(event))
+    end
+
+    # ── Knowledge base (filesystem, mirrors KbController) ─────────────────
+    # ponytail: leans on KbController's KB constants so the definition of "what
+    # the KB is" stays single-sourced; move both to a Kb model if a third caller appears.
+
+    def tool_list_kb(args)
+      limit = (args["limit"].presence || 100).to_i
+      limit = 100 unless limit.positive?
+
+      entries = []
+      kb_sources.each_with_index do |source, idx|
+        base = File.expand_path(source[:path])
+        next unless Dir.exist?(base)
+
+        Dir.glob(File.join(base, "**", "*")).sort.each do |path|
+          next unless File.file?(path) && KbController::MARKDOWN_EXTENSIONS.include?(File.extname(path).downcase)
+
+          entries << { src: idx, source: source[:label], file: path.sub("#{base}/", "") }
+          break if entries.size >= limit
+        end
+        break if entries.size >= limit
+      end
+
+      ok(kb_files: entries, sources: kb_source_summary)
+    end
+
+    def tool_read_kb(args)
+      src_index = kb_src_index(args)
+      base = kb_base(src_index)
+      raise ArgumentError, "KB source not available" if base.nil?
+
+      abs = kb_safe_abs(base, args.fetch("file"))
+      raise ActiveRecord::RecordNotFound, "KB file not found" if abs.nil? || !File.file?(abs)
+      raise ArgumentError, "Not a markdown file" unless KbController::MARKDOWN_EXTENSIONS.include?(File.extname(abs).downcase)
+
+      ok(kb_file: { src: src_index, file: args["file"], content: File.read(abs) })
+    end
+
+    def tool_write_kb(args)
+      src_index = kb_src_index(args)
+      base = kb_base(src_index, create: true)
+      raise ArgumentError, "KB source not available or not writable" if base.nil?
+
+      rel = args.fetch("file").to_s
+      rel = "#{rel}.md" unless File.extname(rel).casecmp?(".md")
+      raise ArgumentError, "Invalid KB path" if kb_invalid_rel?(rel)
+
+      abs = kb_safe_abs(base, rel)
+      raise ArgumentError, "Invalid KB path" if abs.nil? || abs == base
+
+      existed = File.file?(abs)
+      FileUtils.mkdir_p(File.dirname(abs))
+      File.write(abs, args.fetch("content").to_s)
+
+      verb = existed ? "updated" : "created"
+      record_action_event("#{verb}_kb_file", nil, "Local agent #{verb} KB file #{rel}", { "src" => src_index, "file" => rel })
+      ok(kb_file: { src: src_index, file: rel, bytes: File.size(abs), created: !existed })
+    end
+
+    # KB sources in the same order KbController renders them: native first
+    # (unless hidden), then the user's configured folders.
+    def kb_sources
+      sources = []
+      sources << { path: KbController::NATIVE_KB_PATH, label: KbController::NATIVE_KB_LABEL, native: true } unless user.kb_hide_native?
+      user.kb_folders.each do |path|
+        sources << { path: path, label: File.basename(path.to_s.chomp("/")).presence || path.to_s, native: false }
+      end
+      sources
+    end
+
+    def kb_source_summary
+      kb_sources.each_with_index.map do |source, idx|
+        { src: idx, label: source[:label], native: source[:native], exists: Dir.exist?(File.expand_path(source[:path])) }
+      end
+    end
+
+    def kb_src_index(args)
+      (args["src"].presence || 0).to_i
+    end
+
+    def kb_base(src_index, create: false)
+      sources = kb_sources
+      return nil if src_index.negative? || src_index >= sources.size
+
+      source = sources[src_index]
+      base = File.expand_path(source[:path])
+      FileUtils.mkdir_p(base) if create && source[:native] && !Dir.exist?(base)
+      Dir.exist?(base) ? base : nil
+    end
+
+    def kb_safe_abs(base, rel)
+      return nil if rel.blank?
+
+      abs = File.expand_path(File.join(base, rel))
+      abs.start_with?("#{base}/") || abs == base ? abs : nil
+    end
+
+    def kb_invalid_rel?(rel)
+      rel.include?("\0") || rel.split("/").any? { |seg| seg.blank? || seg.start_with?(".") }
     end
 
     def idea_attributes(args)

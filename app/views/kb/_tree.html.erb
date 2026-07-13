@@ -1,0 +1,55 @@
+<div id="kb-sidebar-tree">
+  <% if @folders.empty? %>
+    <div class="kb-tree">
+      <div class="kb-folder-group">
+        <div class="kb-folder-header kb-folder-header--empty">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+          <span class="kb-folder-label">No folders yet</span>
+        </div>
+      </div>
+    </div>
+  <% else %>
+    <div class="kb-tree">
+      <% @folders.each do |folder| %>
+        <% writable = folder[:exists] || folder[:native] %>
+        <div class="kb-folder-group">
+          <div class="kb-folder-header"
+               <% if writable %>
+                 data-action="contextmenu->kb-tree#show dragover->kb-tree#dragOver dragleave->kb-tree#dragLeave drop->kb-tree#drop"
+                 data-kb-tree-type-param="root"
+                 data-kb-tree-src-param="<%= folder[:index] %>"
+               <% end %>>
+            <% if folder[:drive] %>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="8" rx="1"/><line x1="6" y1="8" x2="6.01" y2="8"/><rect x="2" y="14" width="20" height="6" rx="1"/><line x1="6" y1="17" x2="6.01" y2="17"/></svg>
+            <% else %>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+            <% end %>
+            <span class="kb-folder-label" title="<%= folder[:path] %>"><%= folder[:label] %></span>
+            <% if writable %>
+              <button type="button" class="kb-tree-new-btn" title="New file or folder…"
+                      data-action="click->kb-tree#show"
+                      data-kb-tree-type-param="root"
+                      data-kb-tree-src-param="<%= folder[:index] %>">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              </button>
+            <% end %>
+            <% unless folder[:exists] %>
+              <span class="kb-folder-status">(<%= folder[:drive] ? "unmounted" : "unavailable" %>)</span>
+            <% end %>
+          </div>
+          <div class="kb-folder-files">
+            <% if folder[:files].empty? %>
+              <span class="kb-no-files">No supported files found</span>
+            <% else %>
+              <%= render "kb/tree_node",
+                    tree: folder[:tree],
+                    folder_index: folder[:index],
+                    selected_file: @selected_file,
+                    selected_folder_index: @selected_folder_index %>
+            <% end %>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  <% end %>
+</div>

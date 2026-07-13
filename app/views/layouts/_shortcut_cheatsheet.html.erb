@@ -1,0 +1,33 @@
+<div class="shortcuts-shell" data-shortcuts-target="shell">
+  <button type="button"
+          class="shortcuts-toggle"
+          data-shortcuts-target="toggle"
+          data-action="click->shortcuts#togglePanel"
+          aria-label="Keyboard shortcuts"
+          aria-expanded="false"
+          title="Keyboard shortcuts (?)">
+    <span class="shortcuts-toggle__mark">?</span>
+  </button>
+
+  <section class="shortcuts-panel"
+           data-shortcuts-target="panel"
+           role="dialog"
+           aria-labelledby="shortcuts_title"
+           hidden>
+    <div class="shortcuts-panel__header">
+      <div>
+        <h2 id="shortcuts_title">Keyboard Shortcuts</h2>
+        <p data-shortcuts-target="flow">Current flow</p>
+      </div>
+      <button type="button"
+              class="shortcuts-panel__close"
+              data-action="click->shortcuts#closePanel"
+              aria-label="Close keyboard shortcuts">
+        &times;
+      </button>
+    </div>
+    <div class="shortcuts-panel__body" data-shortcuts-target="sections"></div>
+  </section>
+
+  <div class="shortcut-hint-layer" data-shortcuts-target="hintLayer" hidden></div>
+</div>

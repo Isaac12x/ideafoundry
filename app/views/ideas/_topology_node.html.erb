@@ -1,0 +1,33 @@
+<% kids = children_by_parent[topology.id] || [] %>
+<div class="topology-node" role="treeitem" data-topology-name="<%= topology.full_path.to_s.downcase %>">
+  <div class="topology-node__row">
+    <% if kids.any? %>
+      <button type="button" class="topology-node__toggle" aria-expanded="true"
+              data-action="topology-picker#toggleNode" title="Expand / collapse">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m9 18 6-6-6-6"/></svg>
+      </button>
+    <% else %>
+      <span class="topology-node__toggle topology-node__toggle--leaf"></span>
+    <% end %>
+    <label class="topology-node__label" for="topology_<%= topology.id %>">
+      <%= check_box_tag 'idea[topology_ids][]', topology.id,
+          idea.topologies.include?(topology),
+          id: "topology_#{topology.id}",
+          data: {
+            template_switch_target: "topologyCheckbox",
+            topology_fields: topology.effective_default_field_definitions.to_json,
+            action: "change->template-switch#topologiesChanged"
+          } %>
+      <% if topology.color.present? %>
+        <span class="topology-color-dot" style="background-color: <%= topology.color %>;"></span>
+      <% end %>
+      <span class="topology-node__name"><%= topology.name %></span>
+    </label>
+  </div>
+  <% if kids.any? %>
+    <div class="topology-node__children">
+      <%= render partial: "ideas/topology_node", collection: kids, as: :topology,
+            locals: { idea: idea, children_by_parent: children_by_parent } %>
+    </div>
+  <% end %>
+</div>

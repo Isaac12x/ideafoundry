@@ -1,0 +1,19 @@
+<dialog class="command-palette"
+        data-controller="command-palette"
+        data-command-palette-search-url-value="<%= search_ideas_path %>"
+        data-action="click->command-palette#backdropClick cancel->command-palette#onCancel"
+        aria-labelledby="command_palette_title">
+  <div class="command-palette__frame">
+    <div class="command-palette__header">
+      <h2 id="command_palette_title">Search Ideas</h2>
+      <kbd>Ctrl/Cmd+K</kbd>
+    </div>
+    <input type="search"
+           class="command-palette__input"
+           placeholder="Search title or description..."
+           autocomplete="off"
+           data-command-palette-target="input"
+           data-action="input->command-palette#search keydown->command-palette#navigate">
+    <div class="command-palette__results" data-command-palette-target="results"></div>
+  </div>
+</dialog>

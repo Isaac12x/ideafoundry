@@ -306,6 +306,62 @@ class UserTest < ActiveSupport::TestCase
     assert_includes User::DEFAULT_DISPLAY_QUOTES, "Simplicity is pre-requisite for reliability\n- Edgar Dijkstra"
   end
 
+  test "quote_library returns custom library when set, defaults otherwise" do
+    @user.settings = {}
+    assert_equal User::DEFAULT_DISPLAY_QUOTES, @user.quote_library
+
+    @user.settings = { "quotes" => { "library" => ["A", "  ", "B"] } }
+    assert_equal %w[A B], @user.quote_library
+  end
+
+  test "quote_for_page resolves default, none, and indexed assignments" do
+    @user.settings = {
+      "display_quote" => { "text" => "Default quote" },
+      "quotes" => {
+        "library" => %w[Zero One Two],
+        "pages" => { "ideas" => "2", "topologies" => "none", "kb" => "default" }
+      }
+    }
+
+    assert_equal "Two", @user.quote_for_page("ideas")
+    assert_nil @user.quote_for_page("topologies")
+    assert_equal "Default quote", @user.quote_for_page("kb")
+    assert_equal "Default quote", @user.quote_for_page("plan")  # unassigned -> per-page default
+    assert_equal "Default quote", @user.quote_for_page(nil)     # unmapped page -> default quote
+  end
+
+  test "kb hides the quote banner by default" do
+    @user.settings = { "display_quote" => { "text" => "Q" } }
+    assert_nil @user.quote_for_page("kb")
+  end
+
+  test "nav visibility hides only chosen items and keeps others visible" do
+    @user.settings = { "nav" => { "hidden" => %w[kb backlog bogus] } }
+
+    assert_equal %w[kb backlog], @user.nav_hidden_items
+    assert_not @user.nav_item_visible?("kb")
+    assert @user.nav_item_visible?("ideas")
+    assert @user.nav_item_visible?("settings")  # not a nav page key -> always visible
+  end
+
+  test "update_display_quote persists library, page assignments, and nav visibility" do
+    @user.save!
+    @user.update_display_quote(
+      "quote" => "Base",
+      "quote_library" => ["First", "", "Second"],
+      "quote_pages" => { "ideas" => "1", "kb" => "default" },
+      "nav_visible" => { "ideas" => "1", "plan" => "1", "licensing" => "1",
+                         "intake" => "1", "topologies" => "1", "kb" => "1" }
+      # backlog omitted -> hidden
+    )
+    @user.reload
+
+    assert_equal %w[First Second], @user.quote_library
+    assert_equal "Second", @user.quote_for_page("ideas")
+    assert_equal "Base", @user.quote_for_page("kb")
+    assert_equal %w[backlog], @user.nav_hidden_items
+  end
+
   test "should be valid with valid attributes" do
     assert @user.valid?
   end

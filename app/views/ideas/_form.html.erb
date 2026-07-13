@@ -102,6 +102,13 @@
               {},
               class: "form-control" %>
         </div>
+        <div class="form-group form-check">
+          <%= form.check_box :for_licensing, class: "form-check__input", id: "idea_for_licensing" %>
+          <label class="form-check__label" for="idea_for_licensing">
+            Track this idea for licensing
+            <span class="form-check__hint">Swaps Tools &amp; Notes for a Potential Licensors pipeline and adds it to the Licensing CRM.</span>
+          </label>
+        </div>
       </div>
 
       <!-- Hero Image -->
@@ -317,29 +324,26 @@
 
         <div class="form-group">
           <label>Topologies</label>
-          <div class="checkbox-group topology-picker">
-            <% topologies.each do |topology| %>
-              <div class="checkbox-item">
-                <%= check_box_tag 'idea[topology_ids][]', topology.id,
-                    idea.topologies.include?(topology),
-                    id: "topology_#{topology.id}",
-                    data: {
-                      template_switch_target: "topologyCheckbox",
-                      topology_fields: topology.effective_default_field_definitions.to_json,
-                      action: "change->template-switch#topologiesChanged"
-                    } %>
-                <label for="topology_<%= topology.id %>">
-                  <% if topology.color.present? %>
-                    <span class="topology-color-dot" style="background-color: <%= topology.color %>;"></span>
-                  <% end %>
-                  <%= topology.full_path %>
-                </label>
+          <% if topologies.any? %>
+            <% children_by_parent = topologies.group_by(&:parent_id) %>
+            <div class="topology-picker" data-controller="topology-picker">
+              <div class="topology-picker__search-wrap">
+                <svg class="topology-picker__search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+                <input type="search" class="topology-picker__search"
+                       placeholder="Search topologies…" aria-label="Search topologies"
+                       data-topology-picker-target="search"
+                       data-action="input->topology-picker#filter">
               </div>
-            <% end %>
-            <% if topologies.empty? %>
-              <p class="text-muted" style="font-size: 0.85rem;">No topologies yet. <%= link_to "Create one", new_topology_path %>.</p>
-            <% end %>
-          </div>
+              <div class="topology-tree" role="tree" data-topology-picker-target="tree">
+                <%= render partial: "ideas/topology_node",
+                      collection: (children_by_parent[nil] || []), as: :topology,
+                      locals: { idea: idea, children_by_parent: children_by_parent } %>
+              </div>
+              <p class="topology-picker__empty" data-topology-picker-target="empty" hidden>No topologies match.</p>
+            </div>
+          <% else %>
+            <p class="text-muted" style="font-size: 0.85rem;">No topologies yet. <%= link_to "Create one", new_topology_path %>.</p>
+          <% end %>
         </div>
 
         <% unless idea.new_record? || idea.draft? %>

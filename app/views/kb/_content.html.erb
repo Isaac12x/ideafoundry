@@ -1,8 +1,24 @@
 <% kind = content&.kind %>
-<% if kind == :markdown && content.html.present? %>
-  <article class="kb-markdown rich-text-content">
-    <%= content.html %>
-  </article>
+<% if kind == :markdown %>
+  <div class="kb-markdown-wrap"
+       data-controller="kb-resume"
+       data-kb-resume-key-value="<%= content.src %>:<%= content.rel %>">
+    <div class="kb-content-toolbar">
+      <%= link_to kb_edit_path(src: content.src, file: content.rel),
+            data: { turbo_frame: "kb-content" }, class: "kb-content-edit-link" do %>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        Edit
+      <% end %>
+    </div>
+    <article class="kb-markdown rich-text-content">
+      <% if content.html.present? %>
+        <%= content.html %>
+      <% else %>
+        <p class="kb-markdown-blank">This file is empty. Hit Edit to start writing.</p>
+      <% end %>
+    </article>
+  </div>
+
 <% elsif kind == :embed %>
   <iframe class="kb-embed"
           src="<%= content.raw_url %>"
@@ -10,12 +26,59 @@
           referrerpolicy="no-referrer"
           loading="lazy"
           title="<%= selected_file %>"></iframe>
+
+<% elsif kind == :pdf %>
+  <div class="kb-pdf-wrap">
+    <div class="kb-pdf-viewer"
+         data-controller="kb-pdf"
+         data-kb-pdf-url-value="<%= content.serve_url %>"
+         data-kb-pdf-key-value="<%= content.src %>:<%= content.rel %>"
+         title="<%= content.filename %>"></div>
+    <% if content.output_rel.present? %>
+      <div class="kb-media-action-bar">
+        <%= link_to "View extracted knowledge", kb_file_path(src: content.src, file: content.output_rel),
+              data: { turbo_frame: "kb-content" }, class: "btn btn-sm" %>
+      </div>
+    <% end %>
+  </div>
+
+<% elsif kind == :image %>
+  <div class="kb-image-view">
+    <img src="<%= content.serve_url %>" alt="<%= content.filename %>" class="kb-image-preview" />
+    <% if content.output_rel.present? %>
+      <%= link_to "View extracted knowledge", kb_file_path(src: content.src, file: content.output_rel),
+            data: { turbo_frame: "kb-content" }, class: "btn btn-sm" %>
+    <% end %>
+  </div>
+
+<% elsif kind == :video %>
+  <div class="kb-video-view">
+    <div class="kb-video-titlebar"><span class="kb-media-filename"><%= content.filename %></span></div>
+    <video class="kb-video-player" controls preload="metadata"
+           data-controller="kb-resume"
+           data-kb-resume-key-value="<%= content.src %>:<%= content.rel %>">
+      <source src="<%= content.serve_url %>" type="<%= content.mime_type %>">
+      Your browser does not support video playback.
+    </video>
+  </div>
+
+<% elsif kind == :audio %>
+  <div class="kb-audio-view">
+    <p class="kb-media-filename"><%= content.filename %></p>
+    <audio class="kb-audio-player" controls preload="metadata"
+           data-controller="kb-resume"
+           data-kb-resume-key-value="<%= content.src %>:<%= content.rel %>">
+      <source src="<%= content.serve_url %>" type="<%= content.mime_type %>">
+      Your browser does not support audio playback.
+    </audio>
+  </div>
+
 <% elsif kind == :long_doc %>
   <% extraction = content.extraction %>
   <article class="kb-long-doc">
     <header class="kb-long-doc__header">
       <h2 class="kb-long-doc__title"><%= content.filename %></h2>
-      <p class="kb-long-doc__hint">Extended document — run on-demand OCR to extract its knowledge as markdown beside this file.</p>
+      <p class="kb-long-doc__hint">Right-click this file in the sidebar to extract its knowledge as markdown.</p>
     </header>
 
     <% if extraction&.in_flight? %>
@@ -34,14 +97,13 @@
       <% if extraction&.failed? %>
         <p class="kb-long-doc__error">Last extraction failed: <%= extraction.error %></p>
       <% end %>
-      <%= button_to "Extract knowledge", kb_extract_path(src: content.src, file: content.rel),
-            method: :post, class: "btn btn-primary" %>
       <% if content.output_rel.present? %>
         <%= link_to "View extracted knowledge", kb_file_path(src: content.src, file: content.output_rel),
               data: { turbo_frame: "kb-content" }, class: "btn btn-sm" %>
       <% end %>
     <% end %>
   </article>
+
 <% elsif defined?(selected_file) && selected_file.present? %>
   <div class="kb-content-empty">
     <p>File not found or could not be read.</p>

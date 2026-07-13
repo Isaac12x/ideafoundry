@@ -22,6 +22,16 @@
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
           Edit
         <% end %>
+        <% if @idea.for_licensing? %>
+          <%= link_to licensing_crm_path, class: "btn btn-sm" do %>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="5"/><path d="M8.5 12.5L7 22l5-3 5 3-1.5-9.5"/></svg>
+            Licensing CRM
+          <% end %>
+        <% end %>
+        <%= button_to create_version_idea_path(@idea), method: :post, class: "btn btn-sm", form: { style: "display: inline" }, data: { turbo_confirm: "Create a new version (full copy) of this idea?" } do %>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3v12M18 9a3 3 0 100-6 3 3 0 000 6zM6 21a3 3 0 100-6 3 3 0 000 6zM15 6a9 9 0 01-9 9"/></svg>
+          New version
+        <% end %>
         <% if @user.email_configured? %>
           <%= button_to send_email_idea_path(@idea), method: :post, class: "btn btn-sm btn-email", form: { style: "display: inline" }, data: { turbo_confirm: "Send this idea to #{@user.email_recipients.join(', ')}?" } do %>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
@@ -84,6 +94,25 @@
     </div>
   </div>
 
+  <!-- Idea Versions (v1, v2 ...) -->
+  <% idea_versions = @idea.idea_versions.to_a %>
+  <% if idea_versions.size > 1 %>
+    <div class="idea-versions-bar">
+      <span class="idea-versions-label">Versions</span>
+      <div class="idea-versions-list">
+        <% idea_versions.each do |ver| %>
+          <% current = ver.id == @idea.id %>
+          <%= link_to idea_path(ver), class: "idea-version-chip#{' is-current' if current}#{' is-primary' if ver.version_primary?}", title: (ver.version_primary? ? "Primary (shown in list)" : nil) do %>
+            v<%= ver.version_number %><% if ver.version_primary? %> &starf;<% end %>
+          <% end %>
+        <% end %>
+      </div>
+      <% unless @idea.version_primary? %>
+        <%= button_to "Make primary", make_primary_idea_path(@idea), method: :post, class: "btn btn-sm", form: { style: "display: inline" } %>
+      <% end %>
+    </div>
+  <% end %>
+
   <!-- Cool-off Alert -->
   <% if @idea.in_cool_off? %>
     <div class="alert alert-warning">
@@ -124,19 +153,6 @@
 
   <%= render "agent_recommendations", idea: @idea, recommendations: @inline_agent_recommendations %>
 
-  <!-- Hero Image -->
-  <% hero_drawing = @idea.hero_drawing %>
-  <% has_hero = @idea.hero_image.attached? || (hero_drawing && hero_drawing.rendered_png.attached?) %>
-  <% if has_hero %>
-    <div class="hero-image-container">
-      <% if hero_drawing && hero_drawing.rendered_png.attached? %>
-        <%= image_tag hero_drawing.rendered_png, class: "detail-hero-image", alt: hero_drawing.title %>
-      <% else %>
-        <%= image_tag @idea.hero_image, class: "detail-hero-image", alt: @idea.title %>
-      <% end %>
-    </div>
-  <% end %>
-
   <!-- Section Order: Custom Field Panels -->
   <% if @idea.template %>
     <% field_sections = (@idea.template.section_order || []).select { |s| s.start_with?('field:') } %>
@@ -171,13 +187,31 @@
 
   <%= render "agent_access", idea: @idea if @user.idea_work_tokens_enabled? %>
 
-  <!-- Main Content — Tabbed -->
+  <!-- Main Content — Tabbed (hero image caps the card, blending into the tab bar) -->
   <div class="idea-main-content">
+    <% hero_drawing = @idea.hero_drawing %>
+    <% has_hero = @idea.hero_image.attached? || (hero_drawing && hero_drawing.rendered_png.attached?) %>
+    <% if has_hero %>
+      <div class="idea-hero-cap">
+        <% if hero_drawing && hero_drawing.rendered_png.attached? %>
+          <%= image_tag hero_drawing.rendered_png, class: "idea-hero-cap__img", alt: hero_drawing.title %>
+        <% else %>
+          <%= image_tag @idea.hero_image, class: "idea-hero-cap__img", alt: @idea.title %>
+        <% end %>
+      </div>
+    <% end %>
+    <% idea_mood_images = @idea.mood_images.includes(file_attachment: :blob).ordered.to_a %>
     <div data-controller="tabs" data-tabs-default-tab-value="description">
       <div class="tabs-nav" data-controller="drag-scroll">
         <button data-tabs-target="tab" data-tab-name="description" data-action="click->tabs#switch" class="tab-button active">
           Description
         </button>
+        <% if @idea.for_licensing? %>
+          <% licensor_count = @idea.licensors.count %>
+          <button data-tabs-target="tab" data-tab-name="licensors" data-action="click->tabs#switch" class="tab-button">
+            <span id="licensors_tab_label_<%= @idea.id %>">Potential Licensors<% if licensor_count > 0 %> (<%= licensor_count %>)<% end %></span>
+          </button>
+        <% end %>
         <% if @user.idea_tab_enabled?('scores') %>
           <button data-tabs-target="tab" data-tab-name="scores" data-action="click->tabs#switch" class="tab-button">
             Scores
@@ -202,7 +236,7 @@
             </button>
           <% end %>
         <% end %>
-        <% if @user.idea_tab_enabled?('tool') %>
+        <% if @user.idea_tab_enabled?('tool') && !@idea.for_licensing? %>
           <% tool_count = @idea.idea_entries.where(kind: 'tool').count %>
           <button data-tabs-target="tab" data-tab-name="tool" data-action="click->tabs#switch" class="tab-button">
             <span id="idea_entries_tab_label_<%= @idea.id %>_tool">Tools<% if tool_count > 0 %> (<%= tool_count %>)<% end %></span>
@@ -218,7 +252,7 @@
             <span id="idea_entries_tab_label_<%= @idea.id %>_competitors">Competitors<% if merged_count > 0 %> (<%= merged_count %>)<% end %></span>
           </button>
         <% end %>
-        <% if @user.idea_tab_enabled?('notes') %>
+        <% if @user.idea_tab_enabled?('notes') && !@idea.for_licensing? %>
           <% note_count = @idea.notes.count %>
           <button data-tabs-target="tab" data-tab-name="notes" data-action="click->tabs#switch" class="tab-button">
             <span id="notes_tab_label_<%= @idea.id %>">Notes<% if note_count > 0 %> (<%= note_count %>)<% end %></span>
@@ -241,6 +275,9 @@
             Drawings<% if drawing_count > 0 %> (<%= drawing_count %>)<% end %>
           </button>
         <% end %>
+        <button data-tabs-target="tab" data-tab-name="images" data-action="click->tabs#switch" class="tab-button">
+          Think in Images<% if idea_mood_images.any? %> (<%= idea_mood_images.size %>)<% end %>
+        </button>
         <button data-tabs-target="tab" data-tab-name="enrichment" data-action="click->tabs#switch" class="tab-button">
           Enrich<% if @idea.enriched? %> &check;<% end %>
         </button>
@@ -260,6 +297,13 @@
             </div>
           <% end %>
         </div>
+
+        <!-- Potential Licensors Tab -->
+        <% if @idea.for_licensing? %>
+          <div data-tabs-target="panel" data-tab-panel="licensors" class="tab-panel hidden">
+            <%= render "licensors/tab", idea: @idea, licensor: Licensor.new %>
+          </div>
+        <% end %>
 
         <!-- Scores Tab -->
         <% if @user.idea_tab_enabled?('scores') %>
@@ -503,7 +547,7 @@
         <% end %>
 
         <!-- Tools Tab -->
-        <% if @user.idea_tab_enabled?('tool') %>
+        <% if @user.idea_tab_enabled?('tool') && !@idea.for_licensing? %>
           <div data-tabs-target="panel" data-tab-panel="tool" class="tab-panel hidden">
             <%= render "idea_entries/tab", idea: @idea, kind: 'tool' %>
           </div>
@@ -578,7 +622,7 @@
         <% end %>
 
         <!-- Notes Tab -->
-        <% if @user.idea_tab_enabled?('notes') %>
+        <% if @user.idea_tab_enabled?('notes') && !@idea.for_licensing? %>
         <div data-tabs-target="panel" data-tab-panel="notes" class="tab-panel hidden">
           <%= render "notes/tab", idea: @idea %>
         </div>
@@ -771,6 +815,11 @@
           <%= render "drawings/tab", idea: @idea %>
         </div>
         <% end %>
+
+        <!-- Think in Images Tab -->
+        <div data-tabs-target="panel" data-tab-panel="images" class="tab-panel hidden">
+          <%= render "mood_board/board", board_idea: @idea, board_images: idea_mood_images %>
+        </div>
 
         <!-- Enrichment Tab -->
         <div data-tabs-target="panel" data-tab-panel="enrichment" class="tab-panel hidden">

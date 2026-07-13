@@ -145,6 +145,26 @@ class Version < ApplicationRecord
     end
   end
 
+  # Apply this snapshot onto a target idea (used to seed a new idea-version copy).
+  # Reuses the same restore logic as restore_to_idea! but against an arbitrary idea.
+  def apply_snapshot_to(target_idea, include_lists: true)
+    original = idea
+    self.idea = target_idea
+    Idea.without_history_tracking do
+      restore_idea_attributes!
+      restore_topologies!
+      restore_lists! if include_lists
+      restore_todo_items!
+      restore_notes!
+      restore_idea_entries!
+      restore_drawings!
+      restore_media!
+    end
+    target_idea
+  ensure
+    self.idea = original
+  end
+
   # Get the version tree path from root to this version
   def ancestry_path
     path = [self]

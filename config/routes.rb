@@ -69,6 +69,8 @@ Rails.application.routes.draw do
       post :archive
       post :restore
       post :add_to_list
+      post :create_version
+      post :make_primary
     end
     collection do
       get :archived
@@ -105,8 +107,17 @@ Rails.application.routes.draw do
     end
     resources :notes, only: [:create, :destroy]
     resources :idea_entries, only: [:create, :update, :destroy]
+    resources :licensors, only: [:create]
     resources :drawings, only: [:new, :show, :create, :update, :destroy]
     resources :agent_tokens, only: [:create, :destroy], controller: :idea_agent_tokens
+  end
+
+  # Licensing CRM
+  resources :licensors, only: [:show, :update, :destroy] do
+    resources :contacts, only: [:create, :destroy], controller: :licensor_contacts
+  end
+  namespace :licensing do
+    get "crm", to: "crm#index"
   end
 
   # Lists and drag-and-drop functionality
@@ -125,6 +136,9 @@ Rails.application.routes.draw do
 
   # Uploads for TipTap editor images
   resources :uploads, only: [:create]
+
+  # Think in Images — visual thinking board (idea-scoped or global/KB board)
+  resources :mood_images, only: [:create, :update, :destroy]
 
   # Topology management
   resources :topologies do
@@ -209,11 +223,21 @@ Rails.application.routes.draw do
   get 'knowledge-base/file', to: 'kb#file', as: :kb_file
   get 'kb/file', to: redirect('/knowledge-base/file')
   get 'knowledge-base/raw', to: 'kb#raw', as: :kb_raw
+  get 'knowledge-base/serve', to: 'kb#serve', as: :kb_serve
   post 'knowledge-base/extract', to: 'kb#extract', as: :kb_extract
+  get 'knowledge-base/edit', to: 'kb#edit', as: :kb_edit
+  patch 'knowledge-base/save', to: 'kb#fs_save', as: :kb_fs_save
+  post 'knowledge-base/fs/create', to: 'kb#fs_create', as: :kb_fs_create
+  patch 'knowledge-base/fs/rename', to: 'kb#fs_rename', as: :kb_fs_rename
+  patch 'knowledge-base/fs/move', to: 'kb#fs_move', as: :kb_fs_move
+  delete 'knowledge-base/fs', to: 'kb#fs_delete', as: :kb_fs_delete
   resources :facts, only: [:create, :destroy]
   resources :maxims, only: [:create, :destroy]
 
   # Settings - KB folders
+  get  'settings/kb/pick-folder', to: 'settings#pick_folder_dialog', as: :settings_kb_pick_folder
+  post 'settings/kb/open-folder', to: 'settings#open_kb_folder',    as: :settings_kb_open_folder
+  post 'settings/kb/mount-drive', to: 'settings#mount_kb_drive',    as: :settings_kb_mount_drive
   get 'settings/kb', to: 'settings#kb', as: :settings_kb
   patch 'settings/kb', to: 'settings#update_kb'
   get 'settings/activity', to: 'settings#activity', as: :settings_activity

@@ -392,7 +392,7 @@
 .submissions-container {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 2rem;
+  /* .app-main already pads 2rem; padding here double-indented the page */
 }
 
 /* ---- Batch Import ---- */

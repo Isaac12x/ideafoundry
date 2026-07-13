@@ -579,51 +579,112 @@
 
 /* ---- Topology Picker (idea form) ---- */
 .topology-picker {
-  max-height: 260px;
-  overflow-y: auto;
   border: 1px solid var(--border-default);
   border-radius: var(--radius-md);
-  padding: 6px;
   background: var(--bg-input);
+  overflow: hidden;
+}
+
+.topology-picker__search-wrap {
+  position: relative;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.topology-picker__search-icon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.topology-picker__search {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  padding: 9px 12px 9px 32px;
+  font-size: 0.85rem;
+  color: var(--text-primary);
+}
+.topology-picker__search:focus { outline: none; }
+.topology-picker__search::placeholder { color: var(--text-muted); }
+
+.topology-tree {
+  max-height: 280px;
+  overflow-y: auto;
+  padding: 6px;
   scrollbar-width: thin;
   scrollbar-color: var(--border-emphasis) transparent;
 }
-
-.topology-picker::-webkit-scrollbar { width: 5px; }
-.topology-picker::-webkit-scrollbar-track { background: transparent; }
-.topology-picker::-webkit-scrollbar-thumb {
+.topology-tree::-webkit-scrollbar { width: 5px; }
+.topology-tree::-webkit-scrollbar-track { background: transparent; }
+.topology-tree::-webkit-scrollbar-thumb {
   background: var(--border-emphasis);
   border-radius: 3px;
 }
 
-.topology-picker .checkbox-item {
-  border-radius: var(--radius-sm);
-  padding: 7px 10px;
-  transition: all 0.2s;
-  border: 1px solid transparent;
+.topology-picker__empty {
+  margin: 0;
+  padding: 10px 12px;
+  font-size: 0.82rem;
+  color: var(--text-muted);
 }
 
-.topology-picker .checkbox-item:hover {
+.topology-node[hidden] { display: none; }
+
+.topology-node__row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  transition: background 0.15s, border-color 0.15s;
+}
+.topology-node__row:hover {
   background: var(--bg-elevated);
   border-color: var(--border-subtle);
 }
-
-.topology-picker .checkbox-item:has(input:checked) {
+.topology-node__row:has(input:checked) {
   background: var(--accent-muted);
   border-color: rgba(212, 149, 58, 0.25);
 }
 
-.topology-picker .checkbox-item:has(input:checked) label {
-  color: var(--accent);
+.topology-node__toggle {
+  flex: 0 0 auto;
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
 }
+.topology-node__toggle svg { transform: rotate(90deg); transition: transform 0.15s ease; }
+.topology-node.is-collapsed > .topology-node__row > .topology-node__toggle svg { transform: rotate(0deg); }
+.topology-node__toggle--leaf { cursor: default; }
+.topology-node__toggle:hover:not(.topology-node__toggle--leaf) { color: var(--text-primary); }
 
-.topology-picker .checkbox-item label {
+.topology-node__label {
+  flex: 1 1 auto;
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  padding: 6px 8px 6px 2px;
   font-size: 0.85rem;
-  transition: color 0.2s;
+  cursor: pointer;
+  transition: color 0.15s;
 }
+.topology-node__row:has(input:checked) .topology-node__label { color: var(--accent); }
+
+.topology-node__children {
+  margin-left: 18px;
+  border-left: 1px solid var(--border-subtle);
+  padding-left: 4px;
+}
+.topology-node.is-collapsed > .topology-node__children { display: none; }
 
 /* ---- Color Picker Enhancement ---- */
 input[type="color"].form-control {
@@ -754,12 +815,16 @@ input[type="color"].form-control::-webkit-color-swatch {
 }
 
 .topology-graph-canvas {
-  height: 600px;
+  /* Fill viewport below header/page-header/notes-bar instead of a fixed box.
+     ponytail: constant chrome offset; retune if header/notes-bar height changes. */
+  height: calc(100dvh - 210px);
+  min-height: 460px;
   width: 100%;
 }
 
 .topology-graph-canvas--compact {
-  height: 400px;
+  height: calc(100dvh - 210px);
+  min-height: 420px;
 }
 
 .topology-graph-controls {
