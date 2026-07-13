@@ -25,18 +25,46 @@ export default class extends Controller {
   static targets = ["files"];
 
   connect() {
-    if (collapsedSet().has(this.#key())) this.element.classList.add("is-collapsed");
+    const key = this.#keyFor(this.element);
+    if (key && collapsedSet().has(key)) this.element.classList.add("is-collapsed");
   }
 
   toggle() {
     const collapsed = this.element.classList.toggle("is-collapsed");
     const set = collapsedSet();
-    collapsed ? set.add(this.#key()) : set.delete(this.#key());
+    const key = this.#keyFor(this.element);
+    if (!key) return;
+
+    collapsed ? set.add(key) : set.delete(key);
     persist(set);
   }
 
-  #key() {
-    const h = this.element.querySelector(":scope > .kb-dir-header");
-    return `${h?.dataset.kbTreeSrcParam}:${h?.dataset.kbTreeRelParam}`;
+  collapseAll(event) {
+    event?.stopPropagation();
+    this.#setAll(true);
+  }
+
+  expandAll(event) {
+    event?.stopPropagation();
+    this.#setAll(false);
+  }
+
+  #setAll(collapsed) {
+    const set = collapsedSet();
+    this.element.querySelectorAll(".kb-dir-group").forEach((group) => {
+      const key = this.#keyFor(group);
+      if (!key) return;
+
+      group.classList.toggle("is-collapsed", collapsed);
+      collapsed ? set.add(key) : set.delete(key);
+    });
+    persist(set);
+  }
+
+  #keyFor(group) {
+    const header = group.querySelector(":scope > .kb-dir-header");
+    const src = header?.dataset.kbTreeSrcParam;
+    const rel = header?.dataset.kbTreeRelParam;
+    return src != null && rel ? `${src}:${rel}` : null;
   }
 }
