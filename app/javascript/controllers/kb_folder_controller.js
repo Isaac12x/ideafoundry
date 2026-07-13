@@ -29,7 +29,8 @@ export default class extends Controller {
     if (key && collapsedSet().has(key)) this.element.classList.add("is-collapsed");
   }
 
-  toggle() {
+  toggle(event) {
+    event?.stopPropagation();
     const collapsed = this.element.classList.toggle("is-collapsed");
     const set = collapsedSet();
     const key = this.#keyFor(this.element);
