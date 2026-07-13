@@ -3,14 +3,14 @@ class KbController < ApplicationController
   NATIVE_KB_LABEL = KbSource::NATIVE_LABEL
   LAST_DOCUMENT_COOKIE = :kb_last_document
 
-  MARKDOWN_EXTENSIONS   = %w[.md].freeze
-  EMBED_EXTENSIONS      = %w[.html .htm .docx .xlsx].freeze
-  PDF_EXTENSIONS        = %w[.pdf].freeze
-  IMAGE_EXTENSIONS      = %w[.png .jpg .jpeg .webp].freeze
-  VIDEO_EXTENSIONS      = %w[.mp4 .webm .mov .ogv].freeze
-  AUDIO_EXTENSIONS      = %w[.mp3 .wav .ogg .m4a .aac .flac].freeze
+  MARKDOWN_EXTENSIONS   = Kb::MediaTypes::MARKDOWN_EXTENSIONS
+  EMBED_EXTENSIONS      = Kb::MediaTypes::EMBED_EXTENSIONS
+  PDF_EXTENSIONS        = Kb::MediaTypes::PDF_EXTENSIONS
+  IMAGE_EXTENSIONS      = Kb::MediaTypes::IMAGE_EXTENSIONS
+  VIDEO_EXTENSIONS      = Kb::MediaTypes::VIDEO_EXTENSIONS
+  AUDIO_EXTENSIONS      = Kb::MediaTypes::AUDIO_EXTENSIONS
   # TIF/TIFF: not renderable in browsers, extraction only
-  LONG_DOC_EXTENSIONS   = %w[.tif .tiff].freeze
+  LONG_DOC_EXTENSIONS   = Kb::MediaTypes::LONG_DOC_EXTENSIONS
 
   SERVE_EXTENSIONS      = (PDF_EXTENSIONS + IMAGE_EXTENSIONS + VIDEO_EXTENSIONS + AUDIO_EXTENSIONS).freeze
   EXTRACTABLE_EXTENSIONS = (PDF_EXTENSIONS + IMAGE_EXTENSIONS + LONG_DOC_EXTENSIONS).freeze
@@ -19,23 +19,7 @@ class KbController < ApplicationController
 
   EMBED_CSP = "default-src 'none'; img-src data:; style-src 'unsafe-inline'; font-src data:".freeze
 
-  MIME_TYPES = {
-    ".pdf"  => "application/pdf",
-    ".mp4"  => "video/mp4",
-    ".webm" => "video/webm",
-    ".mov"  => "video/quicktime",
-    ".ogv"  => "video/ogg",
-    ".mp3"  => "audio/mpeg",
-    ".wav"  => "audio/wav",
-    ".ogg"  => "audio/ogg",
-    ".m4a"  => "audio/mp4",
-    ".aac"  => "audio/aac",
-    ".flac" => "audio/flac",
-    ".png"  => "image/png",
-    ".jpg"  => "image/jpeg",
-    ".jpeg" => "image/jpeg",
-    ".webp" => "image/webp",
-  }.freeze
+  MIME_TYPES = Kb::MediaTypes::MIME_TYPES
 
   KbContent = Struct.new(
     :kind, :html, :raw_url, :serve_url, :rel, :src, :filename,
@@ -113,13 +97,24 @@ class KbController < ApplicationController
 
   def edit
     folder_index = params[:src].to_i
-    abs = resolve_kb_path(folder_index, params[:file], extensions: MARKDOWN_EXTENSIONS)
+    abs = resolve_kb_path(folder_index, params[:file], extensions: :any)
     return head(:not_found) if abs.nil?
 
     @selected_file = params[:file]
     @selected_folder_index = folder_index
-    @raw_content = File.read(abs)
     remember_document(folder_index, @selected_file)
+
+    if MARKDOWN_EXTENSIONS.include?(File.extname(abs).downcase)
+      @raw_content = File.read(abs)
+      return render :edit
+    end
+
+    @content = render_file(folder_index, @selected_file)
+    @media_info = Kb::MediaInspector.new(abs).call
+    if %w[.html .htm].include?(File.extname(abs).downcase)
+      @source_content = File.read(abs)
+    end
+    render :media_edit
   end
 
   def fs_save

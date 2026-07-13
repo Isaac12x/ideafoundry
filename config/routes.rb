@@ -227,6 +227,8 @@ Rails.application.routes.draw do
   post 'knowledge-base/extract', to: 'kb#extract', as: :kb_extract
   get 'knowledge-base/edit', to: 'kb#edit', as: :kb_edit
   patch 'knowledge-base/save', to: 'kb#fs_save', as: :kb_fs_save
+  post 'knowledge-base/media-edits', to: 'kb_media_edits#create', as: :kb_media_edits
+  get 'knowledge-base/media-edits/:id', to: 'kb_media_edits#show', as: :kb_media_edit
   post 'knowledge-base/fs/create', to: 'kb#fs_create', as: :kb_fs_create
   post 'knowledge-base/fs/upload', to: 'kb#fs_upload', as: :kb_fs_upload
   patch 'knowledge-base/fs/rename', to: 'kb#fs_rename', as: :kb_fs_rename
