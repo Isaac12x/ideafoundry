@@ -50,7 +50,8 @@ FROM base
 
 # Install packages needed for deployment
 RUN apt-get update -qq && \
-    apt-get install --no-install-recommends -y curl libsqlcipher1 sqlcipher libvips pandoc && \
+    apt-get install --no-install-recommends -y curl libsqlcipher1 sqlcipher libvips pandoc \
+      ffmpeg ghostscript imagemagick poppler-utils pdftk-java && \
     rm -rf /var/lib/apt/lists /var/cache/apt/archives
 
 # Copy built artifacts: gems, application

@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Edit-button-gated knowledge-base studios for images, video, audio, PDFs, HTML, and opaque media, with canvas/timeline/waveform/page tools, asynchronous local rendering, atomic saves, and checksum-addressed revision history.
 - Knowledge-base drag-and-drop copies external files into the selected local folder, with collision-safe filenames and immediate Turbo tree updates.
 - Per-source and per-folder emoji/image icons, a global folder-icon default in Display settings, and favourites for knowledge-base files and folders.
 - Knowledge-base filesystem AI jobs from the context menu, including typed or FluidVoice-transcribed requests and Markdown results or errors in a local `job_results/` folder.
@@ -88,6 +89,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
+- Knowledge-base media edits validate configured source paths, reject symlink/traversal access, invoke local tools without a shell, preserve original bytes, and record before/after checksums plus edit recipes in the human activity trail.
 - Persisted recovery passphrases are moved out of app-local storage into platform secure storage when available.
 - SQLCipher and recovery-secret configuration values are filtered from logs.
 
