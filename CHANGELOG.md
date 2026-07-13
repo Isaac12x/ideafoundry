@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Knowledge-base drag-and-drop copies external files into the selected local folder, with collision-safe filenames and immediate Turbo tree updates.
+- Per-source and per-folder emoji/image icons, a global folder-icon default in Display settings, and favourites for knowledge-base files and folders.
+- Knowledge-base filesystem AI jobs from the context menu, including typed or FluidVoice-transcribed requests and Markdown results or errors in a local `job_results/` folder.
+- A separated “Open in Finder” action at the bottom of the knowledge-base context menu.
 - Knowledge-base folder actions for collapsing or uncollapsing every nested folder in a source.
 - Knowledge-base file headers with full extensions, created/modified dates, and selectable, copyable image and video previews.
 - Multiple scoring systems, including a founder scorecard with seven 1-5 criteria and a 24/35 gate for active work and Kanban placement.
@@ -43,6 +47,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- URL-based knowledge-base file creation now queues downloads without reloading the page and refreshes the exact destination folder when the asynchronous job finishes.
 - The keyboard-shortcuts helper now appears as `/shortcuts/` at the bottom-right edge of the notes bar.
 - Batch imports now discover local Apple Notes databases directly, preview folders and individual notes, and route cloud note apps through OAuth-oriented connection flows.
 - Local attachment OCR now uses Surya with block HTML metadata while preserving complete extracted text for saving.

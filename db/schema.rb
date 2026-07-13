@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_08_000001) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_13_220200) do
   create_table "action_mailbox_inbound_emails", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "message_checksum", null: false
@@ -320,12 +320,47 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_08_000001) do
     t.string "filename"
     t.string "format", default: "auto", null: false
     t.integer "source_index", null: false
+    t.text "source_path"
     t.string "status", default: "pending", null: false
     t.datetime "updated_at", null: false
     t.string "url", null: false
     t.integer "user_id", null: false
     t.index ["user_id", "status"], name: "index_kb_downloads_on_user_id_and_status"
     t.index ["user_id"], name: "index_kb_downloads_on_user_id"
+  end
+
+  create_table "kb_entry_preferences", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "emoji"
+    t.string "entry_type", null: false
+    t.boolean "favorite", default: false, null: false
+    t.string "icon_kind", default: "default", null: false
+    t.text "relative_path", default: "", null: false
+    t.text "source_path", default: "", null: false
+    t.datetime "updated_at", null: false
+    t.integer "user_id", null: false
+    t.index ["user_id", "source_path", "relative_path", "entry_type"], name: "index_kb_entry_preferences_on_entry", unique: true
+    t.index ["user_id"], name: "index_kb_entry_preferences_on_user_id"
+  end
+
+  create_table "kb_fs_jobs", force: :cascade do |t|
+    t.string "context_kind", null: false
+    t.text "context_path", null: false
+    t.datetime "created_at", null: false
+    t.text "error"
+    t.datetime "finished_at"
+    t.text "prompt"
+    t.text "result_path"
+    t.integer "source_index", null: false
+    t.text "source_path", null: false
+    t.datetime "started_at"
+    t.string "status", default: "pending", null: false
+    t.text "target_dir", default: "", null: false
+    t.text "transcript"
+    t.datetime "updated_at", null: false
+    t.integer "user_id", null: false
+    t.index ["user_id", "status"], name: "index_kb_fs_jobs_on_user_id_and_status"
+    t.index ["user_id"], name: "index_kb_fs_jobs_on_user_id"
   end
 
   create_table "knowledge_extractions", force: :cascade do |t|
@@ -540,6 +575,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_08_000001) do
   add_foreign_key "ideas", "users"
   add_foreign_key "kanban_boards", "users"
   add_foreign_key "kb_downloads", "users"
+  add_foreign_key "kb_entry_preferences", "users"
+  add_foreign_key "kb_fs_jobs", "users"
   add_foreign_key "knowledge_extractions", "ideas"
   add_foreign_key "licensor_contacts", "licensors"
   add_foreign_key "licensors", "ideas"
