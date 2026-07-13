@@ -16,6 +16,19 @@ class IdeasControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
   end
 
+  test "layout exposes global shortcuts, contextual cheatsheet, and command palette" do
+    get ideas_url
+
+    assert_response :success
+    assert_select "body[data-controller~=?]", "shortcuts"
+    assert_select "body[data-shortcuts-ideas-url-value=?]", ideas_path
+    assert_select ".shortcuts-toggle[title=?]", "Keyboard shortcuts (?)"
+    assert_select ".shortcuts-panel[data-shortcuts-target=?]", "panel"
+    assert_select ".command-palette[data-controller=?][data-command-palette-search-url-value=?]",
+                  "command-palette", search_ideas_path
+    assert_select "a.nav-pill[data-shortcut-key=?][data-shortcut-label=?]", "g i", "Go to Ideas"
+  end
+
   test "index renders right click list assignment hooks for idea cards" do
     @user.lists.create!(name: "Launch Candidates", kind: :named)
 
@@ -28,6 +41,24 @@ class IdeasControllerTest < ActionDispatch::IntegrationTest
       assert_select "[data-idea-context-menu-kanban-boards-value*=?]", "Main Board"
     end
     assert_select ".idea-card[data-action*=?][data-idea-id=?]", "contextmenu->idea-context-menu#open", @idea.id.to_s
+  end
+
+  test "edit renders topologies as a searchable tree preserving template-switch hooks" do
+    parent = @user.topologies.create!(name: "Software")
+    @user.topologies.create!(name: "Web", parent: parent)
+
+    get edit_idea_url(@idea)
+
+    assert_response :success
+    assert_select ".topology-picker[data-controller=?]", "topology-picker"
+    assert_select "input.topology-picker__search"
+    # Parent node nests the child underneath (recursion works).
+    assert_select ".topology-node[data-topology-name=?]", "software" do
+      assert_select ".topology-node[data-topology-name=?]", "software > web"
+    end
+    # Checkbox contract for template-switch must survive the new markup.
+    assert_select "input[type=checkbox][name=?][data-template-switch-target=?]",
+                  "idea[topology_ids][]", "topologyCheckbox", count: 2
   end
 
   test "should get new (auto-drafts and redirects to edit)" do

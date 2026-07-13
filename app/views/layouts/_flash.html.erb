@@ -1,0 +1,9 @@
+<% if notice %>
+  <div class="alert alert-success" data-controller="flash" data-action="click->flash#dismiss"><%= notice %></div>
+<% end %>
+<% if notice == nil && params[:upgraded].present? %>
+  <div class="alert alert-success" data-controller="flash" data-action="click->flash#dismiss">App upgraded successfully.</div>
+<% end %>
+<% if alert %>
+  <div class="alert alert-error" data-controller="flash" data-flash-auto-value="false" data-action="click->flash#dismiss"><%= alert %></div>
+<% end %>

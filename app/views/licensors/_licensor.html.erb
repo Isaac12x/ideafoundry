@@ -1,0 +1,44 @@
+<div class="licensor-row" id="licensor_row_<%= licensor.id %>">
+  <div class="licensor-row__top">
+    <div class="licensor-row__main">
+      <span class="licensor-row__company"><%= licensor.company %></span>
+      <% contact = [licensor.contact_name, licensor.contact_email].reject(&:blank?).join(" · ") %>
+      <% if contact.present? %><span class="licensor-row__contact"><%= contact %></span><% end %>
+    </div>
+    <div class="licensor-row__meta">
+      <%= render "licensors/stage_pill", stage: licensor.stage %>
+      <span class="licensor-row__contacted">
+        <%= licensor.last_contacted_at ? "#{time_ago_in_words(licensor.last_contacted_at)} ago" : "not contacted" %>
+      </span>
+    </div>
+  </div>
+
+  <details class="licensor-row__manage">
+    <summary>Manage</summary>
+    <div class="licensor-row__controls">
+      <%= form_with url: licensor_path(licensor), method: :patch, class: "licensor-inline", data: { controller: "auto-submit" } do %>
+        <input type="hidden" name="context" value="tab">
+        <label class="licensor-inline__label">Stage</label>
+        <%= select_tag "licensor[stage]",
+              options_for_select(Licensor::STAGE_ORDER.map { |s| [Licensor.stage_label(s), s] }, licensor.stage),
+              class: "idea-entry-input licensor-inline__select",
+              data: { action: "change->auto-submit#go" } %>
+      <% end %>
+
+      <%= form_with url: licensor_contacts_path(licensor), method: :post, class: "licensor-inline licensor-inline--log" do %>
+        <input type="hidden" name="context" value="tab">
+        <%= select_tag "licensor_contact[channel]",
+              options_for_select(LicensorContact.channels.keys.map { |c| [LicensorContact::CHANNEL_LABELS[c], c] }),
+              class: "idea-entry-input" %>
+        <%= text_field_tag "licensor_contact[summary]", nil, placeholder: "Log a contact…", class: "idea-entry-input", autocomplete: "off" %>
+        <%= submit_tag "Log", class: "btn btn-sm" %>
+      <% end %>
+
+      <div class="licensor-row__foot">
+        <%= link_to "Open in CRM →", licensing_crm_path, class: "licensor-row__crmlink" %>
+        <%= button_to "Delete", licensor_path(licensor), method: :delete, params: { context: "tab" },
+              class: "btn btn-sm btn-danger", form: { data: { turbo_confirm: "Remove this licensor?" } } %>
+      </div>
+    </div>
+  </details>
+</div>

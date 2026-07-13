@@ -1,0 +1,2 @@
+<% s = local_assigns[:stage].to_s %>
+<span class="stage-pill" style="--stage-hue: <%= Licensor.stage_hue(s) %>"><%= Licensor.stage_label(s) %></span>

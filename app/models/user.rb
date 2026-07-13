@@ -16,6 +16,8 @@ class User < ApplicationRecord
   has_many :agent_events, dependent: :destroy
   has_many :agent_recommendations, dependent: :destroy
   has_many :activity_logs, dependent: :destroy
+  has_many :kb_downloads, dependent: :destroy
+has_many :mood_images, dependent: :destroy
 
   # Single-user application - one user per instance
   validates :email, presence: true, uniqueness: true
@@ -199,6 +201,27 @@ class User < ApplicationRecord
     "Designed it without pen and paper. I learned later one of the advantages of designing without pencil and paper is that you're almost forced to avoid all avoidable complexities\n- Edgar Dijkstra",
     "Simplicity is pre-requisite for reliability\n- Edgar Dijkstra"
   ].freeze
+
+  # Pages that carry the quote banner and can be toggled in the nav bar.
+  # Keys are stable identifiers, values the controller_path they map to.
+  NAV_PAGES = {
+    'plan'       => 'lists',
+    'ideas'      => 'ideas',
+    'licensing'  => 'licensing/crm',
+    'intake'     => 'submissions',
+    'topologies' => 'topologies',
+    'kb'         => 'kb',
+    'backlog'    => 'build_items'
+  }.freeze
+  NAV_PAGE_KEYS = NAV_PAGES.keys.freeze
+
+  NAV_PAGE_LABELS = {
+    'plan' => 'Plan', 'ideas' => 'Ideas', 'licensing' => 'Licensing',
+    'intake' => 'Intake', 'topologies' => 'Topologies', 'kb' => 'KB', 'backlog' => 'Backlog'
+  }.freeze
+
+  # Quote assignment defaults preserve prior behaviour: banner everywhere except KB.
+  DEFAULT_QUOTE_ASSIGNMENTS = NAV_PAGE_KEYS.index_with { |k| k == 'kb' ? 'none' : 'default' }.freeze
 
 
   ALLOWED_TOPOLOGY_OVERRIDE_KEYS = %w[
@@ -837,12 +860,56 @@ class User < ApplicationRecord
     custom_display_quote.presence || default_display_quote
   end
 
+  # The editable pool of quotes; falls back to the built-in defaults when unset.
+  def quote_library
+    stored = Array(settings&.dig('quotes', 'library')).map(&:to_s).map(&:strip).reject(&:blank?)
+    stored.presence || DEFAULT_DISPLAY_QUOTES
+  end
+
+  # page_key => 'default' | 'none' | library index (as string)
+  def quote_page_assignments
+    (settings&.dig('quotes', 'pages') || {}).slice(*NAV_PAGE_KEYS)
+  end
+
+  # Resolves the quote text to show on a given page, or nil for no banner.
+  # page_key nil (unmapped page) shows the default quote — preserves prior behaviour.
+  def quote_for_page(page_key)
+    return display_quote if page_key.blank?
+
+    assignment = quote_page_assignments[page_key].presence || DEFAULT_QUOTE_ASSIGNMENTS[page_key] || 'default'
+    case assignment
+    when 'none'    then nil
+    when 'default' then display_quote
+    else quote_library[assignment.to_i] || display_quote
+    end
+  end
+
+  # Maps a controller_path back to a nav page key (or nil if not a nav section).
+  def self.nav_page_key(controller_path)
+    NAV_PAGES.key(controller_path.to_s)
+  end
+
   def display_contrast
     val = settings&.dig('display_contrast').to_s
     return 130 if val == 'high'
     return 100 if val == 'normal' || val.empty?
     int = val.to_i
     int.between?(70, 150) ? int : 100
+  end
+
+  def nav_text_hidden?
+    settings&.dig('nav_text_hidden') == true
+  end
+
+  # Nav sections the user has chosen to hide (Settings is never hideable).
+  def nav_hidden_items
+    Array(settings&.dig('nav', 'hidden')).map(&:to_s) & NAV_PAGE_KEYS
+  end
+
+  def nav_item_visible?(key)
+    key = key.to_s
+    return true unless NAV_PAGE_KEYS.include?(key)
+    !nav_hidden_items.include?(key)
   end
 
   def update_display_quote(params)
@@ -863,6 +930,15 @@ class User < ApplicationRecord
     else
       self.settings['display_contrast'] = contrast_int.to_s
     end
+
+    if h['nav_text_hidden'] == '1'
+      self.settings['nav_text_hidden'] = true
+    else
+      self.settings.delete('nav_text_hidden')
+    end
+
+    apply_quote_settings(h) if h.key?('quote_library') || h.key?('quote_pages')
+    apply_nav_visibility(h) if h.key?('nav_visible')
 
     save
   end
@@ -889,10 +965,29 @@ class User < ApplicationRecord
     Array(settings&.dig('kb', 'folders'))
   end
 
-  def update_kb_folders(paths)
+  def kb_hide_native?
+    settings&.dig('kb', 'hide_native') == true
+  end
+
+  # Mounted volumes / network shares added as KB sources, kept separate from
+  # plain folders so the UI can present and badge them as drives.
+  def kb_drives
+    Array(settings&.dig('kb', 'drives'))
+  end
+
+  def update_kb_folders(paths, hide_native: nil, drives: nil)
     self.settings ||= {}
     self.settings['kb'] ||= {}
     self.settings['kb']['folders'] = Array(paths).map(&:strip).reject(&:blank?)
+    self.settings['kb']['drives'] = Array(drives).map(&:strip).reject(&:blank?).uniq unless drives.nil?
+    self.settings['kb']['hide_native'] = hide_native unless hide_native.nil?
+    save
+  end
+
+  def update_kb_drives(paths)
+    self.settings ||= {}
+    self.settings['kb'] ||= {}
+    self.settings['kb']['drives'] = Array(paths).map(&:strip).reject(&:blank?).uniq
     save
   end
 
@@ -929,6 +1024,35 @@ class User < ApplicationRecord
   def normalize_settings_attribute
     normalized = self.class.normalize_settings_value(read_attribute(:settings))
     self.settings = normalized unless read_attribute(:settings) == normalized
+  end
+
+  def apply_quote_settings(h)
+    library = Array(h['quote_library']).map(&:to_s).map(&:strip).reject(&:blank?)
+    pages = (h['quote_pages'] || {}).to_h.each_with_object({}) do |(page, value), acc|
+      next unless NAV_PAGE_KEYS.include?(page.to_s)
+      acc[page.to_s] = value.to_s
+    end
+
+    quotes = {}
+    quotes['library'] = library if library.present?
+    quotes['pages'] = pages if pages.present?
+    if quotes.present?
+      self.settings['quotes'] = quotes
+    else
+      self.settings.delete('quotes')
+    end
+  end
+
+  # Form posts one checkbox per page under nav_visible (checked == "1" == visible);
+  # any page absent from the hash is treated as hidden.
+  def apply_nav_visibility(h)
+    visible = (h['nav_visible'] || {}).to_h
+    hidden = NAV_PAGE_KEYS.reject { |key| ActiveModel::Type::Boolean.new.cast(visible[key]) }
+    if hidden.present?
+      self.settings['nav'] = { 'hidden' => hidden }
+    else
+      self.settings.delete('nav')
+    end
   end
 
   def positive_integer_or_default(value, default)

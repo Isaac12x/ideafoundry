@@ -882,6 +882,80 @@
   max-width: 640px;
 }
 
+/* Display form: stack cards + dividers with rhythm; actions sit on their own. */
+.display-settings-form {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.display-settings-form .display-field-actions {
+  border-top: none;
+  padding: 0;
+}
+
+/* Quote library — indexed, editable pool of quotes */
+.quote-library {
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.quote-library__row {
+  display: flex;
+  gap: 0.85rem;
+  align-items: flex-start;
+}
+
+.quote-library__index {
+  flex: 0 0 auto;
+  width: 1.6rem;
+  height: 1.6rem;
+  margin-top: 0.4rem;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--text-muted) 16%, transparent);
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.quote-library__row .display-field-textarea {
+  flex: 1 1 auto;
+}
+
+/* Per-page quote assignment — label + select rows */
+.quote-page-grid {
+  padding: 0.4rem 0.75rem;
+}
+
+.quote-page-grid__row {
+  display: grid;
+  grid-template-columns: 8rem 1fr;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.65rem 0.75rem;
+}
+
+.quote-page-grid__row + .quote-page-grid__row {
+  border-top: 1px solid var(--border-subtle);
+}
+
+.quote-page-grid__label {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+}
+
+@media (max-width: 520px) {
+  .quote-page-grid__row {
+    grid-template-columns: 1fr;
+    gap: 0.4rem;
+  }
+}
+
 /* ============================================
    Idea Tabs — toggle cards
    ============================================ */

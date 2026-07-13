@@ -1,27 +1,52 @@
 class KbController < ApplicationController
-  NATIVE_KB_PATH = Rails.root.join("docs", "kb").to_s.freeze
-  NATIVE_KB_LABEL = "App KB".freeze
+  NATIVE_KB_PATH = KbSource::NATIVE_PATH
+  NATIVE_KB_LABEL = KbSource::NATIVE_LABEL
 
-  # Extensions surfaced in the KB tree. Markdown renders inline; the rest are
-  # converted to HTML and shown in a sandboxed iframe via the +raw+ action.
-  MARKDOWN_EXTENSIONS = %w[.md].freeze
-  EMBED_EXTENSIONS = %w[.html .htm .docx .xlsx].freeze
-  # Extended documents (books, patents) surfaced for on-demand knowledge
-  # extraction instead of inline rendering.
-  LONG_DOC_EXTENSIONS = %w[.pdf .png .jpg .jpeg .tif .tiff .webp].freeze
-  KB_EXTENSIONS = (MARKDOWN_EXTENSIONS + EMBED_EXTENSIONS).freeze
-  ALL_EXTENSIONS = (KB_EXTENSIONS + LONG_DOC_EXTENSIONS).freeze
+  MARKDOWN_EXTENSIONS   = %w[.md].freeze
+  EMBED_EXTENSIONS      = %w[.html .htm .docx .xlsx].freeze
+  PDF_EXTENSIONS        = %w[.pdf].freeze
+  IMAGE_EXTENSIONS      = %w[.png .jpg .jpeg .webp].freeze
+  VIDEO_EXTENSIONS      = %w[.mp4 .webm .mov .ogv].freeze
+  AUDIO_EXTENSIONS      = %w[.mp3 .wav .ogg .m4a .aac .flac].freeze
+  # TIF/TIFF: not renderable in browsers, extraction only
+  LONG_DOC_EXTENSIONS   = %w[.tif .tiff].freeze
 
-  # Locked-down CSP for embedded documents: no scripts, no network access,
-  # only inline styles and data: images/fonts (pandoc inlines media as data URIs).
+  SERVE_EXTENSIONS      = (PDF_EXTENSIONS + IMAGE_EXTENSIONS + VIDEO_EXTENSIONS + AUDIO_EXTENSIONS).freeze
+  EXTRACTABLE_EXTENSIONS = (PDF_EXTENSIONS + IMAGE_EXTENSIONS + LONG_DOC_EXTENSIONS).freeze
+  KB_EXTENSIONS         = (MARKDOWN_EXTENSIONS + EMBED_EXTENSIONS).freeze
+  ALL_EXTENSIONS        = (KB_EXTENSIONS + SERVE_EXTENSIONS + LONG_DOC_EXTENSIONS).freeze
+
   EMBED_CSP = "default-src 'none'; img-src data:; style-src 'unsafe-inline'; font-src data:".freeze
 
-  KbContent = Struct.new(:kind, :html, :raw_url, :rel, :src, :filename, :extraction, :output_rel, keyword_init: true)
+  MIME_TYPES = {
+    ".pdf"  => "application/pdf",
+    ".mp4"  => "video/mp4",
+    ".webm" => "video/webm",
+    ".mov"  => "video/quicktime",
+    ".ogv"  => "video/ogg",
+    ".mp3"  => "audio/mpeg",
+    ".wav"  => "audio/wav",
+    ".ogg"  => "audio/ogg",
+    ".m4a"  => "audio/mp4",
+    ".aac"  => "audio/aac",
+    ".flac" => "audio/flac",
+    ".png"  => "image/png",
+    ".jpg"  => "image/jpeg",
+    ".jpeg" => "image/jpeg",
+    ".webp" => "image/webp",
+  }.freeze
+
+  KbContent = Struct.new(
+    :kind, :html, :raw_url, :serve_url, :rel, :src, :filename,
+    :extraction, :output_rel, :mime_type,
+    keyword_init: true
+  )
 
   before_action :set_user
 
   def index
     @folders = build_folder_tree
+    @downloads = @user.kb_downloads.active.recent
     @selected_file = params[:file]
     @selected_folder_index = params[:src].to_i
 
@@ -47,8 +72,6 @@ class KbController < ApplicationController
     @selected_folder_index = folder_index
   end
 
-  # Serves an embeddable document (html/docx/xlsx) as a standalone HTML body
-  # for consumption inside a sandboxed iframe. Markdown is never served here.
   def raw
     abs = resolve_kb_path(params[:src].to_i, params[:file], extensions: EMBED_EXTENSIONS)
     return head(:not_found) if abs.nil?
@@ -60,11 +83,28 @@ class KbController < ApplicationController
     head :unprocessable_entity
   end
 
-  # Queue on-demand knowledge extraction for an extended KB document. The
-  # produced "<book>.md" is written beside the source and appears in the tree.
+  def serve
+    abs = resolve_kb_path(params[:src].to_i, params[:file], extensions: SERVE_EXTENSIONS)
+    return head(:not_found) if abs.nil?
+
+    return unless stale?(last_modified: File.mtime(abs))
+
+    ext = File.extname(abs).downcase
+    mime = MIME_TYPES[ext] || "application/octet-stream"
+
+    # Rack::Files (unlike send_file) answers Range requests with 206, which
+    # video/audio seeking, resume and Safari playback all require.
+    status, headers, body = Rack::Files.new(File.dirname(abs)).serving(request, abs)
+    headers["content-type"] = mime
+    headers["cache-control"] = "private, max-age=0, must-revalidate"
+    headers.each { |name, value| response.set_header(name, value) }
+    self.status = status
+    self.response_body = body
+  end
+
   def extract
     folder_index = params[:src].to_i
-    abs = resolve_kb_path(folder_index, params[:file], extensions: LONG_DOC_EXTENSIONS)
+    abs = resolve_kb_path(folder_index, params[:file], extensions: EXTRACTABLE_EXTENSIONS)
     return head(:not_found) if abs.nil?
 
     KnowledgeExtraction.enqueue_for_kb(folder_index: folder_index, kb_path: abs)
@@ -72,20 +112,220 @@ class KbController < ApplicationController
                 notice: "Knowledge extraction queued for #{File.basename(abs)}."
   end
 
+  # ── Tree file operations ──────────────────────────────────────────────
+
+  def edit
+    folder_index = params[:src].to_i
+    abs = resolve_kb_path(folder_index, params[:file], extensions: MARKDOWN_EXTENSIONS)
+    return head(:not_found) if abs.nil?
+
+    @selected_file = params[:file]
+    @selected_folder_index = folder_index
+    @raw_content = File.read(abs)
+  end
+
+  def fs_save
+    folder_index = params[:src].to_i
+    abs = resolve_kb_path(folder_index, params[:file], extensions: MARKDOWN_EXTENSIONS)
+    return head(:not_found) if abs.nil?
+
+    File.write(abs, params[:content].to_s)
+    redirect_to kb_file_path(src: folder_index, file: params[:file])
+  end
+
+  def fs_create
+    base = writable_base(params[:src].to_i)
+    return fs_error("Folder is not available.") if base.nil?
+
+    parent = resolve_dir(base, params[:dir])
+    return fs_error("Target folder not found.") if parent.nil?
+
+    name = params[:name].to_s.strip
+
+    # A URL instead of a name means "download this into the folder in the
+    # background" (yt-dlp for media, HTTP otherwise). URLs contain "/" so this
+    # must run before valid_node_name?, which rejects them.
+    if params[:kind] != "folder" && url?(name)
+      KbDownload.enqueue(user: @user, source_index: params[:src].to_i,
+                         dir: params[:dir].to_s, url: name, format: params[:format].to_s)
+      return respond_fs(notice: "Downloading… it will appear in the tree when ready.")
+    end
+
+    return fs_error("Invalid name.") unless valid_node_name?(name)
+
+    if params[:kind] == "folder"
+      abs = File.join(parent, name)
+      return fs_error("\"#{name}\" already exists.") if File.exist?(abs)
+      Dir.mkdir(abs)
+      respond_fs(notice: "Folder \"#{name}\" created.")
+    else
+      name = "#{name}.md" unless ALL_EXTENSIONS.include?(File.extname(name).downcase)
+      abs = File.join(parent, name)
+      return fs_error("\"#{name}\" already exists.") if File.exist?(abs)
+      File.write(abs, "")
+      respond_fs(file: abs.delete_prefix("#{base}/"), notice: "File \"#{name}\" created.")
+    end
+  end
+
+  def fs_rename
+    base = writable_base(params[:src].to_i)
+    return fs_error("Folder is not available.") if base.nil?
+
+    abs = safe_abs(base, params[:path])
+    return fs_error("Not found.") if abs.nil? || abs == base || !File.exist?(abs)
+
+    name = params[:name].to_s.strip
+    return fs_error("Invalid name.") unless valid_node_name?(name)
+
+    if File.file?(abs)
+      name = "#{name}#{File.extname(abs)}" if File.extname(name).empty?
+      return fs_error("Unsupported file extension.") unless ALL_EXTENSIONS.include?(File.extname(name).downcase)
+    end
+
+    dest = File.join(File.dirname(abs), name)
+    return fs_error("\"#{name}\" already exists.") if File.exist?(dest) && dest != abs
+
+    File.rename(abs, dest)
+    if File.file?(dest)
+      respond_fs(file: dest.delete_prefix("#{base}/"), notice: "Renamed to \"#{name}\".")
+    else
+      respond_fs(notice: "Renamed to \"#{name}\".")
+    end
+  end
+
+  def fs_move
+    base = writable_base(params[:src].to_i)
+    dest_index = (params[:dest_src].presence || params[:src]).to_i
+    dest_base = writable_base(dest_index)
+    return fs_error("Folder is not available.") if base.nil? || dest_base.nil?
+
+    abs = safe_abs(base, params[:path])
+    return fs_error("Not found.") if abs.nil? || abs == base || !File.exist?(abs)
+
+    dest_dir = resolve_dir(dest_base, params[:dest_dir])
+    return fs_error("Target folder not found.") if dest_dir.nil?
+
+    if File.directory?(abs) && (dest_dir == abs || dest_dir.start_with?("#{abs}/"))
+      return fs_error("Cannot move a folder into itself.")
+    end
+    return respond_fs if File.dirname(abs) == dest_dir
+
+    target = File.join(dest_dir, File.basename(abs))
+    return fs_error("\"#{File.basename(abs)}\" already exists in the target folder.") if File.exist?(target)
+
+    FileUtils.mv(abs, target)
+    if File.file?(target)
+      respond_fs(src: dest_index, file: target.delete_prefix("#{dest_base}/"), notice: "Moved \"#{File.basename(abs)}\".")
+    else
+      respond_fs(src: dest_index, notice: "Moved \"#{File.basename(abs)}\".")
+    end
+  end
+
+  def fs_delete
+    base = writable_base(params[:src].to_i)
+    return fs_error("Folder is not available.") if base.nil?
+
+    abs = safe_abs(base, params[:path])
+    return fs_error("Not found.") if abs.nil? || abs == base || !File.exist?(abs)
+
+    File.directory?(abs) ? FileUtils.rm_r(abs) : File.delete(abs)
+    respond_fs(notice: "Deleted \"#{File.basename(abs)}\".")
+  end
+
   private
+
+  def fs_error(message)
+    respond_fs(alert: message)
+  end
+
+  # Renders the tree (and, when the selection changed, the content pane) as a
+  # turbo stream so file ops update in place instead of reloading the page.
+  # Falls back to a full redirect for non-turbo clients.
+  def respond_fs(file: nil, src: params[:src].to_i, notice: nil, alert: nil)
+    unless request.format.turbo_stream?
+      return redirect_to kb_path(src: src, file: file), notice: notice, alert: alert
+    end
+
+    flash.now[:notice] = notice if notice
+    flash.now[:alert]  = alert if alert
+    @folders = build_folder_tree
+    if file
+      @selected_file = file
+      @selected_folder_index = src
+      @content = render_file(src, file)
+      @update_content = true
+    else
+      # Keep the doc the user had open highlighted; clear the pane if it's
+      # gone (deleted, or inside a renamed/moved folder).
+      sel_src  = params[:sel_src].to_i
+      sel_file = params[:sel_file].presence
+      if sel_file && resolve_kb_path(sel_src, sel_file, extensions: ALL_EXTENSIONS)
+        @selected_file = sel_file
+        @selected_folder_index = sel_src
+      elsif sel_file
+        @update_content = true
+      end
+    end
+    render "kb/fs_stream"
+  end
+
+  # Base directory of a KB source, only if it can be written to.
+  # The native source is created on demand; user folders must already exist.
+  def writable_base(folder_index)
+    sources = kb_sources
+    return nil if folder_index.negative? || folder_index >= sources.size
+
+    source = sources[folder_index]
+    base = File.expand_path(source[:path])
+    FileUtils.mkdir_p(base) if source[:native] && !Dir.exist?(base)
+    Dir.exist?(base) ? base : nil
+  end
+
+  # Expands rel inside base, nil when it escapes the source root.
+  def safe_abs(base, rel)
+    return nil if rel.blank?
+
+    abs = File.expand_path(File.join(base, rel))
+    abs.start_with?("#{base}/") || abs == base ? abs : nil
+  end
+
+  # Resolves a relative directory ("" means the source root).
+  def resolve_dir(base, rel)
+    return base if rel.blank?
+
+    abs = safe_abs(base, rel)
+    abs && File.directory?(abs) ? abs : nil
+  end
+
+  def url?(str)
+    str.match?(%r{\Ahttps?://\S+\z}i)
+  end
+
+  def valid_node_name?(name)
+    name.present? &&
+      name.length <= 255 &&
+      !name.start_with?(".") &&
+      name.match?(%r{\A[^/\\\0]+\z})
+  end
 
   def build_folder_tree
     kb_sources.each_with_index.map do |source, idx|
       path = source[:path]
       expanded = File.expand_path(path)
       files = []
+      dirs = []
       if Dir.exist?(expanded)
-        files = Dir.glob(File.join(expanded, "**", "*"))
+        entries = Dir.glob(File.join(expanded, "**", "*"))
+        files = entries
                    .select { |f| File.file?(f) && ALL_EXTENSIONS.include?(File.extname(f).downcase) }
                    .sort
                    .map { |f| { rel: f.sub("#{expanded}/", ""), abs: f } }
+        dirs = entries
+                  .select { |d| File.directory?(d) }
+                  .sort
+                  .map { |d| d.sub("#{expanded}/", "") }
       end
-      tree = build_nested_tree(files)
+      tree = build_nested_tree(files, dirs)
       {
         index: idx,
         path: path,
@@ -93,40 +333,42 @@ class KbController < ApplicationController
         files: files,
         tree: tree,
         exists: Dir.exist?(expanded),
-        native: source[:native]
+        native: source[:native],
+        drive: source[:drive]
       }
     end
   end
 
   def kb_sources
-    native_kb_sources + @user.kb_folders.map do |path|
-      { path: path, label: folder_label(path), native: false }
-    end
-  end
-
-  def native_kb_sources
-    return [] unless Dir.exist?(NATIVE_KB_PATH)
-    return [] if Dir.glob(File.join(NATIVE_KB_PATH, "**", "*.md")).empty?
-
-    [{ path: NATIVE_KB_PATH, label: NATIVE_KB_LABEL, native: true }]
+    KbSource.list(@user)
   end
 
   def folder_label(path)
     File.basename(path.to_s.chomp(File::SEPARATOR)).presence || path.to_s
   end
 
-  def build_nested_tree(files)
+  def build_nested_tree(files, dirs = [])
     root = {}
+    dirs.each do |rel|
+      dir_node_for(root, rel.split("/"))
+    end
     files.each do |file|
       parts = file[:rel].split("/")
-      current = root
-      parts[0..-2].each do |dir|
-        current[dir] ||= { type: :dir, children: {} }
-        current = current[dir][:children]
-      end
+      current = parts.size > 1 ? dir_node_for(root, parts[0..-2]) : root
       current[parts.last] = { type: :file, rel: file[:rel], abs: file[:abs] }
     end
     root
+  end
+
+  # Walks/creates dir nodes for the given path parts, returns the children
+  # hash of the deepest one. Dir nodes carry their own rel path for tree ops.
+  def dir_node_for(root, parts)
+    current = root
+    parts.each_with_index do |dir, i|
+      current[dir] ||= { type: :dir, children: {}, rel: parts[0..i].join("/") }
+      current = current[dir][:children]
+    end
+    current
   end
 
   def render_file(folder_index, rel_path)
@@ -136,15 +378,49 @@ class KbController < ApplicationController
     return KbContent.new(kind: :missing) if abs.nil?
 
     ext = File.extname(abs).downcase
+
     if MARKDOWN_EXTENSIONS.include?(ext)
-      KbContent.new(kind: :markdown, html: render_markdown(File.read(abs)))
+      KbContent.new(kind: :markdown, html: render_markdown(File.read(abs)), rel: rel_path, src: folder_index)
     elsif EMBED_EXTENSIONS.include?(ext)
       KbContent.new(kind: :embed, raw_url: kb_raw_path(src: folder_index, file: rel_path))
+    elsif PDF_EXTENSIONS.include?(ext)
+      KbContent.new(
+        kind: :pdf,
+        serve_url: kb_serve_path(src: folder_index, file: rel_path),
+        rel: rel_path, src: folder_index,
+        filename: File.basename(abs),
+        extraction: KnowledgeExtraction.where(kb_path: abs).recent.first,
+        output_rel: output_rel_for(abs, rel_path)
+      )
+    elsif IMAGE_EXTENSIONS.include?(ext)
+      KbContent.new(
+        kind: :image,
+        serve_url: kb_serve_path(src: folder_index, file: rel_path),
+        rel: rel_path, src: folder_index,
+        filename: File.basename(abs),
+        extraction: KnowledgeExtraction.where(kb_path: abs).recent.first,
+        output_rel: output_rel_for(abs, rel_path)
+      )
+    elsif VIDEO_EXTENSIONS.include?(ext)
+      KbContent.new(
+        kind: :video,
+        serve_url: kb_serve_path(src: folder_index, file: rel_path),
+        rel: rel_path, src: folder_index,
+        mime_type: MIME_TYPES[ext],
+        filename: File.basename(abs)
+      )
+    elsif AUDIO_EXTENSIONS.include?(ext)
+      KbContent.new(
+        kind: :audio,
+        serve_url: kb_serve_path(src: folder_index, file: rel_path),
+        rel: rel_path, src: folder_index,
+        mime_type: MIME_TYPES[ext],
+        filename: File.basename(abs)
+      )
     elsif LONG_DOC_EXTENSIONS.include?(ext)
       KbContent.new(
         kind: :long_doc,
-        rel: rel_path,
-        src: folder_index,
+        rel: rel_path, src: folder_index,
         filename: File.basename(abs),
         extraction: KnowledgeExtraction.where(kb_path: abs).recent.first,
         output_rel: output_rel_for(abs, rel_path)
@@ -154,7 +430,6 @@ class KbController < ApplicationController
     end
   end
 
-  # Relative path of the produced "<book>.md" if it already exists on disk.
   def output_rel_for(abs, rel_path)
     dir = File.dirname(abs)
     base = File.basename(abs, File.extname(abs))
@@ -168,8 +443,6 @@ class KbController < ApplicationController
     nil
   end
 
-  # Resolves a folder-relative path to an absolute path, rejecting anything that
-  # escapes the configured folder or has an unsupported extension.
   def resolve_kb_path(folder_index, rel_path, extensions: KB_EXTENSIONS)
     return nil if rel_path.blank?
 
@@ -179,7 +452,6 @@ class KbController < ApplicationController
     base = File.expand_path(sources[folder_index][:path])
     abs = File.expand_path(File.join(base, rel_path))
 
-    # Security: ensure the resolved path stays within the configured folder
     return nil unless abs.start_with?(base + "/") || abs == base
     return nil unless File.exist?(abs) && File.file?(abs)
     return nil unless extensions.include?(File.extname(abs).downcase)

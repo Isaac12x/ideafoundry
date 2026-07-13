@@ -77,27 +77,30 @@ class SettingsControllerTest < ActionDispatch::IntegrationTest
     end
   end
 
-  test "GET settings/display renders default quote banner with empty custom quote field" do
+  test "GET settings/display shows empty custom quote field and no banner" do
     @user.update!(settings: (@user.settings || {}).except("display_quote"))
 
     get settings_display_path
 
     assert_response :success
-    assert_select "body > header.app-header ~ div.app-quote-banner .app-quote-banner__text", text: /Your mind is for having ideas/
-    assert_select "body > header.app-header ~ div.app-quote-banner .app-quote-banner__text", text: /David Allen/
+    # The quote banner is suppressed on settings pages.
+    assert_select "div.app-quote-banner", count: 0
     assert_select "textarea[name=?]", "display_settings[quote]" do |elements|
       assert_equal "", elements.first.text
       assert_includes elements.first["placeholder"], "Your mind is for having ideas"
     end
   end
 
-  test "GET settings/display renders configured quote banner" do
+  test "configured quote banner renders on non-settings pages only" do
     @user.update!(settings: (@user.settings || {}).merge("display_quote" => { "text" => "Focus on the next useful thing." }))
 
-    get settings_display_path
-
+    get root_path
     assert_response :success
-    assert_select "body > header.app-header ~ div.app-quote-banner", text: "Focus on the next useful thing."
+    assert_select "body > header.app-header ~ div.app-quote-banner", text: /Focus on the next useful thing./
+
+    get settings_display_path
+    assert_response :success
+    assert_select "div.app-quote-banner", count: 0
   end
 
   test "PATCH settings updates display quote" do
@@ -694,6 +697,33 @@ class SettingsControllerTest < ActionDispatch::IntegrationTest
     assert_equal "Keep it simple.", @user.display_quote
   end
 
+  test "PATCH settings/display persists quote library, per-page quotes, and nav visibility" do
+    patch settings_display_path, params: {
+      display_settings: {
+        quote: "Base quote",
+        quote_library: ["Alpha", "", "Beta"],
+        quote_pages: { "ideas" => "1", "kb" => "none" },
+        nav_visible: { "ideas" => "1", "plan" => "1" }
+      }
+    }
+    assert_redirected_to settings_display_path
+    @user.reload
+
+    assert_equal %w[Alpha Beta], @user.quote_library
+    assert_equal "Beta", @user.quote_for_page("ideas")
+    assert_nil @user.quote_for_page("kb")
+    assert @user.nav_item_visible?("ideas")
+    assert_not @user.nav_item_visible?("topologies")  # absent from nav_visible -> hidden
+  end
+
+  test "GET settings/display renders per-page quote selects and nav toggles" do
+    get settings_display_path
+    assert_response :success
+    assert_select "textarea[name=?]", "display_settings[quote_library][]"
+    assert_select "select[name=?]", "display_settings[quote_pages][ideas]"
+    assert_select "input[type=checkbox][name=?]", "display_settings[nav_visible][kb]"
+  end
+
   test "display_contrast returns 100 by default" do
     @user.update!(settings: {})
     assert_equal 100, @user.display_contrast
@@ -717,6 +747,33 @@ class SettingsControllerTest < ActionDispatch::IntegrationTest
   test "display_contrast clamps out-of-range value to 100" do
     @user.update!(settings: { 'display_contrast' => '999' })
     assert_equal 100, @user.display_contrast
+  end
+
+  test "GET settings/kb renders the drives section and mount form" do
+    get settings_kb_path
+    assert_response :success
+    assert_select "h3", text: "Drives"
+    assert_select "form[action=?]", settings_kb_mount_drive_path
+    assert_select "select[data-kb-drives-target='volume']"
+  end
+
+  test "PATCH settings/kb persists drives alongside folders" do
+    original = @user.settings.deep_dup
+    patch settings_kb_path, params: { kb_folders: [], kb_drives: ["/Volumes/Archive"] }
+
+    assert_redirected_to settings_kb_path
+    assert_equal ["/Volumes/Archive"], @user.reload.kb_drives
+  ensure
+    @user.update!(settings: original)
+  end
+
+  test "POST settings/kb/mount-drive rejects a non-share url" do
+    before = @user.kb_drives
+    post settings_kb_mount_drive_path, params: { url: "https://evil.example.com" }
+
+    assert_redirected_to settings_kb_path
+    assert_equal before, @user.reload.kb_drives
+    assert_match(/share url/i, flash[:alert])
   end
 
   private
