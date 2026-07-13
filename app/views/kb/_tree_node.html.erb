@@ -34,7 +34,7 @@
       is_editable = ext == ".md"
       active = (selected_folder_index == folder_index && selected_file == node[:rel])
       file_url = kb_file_path(file: node[:rel], src: folder_index)
-      display_name = File.basename(node[:rel], ext)
+      display_name = File.basename(node[:rel])
     %>
     <%= link_to file_url,
           draggable: "true",

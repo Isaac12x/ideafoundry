@@ -1,12 +1,14 @@
-<div class="shortcuts-shell" data-shortcuts-target="shell">
+<div class="shortcuts-shell"
+     data-shortcuts-target="shell"
+     data-action="click->shortcuts#stopPropagation">
   <button type="button"
           class="shortcuts-toggle"
           data-shortcuts-target="toggle"
           data-action="click->shortcuts#togglePanel"
           aria-label="Keyboard shortcuts"
           aria-expanded="false"
-          title="Keyboard shortcuts (?)">
-    <span class="shortcuts-toggle__mark">?</span>
+          title="Keyboard shortcuts (/shortcuts/)">
+    <span class="shortcuts-toggle__mark">/shortcuts/</span>
   </button>
 
   <section class="shortcuts-panel"

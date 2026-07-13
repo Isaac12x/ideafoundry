@@ -1,6 +1,7 @@
 class KbController < ApplicationController
   NATIVE_KB_PATH = KbSource::NATIVE_PATH
   NATIVE_KB_LABEL = KbSource::NATIVE_LABEL
+  LAST_DOCUMENT_COOKIE = :kb_last_document
 
   MARKDOWN_EXTENSIONS   = %w[.md].freeze
   EMBED_EXTENSIONS      = %w[.html .htm .docx .xlsx].freeze
@@ -38,6 +39,7 @@ class KbController < ApplicationController
 
   KbContent = Struct.new(
     :kind, :html, :raw_url, :serve_url, :rel, :src, :filename,
+    :created_at, :modified_at,
     :extraction, :output_rel, :mime_type,
     keyword_init: true
   )
@@ -47,19 +49,10 @@ class KbController < ApplicationController
   def index
     @folders = build_folder_tree
     @downloads = @user.kb_downloads.active.recent
-    @selected_file = params[:file]
-    @selected_folder_index = params[:src].to_i
-
-    if @selected_file.blank? && @folders.any?
-      first_folder = @folders.first
-      first_file = first_folder[:files].first
-      if first_file
-        @selected_file = first_file[:rel]
-        @selected_folder_index = 0
-      end
-    end
+    @selected_folder_index, @selected_file = initial_document_selection
 
     @content = render_file(@selected_folder_index, @selected_file)
+    remember_document(@selected_folder_index, @selected_file) if displayable_content?(@content)
     @facts = @user.facts.recent
     @maxims = @user.maxims.recent
   end
@@ -70,6 +63,7 @@ class KbController < ApplicationController
     @content = render_file(folder_index, rel_path)
     @selected_file = rel_path
     @selected_folder_index = folder_index
+    remember_document(folder_index, rel_path) if displayable_content?(@content)
   end
 
   def raw
@@ -122,6 +116,7 @@ class KbController < ApplicationController
     @selected_file = params[:file]
     @selected_folder_index = folder_index
     @raw_content = File.read(abs)
+    remember_document(folder_index, @selected_file)
   end
 
   def fs_save
@@ -253,6 +248,7 @@ class KbController < ApplicationController
       @selected_file = file
       @selected_folder_index = src
       @content = render_file(src, file)
+      remember_document(src, file) if displayable_content?(@content)
       @update_content = true
     else
       # Keep the doc the user had open highlighted; clear the pane if it's
@@ -360,6 +356,42 @@ class KbController < ApplicationController
     root
   end
 
+  def initial_document_selection
+    return [params[:src].to_i, params[:file]] if params[:file].present?
+
+    remembered = remembered_document
+    if remembered && resolve_kb_path(remembered.first, remembered.last, extensions: ALL_EXTENSIONS)
+      return remembered
+    end
+
+    folder = @folders.find { |candidate| candidate[:files].any? }
+    return [0, nil] unless folder
+
+    [folder[:index], folder[:files].first[:rel]]
+  end
+
+  def remembered_document
+    value = cookies.encrypted[LAST_DOCUMENT_COOKIE]
+    return if value.blank?
+
+    parsed = JSON.parse(value)
+    [Integer(parsed.fetch("src")), parsed.fetch("file").to_s]
+  rescue JSON::ParserError, KeyError, TypeError, ArgumentError
+    nil
+  end
+
+  def remember_document(folder_index, rel_path)
+    cookies.permanent.encrypted[LAST_DOCUMENT_COOKIE] = {
+      value: { src: folder_index, file: rel_path }.to_json,
+      httponly: true,
+      same_site: :lax
+    }
+  end
+
+  def displayable_content?(content)
+    content.present? && content.kind != :missing
+  end
+
   # Walks/creates dir nodes for the given path parts, returns the children
   # hash of the deepest one. Dir nodes carry their own rel path for tree ops.
   def dir_node_for(root, parts)
@@ -378,56 +410,70 @@ class KbController < ApplicationController
     return KbContent.new(kind: :missing) if abs.nil?
 
     ext = File.extname(abs).downcase
+    metadata = file_metadata(abs, folder_index, rel_path)
 
     if MARKDOWN_EXTENSIONS.include?(ext)
-      KbContent.new(kind: :markdown, html: render_markdown(File.read(abs)), rel: rel_path, src: folder_index)
+      KbContent.new(**metadata, kind: :markdown, html: render_markdown(File.read(abs)))
     elsif EMBED_EXTENSIONS.include?(ext)
-      KbContent.new(kind: :embed, raw_url: kb_raw_path(src: folder_index, file: rel_path))
+      KbContent.new(**metadata, kind: :embed, raw_url: kb_raw_path(src: folder_index, file: rel_path))
     elsif PDF_EXTENSIONS.include?(ext)
       KbContent.new(
+        **metadata,
         kind: :pdf,
         serve_url: kb_serve_path(src: folder_index, file: rel_path),
-        rel: rel_path, src: folder_index,
-        filename: File.basename(abs),
         extraction: KnowledgeExtraction.where(kb_path: abs).recent.first,
         output_rel: output_rel_for(abs, rel_path)
       )
     elsif IMAGE_EXTENSIONS.include?(ext)
       KbContent.new(
+        **metadata,
         kind: :image,
         serve_url: kb_serve_path(src: folder_index, file: rel_path),
-        rel: rel_path, src: folder_index,
-        filename: File.basename(abs),
+        mime_type: MIME_TYPES[ext],
         extraction: KnowledgeExtraction.where(kb_path: abs).recent.first,
         output_rel: output_rel_for(abs, rel_path)
       )
     elsif VIDEO_EXTENSIONS.include?(ext)
       KbContent.new(
+        **metadata,
         kind: :video,
         serve_url: kb_serve_path(src: folder_index, file: rel_path),
-        rel: rel_path, src: folder_index,
-        mime_type: MIME_TYPES[ext],
-        filename: File.basename(abs)
+        mime_type: MIME_TYPES[ext]
       )
     elsif AUDIO_EXTENSIONS.include?(ext)
       KbContent.new(
+        **metadata,
         kind: :audio,
         serve_url: kb_serve_path(src: folder_index, file: rel_path),
-        rel: rel_path, src: folder_index,
-        mime_type: MIME_TYPES[ext],
-        filename: File.basename(abs)
+        mime_type: MIME_TYPES[ext]
       )
     elsif LONG_DOC_EXTENSIONS.include?(ext)
       KbContent.new(
+        **metadata,
         kind: :long_doc,
-        rel: rel_path, src: folder_index,
-        filename: File.basename(abs),
         extraction: KnowledgeExtraction.where(kb_path: abs).recent.first,
         output_rel: output_rel_for(abs, rel_path)
       )
     else
       KbContent.new(kind: :missing)
     end
+  end
+
+  def file_metadata(abs, folder_index, rel_path)
+    stat = File.stat(abs)
+    {
+      rel: rel_path,
+      src: folder_index,
+      filename: File.basename(abs),
+      created_at: file_created_at(stat),
+      modified_at: stat.mtime
+    }
+  end
+
+  def file_created_at(stat)
+    stat.birthtime
+  rescue NotImplementedError, Errno::EINVAL
+    stat.ctime
   end
 
   def output_rel_for(abs, rel_path)
