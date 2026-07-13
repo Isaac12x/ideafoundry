@@ -6,12 +6,20 @@
      data-tabs-default-tab-value="<%= kb_default_tab %>"
      data-kb-tree-extract-url-value="<%= kb_extract_path %>"
      data-kb-tree-create-url-value="<%= kb_fs_create_path %>"
+     data-kb-tree-upload-url-value="<%= kb_fs_upload_path %>"
      data-kb-tree-rename-url-value="<%= kb_fs_rename_path %>"
      data-kb-tree-move-url-value="<%= kb_fs_move_path %>"
+     data-kb-tree-preference-url-value="<%= kb_fs_preference_path %>"
+     data-kb-tree-open-url-value="<%= kb_fs_open_path %>"
      data-kb-tree-delete-url-value="<%= kb_fs_delete_path %>"
      data-kb-tree-edit-url-value="<%= kb_edit_path %>">
+  <div class="kb-controller-scope"
+       data-controller="kb-icon-picker kb-job"
+       data-action="kb-job:open->kb-job#open"
+       data-kb-icon-picker-update-url-value="<%= kb_fs_preference_path %>"
+       data-kb-job-create-url-value="<%= kb_fs_jobs_path %>">
 
-  <%= turbo_stream_from @user, "kb_downloads" %>
+  <%= turbo_stream_from @user, "kb_tree" %>
 
   <div class="tabs-nav">
     <button data-tabs-target="tab" data-tab-name="kb" data-action="click->tabs#switch" class="tab-button active">
@@ -37,11 +45,6 @@
     <div class="kb-layout">
       <aside class="kb-sidebar">
         <div class="kb-sidebar-inner">
-          <div id="kb-downloads" class="kb-downloads">
-            <% @downloads.each do |download| %>
-              <%= render "kb/download_row", download: download %>
-            <% end %>
-          </div>
           <%= render "kb/tree" %>
         </div>
         <div class="kb-tree-footer">
@@ -146,11 +149,22 @@
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
         Extract knowledge
       </button>
+      <button class="kb-context-menu-item" data-kb-tree-target="item" data-menu-item="job"
+              data-action="click->kb-tree#job">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3a4 4 0 00-4 4v1a4 4 0 00-3 3.87V16a3 3 0 003 3h8a3 3 0 003-3v-4.13A4 4 0 0016 8V7a4 4 0 00-4-4z"/><path d="M9 13h.01M15 13h.01M9 16h6"/></svg>
+        Ask AI about this…
+      </button>
       <div class="kb-context-menu-divider" data-kb-tree-target="item" data-menu-item="divider"></div>
       <button class="kb-context-menu-item kb-context-menu-item--danger" data-kb-tree-target="item" data-menu-item="delete"
               data-action="click->kb-tree#destroy">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
         Delete
+      </button>
+      <div class="kb-context-menu-divider" data-kb-tree-target="item" data-menu-item="finderDivider"></div>
+      <button class="kb-context-menu-item" data-kb-tree-target="item" data-menu-item="openFinder"
+              data-action="click->kb-tree#openFinder">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 5h6l2 2h10v12H3z"/><path d="M8 12h8M12 9v6"/></svg>
+        Open in Finder
       </button>
     </div>
     <form class="kb-context-menu-prompt" hidden
@@ -165,5 +179,90 @@
         <option value="audio">Audio (mp3)</option>
       </select>
     </form>
+  </div>
+
+  <dialog class="kb-icon-dialog" data-kb-icon-picker-target="dialog" data-action="click->kb-icon-picker#backdropClose">
+    <form action="<%= kb_fs_preference_path %>" method="post" enctype="multipart/form-data"
+          class="kb-icon-dialog__sheet"
+          data-kb-icon-picker-target="form"
+          data-action="turbo:submit-end->kb-icon-picker#submitted">
+      <%= hidden_field_tag :authenticity_token, form_authenticity_token %>
+      <%= hidden_field_tag :_method, "patch" %>
+      <%= hidden_field_tag :src, "", data: { kb_icon_picker_target: "src" } %>
+      <%= hidden_field_tag :path, "", data: { kb_icon_picker_target: "path" } %>
+      <%= hidden_field_tag :entry_type, "", data: { kb_icon_picker_target: "entryType" } %>
+      <%= hidden_field_tag :icon_kind, "emoji", data: { kb_icon_picker_target: "kind" } %>
+      <%= hidden_field_tag :emoji, "📁", data: { kb_icon_picker_target: "emoji" } %>
+
+      <header class="kb-dialog-header">
+        <div>
+          <span class="kb-dialog-eyebrow">Folder character</span>
+          <h3 data-kb-icon-picker-target="title">Personalise folder</h3>
+        </div>
+        <button type="button" class="kb-dialog-close" data-action="kb-icon-picker#close" aria-label="Close icon picker">×</button>
+      </header>
+
+      <div class="kb-icon-tabs" role="tablist" aria-label="Icon source">
+        <button type="button" role="tab" class="kb-icon-tab is-active" data-kb-icon-picker-target="emojiTab" data-action="kb-icon-picker#showEmoji">Emoji</button>
+        <button type="button" role="tab" class="kb-icon-tab" data-kb-icon-picker-target="imageTab" data-action="kb-icon-picker#showImage">Upload image</button>
+      </div>
+
+      <div class="kb-icon-panel" data-kb-icon-picker-target="emojiPanel">
+        <div class="kb-emoji-grid">
+          <% %w[📁 📚 🧠 🔬 🧭 🗂️ 🧪 🧱 🌱 💡 🛰️ 🗃️ 📝 🎨 🧬 🛠️].each do |emoji| %>
+            <button type="button" class="kb-emoji-choice" data-emoji="<%= emoji %>" data-action="kb-icon-picker#chooseEmoji" aria-label="Use <%= emoji %>"><%= emoji %></button>
+          <% end %>
+        </div>
+      </div>
+
+      <div class="kb-icon-panel" data-kb-icon-picker-target="imagePanel" hidden>
+        <label class="kb-icon-upload" for="kb_entry_icon_image">
+          <span>Choose a square image</span>
+          <small>Stored locally. PNG, JPEG, GIF, or WebP.</small>
+        </label>
+        <input id="kb_entry_icon_image" type="file" name="icon_image" accept="image/png,image/jpeg,image/gif,image/webp"
+               data-kb-icon-picker-target="image" data-action="change->kb-icon-picker#imageChanged">
+      </div>
+
+      <footer class="kb-dialog-actions">
+        <button type="button" class="btn btn-sm" data-action="kb-icon-picker#useDefault">Use default</button>
+        <button type="submit" class="btn btn-primary btn-sm">Save icon</button>
+      </footer>
+    </form>
+  </dialog>
+
+  <dialog class="kb-job-dialog" data-kb-job-target="dialog" data-action="click->kb-job#backdropClose">
+    <form class="kb-job-dialog__sheet" data-kb-job-target="form" data-action="submit->kb-job#submit">
+      <input type="hidden" name="src" data-kb-job-target="src">
+      <input type="hidden" name="path" data-kb-job-target="path">
+      <input type="hidden" name="context_kind" data-kb-job-target="contextKind">
+
+      <header class="kb-dialog-header">
+        <div>
+          <span class="kb-dialog-eyebrow">Filesystem job</span>
+          <h3>Ask AI about <span data-kb-job-target="contextLabel"></span></h3>
+        </div>
+        <button type="button" class="kb-dialog-close" data-action="kb-job#close" aria-label="Close AI job">×</button>
+      </header>
+
+      <label class="kb-job-label" for="kb_job_prompt">What should the local AI do?</label>
+      <textarea id="kb_job_prompt" name="prompt" rows="5" class="kb-job-prompt"
+                placeholder="Summarise this, compare the sources, find gaps, draft follow-up research…"
+                data-kb-job-target="prompt"></textarea>
+
+      <div class="kb-job-voice">
+        <button type="button" class="kb-job-record" data-kb-job-target="recordButton" data-action="kb-job#toggleRecording">
+          <span class="kb-job-record__dot" aria-hidden="true"></span>
+          <span data-kb-job-target="recordLabel">Record voice message</span>
+        </button>
+        <p data-kb-job-target="status" aria-live="polite">The request and selected context stay on this machine.</p>
+      </div>
+
+      <footer class="kb-dialog-actions">
+        <button type="button" class="btn btn-sm" data-action="kb-job#close">Keep browsing</button>
+        <button type="submit" class="btn btn-primary btn-sm" data-kb-job-target="submitButton">Create AI job</button>
+      </footer>
+    </form>
+  </dialog>
   </div>
 </div>
