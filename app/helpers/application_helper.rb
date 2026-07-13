@@ -143,4 +143,9 @@ module ApplicationHelper
     else trackable_type.to_s.humanize.pluralize
     end
   end
+
+  # DOM id for a Think-in-Images wall — idea board or the global (KB) board.
+  def mood_wall_dom_id(idea)
+    idea ? "mood-wall-idea-#{idea.id}" : "mood-wall-global"
+  end
 end

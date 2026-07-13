@@ -7,17 +7,14 @@ class SettingsController < ApplicationController
   end
 
   def display
-    @display_quote = @user.custom_display_quote
-    @display_contrast = @user.display_contrast
-    @idea_tab_settings = @user.idea_tab_settings
+    load_display_settings
   end
 
   def update_display
     if @user.update_display_quote(display_settings_params)
       redirect_to settings_display_path, notice: 'Display settings updated.'
     else
-      @display_quote = @user.custom_display_quote
-      @display_contrast = @user.display_contrast
+      load_display_settings
       flash.now[:alert] = 'Failed to update display settings.'
       render :display, status: :unprocessable_content
     end
@@ -469,15 +466,65 @@ class SettingsController < ApplicationController
 
   def kb
     @kb_folders = @user.kb_folders
+    @kb_drives = @user.kb_drives
+    @hide_native_kb = @user.kb_hide_native?
+    @available_volumes = mounted_volumes
+  end
+
+  # Mount an smb/afp/nfs share via the native macOS dialog (which handles
+  # credentials through the Keychain — we never see or store them), then add
+  # the freshly mounted volume as a KB drive.
+  def mount_kb_drive
+    url = params[:url].to_s.strip
+    unless url.match?(%r{\A(smb|afp|nfs|cifs)://[^\s"'\\]+\z}i)
+      redirect_to settings_kb_path, alert: "Enter a share URL like smb://server/share."
+      return
+    end
+
+    before = mounted_volumes
+    system("osascript", "-e", %(mount volume "#{url}"))
+    added = mounted_volumes - before
+
+    if added.any?
+      @user.update_kb_drives(@user.kb_drives + added)
+      redirect_to settings_kb_path, notice: "Mounted #{File.basename(added.first)}."
+    else
+      redirect_to settings_kb_path, alert: "Could not mount #{url} (cancelled or already mounted)."
+    end
+  end
+
+  def pick_folder_dialog
+    path = `osascript -e 'POSIX path of (choose folder)' 2>/dev/null`.strip
+    if $?.success? && path.present?
+      render json: { path: path.chomp("/") }
+    else
+      render json: { cancelled: true }
+    end
+  end
+
+  def open_kb_folder
+    raw      = params[:path].to_s.strip
+    expanded = File.expand_path(raw) rescue nil
+    if expanded.present? && Dir.exist?(expanded)
+      system("open", expanded)
+      render json: { ok: true }
+    else
+      render json: { ok: false }, status: :unprocessable_entity
+    end
   end
 
   def update_kb
     paths = Array(params[:kb_folders]).reject(&:blank?)
-    if @user.update_kb_folders(paths)
-      ActivityLog.record_settings!(user: @user, setting: "KB Folders", details: { paths: paths })
+    drives = Array(params[:kb_drives]).reject(&:blank?)
+    hide_native = params[:hide_native_kb] == "1"
+    if @user.update_kb_folders(paths, hide_native: hide_native, drives: drives)
+      ActivityLog.record_settings!(user: @user, setting: "KB Folders", details: { paths: paths, drives: drives })
       redirect_to settings_kb_path, notice: "KB folders updated."
     else
       @kb_folders = paths
+      @kb_drives = drives
+      @hide_native_kb = hide_native
+      @available_volumes = mounted_volumes
       flash.now[:alert] = "Failed to update KB folders."
       render :kb, status: :unprocessable_content
     end
@@ -510,6 +557,11 @@ class SettingsController < ApplicationController
   end
 
   private
+
+  # Mounted volumes other than the boot drive (which is symlinked at /).
+  def mounted_volumes
+    Dir.glob("/Volumes/*").select { |p| File.directory?(p) && !File.symlink?(p) }.sort
+  end
 
   def load_security_settings
     @typing_lock_settings = @user.typing_lock_settings
@@ -624,7 +676,20 @@ class SettingsController < ApplicationController
   end
 
   def display_settings_params
-    params.require(:display_settings).permit(:quote, :contrast)
+    params.require(:display_settings).permit(
+      :quote, :contrast, :nav_text_hidden,
+      quote_library: [], nav_visible: User::NAV_PAGE_KEYS, quote_pages: User::NAV_PAGE_KEYS
+    )
+  end
+
+  def load_display_settings
+    @display_quote = @user.custom_display_quote
+    @display_contrast = @user.display_contrast
+    @nav_text_hidden = @user.nav_text_hidden?
+    @idea_tab_settings = @user.idea_tab_settings
+    @quote_library = @user.quote_library
+    @quote_page_assignments = @user.quote_page_assignments
+    @nav_hidden_items = @user.nav_hidden_items
   end
 
   def typing_lock_params

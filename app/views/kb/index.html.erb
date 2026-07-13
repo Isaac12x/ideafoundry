@@ -1,6 +1,18 @@
 <% content_for :body_class, "kb-page" %>
-<% kb_default_tab = %w[kb facts maxims].include?(params[:tab].to_s) ? params[:tab] : "kb" %>
-<div class="kb-shell" data-controller="tabs" data-tabs-default-tab-value="<%= kb_default_tab %>">
+<% kb_default_tab = %w[kb facts maxims images].include?(params[:tab].to_s) ? params[:tab] : "kb" %>
+<% kb_mood_images = @user.mood_images.global.includes(file_attachment: :blob).ordered.to_a %>
+<div class="kb-shell"
+     data-controller="tabs kb-tree"
+     data-tabs-default-tab-value="<%= kb_default_tab %>"
+     data-kb-tree-extract-url-value="<%= kb_extract_path %>"
+     data-kb-tree-create-url-value="<%= kb_fs_create_path %>"
+     data-kb-tree-rename-url-value="<%= kb_fs_rename_path %>"
+     data-kb-tree-move-url-value="<%= kb_fs_move_path %>"
+     data-kb-tree-delete-url-value="<%= kb_fs_delete_path %>"
+     data-kb-tree-edit-url-value="<%= kb_edit_path %>">
+
+  <%= turbo_stream_from @user, "kb_downloads" %>
+
   <div class="tabs-nav">
     <button data-tabs-target="tab" data-tab-name="kb" data-action="click->tabs#switch" class="tab-button active">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>
@@ -14,60 +26,28 @@
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V4s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
       Maxims
     </button>
+    <button data-tabs-target="tab" data-tab-name="images" data-action="click->tabs#switch" class="tab-button">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+      Think in Images
+    </button>
   </div>
 
+  <%# ── KB panel ──────────────────────────────────────────────── %>
   <div data-tabs-target="panel" data-tab-panel="kb" class="kb-panel-full">
     <div class="kb-layout">
       <aside class="kb-sidebar">
         <div class="kb-sidebar-inner">
-          <% if @folders.empty? %>
-            <div class="kb-tree">
-              <div class="kb-folder-group">
-                <div class="kb-folder-header kb-folder-header--empty">
-                  <svg class="kb-folder-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
-                  <span class="kb-folder-label">No folders yet</span>
-                </div>
-              </div>
-              <div class="kb-tree-footer">
-                <%= link_to settings_kb_path, class: "kb-add-folder-link" do %>
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                  Add folder
-                <% end %>
-              </div>
-            </div>
-          <% else %>
-            <div class="kb-tree">
-              <% @folders.each do |folder| %>
-                <div class="kb-folder-group" data-controller="kb-folder">
-                  <button class="kb-folder-header" data-action="click->kb-folder#toggle" type="button">
-                    <svg class="kb-folder-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
-                    <span class="kb-folder-label" title="<%= folder[:path] %>"><%= folder[:label] %></span>
-                    <% unless folder[:exists] %>
-                      <span class="kb-folder-status">(unavailable - supply the new path)</span>
-                    <% end %>
-                  </button>
-                  <div class="kb-folder-files" data-kb-folder-target="files">
-                    <% if folder[:files].empty? %>
-                      <span class="kb-no-files">No .md files found</span>
-                    <% else %>
-                      <%= render "kb/tree_node",
-                            tree: folder[:tree],
-                            folder_index: folder[:index],
-                            selected_file: @selected_file,
-                            selected_folder_index: @selected_folder_index %>
-                    <% end %>
-                  </div>
-                </div>
-              <% end %>
-              <div class="kb-tree-footer">
-                <%= link_to settings_kb_path, class: "kb-add-folder-link" do %>
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                  Add folder
-                <% end %>
-              </div>
-            </div>
+          <div id="kb-downloads" class="kb-downloads">
+            <% @downloads.each do |download| %>
+              <%= render "kb/download_row", download: download %>
+            <% end %>
+          </div>
+          <%= render "kb/tree" %>
+        </div>
+        <div class="kb-tree-footer">
+          <%= link_to settings_kb_path, class: "kb-add-folder-link" do %>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Add folder
           <% end %>
         </div>
       </aside>
@@ -78,8 +58,10 @@
         </turbo-frame>
       </main>
     </div>
+
   </div>
 
+  <%# ── Facts panel ─────────────────────────────────────────────── %>
   <div data-tabs-target="panel" data-tab-panel="facts" class="kb-panel-full kb-facts-panel-full hidden">
     <div class="kb-facts-container">
       <div class="page-header">
@@ -104,6 +86,7 @@
     </div>
   </div>
 
+  <%# ── Maxims panel ────────────────────────────────────────────── %>
   <div data-tabs-target="panel" data-tab-panel="maxims" class="kb-panel-full kb-maxims-panel-full hidden">
     <div class="kb-maxims-container">
       <div class="page-header">
@@ -126,5 +109,61 @@
         </div>
       <% end %>
     </div>
+  </div>
+
+  <%# ── Think in Images panel ───────────────────────────────────── %>
+  <div data-tabs-target="panel" data-tab-panel="images" class="kb-panel-full kb-mood-panel-full hidden">
+    <div class="kb-mood-container">
+      <%= render "mood_board/board", board_idea: nil, board_images: kb_mood_images %>
+    </div>
+  </div>
+
+  <%# ── Context menu (shared, position:fixed) ───────────────────── %>
+  <div class="kb-context-menu" data-kb-tree-target="menu">
+    <div data-kb-tree-target="items">
+      <button class="kb-context-menu-item" data-kb-tree-target="item" data-menu-item="newFile"
+              data-action="click->kb-tree#newFile">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="12" x2="12" y2="18"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+        New file…
+      </button>
+      <button class="kb-context-menu-item" data-kb-tree-target="item" data-menu-item="newFolder"
+              data-action="click->kb-tree#newFolder">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/><line x1="12" y1="10" x2="12" y2="16"/><line x1="9" y1="13" x2="15" y2="13"/></svg>
+        New folder…
+      </button>
+      <button class="kb-context-menu-item" data-kb-tree-target="item" data-menu-item="edit"
+              data-action="click->kb-tree#edit">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        Edit
+      </button>
+      <button class="kb-context-menu-item" data-kb-tree-target="item" data-menu-item="rename"
+              data-action="click->kb-tree#rename">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>
+        Rename…
+      </button>
+      <button class="kb-context-menu-item" data-kb-tree-target="item" data-menu-item="extract"
+              data-action="click->kb-tree#extract">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Extract knowledge
+      </button>
+      <div class="kb-context-menu-divider" data-kb-tree-target="item" data-menu-item="divider"></div>
+      <button class="kb-context-menu-item kb-context-menu-item--danger" data-kb-tree-target="item" data-menu-item="delete"
+              data-action="click->kb-tree#destroy">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+        Delete
+      </button>
+    </div>
+    <form class="kb-context-menu-prompt" hidden
+          data-kb-tree-target="prompt"
+          data-action="submit->kb-tree#promptSubmit">
+      <input type="text" class="kb-context-menu-input" autocomplete="off"
+             data-kb-tree-target="promptInput"
+             data-action="input->kb-tree#promptInputChanged" />
+      <select class="kb-context-menu-format" data-kb-tree-target="format" hidden>
+        <option value="auto">Auto (download link)</option>
+        <option value="video">Video (mp4)</option>
+        <option value="audio">Audio (mp3)</option>
+      </select>
+    </form>
   </div>
 </div>
