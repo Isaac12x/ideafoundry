@@ -49,10 +49,28 @@ class KbMultiFormatTest < ActionDispatch::IntegrationTest
     get kb_path
 
     assert_response :success
-    # Displayed names are extension-less, so match on the link URL.
-    assert_select ".kb-file-link[href*=?]", "page.html"
-    assert_select ".kb-file-link[href*=?]", "sheet.xlsx"
-    assert_select ".kb-file-link[href*=?]", "doc.docx" if @pandoc
+    assert_select ".kb-file-link", text: "page.html"
+    assert_select ".kb-file-link", text: "sheet.xlsx"
+    assert_select ".kb-file-link", text: "doc.docx" if @pandoc
+  end
+
+  test "image and video viewers can be selected and copied" do
+    File.write(File.join(@kb_dir, "photo.png"), "not-a-real-png")
+    File.write(File.join(@kb_dir, "clip.mp4"), "not-a-real-video")
+
+    get kb_file_path(src: src_index, file: "photo.png")
+
+    assert_response :success
+    assert_select '.kb-document[data-controller="kb-media-copy"]'
+    assert_select '.kb-media-copy-btn[data-action="click->kb-media-copy#copy"]', text: "Copy image"
+    assert_select 'img.kb-selectable-media[tabindex="0"][data-action*="kb-media-copy#copyFromShortcut"]'
+
+    get kb_file_path(src: src_index, file: "clip.mp4")
+
+    assert_response :success
+    assert_select '.kb-document[data-controller="kb-media-copy"]'
+    assert_select '.kb-media-copy-btn[data-action="click->kb-media-copy#copy"]', text: "Copy video"
+    assert_select 'video.kb-selectable-media[tabindex="0"][data-action*="kb-media-copy#copyFromShortcut"]'
   end
 
   test "selecting an html file renders a sandboxed iframe pointing at the raw endpoint" do
