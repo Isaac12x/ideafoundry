@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_13_220200) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_13_220400) do
   create_table "action_mailbox_inbound_emails", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "message_checksum", null: false
@@ -363,6 +363,28 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_13_220200) do
     t.index ["user_id"], name: "index_kb_fs_jobs_on_user_id"
   end
 
+  create_table "kb_media_edits", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.text "error"
+    t.datetime "finished_at"
+    t.string "media_kind", null: false
+    t.text "operations"
+    t.string "original_sha256"
+    t.string "relative_path", null: false
+    t.string "result_sha256"
+    t.string "revision_path"
+    t.integer "source_index", null: false
+    t.string "source_path", null: false
+    t.datetime "started_at"
+    t.string "status", default: "pending", null: false
+    t.datetime "updated_at", null: false
+    t.integer "user_id", null: false
+    t.index ["source_path", "relative_path"], name: "index_kb_media_edits_on_source_path_and_relative_path"
+    t.index ["user_id", "source_path", "relative_path"], name: "index_active_kb_media_edits_on_path", unique: true, where: "status IN ('pending', 'running')"
+    t.index ["user_id", "status"], name: "index_kb_media_edits_on_user_id_and_status"
+    t.index ["user_id"], name: "index_kb_media_edits_on_user_id"
+  end
+
   create_table "knowledge_extractions", force: :cascade do |t|
     t.bigint "attachment_id"
     t.string "backend"
@@ -577,6 +599,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_13_220200) do
   add_foreign_key "kb_downloads", "users"
   add_foreign_key "kb_entry_preferences", "users"
   add_foreign_key "kb_fs_jobs", "users"
+  add_foreign_key "kb_media_edits", "users"
   add_foreign_key "knowledge_extractions", "ideas"
   add_foreign_key "licensor_contacts", "licensors"
   add_foreign_key "licensors", "ideas"

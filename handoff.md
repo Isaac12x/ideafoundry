@@ -1,5 +1,35 @@
 # Handoff
 
+## 2026-07-13 — Knowledge-base media editing studios
+
+Branch: `feature/kb-media-editors` (stacked on `feature/kb-live-filesystem-jobs`)
+
+### Delivered
+
+- Every knowledge-base file now exposes Edit in its file header and context menu, while the normal viewer remains free of editor controllers and controls until that explicit action is taken.
+- Images open a full-resolution canvas studio with crop, free drawing, text annotation, rotation, horizontal/vertical flip, undo/reset, brightness, contrast, saturation, grayscale, and format-aware export.
+- Video opens a local timeline editor with millisecond in/out points, scrubbing, speed, volume, fades, normalisation, mute, centred aspect crops, rotation/flips, resolution selection, and colour grading.
+- Audio opens a decoded waveform editor with the same precise timeline, speed/volume/fades, loudness normalisation, and mono mixdown controls.
+- PDFs support page removal/reordering through page sequences, whole-document rotation, lossless output, and print/ebook/screen optimisation. HTML has an in-app source editor. DOCX, XLSX, TIFF, and opaque formats use a revision-safe native-format replacement surface.
+- Saves enqueue through Solid Queue, reject concurrent edits to the same path, process only with local binaries, atomically replace the selected file, and preserve its previous bytes under the source’s hidden `.ideafoundry-history/` tree.
+- `KbMediaEdit` retains durable job/provenance state. Human activity records include the exact edit recipe, source/revision paths, and SHA-256 checksums before and after the edit.
+- Fresh macOS installs and the production Docker image now include FFmpeg/ffprobe, ImageMagick, Ghostscript, pdftk, and Poppler; `SETUP.md` documents manual installation.
+
+### Verification
+
+- `PARALLEL_WORKERS=1 bin/rails test` — 707 tests, 2,789 assertions, 0 failures. Parallel runs intermittently hit the pre-existing native-KB directory-count race in `KbControllerTest`; that exact test passes alone, and one parallel full run also passed.
+- `node --test test/javascript/*.mjs` — 21 tests, all passing.
+- `bin/rails test test/system/kb_media_editor_system_test.rb` — headless Chrome verified dormant view mode, Edit activation, canvas load, controls, and Cancel return.
+- Focused media suite — 13 tests, 101 assertions, all passing.
+- Real local-tool smoke tests generated and edited MP4 and MP3 media, then probed the results; PDF page rotation plus screen optimisation also completed successfully. These caught and fixed output-time truncation for slowed media.
+- `bin/rails zeitwerk:check` and `git diff --check` — passed.
+
+### Runtime and storage notes
+
+- Media rendering requires the separately running Solid Queue worker (`bin/jobs`) in production.
+- Revisions deliberately live beside each KB source so its provenance travels with that source. The history directory is dot-prefixed and omitted from the KB tree.
+- The pre-existing dirty `graphify-out/` artifacts remain outside the feature commit; they are refreshed after source changes as required.
+
 ## 2026-07-13 — Knowledge-base continuity and media controls
 
 Branch: `feature/kb-navigation-media-shortcuts`

@@ -19,6 +19,7 @@ class User < ApplicationRecord
   has_many :kb_downloads, dependent: :destroy
   has_many :kb_entry_preferences, dependent: :destroy
   has_many :kb_fs_jobs, dependent: :destroy
+  has_many :kb_media_edits, dependent: :destroy
   has_many :mood_images, dependent: :destroy
 
   # Single-user application - one user per instance
