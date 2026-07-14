@@ -228,9 +228,14 @@ Rails.application.routes.draw do
   get 'knowledge-base/edit', to: 'kb#edit', as: :kb_edit
   patch 'knowledge-base/save', to: 'kb#fs_save', as: :kb_fs_save
   post 'knowledge-base/fs/create', to: 'kb#fs_create', as: :kb_fs_create
+  post 'knowledge-base/fs/upload', to: 'kb#fs_upload', as: :kb_fs_upload
   patch 'knowledge-base/fs/rename', to: 'kb#fs_rename', as: :kb_fs_rename
   patch 'knowledge-base/fs/move', to: 'kb#fs_move', as: :kb_fs_move
+  patch 'knowledge-base/fs/preference', to: 'kb#fs_preference', as: :kb_fs_preference
+  post 'knowledge-base/fs/open', to: 'kb#fs_open', as: :kb_fs_open
   delete 'knowledge-base/fs', to: 'kb#fs_delete', as: :kb_fs_delete
+  get 'knowledge-base/tree', to: 'kb#tree', as: :kb_tree
+  post 'knowledge-base/jobs', to: 'kb_fs_jobs#create', as: :kb_fs_jobs
   resources :facts, only: [:create, :destroy]
   resources :maxims, only: [:create, :destroy]
 

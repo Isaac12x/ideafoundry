@@ -11,7 +11,7 @@ class SettingsController < ApplicationController
   end
 
   def update_display
-    if @user.update_display_quote(display_settings_params)
+    if @user.update_display_quote(display_settings_params) && update_default_kb_folder_icon(display_settings_params)
       redirect_to settings_display_path, notice: 'Display settings updated.'
     else
       load_display_settings
@@ -678,6 +678,7 @@ class SettingsController < ApplicationController
   def display_settings_params
     params.require(:display_settings).permit(
       :quote, :contrast, :nav_text_hidden,
+      :kb_default_icon_kind, :kb_default_folder_emoji, :kb_default_folder_icon,
       quote_library: [], nav_visible: User::NAV_PAGE_KEYS, quote_pages: User::NAV_PAGE_KEYS
     )
   end
@@ -690,6 +691,25 @@ class SettingsController < ApplicationController
     @quote_library = @user.quote_library
     @quote_page_assignments = @user.quote_page_assignments
     @nav_hidden_items = @user.nav_hidden_items
+    @kb_default_folder_preference = KbEntryPreference.default_folder_for(@user)
+  end
+
+  def update_default_kb_folder_icon(settings)
+    kind = settings[:kb_default_icon_kind].to_s
+    return true if kind.blank?
+
+    preference = KbEntryPreference.default_folder_for(@user)
+    preference.save! unless preference.persisted?
+    preference.set_icon!(
+      kind: kind,
+      emoji: settings[:kb_default_folder_emoji],
+      image: settings[:kb_default_folder_icon]
+    )
+    ActivityLog.record_settings!(user: @user, setting: "Knowledge Base Display", details: { icon_kind: kind })
+    true
+  rescue ActiveRecord::RecordInvalid, ArgumentError => error
+    @user.errors.add(:base, error.message)
+    false
   end
 
   def typing_lock_params

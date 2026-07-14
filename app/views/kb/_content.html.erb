@@ -116,6 +116,13 @@
             <% end %>
           <% end %>
         </article>
+      <% elsif kind == :generic %>
+        <div class="kb-generic-file">
+          <%= render "kb/file_icon", extension: File.extname(content.filename).downcase %>
+          <p>This file is stored in the knowledge base but does not have an inline preview.</p>
+          <%= link_to "Download #{content.filename}", content.serve_url,
+                class: "btn btn-primary btn-sm", data: { turbo: false } %>
+        </div>
       <% end %>
     </div>
   </div>
