@@ -57,7 +57,7 @@
     <%
       ext = File.extname(node[:rel]).downcase
       is_extractable = extractable_exts.include?(ext)
-      is_editable = ext == ".md"
+      is_editable = true
       active = (selected_folder_index == folder_index && selected_file == node[:rel])
       favorite = node[:preference]&.favorite?
       file_url = kb_file_path(file: node[:rel], src: folder_index)

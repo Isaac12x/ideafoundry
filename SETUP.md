@@ -11,6 +11,10 @@
 - **libvips** (for image processing)
   - macOS: `brew install vips`
   - Debian/Ubuntu: `apt-get install libvips`
+- **Local media toolchain** (for knowledge-base video, audio, image metadata, and PDF editing)
+  - macOS: `brew install ffmpeg imagemagick ghostscript pdftk-java poppler`
+  - Debian/Ubuntu: `apt-get install ffmpeg imagemagick ghostscript pdftk-java poppler-utils`
+  - `bin/install` installs missing tools automatically on macOS; the production Docker image includes them.
 
 ## Local Development Setup
 
