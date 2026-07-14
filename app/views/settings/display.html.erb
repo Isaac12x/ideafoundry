@@ -30,7 +30,7 @@
 
   <div class="display-page-stack">
 
-    <%= form_with url: settings_display_path, method: :patch, local: true, class: "display-settings-form" do |form| %>
+    <%= form_with url: settings_display_path, method: :patch, local: true, class: "display-settings-form", html: { multipart: true } do |form| %>
       <div class="display-fields-card">
         <div class="display-field-row">
           <label class="display-field-label" for="display_settings_quote">Default quote</label>
@@ -76,6 +76,63 @@
             </span>
           </label>
         </div>
+      </div>
+
+      <div class="display-section-divider">
+        <h3 class="display-section-heading">Knowledge base</h3>
+        <p class="display-section-subhead">Set the default folder character. Individual folders can still be personalised by selecting their icon in the tree.</p>
+      </div>
+
+      <div class="display-fields-card kb-default-icon-settings" data-controller="kb-icon-settings">
+        <%= hidden_field_tag "display_settings[kb_default_icon_kind]", "", data: { kb_icon_settings_target: "kind" } %>
+        <%= hidden_field_tag "display_settings[kb_default_folder_emoji]", @kb_default_folder_preference.emoji, data: { kb_icon_settings_target: "emoji" } %>
+
+        <div class="kb-default-icon-settings__preview" aria-label="Current knowledge-base folder icon">
+          <span class="kb-default-icon-settings__glyph <%= 'has-image' if @kb_default_folder_preference.icon_kind == 'image' && @kb_default_folder_preference.icon_image.attached? %>"
+                data-kb-icon-settings-target="preview">
+            <% if @kb_default_folder_preference.icon_kind == "image" && @kb_default_folder_preference.icon_image.attached? %>
+              <%= image_tag @kb_default_folder_preference.icon_image, alt: "" %>
+            <% else %>
+              <%= @kb_default_folder_preference.emoji.presence || "📁" %>
+            <% end %>
+          </span>
+          <div>
+            <strong>Default folder icon</strong>
+            <p>Applied to every KB folder that does not have its own icon.</p>
+          </div>
+        </div>
+
+        <div class="kb-icon-tabs" role="tablist" aria-label="Folder icon source">
+          <button type="button" role="tab" class="kb-icon-tab is-active"
+                  data-kb-icon-settings-target="emojiTab"
+                  data-action="kb-icon-settings#showEmojiTab">Emoji</button>
+          <button type="button" role="tab" class="kb-icon-tab"
+                  data-kb-icon-settings-target="imageTab"
+                  data-action="kb-icon-settings#showImageTab">Upload image</button>
+        </div>
+
+        <div class="kb-icon-panel" data-kb-icon-settings-target="emojiPanel">
+          <div class="kb-emoji-grid" aria-label="Choose a default folder emoji">
+            <% %w[📁 📚 🧠 🔬 🧭 🗂️ 🧪 🧱 🌱 💡 🛰️ 🗃️].each do |emoji| %>
+              <button type="button" class="kb-emoji-choice <%= 'is-selected' if @kb_default_folder_preference.emoji == emoji %>"
+                      data-emoji="<%= emoji %>" data-action="kb-icon-settings#chooseEmoji"
+                      aria-label="Use <%= emoji %> as the folder icon"><%= emoji %></button>
+            <% end %>
+          </div>
+        </div>
+
+        <div class="kb-icon-panel" data-kb-icon-settings-target="imagePanel" hidden>
+          <label class="kb-icon-upload" for="display_settings_kb_default_folder_icon">
+            <span>Choose a square image</span>
+            <small>PNG, JPEG, GIF, or WebP. It stays in local app storage.</small>
+          </label>
+          <%= file_field_tag "display_settings[kb_default_folder_icon]",
+                id: "display_settings_kb_default_folder_icon",
+                accept: "image/png,image/jpeg,image/gif,image/webp",
+                data: { kb_icon_settings_target: "image", action: "change->kb-icon-settings#imageChanged" } %>
+        </div>
+
+        <button type="button" class="btn btn-sm kb-icon-reset" data-action="kb-icon-settings#useDefault">Use built-in folder icon</button>
       </div>
 
       <div class="display-section-divider">
