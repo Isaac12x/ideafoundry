@@ -3134,30 +3134,35 @@ header.app-header {
 
 /* ---- Keyboard Shortcuts & Command Palette ---- */
 .shortcuts-shell {
-    position: fixed;
-    left: 1rem;
-    bottom: 1rem;
+    position: relative;
+    flex-shrink: 0;
+    margin-left: 0.25rem;
     z-index: 360;
-    pointer-events: none;
+    pointer-events: auto;
 }
 
-body.has-notes-bar .shortcuts-shell {
-    bottom: 3.25rem;
+body:not(.has-notes-bar) .shortcuts-shell {
+    position: fixed;
+    right: 1rem;
+    bottom: 1rem;
 }
 
 .shortcuts-toggle {
     pointer-events: auto;
-    width: 42px;
-    height: 42px;
-    border: 1px solid var(--border-emphasis);
-    border-radius: 50%;
-    background: color-mix(in srgb, var(--bg-elevated) 86%, black);
-    color: var(--text-primary);
-    box-shadow: var(--shadow-md);
+    width: auto;
+    height: 28px;
+    padding: 0.2rem 0.5rem;
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--text-muted);
+    box-shadow: none;
     cursor: pointer;
-    font: 700 1rem/1 var(--font-mono);
+    font: 600 0.68rem/1 var(--font-mono);
+    letter-spacing: 0.01em;
     transition:
         transform 0.16s ease,
+        background 0.16s ease,
         border-color 0.16s ease,
         color 0.16s ease;
 }
@@ -3165,6 +3170,7 @@ body.has-notes-bar .shortcuts-shell {
 .shortcuts-toggle:hover,
 .shortcuts-toggle[aria-expanded="true"] {
     border-color: var(--accent);
+    background: var(--accent-muted);
     color: var(--accent);
     transform: translateY(-1px);
 }
@@ -3179,8 +3185,8 @@ body.has-notes-bar .shortcuts-shell {
 .shortcuts-panel {
     pointer-events: auto;
     position: absolute;
-    left: 0;
-    bottom: 52px;
+    right: 0;
+    bottom: 36px;
     width: min(430px, calc(100vw - 2rem));
     max-height: min(72vh, 620px);
     overflow: hidden;
@@ -3433,13 +3439,9 @@ body.shortcuts-hints-active {
 }
 
 @media (max-width: 640px) {
-    .shortcuts-shell {
-        left: 0.75rem;
+    body:not(.has-notes-bar) .shortcuts-shell {
+        right: 0.75rem;
         bottom: 0.75rem;
-    }
-
-    body.has-notes-bar .shortcuts-shell {
-        bottom: 3rem;
     }
 
     .shortcuts-panel {

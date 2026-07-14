@@ -40,13 +40,75 @@ class KbControllerTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_select ".kb-folder-label", text: "App KB"
-    assert_select ".kb-file-link", text: "native-kb-#{filename[/native-kb-(.+)\.md/, 1]}"
+    assert_select ".kb-file-link", text: filename
 
     get kb_file_path(src: 0, file: filename)
 
     assert_response :success
     assert_includes response.body, "<h1>Native KB Doc</h1>"
     assert_includes response.body, "Native body"
+  end
+
+  test "reload reopens the last valid document instead of the first file" do
+    use_isolated_kb_folder
+    File.write(File.join(@kb_dir, "a-first.md"), "# First")
+    File.write(File.join(@kb_dir, "z-last.md"), "# Last open")
+
+    get kb_file_path(src: 0, file: "z-last.md")
+    assert_response :success
+
+    get kb_path
+
+    assert_response :success
+    assert_select ".kb-file-link.is-active", text: "z-last.md"
+    assert_select ".kb-file-meta__name", text: "z-last.md"
+    assert_includes response.body, "<h1>Last open</h1>"
+  end
+
+  test "stale last document falls back to the first available file" do
+    use_isolated_kb_folder
+    File.write(File.join(@kb_dir, "available.md"), "# Available")
+    File.write(File.join(@kb_dir, "removed.md"), "# Removed")
+
+    get kb_file_path(src: 0, file: "removed.md")
+    File.delete(File.join(@kb_dir, "removed.md"))
+
+    get kb_path
+
+    assert_response :success
+    assert_select ".kb-file-link.is-active", text: "available.md"
+    assert_includes response.body, "<h1>Available</h1>"
+  end
+
+  test "selected files show extensions and filesystem dates in the content header" do
+    use_isolated_kb_folder
+    path = File.join(@kb_dir, "research-note.md")
+    File.write(path, "# Dated")
+    modified_at = Time.utc(2026, 7, 12, 10, 30, 0)
+    File.utime(modified_at, modified_at, path)
+
+    get kb_path(src: 0, file: "research-note.md")
+
+    assert_response :success
+    assert_select ".kb-file-link", text: "research-note.md"
+    assert_select ".kb-file-meta__name", text: "research-note.md"
+    assert_select ".kb-file-meta__dates dt", text: "Created"
+    assert_select ".kb-file-meta__dates dt", text: "Modified"
+    assert_select ".kb-file-meta__dates time[datetime]", count: 2
+    rendered_modified_at = css_select(".kb-file-meta__dates > div").last.at_css("time")["datetime"]
+    assert_in_delta modified_at.to_f, Time.iso8601(rendered_modified_at).to_f, 1
+  end
+
+  test "folder headers expose collapse and uncollapse all actions" do
+    use_isolated_kb_folder
+    FileUtils.mkdir_p(File.join(@kb_dir, "research", "sources"))
+    File.write(File.join(@kb_dir, "research", "sources", "note.md"), "# Nested")
+
+    get kb_path
+
+    assert_response :success
+    assert_select 'button[aria-label="Collapse all folders"][data-action="click->kb-folder#collapseAll"]'
+    assert_select 'button[aria-label="Uncollapse all folders"][data-action="click->kb-folder#expandAll"]'
   end
 
   test "knowledge base includes a maxims panel for high importance reminders" do
