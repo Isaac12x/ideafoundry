@@ -1,0 +1,45 @@
+<header class="kb-file-meta">
+  <div class="kb-file-meta__identity" title="<%= content.rel %>">
+    <span class="kb-file-meta__name"><%= content.filename %></span>
+  </div>
+
+  <dl class="kb-file-meta__dates">
+    <div>
+      <dt>Created</dt>
+      <dd>
+        <time datetime="<%= content.created_at.iso8601 %>">
+          <%= content.created_at.in_time_zone.strftime("%d %b %Y, %H:%M") %>
+        </time>
+      </dd>
+    </div>
+    <div>
+      <dt>Modified</dt>
+      <dd>
+        <time datetime="<%= content.modified_at.iso8601 %>">
+          <%= content.modified_at.in_time_zone.strftime("%d %b %Y, %H:%M") %>
+        </time>
+      </dd>
+    </div>
+  </dl>
+
+  <div class="kb-file-meta__actions">
+    <% if content.kind == :markdown %>
+      <%= link_to kb_edit_path(src: content.src, file: content.rel),
+            data: { turbo_frame: "kb-content" }, class: "kb-content-edit-link" do %>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        Edit
+      <% end %>
+    <% end %>
+
+    <% if %i[image video].include?(content.kind) %>
+      <button type="button"
+              class="kb-media-copy-btn"
+              data-action="click->kb-media-copy#copy"
+              title="Copy <%= content.kind %>">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+        <span data-kb-media-copy-target="label">Copy <%= content.kind %></span>
+      </button>
+      <span class="sr-only" aria-live="polite" data-kb-media-copy-target="status"></span>
+    <% end %>
+  </div>
+</header>
