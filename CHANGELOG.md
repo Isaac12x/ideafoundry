@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Knowledge-base folder actions for collapsing or uncollapsing every nested folder in a source.
+- Knowledge-base file headers with full extensions, created/modified dates, and selectable, copyable image and video previews.
 - Multiple scoring systems, including a founder scorecard with seven 1-5 criteria and a 24/35 gate for active work and Kanban placement.
 - Right-click idea cards can add ideas to Kanban board columns or named lists.
 - Backlog items can include multiple uploaded images with inline thumbnails.
@@ -41,6 +43,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The keyboard-shortcuts helper now appears as `/shortcuts/` at the bottom-right edge of the notes bar.
 - Batch imports now discover local Apple Notes databases directly, preview folders and individual notes, and route cloud note apps through OAuth-oriented connection flows.
 - Local attachment OCR now uses Surya with block HTML metadata while preserving complete extracted text for saving.
 - Idea creation no longer asks for Kanban board or named-list placement; placement remains available after the idea exists.
@@ -60,6 +63,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Knowledge-base reloads reopen the last valid document instead of resetting to the first available file.
 - Local HTTPS access through `ideas.local:8443` is allowed by Rails host authorization.
 - Batch import export uploads are available again for note apps without OAuth support, and individual note selections no longer override folder selections.
 - Ask Agent now only renders while the local agent is enabled and live, and its launcher icon changes at most once per day.

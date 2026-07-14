@@ -82,6 +82,10 @@ export default class extends Controller {
     this.panelOpen() ? this.closePanel() : this.openPanel()
   }
 
+  stopPropagation(event) {
+    event.stopPropagation()
+  }
+
   openPanel() {
     if (!this.hasPanelTarget) return
 

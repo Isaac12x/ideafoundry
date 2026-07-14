@@ -140,7 +140,6 @@
     </header>
 
     <%= render "layouts/ask_agent", security_lock_screen: security_lock_screen unless security_lock_screen %>
-    <%= render "layouts/shortcut_cheatsheet" unless security_lock_screen %>
     <%= render "layouts/command_palette" unless security_lock_screen %>
 
     <% if display_quote.present? && controller_name != 'settings' && !security_lock_screen %>
@@ -165,6 +164,7 @@
           <div class="kb-notes-tab-strip" data-action="click->kb-notes#barClick">
             <div class="kb-notes-tabs" data-kb-notes-target="tabList"></div>
             <button class="kb-notes-add-btn" data-action="click->kb-notes#addTab" title="Add note tab">+</button>
+            <%= render "layouts/shortcut_cheatsheet" %>
           </div>
           <div class="kb-notes-panel-overlay" data-kb-notes-target="panel">
             <div class="kb-notes-editor-body">
@@ -173,6 +173,8 @@
           </div>
         </div>
       </div>
+    <% elsif !security_lock_screen %>
+      <%= render "layouts/shortcut_cheatsheet" %>
     <% end %>
   </body>
 </html>
