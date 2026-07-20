@@ -166,7 +166,8 @@ Rails.application.routes.draw do
   # Settings management
   get 'settings', to: 'settings#index'
   patch 'settings', to: 'settings#update_display'
-  patch 'settings/features', to: 'settings#update_features', as: :settings_features
+  get 'settings/features', to: 'settings#features', as: :settings_features
+  patch 'settings/features', to: 'settings#update_features'
   get 'settings/display', to: 'settings#display', as: :settings_display
   patch 'settings/display', to: 'settings#update_display'
   get 'settings/scoring', to: 'settings#scoring'

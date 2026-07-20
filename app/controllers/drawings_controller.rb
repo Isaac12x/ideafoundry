@@ -51,7 +51,7 @@ class DrawingsController < ApplicationController
         )
       end
       format.json { head :no_content }
-      format.html { redirect_to idea_path(@idea, anchor: "drawing"), notice: "Drawing deleted." }
+      format.html { redirect_to idea_path(@idea, anchor: "media"), notice: "Drawing deleted." }
     end
   end
 
