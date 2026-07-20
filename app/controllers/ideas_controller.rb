@@ -551,7 +551,7 @@ class IdeasController < ApplicationController
   end
 
   def apply_sorting(ideas)
-    sort_by = params[:sort_by] || 'created_at'
+    sort_by = params[:sort_by] || 'score'
     sort_order = params[:sort_order] || 'desc'
     
     case sort_by

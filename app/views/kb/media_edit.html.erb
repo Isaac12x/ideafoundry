@@ -1,0 +1,94 @@
+<turbo-frame id="kb-content">
+  <%= form_with url: kb_media_edits_path,
+        method: :post,
+        multipart: true,
+        class: "kb-media-editor",
+        data: {
+          controller: "kb-media-editor",
+          action: "submit->kb-media-editor#save input->kb-media-editor#preview",
+          kb_media_editor_kind_value: @content.kind,
+          kb_media_editor_filename_value: @content.filename,
+          kb_media_editor_duration_value: @media_info[:duration].to_f,
+          kb_media_editor_width_value: @media_info[:width].to_i,
+          kb_media_editor_height_value: @media_info[:height].to_i,
+          kb_media_editor_size_value: @media_info[:size].to_i
+        } do |form| %>
+    <%= form.hidden_field :src, value: @selected_folder_index %>
+    <%= form.hidden_field :file, value: @selected_file %>
+
+    <header class="kb-media-editor__header">
+      <div class="kb-media-editor__identity">
+        <span class="kb-media-editor__eyebrow"><%= @content.kind.to_s.humanize %> studio</span>
+        <strong><%= @content.filename %></strong>
+        <span><%= number_to_human_size(@media_info[:size]) %><% if @media_info[:width].to_i.positive? %> · <%= @media_info[:width] %> × <%= @media_info[:height] %><% end %><% if @media_info[:duration].to_f.positive? %> · <%= distance_of_time_in_words(@media_info[:duration]) %><% end %></span>
+      </div>
+      <div class="kb-media-editor__actions">
+        <span class="kb-media-editor__status" data-kb-media-editor-target="status" aria-live="polite">Original protected in revision history</span>
+        <%= link_to "Cancel", kb_file_path(src: @selected_folder_index, file: @selected_file),
+              data: { turbo_frame: "kb-content" }, class: "btn btn-sm" %>
+        <%= form.submit "Save edit", class: "btn btn-primary btn-sm", data: { kb_media_editor_target: "saveButton" } %>
+      </div>
+    </header>
+
+    <div class="kb-media-editor__workspace kb-media-editor__workspace--<%= @content.kind %>">
+      <section class="kb-media-editor__stage" aria-label="<%= @content.kind.to_s.humanize %> preview">
+        <% if @content.kind == :image %>
+          <div class="kb-media-editor__canvas-wrap" data-action="pointerdown->kb-media-editor#pointerDown pointermove->kb-media-editor#pointerMove pointerup->kb-media-editor#pointerUp pointercancel->kb-media-editor#pointerUp">
+            <canvas data-kb-media-editor-target="canvas" aria-label="Editable image canvas"></canvas>
+            <div class="kb-media-editor__crop-selection" data-kb-media-editor-target="cropSelection" hidden></div>
+          </div>
+          <img src="<%= @content.serve_url %>" alt="" hidden data-kb-media-editor-target="imageSource" data-action="load->kb-media-editor#loadImage">
+
+        <% elsif @content.kind == :video %>
+          <video controls preload="metadata" data-kb-media-editor-target="media" data-action="loadedmetadata->kb-media-editor#mediaReady timeupdate->kb-media-editor#timeChanged">
+            <source src="<%= @content.serve_url %>" type="<%= @content.mime_type %>">
+          </video>
+
+        <% elsif @content.kind == :audio %>
+          <div class="kb-media-editor__audio-visual">
+            <div class="kb-media-editor__record-mark" aria-hidden="true"></div>
+            <canvas class="kb-media-editor__waveform" data-kb-media-editor-target="waveform" aria-label="Audio waveform"></canvas>
+            <span class="kb-media-editor__audio-name"><%= @content.filename %></span>
+          </div>
+          <audio controls preload="metadata" data-kb-media-editor-target="media" data-action="loadedmetadata->kb-media-editor#mediaReady timeupdate->kb-media-editor#timeChanged">
+            <source src="<%= @content.serve_url %>" type="<%= @content.mime_type %>">
+          </audio>
+
+        <% elsif @content.kind == :pdf %>
+          <div class="kb-media-editor__pdf" data-controller="kb-pdf"
+               data-kb-pdf-url-value="<%= @content.serve_url %>"
+               data-kb-pdf-key-value="editor:<%= @content.src %>:<%= @content.rel %>"></div>
+
+        <% elsif @source_content.present? || %w[.html .htm].include?(File.extname(@content.filename).downcase) %>
+          <label class="kb-media-editor__source-label" for="kb_source_content">HTML source</label>
+          <%= text_area_tag :source_content, @source_content, id: "kb_source_content",
+                class: "kb-media-editor__source", spellcheck: false, data: { kb_media_editor_target: "source" } %>
+
+        <% else %>
+          <div class="kb-media-editor__replace-stage">
+            <%= render "kb/file_icon", extension: File.extname(@content.filename).downcase %>
+            <h3>Edit in the format’s native tool</h3>
+            <p>Choose the revised file here. Idea Foundry keeps the current file as a checksum-addressed revision before replacing it.</p>
+            <%= file_field_tag :replacement_file, class: "kb-media-editor__file-input",
+                  data: { kb_media_editor_target: "replacement" } %>
+          </div>
+        <% end %>
+      </section>
+
+      <aside class="kb-media-editor__inspector">
+        <% if @content.kind == :image %>
+          <%= render "kb/image_editor_controls" %>
+        <% elsif %i[video audio].include?(@content.kind) %>
+          <%= render "kb/av_editor_controls", kind: @content.kind, media_info: @media_info %>
+        <% elsif @content.kind == :pdf %>
+          <%= render "kb/pdf_editor_controls", media_info: @media_info %>
+        <% else %>
+          <section class="kb-media-editor__panel">
+            <h3>Revision</h3>
+            <p class="kb-media-editor__hint">Saving writes atomically. The previous bytes remain under the hidden <code>.ideafoundry-history</code> directory and the activity log records both checksums.</p>
+          </section>
+        <% end %>
+      </aside>
+    </div>
+  <% end %>
+</turbo-frame>

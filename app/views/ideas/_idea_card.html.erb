@@ -21,7 +21,9 @@
       <% end %>
 
       <div class="idea-card-footer">
-        <span class="idea-state <%= idea.state %>"><%= idea.state == "idea_new" ? "New" : idea.state.humanize %></span>
+        <% if feature_enabled?(:idea_states) %>
+          <span class="idea-state <%= idea.state %>"><%= idea.state == "idea_new" ? "New" : idea.state.humanize %></span>
+        <% end %>
         <% if idea.topologies.any? %>
           <div class="idea-card-tags">
             <% idea.topologies.each do |topology| %>

@@ -1,3 +1,4 @@
+<% idea_licensing_active = feature_enabled?(:licensing) && @idea.for_licensing? %>
 <% if params[:idea_draft_saved].present? %>
   <div data-controller="idea-draft-persist"
        data-idea-draft-persist-clear-on-connect-value="true"
@@ -22,7 +23,7 @@
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
           Edit
         <% end %>
-        <% if @idea.for_licensing? %>
+        <% if idea_licensing_active %>
           <%= link_to licensing_crm_path, class: "btn btn-sm" do %>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="5"/><path d="M8.5 12.5L7 22l5-3 5 3-1.5-9.5"/></svg>
             Licensing CRM
@@ -80,7 +81,9 @@
     <div class="idea-header-content">
       <h1 class="idea-detail-title"><%= @idea.title %></h1>
       <div class="idea-header-meta">
-        <span class="idea-state <%= @idea.state %>"><%= @idea.state.humanize %></span>
+        <% if feature_enabled?(:idea_states) %>
+          <span class="idea-state <%= @idea.state %>"><%= @idea.state.humanize %></span>
+        <% end %>
         <% @idea.topologies.each do |topology| %>
           <%= link_to ideas_path(topology_id: topology.id), class: "topology-badge", style: "--badge-color: #{topology.color || 'var(--accent)'}" do %>
             <span class="topology-color-dot" style="background-color: <%= topology.color || 'var(--accent)' %>"></span>
@@ -206,7 +209,7 @@
         <button data-tabs-target="tab" data-tab-name="description" data-action="click->tabs#switch" class="tab-button active">
           Description
         </button>
-        <% if @idea.for_licensing? %>
+        <% if idea_licensing_active %>
           <% licensor_count = @idea.licensors.count %>
           <button data-tabs-target="tab" data-tab-name="licensors" data-action="click->tabs#switch" class="tab-button">
             <span id="licensors_tab_label_<%= @idea.id %>">Potential Licensors<% if licensor_count > 0 %> (<%= licensor_count %>)<% end %></span>
@@ -236,7 +239,7 @@
             </button>
           <% end %>
         <% end %>
-        <% if @user.idea_tab_enabled?('tool') && !@idea.for_licensing? %>
+        <% if @user.idea_tab_enabled?('tool') && !idea_licensing_active %>
           <% tool_count = @idea.idea_entries.where(kind: 'tool').count %>
           <button data-tabs-target="tab" data-tab-name="tool" data-action="click->tabs#switch" class="tab-button">
             <span id="idea_entries_tab_label_<%= @idea.id %>_tool">Tools<% if tool_count > 0 %> (<%= tool_count %>)<% end %></span>
@@ -252,7 +255,7 @@
             <span id="idea_entries_tab_label_<%= @idea.id %>_competitors">Competitors<% if merged_count > 0 %> (<%= merged_count %>)<% end %></span>
           </button>
         <% end %>
-        <% if @user.idea_tab_enabled?('notes') && !@idea.for_licensing? %>
+        <% if @user.idea_tab_enabled?('notes') && !idea_licensing_active %>
           <% note_count = @idea.notes.count %>
           <button data-tabs-target="tab" data-tab-name="notes" data-action="click->tabs#switch" class="tab-button">
             <span id="notes_tab_label_<%= @idea.id %>">Notes<% if note_count > 0 %> (<%= note_count %>)<% end %></span>
@@ -299,7 +302,7 @@
         </div>
 
         <!-- Potential Licensors Tab -->
-        <% if @idea.for_licensing? %>
+        <% if idea_licensing_active %>
           <div data-tabs-target="panel" data-tab-panel="licensors" class="tab-panel hidden">
             <%= render "licensors/tab", idea: @idea, licensor: Licensor.new %>
           </div>
@@ -547,7 +550,7 @@
         <% end %>
 
         <!-- Tools Tab -->
-        <% if @user.idea_tab_enabled?('tool') && !@idea.for_licensing? %>
+        <% if @user.idea_tab_enabled?('tool') && !idea_licensing_active %>
           <div data-tabs-target="panel" data-tab-panel="tool" class="tab-panel hidden">
             <%= render "idea_entries/tab", idea: @idea, kind: 'tool' %>
           </div>
@@ -622,7 +625,7 @@
         <% end %>
 
         <!-- Notes Tab -->
-        <% if @user.idea_tab_enabled?('notes') && !@idea.for_licensing? %>
+        <% if @user.idea_tab_enabled?('notes') && !idea_licensing_active %>
         <div data-tabs-target="panel" data-tab-panel="notes" class="tab-panel hidden">
           <%= render "notes/tab", idea: @idea %>
         </div>

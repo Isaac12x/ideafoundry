@@ -5,6 +5,7 @@ class Template < ApplicationRecord
   FIELD_TYPES = %w[text textarea number select boolean date url].freeze
 
   belongs_to :user
+  belongs_to :topology, optional: true
   has_many :ideas, dependent: :nullify
 
   # Validations

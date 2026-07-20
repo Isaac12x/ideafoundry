@@ -1,0 +1,33 @@
+<section class="kb-media-editor__panel">
+  <h3>Tools</h3>
+  <div class="kb-media-editor__tool-grid" role="toolbar" aria-label="Image tools">
+    <button type="button" class="kb-media-editor__tool" data-action="kb-media-editor#setMode" data-kb-media-editor-mode-param="crop" aria-pressed="false">Crop</button>
+    <button type="button" class="kb-media-editor__tool" data-action="kb-media-editor#setMode" data-kb-media-editor-mode-param="draw" aria-pressed="false">Draw</button>
+    <button type="button" class="kb-media-editor__tool" data-action="kb-media-editor#rotateLeft">↶ 90°</button>
+    <button type="button" class="kb-media-editor__tool" data-action="kb-media-editor#rotateRight">↷ 90°</button>
+    <button type="button" class="kb-media-editor__tool" data-action="kb-media-editor#flipHorizontal">Flip H</button>
+    <button type="button" class="kb-media-editor__tool" data-action="kb-media-editor#flipVertical">Flip V</button>
+    <button type="button" class="kb-media-editor__tool" data-action="kb-media-editor#undo">Undo</button>
+    <button type="button" class="kb-media-editor__tool" data-action="kb-media-editor#resetImage">Reset</button>
+  </div>
+</section>
+
+<section class="kb-media-editor__panel">
+  <h3>Draw & annotate</h3>
+  <div class="kb-media-editor__inline-controls">
+    <label>Colour <input type="color" value="#e0a54a" data-kb-media-editor-target="drawColor"></label>
+    <label>Size <input type="range" min="1" max="64" value="6" data-kb-media-editor-target="drawSize"></label>
+  </div>
+  <label class="kb-media-editor__field">
+    <span>Text</span>
+    <span class="kb-media-editor__input-action"><input type="text" maxlength="120" data-kb-media-editor-target="annotationText" placeholder="Add a label"><button type="button" class="btn btn-sm" data-action="kb-media-editor#addText">Add</button></span>
+  </label>
+</section>
+
+<section class="kb-media-editor__panel">
+  <h3>Light & colour</h3>
+  <label class="kb-media-editor__range"><span>Brightness <output data-kb-media-editor-target="brightnessOutput">0</output></span><input name="operations[brightness]" type="range" min="-1" max="1" step="0.01" value="0" data-kb-media-editor-target="brightness"></label>
+  <label class="kb-media-editor__range"><span>Contrast <output data-kb-media-editor-target="contrastOutput">1</output></span><input name="operations[contrast]" type="range" min="0" max="2" step="0.01" value="1" data-kb-media-editor-target="contrast"></label>
+  <label class="kb-media-editor__range"><span>Saturation <output data-kb-media-editor-target="saturationOutput">1</output></span><input name="operations[saturation]" type="range" min="0" max="3" step="0.01" value="1" data-kb-media-editor-target="saturation"></label>
+  <label class="kb-media-editor__check"><input name="operations[grayscale]" type="checkbox" value="1" data-kb-media-editor-target="grayscale"> Black & white</label>
+</section>

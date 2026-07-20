@@ -3,71 +3,99 @@
 %>
 <% tree.sort.each do |name, node| %>
   <% if node[:type] == :dir %>
+    <% favorite = node[:preference]&.favorite? %>
     <div class="kb-dir-group" data-controller="kb-folder">
-      <button class="kb-dir-header" type="button" draggable="true"
-              data-action="click->kb-folder#toggle
-                           contextmenu->kb-tree#show
-                           dragstart->kb-tree#dragStart
-                           dragend->kb-tree#dragEnd
-                           dragover->kb-tree#dragOver
-                           dragleave->kb-tree#dragLeave
-                           drop->kb-tree#drop"
-              data-kb-tree-type-param="dir"
-              data-kb-tree-rel-param="<%= node[:rel] %>"
-              data-kb-tree-src-param="<%= folder_index %>">
-        <svg class="kb-folder-chevron" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
-        <span class="kb-dir-label"><%= name %></span>
-      </button>
+      <div class="kb-dir-header" draggable="true"
+           data-action="contextmenu->kb-tree#show
+                        dragstart->kb-tree#dragStart
+                        dragend->kb-tree#dragEnd
+                        dragover->kb-tree#dragOver
+                        dragleave->kb-tree#dragLeave
+                        drop->kb-tree#drop"
+           data-kb-tree-type-param="dir"
+           data-kb-tree-rel-param="<%= node[:rel] %>"
+           data-kb-tree-src-param="<%= folder_index %>"
+           data-kb-tree-favorite-param="<%= favorite %>">
+        <button type="button" class="kb-dir-toggle" data-action="click->kb-folder#toggle" aria-label="Toggle <%= name %>">
+          <svg class="kb-folder-chevron" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <button type="button" class="kb-entry-icon-button" title="Personalise folder icon"
+                aria-label="Personalise <%= name %> icon"
+                data-action="click->kb-icon-picker#open"
+                data-kb-icon-picker-type-param="folder"
+                data-kb-icon-picker-src-param="<%= folder_index %>"
+                data-kb-icon-picker-rel-param="<%= node[:rel] %>"
+                data-kb-icon-picker-label-param="<%= name %>">
+          <%= render "kb/entry_icon",
+                preference: node[:preference],
+                default_preference: default_folder_preference,
+                fallback: "folder" %>
+        </button>
+        <button type="button"
+                class="kb-favorite-button <%= 'is-favorite' if favorite %>"
+                aria-label="<%= favorite ? 'Remove from favourites' : 'Add to favourites' %>"
+                title="<%= favorite ? 'Remove from favourites' : 'Add to favourites' %>"
+                data-action="click->kb-tree#toggleFavorite"
+                data-kb-tree-type-param="folder"
+                data-kb-tree-src-param="<%= folder_index %>"
+                data-kb-tree-rel-param="<%= node[:rel] %>"
+                data-kb-tree-favorite-param="<%= favorite %>">
+          <%= render "kb/star_icon", filled: favorite %>
+        </button>
+        <button type="button" class="kb-dir-label" data-action="click->kb-folder#toggle"><%= name %></button>
+      </div>
       <div class="kb-dir-children" data-kb-folder-target="files">
         <%= render "kb/tree_node",
               tree: node[:children],
               folder_index: folder_index,
               selected_file: selected_file,
-              selected_folder_index: selected_folder_index %>
+              selected_folder_index: selected_folder_index,
+              default_folder_preference: default_folder_preference %>
       </div>
     </div>
   <% elsif node[:type] == :file %>
     <%
       ext = File.extname(node[:rel]).downcase
       is_extractable = extractable_exts.include?(ext)
-      is_editable = ext == ".md"
+      is_editable = true
       active = (selected_folder_index == folder_index && selected_file == node[:rel])
+      favorite = node[:preference]&.favorite?
       file_url = kb_file_path(file: node[:rel], src: folder_index)
       display_name = File.basename(node[:rel])
     %>
-    <%= link_to file_url,
-          draggable: "true",
-          data: {
-            turbo_frame: "kb-content",
-            action: "click->kb-notes#trackFile contextmenu->kb-tree#show dragstart->kb-tree#dragStart dragend->kb-tree#dragEnd",
-            "kb-notes-file-param": node[:rel],
-            "kb-notes-src-param": folder_index,
-            "kb-tree-type-param": "file",
-            "kb-tree-rel-param": node[:rel],
-            "kb-tree-src-param": folder_index,
-            "kb-tree-extractable-param": (is_extractable || nil),
-            "kb-tree-editable-param": (is_editable || nil),
-          }.compact,
-          class: "kb-file-link #{active ? 'is-active' : ''}" do %>
-      <%
-        icon = case ext
-        when ".pdf"
-          '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>'
-        when ".mp4", ".webm", ".mov", ".ogv"
-          '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>'
-        when ".mp3", ".wav", ".ogg", ".m4a", ".aac", ".flac"
-          '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>'
-        when ".png", ".jpg", ".jpeg", ".webp", ".tif", ".tiff"
-          '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>'
-        when ".md"
-          '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>'
-        else
-          '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>'
-        end
-      %>
-      <%= icon.html_safe %>
-      <%= display_name %>
-    <% end %>
+    <div class="kb-file-row <%= 'is-active' if active %>" draggable="true"
+         data-action="contextmenu->kb-tree#show dragstart->kb-tree#dragStart dragend->kb-tree#dragEnd"
+         data-kb-tree-type-param="file"
+         data-kb-tree-rel-param="<%= node[:rel] %>"
+         data-kb-tree-src-param="<%= folder_index %>"
+         data-kb-tree-extractable-param="<%= is_extractable %>"
+         data-kb-tree-editable-param="<%= is_editable %>"
+         data-kb-tree-favorite-param="<%= favorite %>">
+      <span class="kb-file-type-icon"><%= render "kb/file_icon", extension: ext %></span>
+      <button type="button"
+              class="kb-favorite-button <%= 'is-favorite' if favorite %>"
+              aria-label="<%= favorite ? 'Remove from favourites' : 'Add to favourites' %>"
+              title="<%= favorite ? 'Remove from favourites' : 'Add to favourites' %>"
+              data-action="click->kb-tree#toggleFavorite"
+              data-kb-tree-type-param="file"
+              data-kb-tree-src-param="<%= folder_index %>"
+              data-kb-tree-rel-param="<%= node[:rel] %>"
+              data-kb-tree-favorite-param="<%= favorite %>">
+        <%= render "kb/star_icon", filled: favorite %>
+      </button>
+      <%= link_to display_name, file_url,
+            draggable: "false",
+            data: {
+              turbo_frame: "kb-content",
+              action: "click->kb-notes#trackFile",
+              "kb-notes-file-param": node[:rel],
+              "kb-notes-src-param": folder_index,
+            },
+            class: "kb-file-link #{active ? 'is-active' : ''}" %>
+    </div>
+  <% elsif node[:type] == :download %>
+    <%= render "kb/download_row", download: node[:download] %>
+  <% elsif node[:type] == :job %>
+    <%= render "kb/job_row", job: node[:job] %>
   <% end %>
 <% end %>

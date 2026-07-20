@@ -39,6 +39,10 @@ body.kb-page .app-main {
   width: 100%;
 }
 
+.kb-controller-scope {
+  display: contents;
+}
+
 /* ---- Tab header — reuse shared .tabs-nav from idea_detail.css ---- */
 .kb-page .tabs-nav {
   flex-shrink: 0;
@@ -904,7 +908,7 @@ body.has-notes-bar.kb-page .kb-content-area {
 .kb-notes-add-btn {
   background: none;
   border: none;
-  color: var(--text-muted);
+  color: var(--accent);
   cursor: pointer;
   font-size: 1rem;
   line-height: 1;
@@ -915,8 +919,8 @@ body.has-notes-bar.kb-page .kb-content-area {
 }
 
 .kb-notes-add-btn:hover {
-  background: var(--bg-elevated);
-  color: var(--text-primary);
+  background: var(--accent-muted);
+  color: var(--accent);
 }
 
 /* Fixed overlay panel — expands upward over content, non-blocking */
@@ -1184,3 +1188,563 @@ body.has-notes-bar.kb-page .kb-content-area {
 
 /* Drives in KB settings */
 .kb-folder-native-badge.is-unmounted { opacity: 0.6; }
+
+/* ── Tree identity, favourites, and external file drops ─────────────────── */
+.kb-entry-icon-button,
+.kb-favorite-button,
+.kb-dir-toggle,
+.kb-dir-label {
+  appearance: none;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  padding: 0;
+}
+
+.kb-entry-icon-button,
+.kb-favorite-button,
+.kb-dir-toggle {
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 auto;
+  position: relative;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.kb-entry-icon-button {
+  width: 18px;
+  height: 18px;
+}
+
+.kb-entry-icon-button::before,
+.kb-favorite-button::before,
+.kb-dir-toggle::before {
+  content: "";
+  position: absolute;
+  inset: -5px;
+}
+
+.kb-entry-icon-button:hover,
+.kb-entry-icon-button:focus-visible {
+  background: var(--accent-muted);
+  color: var(--accent);
+}
+
+.kb-entry-icon-button:focus-visible,
+.kb-favorite-button:focus-visible,
+.kb-dir-toggle:focus-visible,
+.kb-dir-label:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.kb-entry-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 15px;
+  height: 15px;
+  line-height: 1;
+  font-size: 13px;
+}
+
+.kb-entry-icon img {
+  width: 15px;
+  height: 15px;
+  border-radius: 3px;
+  object-fit: cover;
+}
+
+.kb-favorite-button {
+  width: 13px;
+  height: 16px;
+  margin-left: -0.25rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  opacity: 0.18;
+  transition: color 120ms, opacity 120ms, transform 120ms;
+}
+
+.kb-folder-header:hover .kb-favorite-button,
+.kb-dir-header:hover .kb-favorite-button,
+.kb-file-row:hover .kb-favorite-button,
+.kb-favorite-button:focus-visible,
+.kb-favorite-button.is-favorite {
+  opacity: 1;
+}
+
+.kb-favorite-button:hover,
+.kb-favorite-button.is-favorite {
+  color: var(--state-orange, #d68a36);
+}
+
+.kb-favorite-button:active {
+  transform: scale(0.88);
+}
+
+.kb-dir-toggle {
+  width: 12px;
+  height: 18px;
+  cursor: pointer;
+}
+
+.kb-dir-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.kb-file-row {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 0;
+  margin: 0.05rem 0.4rem;
+  padding: 0.3rem 0.35rem;
+  border-radius: 4px;
+  color: var(--text-secondary);
+  transition: background 120ms, color 120ms;
+}
+
+.kb-file-row:hover {
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+}
+
+.kb-file-row.is-dragging {
+  opacity: 0.45;
+}
+
+.kb-file-row.is-active {
+  background: var(--accent-muted);
+  color: var(--accent);
+  font-weight: 500;
+}
+
+.kb-file-type-icon {
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 14px;
+  opacity: 0.58;
+}
+
+.kb-file-row.is-active .kb-file-type-icon {
+  opacity: 1;
+}
+
+.kb-file-row .kb-file-link {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border-radius: 0;
+  background: none;
+  color: inherit;
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.kb-file-row .kb-file-link:hover,
+.kb-file-row .kb-file-link.is-active {
+  background: none;
+  color: inherit;
+}
+
+.kb-async-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 0;
+  margin: 0.1rem 0.55rem;
+  padding: 0.35rem 0.45rem;
+  border: 1px dashed var(--border-subtle);
+  color: var(--text-muted);
+  font-size: 0.74rem;
+  line-height: 1.3;
+}
+
+.kb-async-row span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.kb-job-row {
+  color: var(--accent);
+}
+
+.kb-job-row--failed {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 0;
+  margin: 0.1rem 0.55rem;
+  padding: 0.35rem 0.45rem;
+  border: 1px dashed var(--state-red, #d95d5d);
+  color: var(--state-red, #d95d5d);
+  font-size: 0.74rem;
+}
+
+/* ── Folder icon picker and filesystem AI job ──────────────────────────── */
+.kb-icon-dialog,
+.kb-job-dialog {
+  width: min(92vw, 520px);
+  max-height: min(82vh, 680px);
+  padding: 0;
+  border: 1px solid var(--border-default);
+  border-radius: 8px;
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  box-shadow: 0 24px 64px color-mix(in oklch, var(--bg-base) 78%, transparent);
+}
+
+.kb-icon-dialog::backdrop,
+.kb-job-dialog::backdrop {
+  background: color-mix(in oklch, var(--bg-base) 76%, transparent);
+}
+
+.kb-icon-dialog__sheet,
+.kb-job-dialog__sheet {
+  display: grid;
+  gap: 0;
+  margin: 0;
+}
+
+.kb-dialog-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.15rem 1.25rem 0.9rem;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.kb-dialog-header h3 {
+  margin: 0.12rem 0 0;
+  font-size: 1rem;
+  line-height: 1.3;
+}
+
+.kb-dialog-eyebrow {
+  color: var(--text-muted);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.kb-dialog-close {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 4px;
+  background: none;
+  color: var(--text-muted);
+  font-size: 1.35rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.kb-dialog-close:hover,
+.kb-dialog-close:focus-visible {
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+}
+
+.kb-dialog-close:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.kb-icon-tabs {
+  display: flex;
+  gap: 1rem;
+  padding: 0.7rem 1.25rem 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.kb-icon-tab {
+  border: 0;
+  border-bottom: 2px solid transparent;
+  padding: 0.35rem 0 0.55rem;
+  background: none;
+  color: var(--text-muted);
+  font: 600 0.78rem/1 var(--font-body);
+  cursor: pointer;
+}
+
+.kb-icon-tab:hover,
+.kb-icon-tab.is-active {
+  color: var(--text-primary);
+}
+
+.kb-icon-tab.is-active {
+  border-bottom-color: var(--accent);
+}
+
+.kb-icon-tab:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.kb-icon-panel {
+  padding: 1.15rem 1.25rem;
+}
+
+.kb-emoji-grid {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(32px, 1fr));
+  gap: 0.35rem;
+}
+
+.kb-emoji-choice {
+  display: grid;
+  place-items: center;
+  min-height: 38px;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  background: var(--bg-elevated);
+  font-size: 1.15rem;
+  cursor: pointer;
+  transition: border-color 120ms, transform 120ms, background 120ms;
+}
+
+.kb-emoji-choice:hover,
+.kb-emoji-choice.is-selected {
+  border-color: var(--accent);
+  background: var(--accent-muted);
+}
+
+.kb-emoji-choice:active {
+  transform: scale(0.94);
+}
+
+.kb-emoji-choice:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.kb-icon-upload {
+  display: grid;
+  gap: 0.25rem;
+  margin-bottom: 0.75rem;
+  padding: 1rem;
+  border: 1px dashed var(--border-default);
+  background: var(--bg-base);
+  cursor: pointer;
+}
+
+.kb-icon-upload span {
+  font-size: 0.84rem;
+  font-weight: 650;
+}
+
+.kb-icon-upload small {
+  color: var(--text-muted);
+}
+
+.kb-dialog-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.85rem 1.25rem 1.1rem;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.kb-job-label {
+  padding: 1rem 1.25rem 0.35rem;
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  font-weight: 650;
+}
+
+.kb-job-prompt {
+  width: auto;
+  min-height: 128px;
+  margin: 0 1.25rem 1rem;
+  padding: 0.8rem;
+  border: 1px solid var(--border-default);
+  border-radius: 5px;
+  background: var(--bg-input);
+  color: var(--text-primary);
+  font: 0.88rem/1.55 var(--font-body);
+  resize: vertical;
+}
+
+.kb-job-prompt:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+  border-color: transparent;
+}
+
+.kb-job-voice {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  margin: 0 1.25rem 1.15rem;
+}
+
+.kb-job-voice p {
+  flex: 1;
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  line-height: 1.35;
+}
+
+.kb-job-voice p.is-error {
+  color: var(--state-red, #d95d5d);
+}
+
+.kb-job-record {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex: 0 0 auto;
+  padding: 0.48rem 0.65rem;
+  border: 1px solid var(--border-default);
+  border-radius: 5px;
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  font: 600 0.75rem/1 var(--font-body);
+  cursor: pointer;
+}
+
+.kb-job-record:hover,
+.kb-job-record:focus-visible {
+  color: var(--text-primary);
+  border-color: var(--accent);
+}
+
+.kb-job-record:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.kb-job-record__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--state-red, #d95d5d);
+}
+
+.kb-job-record.is-recording .kb-job-record__dot {
+  animation: kb-recording-pulse 1.1s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}
+
+@keyframes kb-recording-pulse {
+  50% { transform: scale(1.45); opacity: 0.45; }
+}
+
+.kb-generic-file {
+  display: grid;
+  justify-items: start;
+  gap: 1rem;
+  max-width: 48ch;
+  margin: clamp(2rem, 8vh, 6rem) auto;
+  padding: 0 1.5rem;
+  color: var(--text-secondary);
+}
+
+.kb-generic-file > svg {
+  width: 34px;
+  height: 34px;
+  color: var(--text-muted);
+}
+
+/* ── Display settings: global KB folder icon ───────────────────────────── */
+.kb-default-icon-settings {
+  display: grid;
+  gap: 0;
+}
+
+.kb-default-icon-settings__preview {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 0.2rem 0 1rem;
+}
+
+.kb-default-icon-settings__preview strong {
+  display: block;
+  font-size: 0.88rem;
+}
+
+.kb-default-icon-settings__preview p {
+  margin: 0.18rem 0 0;
+  color: var(--text-muted);
+  font-size: 0.76rem;
+}
+
+.kb-default-icon-settings__glyph {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
+  border: 1px solid var(--border-default);
+  border-radius: 6px;
+  background: var(--bg-elevated);
+  font-size: 1.45rem;
+}
+
+.kb-default-icon-settings__glyph img {
+  width: 100%;
+  height: 100%;
+  border-radius: 5px;
+  object-fit: cover;
+}
+
+.kb-default-icon-settings .kb-icon-tabs {
+  margin-inline: -0.2rem;
+  padding-inline: 0.2rem;
+}
+
+.kb-default-icon-settings .kb-icon-panel {
+  padding-inline: 0;
+}
+
+.kb-icon-reset {
+  justify-self: start;
+}
+
+@media (pointer: coarse) {
+  .kb-entry-icon-button,
+  .kb-favorite-button,
+  .kb-dir-toggle {
+    min-width: 28px;
+    min-height: 28px;
+  }
+
+  .kb-favorite-button {
+    margin-left: -0.35rem;
+    opacity: 1;
+  }
+}
+
+@media (max-width: 560px) {
+  .kb-emoji-grid {
+    grid-template-columns: repeat(6, minmax(32px, 1fr));
+  }
+
+  .kb-job-voice {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kb-job-record.is-recording .kb-job-record__dot {
+    animation-duration: 2s;
+  }
+}

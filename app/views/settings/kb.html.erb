@@ -8,19 +8,23 @@
     <% end %>
   </div>
 
-  <p class="config-description" style="max-width: 720px; margin-bottom: 1.5rem;">
-    Configure local or network-synced folder paths containing <code>.md</code> files.
-    Each folder will appear as a group in the KB sidebar, where you can create,
-    rename, move, and delete files and folders.
-  </p>
+  <div class="display-page-stack">
 
   <%= form_with url: url_for(action: :update_kb), method: :patch, local: true,
-        data: { controller: "kb-folders" } do |form| %>
+        data: { controller: "kb-folders settings-autosave", action: "change->settings-autosave#toggleChanged" } do |form| %>
     <input type="hidden" name="hide_native_kb"
            value="<%= @hide_native_kb ? '1' : '0' %>"
            data-kb-folders-target="hideNativeInput" />
 
-    <div class="kb-folder-list" id="kb-folder-list" data-kb-folders-target="list">
+    <div class="display-fields-card">
+      <div class="display-field-row">
+        <p class="display-field-hint" style="margin: 0;">
+          Configure local or network-synced folder paths containing <code>.md</code> files.
+          Each folder will appear as a group in the KB sidebar, where you can create,
+          rename, move, and delete files and folders.
+        </p>
+
+        <div class="kb-folder-list" id="kb-folder-list" data-kb-folders-target="list">
       <% unless @hide_native_kb %>
         <div class="kb-folder-entry" data-kb-folders-target="nativeRow">
           <div class="kb-folder-row">
@@ -78,22 +82,30 @@
           <% end %>
         </div>
       <% end %>
+        </div>
+
+        <div>
+          <button type="button"
+                  class="btn btn-sm kb-folder-add-btn"
+                  data-action="click->kb-folders#addRow">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Add folder
+          </button>
+        </div>
+      </div>
     </div>
 
-    <button type="button"
-            class="btn btn-sm kb-folder-add-btn"
-            data-action="click->kb-folders#addRow">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-      Add folder
-    </button>
+    <div class="display-section-divider">
+      <h3 class="display-section-heading">Drives</h3>
+      <p class="display-section-subhead">
+        Mounted volumes and network shares. They appear in the KB sidebar with a
+        drive icon and show as <em>unmounted</em> when unavailable.
+      </p>
+    </div>
 
-    <h3 style="margin-top: 2rem;">Drives</h3>
-    <p class="config-description" style="max-width: 720px;">
-      Mounted volumes and network shares. They appear in the KB sidebar with a
-      drive icon and show as <em>unmounted</em> when unavailable.
-    </p>
-
-    <div class="kb-drive-list" data-controller="kb-drives" data-kb-drives-target="list">
+    <div class="display-fields-card">
+      <div class="display-field-row">
+        <div class="kb-drive-list" data-controller="kb-drives" data-kb-drives-target="list">
       <% @kb_drives.each do |path| %>
         <div class="kb-folder-entry kb-drive-entry">
           <div class="kb-folder-row">
@@ -121,27 +133,35 @@
           Add volume
         </button>
       </div>
+        </div>
+      </div>
     </div>
 
     <div class="settings-form-actions" style="margin-top: 1.5rem;">
-      <%= form.submit "Save", class: "btn btn-primary" %>
       <%= link_to kb_path, class: "btn btn-sm" do %>
         Back to KB
       <% end %>
     </div>
   <% end %>
 
-  <div class="kb-mount-share" style="margin-top: 1.5rem; max-width: 720px;">
-    <h4>Mount a network share</h4>
-    <p class="config-description">
+  <div class="display-section-divider">
+    <h3 class="display-section-heading">Mount a network share</h3>
+    <p class="display-section-subhead">
       macOS will ask for credentials and store them in your Keychain; the app
       never sees them. The share is added to your drives once mounted.
     </p>
-    <%= form_with url: settings_kb_mount_drive_path, method: :post, local: true do |form| %>
-      <div style="display: flex; gap: 0.5rem;">
-        <input type="text" name="url" placeholder="smb://server/share" class="kb-folder-input" />
-        <%= form.submit "Mount", class: "btn btn-sm" %>
-      </div>
-    <% end %>
+  </div>
+
+  <div class="display-fields-card kb-mount-share">
+    <div class="display-field-row">
+      <%= form_with url: settings_kb_mount_drive_path, method: :post, local: true do |form| %>
+        <div style="display: flex; gap: 0.5rem;">
+          <input type="text" name="url" placeholder="smb://server/share" class="kb-folder-input" />
+          <%= form.submit "Mount", class: "btn btn-sm" %>
+        </div>
+      <% end %>
+    </div>
+  </div>
+
   </div>
 </div>

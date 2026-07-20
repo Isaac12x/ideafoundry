@@ -84,9 +84,13 @@ class KbDownloadJob < ApplicationJob
 
   def base_path_for(dl)
     sources = KbSource.list(dl.user)
-    return nil if dl.source_index.to_i.negative? || dl.source_index.to_i >= sources.size
+    src = if dl.source_path.present?
+      sources.find { |source| File.expand_path(source[:path]) == File.expand_path(dl.source_path) }
+    else
+      sources[dl.source_index]
+    end
+    return nil unless src
 
-    src  = sources[dl.source_index]
     base = File.expand_path(src[:path])
     FileUtils.mkdir_p(base) if src[:native] && !Dir.exist?(base)
     Dir.exist?(base) ? base : nil
