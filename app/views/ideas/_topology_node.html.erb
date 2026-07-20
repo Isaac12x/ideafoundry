@@ -1,4 +1,5 @@
 <% kids = children_by_parent[topology.id] || [] %>
+<% template_ids_by_topology = local_assigns.fetch(:template_ids_by_topology, {}) %>
 <div class="topology-node" role="treeitem" data-topology-name="<%= topology.full_path.to_s.downcase %>">
   <div class="topology-node__row">
     <% if kids.any? %>
@@ -16,6 +17,7 @@
           data: {
             template_switch_target: "topologyCheckbox",
             topology_fields: topology.effective_default_field_definitions.to_json,
+            template_id: template_ids_by_topology[topology.id],
             action: "change->template-switch#topologiesChanged"
           } %>
       <% if topology.color.present? %>
@@ -27,7 +29,7 @@
   <% if kids.any? %>
     <div class="topology-node__children">
       <%= render partial: "ideas/topology_node", collection: kids, as: :topology,
-            locals: { idea: idea, children_by_parent: children_by_parent } %>
+            locals: { idea: idea, children_by_parent: children_by_parent, template_ids_by_topology: template_ids_by_topology } %>
     </div>
   <% end %>
 </div>

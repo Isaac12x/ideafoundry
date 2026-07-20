@@ -14,25 +14,25 @@
   </div>
 
   <div class="submission-status-tabs">
-    <%= link_to submissions_path(status: "pending"), class: "status-tab #{(params[:status].blank? || params[:status] == 'pending') ? 'active' : ''}" do %>
+    <%= link_to ideas_intake_path(status: "pending"), class: "status-tab #{(params[:status].blank? || params[:status] == 'pending') ? 'active' : ''}" do %>
       Pending
       <% if @status_counts[:pending] > 0 %>
         <span class="status-count"><%= @status_counts[:pending] %></span>
       <% end %>
     <% end %>
-    <%= link_to submissions_path(status: "approved"), class: "status-tab #{params[:status] == 'approved' ? 'active' : ''}" do %>
+    <%= link_to ideas_intake_path(status: "approved"), class: "status-tab #{params[:status] == 'approved' ? 'active' : ''}" do %>
       Approved
       <% if @status_counts[:approved] > 0 %>
         <span class="status-count approved"><%= @status_counts[:approved] %></span>
       <% end %>
     <% end %>
-    <%= link_to submissions_path(status: "rejected"), class: "status-tab #{params[:status] == 'rejected' ? 'active' : ''}" do %>
+    <%= link_to ideas_intake_path(status: "rejected"), class: "status-tab #{params[:status] == 'rejected' ? 'active' : ''}" do %>
       Rejected
       <% if @status_counts[:rejected] > 0 %>
         <span class="status-count rejected"><%= @status_counts[:rejected] %></span>
       <% end %>
     <% end %>
-    <%= link_to submissions_path(status: "all"), class: "status-tab #{params[:status] == 'all' ? 'active' : ''}" do %>
+    <%= link_to ideas_intake_path(status: "all"), class: "status-tab #{params[:status] == 'all' ? 'active' : ''}" do %>
       All
     <% end %>
   </div>

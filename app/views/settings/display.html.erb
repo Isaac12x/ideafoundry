@@ -30,7 +30,7 @@
 
   <div class="display-page-stack">
 
-    <%= form_with url: settings_display_path, method: :patch, local: true, class: "display-settings-form", html: { multipart: true } do |form| %>
+    <%= form_with url: settings_display_path, method: :patch, local: true, class: "display-settings-form", html: { multipart: true }, data: { controller: "settings-autosave", action: "change->settings-autosave#toggleChanged" } do |form| %>
       <div class="display-fields-card">
         <div class="display-field-row">
           <label class="display-field-label" for="display_settings_quote">Default quote</label>
@@ -175,35 +175,51 @@
 
       <div class="display-section-divider">
         <h3 class="display-section-heading">Nav bar items</h3>
-        <p class="display-section-subhead">Choose which sections appear in the top navigation bar. Settings is always available.</p>
+        <p class="display-section-subhead">Choose which sections appear in the top navigation bar and drag rows to reorder them. Settings is always available.</p>
       </div>
 
       <div class="display-fields-card">
-        <div class="tab-toggle-list">
-          <% User::NAV_PAGE_KEYS.each do |page| %>
-            <label class="tab-toggle" for="nav_visible_<%= page %>">
-              <div class="tab-toggle__text">
-                <span class="tab-toggle__name">Show <%= User::NAV_PAGE_LABELS[page] %></span>
-                <% if page == 'backlog' %>
-                  <span class="tab-toggle__description">Only appears when the backlog feature is enabled.</span>
+        <div class="tab-toggle-list nav-reorder-list"
+             data-controller="section-reorder"
+             data-section-reorder-target="container">
+          <% @user.nav_order.each do |page| %>
+            <% feature = User::NAV_FEATURE_REQUIREMENTS[page] %>
+            <% if feature && !@user.feature_enabled?(feature) %>
+              <%# Feature disabled: keep order + visibility so re-enabling restores them %>
+              <span style="display:none">
+                <%= hidden_field_tag "display_settings[nav_order][]", page, id: nil %>
+                <% if @nav_hidden_items.exclude?(page) %>
+                  <%= hidden_field_tag "display_settings[nav_visible][#{page}]", "1", id: nil %>
                 <% end %>
-              </div>
-              <span class="tab-toggle__switch">
-                <%= check_box_tag "display_settings[nav_visible][#{page}]", "1",
-                      @nav_hidden_items.exclude?(page),
-                      id: "nav_visible_#{page}", class: "tab-toggle__input" %>
-                <span class="tab-toggle__track" aria-hidden="true">
-                  <span class="tab-toggle__thumb"></span>
-                </span>
               </span>
-            </label>
+              <% next %>
+            <% end %>
+            <div class="nav-reorder-row" data-section-reorder-target="section">
+              <span class="nav-reorder-handle" draggable="true" data-section-reorder-target="handle" title="Drag to reorder">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="9" cy="6" r="1.5"/><circle cx="15" cy="6" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="9" cy="18" r="1.5"/><circle cx="15" cy="18" r="1.5"/></svg>
+              </span>
+              <%= hidden_field_tag "display_settings[nav_order][]", page, id: nil %>
+              <label class="tab-toggle" for="nav_visible_<%= page %>">
+                <div class="tab-toggle__text">
+                  <span class="tab-toggle__name">Show <%= User::NAV_PAGE_LABELS[page] %></span>
+                  <% if page == 'backlog' %>
+                    <span class="tab-toggle__description">Only appears when the backlog feature is enabled.</span>
+                  <% end %>
+                </div>
+                <span class="tab-toggle__switch">
+                  <%= check_box_tag "display_settings[nav_visible][#{page}]", "1",
+                        @nav_hidden_items.exclude?(page),
+                        id: "nav_visible_#{page}", class: "tab-toggle__input" %>
+                  <span class="tab-toggle__track" aria-hidden="true">
+                    <span class="tab-toggle__thumb"></span>
+                  </span>
+                </span>
+              </label>
+            </div>
           <% end %>
         </div>
       </div>
 
-      <div class="display-field-actions">
-        <%= form.submit "Save", class: "btn btn-primary" %>
-      </div>
     <% end %>
 
     <div class="display-section-divider">

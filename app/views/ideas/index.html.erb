@@ -14,6 +14,14 @@
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
         </button>
       </div>
+      <% pending_intake_count = @user&.submissions&.pending&.count || 0 %>
+      <%= link_to ideas_intake_path, class: "btn" do %>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Intake
+        <% if pending_intake_count > 0 %>
+          <span class="nav-badge"><%= pending_intake_count %></span>
+        <% end %>
+      <% end %>
       <%= link_to new_idea_path, class: "btn btn-primary" do %>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
         New Idea
@@ -49,7 +57,7 @@
   function applyView() {
     var container = document.querySelector('.ideas-container');
     if (!container) return;
-    var view = localStorage.getItem('ideas-view') || 'grid';
+    var view = localStorage.getItem('ideas-view') || 'list';
     container.dataset.view = view;
     document.querySelectorAll('[data-view-toggle]').forEach(function(btn) {
       btn.classList.toggle('active', btn.dataset.viewToggle === view);

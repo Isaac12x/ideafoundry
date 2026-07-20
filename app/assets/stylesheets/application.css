@@ -1885,6 +1885,30 @@ select.form-control {
     margin-bottom: 1rem;
 }
 
+.kanban-board-toolbar--below {
+    justify-content: flex-start;
+    margin: 1.5rem 0 0;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-subtle);
+}
+
+.kanban-board-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.kanban-board-header-actions .btn[disabled] {
+    opacity: 0.4;
+    pointer-events: none;
+}
+
+.named-lists-footer {
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-subtle);
+}
+
 .kanban-board-form .form-control {
     width: min(320px, 50vw);
 }
@@ -2417,6 +2441,44 @@ select.form-control {
     margin: 0 0 1.25rem 0;
     padding-bottom: 10px;
     border-bottom: 1px solid var(--border-subtle);
+}
+
+/* Collapsible form panels (details/summary) */
+details.form-panel > summary.form-panel-title {
+    list-style: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    user-select: none;
+}
+
+details.form-panel > summary.form-panel-title::-webkit-details-marker {
+    display: none;
+}
+
+details.form-panel > summary.form-panel-title::after {
+    content: "";
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    background-color: currentColor;
+    opacity: 0.6;
+    -webkit-mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>') center / contain no-repeat;
+    mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>') center / contain no-repeat;
+    transition: transform 0.2s ease;
+    transform: rotate(-90deg);
+}
+
+details.form-panel[open] > summary.form-panel-title::after {
+    transform: rotate(0deg);
+}
+
+details.form-panel:not([open]) > summary.form-panel-title {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
 }
 
 @media (max-width: 768px) {
@@ -3147,32 +3209,25 @@ body:not(.has-notes-bar) .shortcuts-shell {
     bottom: 1rem;
 }
 
+/* Mirrors .kb-notes-add-btn so both read as peer buttons on the notes bar */
 .shortcuts-toggle {
     pointer-events: auto;
-    width: auto;
-    height: 28px;
-    padding: 0.2rem 0.5rem;
-    border: 1px solid transparent;
-    border-radius: var(--radius-sm);
-    background: transparent;
-    color: var(--text-muted);
-    box-shadow: none;
+    background: none;
+    border: none;
+    color: var(--accent);
     cursor: pointer;
-    font: 600 0.68rem/1 var(--font-mono);
-    letter-spacing: 0.01em;
-    transition:
-        transform 0.16s ease,
-        background 0.16s ease,
-        border-color 0.16s ease,
-        color 0.16s ease;
+    font-size: 1rem;
+    line-height: 1;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    flex-shrink: 0;
+    transition: background 0.12s, color 0.12s;
 }
 
 .shortcuts-toggle:hover,
 .shortcuts-toggle[aria-expanded="true"] {
-    border-color: var(--accent);
     background: var(--accent-muted);
     color: var(--accent);
-    transform: translateY(-1px);
 }
 
 .shortcuts-toggle:focus-visible,
