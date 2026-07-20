@@ -1,0 +1,85 @@
+<%= turbo_frame_tag "licensor-panel" do %>
+  <div class="crm-panel" data-controller="crm-panel">
+    <div class="crm-panel__scrim" data-action="click->crm-panel#close"></div>
+    <aside class="crm-panel__drawer" style="--stage-hue: <%= licensor.stage_hue %>">
+      <header class="crm-panel__head">
+        <div class="crm-panel__ident">
+          <h2 class="crm-panel__company"><%= licensor.company %></h2>
+          <%= link_to licensor.idea.title, idea_path(licensor.idea), class: "crm-panel__idea" %>
+        </div>
+        <button type="button" class="crm-panel__close" data-action="click->crm-panel#close" aria-label="Close">&times;</button>
+      </header>
+
+      <%= form_with url: licensor_path(licensor), method: :patch, class: "crm-panel__form" do %>
+        <input type="hidden" name="context" value="panel">
+        <div class="crm-field">
+          <label>Stage</label>
+          <%= select_tag "licensor[stage]",
+                options_for_select(Licensor::STAGE_ORDER.map { |s| [Licensor.stage_label(s), s] }, licensor.stage),
+                class: "crm-input" %>
+        </div>
+        <div class="crm-field-row">
+          <div class="crm-field">
+            <label>Contact name</label>
+            <%= text_field_tag "licensor[contact_name]", licensor.contact_name, class: "crm-input", autocomplete: "off" %>
+          </div>
+          <div class="crm-field">
+            <label>Email</label>
+            <%= email_field_tag "licensor[contact_email]", licensor.contact_email, class: "crm-input", autocomplete: "off" %>
+          </div>
+        </div>
+        <div class="crm-field">
+          <label>Link</label>
+          <%= url_field_tag "licensor[contact_url]", licensor.contact_url, class: "crm-input", placeholder: "https://…", autocomplete: "off" %>
+        </div>
+        <div class="crm-field">
+          <label>Next action</label>
+          <%= text_field_tag "licensor[next_action]", licensor.next_action, class: "crm-input", autocomplete: "off" %>
+        </div>
+        <div class="crm-field">
+          <label>Notes</label>
+          <%= text_area_tag "licensor[notes]", licensor.notes, class: "crm-input", rows: 3 %>
+        </div>
+        <%= submit_tag "Save", class: "btn btn-sm btn-primary" %>
+      <% end %>
+
+      <div class="crm-panel__log">
+        <h3>Contact log</h3>
+        <%= form_with url: licensor_contacts_path(licensor), method: :post, class: "crm-log-form" do %>
+          <input type="hidden" name="context" value="panel">
+          <%= select_tag "licensor_contact[channel]",
+                options_for_select(LicensorContact.channels.keys.map { |c| [LicensorContact::CHANNEL_LABELS[c], c] }),
+                class: "crm-input crm-input--channel" %>
+          <%= text_field_tag "licensor_contact[summary]", nil, placeholder: "What happened?", class: "crm-input", autocomplete: "off" %>
+          <%= submit_tag "Log", class: "btn btn-sm" %>
+        <% end %>
+
+        <ul class="crm-log">
+          <% if licensor.contacts.any? %>
+            <% licensor.contacts.each do |c| %>
+              <li class="crm-log__item">
+                <div class="crm-log__body">
+                  <div class="crm-log__meta">
+                    <span class="crm-log__channel"><%= c.channel_label %></span>
+                    <span class="crm-log__date"><%= c.occurred_at.strftime("%b %-d, %Y") %></span>
+                  </div>
+                  <% if c.summary.present? %><p class="crm-log__summary"><%= c.summary %></p><% end %>
+                </div>
+                <%= button_to "&times;".html_safe, licensor_contact_path(licensor, c), method: :delete,
+                      params: { context: "panel" }, class: "crm-log__del",
+                      form: { data: { turbo_confirm: "Delete this log entry?" } }, aria: { label: "Delete" } %>
+              </li>
+            <% end %>
+          <% else %>
+            <li class="crm-log__empty">No contact logged yet.</li>
+          <% end %>
+        </ul>
+      </div>
+
+      <footer class="crm-panel__foot">
+        <%= button_to "Delete licensor", licensor_path(licensor), method: :delete, params: { context: "panel" },
+              class: "btn btn-sm btn-danger", form: { data: { turbo_confirm: "Delete this licensor and its contact log?" } } %>
+      </footer>
+    </aside>
+  </div>
+<% end %>

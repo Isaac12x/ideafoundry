@@ -13,9 +13,26 @@ services:
       - PORT=3000
       - VOICE_ID_SERVICE_URL=http://voice-id:8000
       - OCR_SERVICE_URL=http://ocr:8000/extract
+      # On-demand heavy OCR (Unlimited-OCR). Backend auto-selects: remote URL ->
+      # remote, NVIDIA present -> vllm, otherwise -> llamacpp.
+      - OCR_LONG_BACKEND=${OCR_LONG_BACKEND:-auto}
+      - OCR_LONG_SERVICE_URL=${OCR_LONG_SERVICE_URL:-}
+      - OCR_LONG_VLLM_URL=${OCR_LONG_VLLM_URL:-http://unlimited-ocr:8000/v1}
+      - OCR_LONG_LLAMACPP_URL=${OCR_LONG_LLAMACPP_URL:-http://unlimited-ocr-llama:8000/v1}
+      - OCR_LONG_DOC_PAGE_THRESHOLD=${OCR_LONG_DOC_PAGE_THRESHOLD:-10}
+      - OCR_LONG_IDLE_TIMEOUT=${OCR_LONG_IDLE_TIMEOUT:-300}
+      # 0 = whole document in one multi-image (base mode) request per the recipe.
+      # Lower it (e.g. 8) if VRAM can't hold a very large book in a single call.
+      - OCR_LONG_PAGES_PER_REQUEST=${OCR_LONG_PAGES_PER_REQUEST:-0}
     volumes:
       - ./storage:/rails/storage
       - ./config/master.key:/rails/config/master.key:ro
+      # Lifecycle management (start/stop the heavy backend on demand) needs the
+      # docker CLI + socket. Uncomment to let the in-container worker drive
+      # compose; otherwise run the :long_ocr worker on the host, or use a remote
+      # backend via OCR_LONG_SERVICE_URL.
+      # - /var/run/docker.sock:/var/run/docker.sock
+      # - ./docker-compose.yml:/rails/docker-compose.yml:ro
     depends_on:
       voice-id:
         condition: service_healthy
@@ -63,6 +80,8 @@ services:
       - SURYA_INFERENCE_KEEP_ALIVE=${SURYA_INFERENCE_KEEP_ALIVE:-1}
       - SURYA_INFERENCE_PARALLEL=${SURYA_INFERENCE_PARALLEL:-1}
       - SURYA_INFERENCE_STARTUP_TIMEOUT=${SURYA_INFERENCE_STARTUP_TIMEOUT:-900}
+      # /probe uses this to flag documents that should go to the heavy pipeline.
+      - OCR_LONG_DOC_PAGE_THRESHOLD=${OCR_LONG_DOC_PAGE_THRESHOLD:-10}
     volumes:
       - ocr-model-cache:/root/.cache
     healthcheck:
@@ -73,5 +92,55 @@ services:
       retries: 3
     restart: unless-stopped
 
+  # ── On-demand heavy OCR backends ────────────────────────────────────────
+  # Kept under the "gpu" profile so they stay OUT of the default graph and are
+  # only started when a long-document extraction is enqueued (see
+  # LongOcr::ServiceSupervisor), then stopped again by LongOcrIdleStopJob.
+
+  # NVIDIA path: Baidu Unlimited-OCR on vLLM (recipes.vllm.ai/baidu/Unlimited-OCR).
+  unlimited-ocr:
+    profiles: [ gpu ]
+    image: vllm/vllm-openai:unlimited-ocr
+    command: >
+      ${OCR_LONG_MODEL:-baidu/Unlimited-OCR}
+      --trust-remote-code
+      --logits_processors vllm.model_executor.models.unlimited_ocr:NGramPerReqLogitsProcessor
+      --no-enable-prefix-caching
+      --mm-processor-cache-gb 0
+    ports:
+      - "127.0.0.1:${OCR_LONG_VLLM_PORT:-8002}:8000"
+    ipc: host
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [ gpu ]
+    volumes:
+      - long-ocr-model-cache:/root/.cache
+    restart: "no"
+
+  # Apple Silicon / CPU path: llama.cpp port (llama-server + GGUF + mmproj).
+  # For Metal acceleration on macOS run llama-server natively on the host and
+  # point OCR_LONG_SERVICE_URL at it (Docker Desktop has no GPU passthrough).
+  unlimited-ocr-llama:
+    profiles: [ gpu ]
+    build:
+      context: ./long_ocr_service
+      args:
+        LLAMA_CPP_REF: ${LLAMA_CPP_REF:-b9360}
+    ports:
+      - "127.0.0.1:${OCR_LONG_LLAMA_PORT:-8003}:8000"
+    environment:
+      - OCR_LONG_MODEL_URL=${OCR_LONG_MODEL_URL:-}
+      - OCR_LONG_MMPROJ_URL=${OCR_LONG_MMPROJ_URL:-}
+      - LLAMA_NGL=${OCR_LONG_LLAMA_NGL:-0}
+      - LLAMA_CTX_SIZE=${OCR_LONG_LLAMA_CTX:-8192}
+    volumes:
+      - long-ocr-model-cache:/models
+    restart: "no"
+
 volumes:
   ocr-model-cache:
+  long-ocr-model-cache:

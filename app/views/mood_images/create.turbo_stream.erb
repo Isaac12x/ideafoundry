@@ -1,0 +1,5 @@
+<% @images.each do |image| %>
+  <%= turbo_stream.append mood_wall_dom_id(image.idea) do %>
+    <%= render "mood_board/image", image: image %>
+  <% end %>
+<% end %>

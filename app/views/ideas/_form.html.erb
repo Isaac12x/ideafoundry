@@ -84,9 +84,33 @@
     <!-- ===== MAIN COLUMN ===== -->
     <div class="form-main">
 
-      <!-- Title -->
-      <div class="form-panel">
-        <h3 class="form-panel-title">Basics</h3>
+      <!-- Basics: topology (type of idea) first, then title -->
+      <details class="form-panel" open>
+        <summary class="form-panel-title">Basics</summary>
+        <div class="form-group">
+          <label>Topology</label>
+          <% if topologies.any? %>
+            <% children_by_parent = topologies.group_by(&:parent_id) %>
+            <% template_ids_by_topology = templates.each_with_object({}) { |t, h| h[t.topology_id] ||= t.id if t.topology_id.present? } %>
+            <div class="topology-picker" data-controller="topology-picker">
+              <div class="topology-picker__search-wrap">
+                <svg class="topology-picker__search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+                <input type="search" class="topology-picker__search"
+                       placeholder="Search topologies…" aria-label="Search topologies"
+                       data-topology-picker-target="search"
+                       data-action="input->topology-picker#filter">
+              </div>
+              <div class="topology-tree" role="tree" data-topology-picker-target="tree">
+                <%= render partial: "ideas/topology_node",
+                      collection: (children_by_parent[nil] || []), as: :topology,
+                      locals: { idea: idea, children_by_parent: children_by_parent, template_ids_by_topology: template_ids_by_topology } %>
+              </div>
+              <p class="topology-picker__empty" data-topology-picker-target="empty" hidden>No topologies match.</p>
+            </div>
+          <% else %>
+            <p class="text-muted" style="font-size: 0.85rem;">No topologies yet. <%= link_to "Create one", new_topology_path %>.</p>
+          <% end %>
+        </div>
         <div class="form-group">
           <%= form.label :title %>
           <%= form.text_field :title, class: "form-control", required: true, placeholder: "What's the idea?" %>
@@ -95,20 +119,71 @@
           <%= form.label :tldr, "TL;DR" %>
           <%= form.text_field :tldr, class: "form-control", placeholder: "One sentence: what is this idea and why it matters?" %>
         </div>
-        <div class="form-group">
-          <%= form.label :state %>
-          <%= form.select :state,
-              Idea.states.keys.map { |k| [k.humanize, k] },
-              {},
-              class: "form-control" %>
-        </div>
-      </div>
+      </details>
+
+      <!-- Lists & Boards -->
+      <% unless idea.new_record? || idea.draft? %>
+        <details class="form-panel" open>
+          <summary class="form-panel-title">Organization</summary>
+
+          <% kanban_boards ||= [] %>
+          <% named_lists ||= [] %>
+
+          <div class="form-group">
+            <label>Kanban Boards</label>
+            <% if kanban_boards.any? %>
+              <div class="kanban-board-pickers">
+                <% kanban_boards.each do |board| %>
+                  <% board_lists = board.lists.to_a %>
+                  <% current_board_list = idea.idea_lists.joins(:list).find_by(lists: { kind: "kanban", kanban_board_id: board.id })&.list %>
+                  <div class="kanban-board-picker">
+                    <h4><%= board.name %></h4>
+                    <div class="checkbox-group">
+                      <div class="checkbox-item">
+                        <%= radio_button_tag "kanban_list_ids[#{board.id}]", "", current_board_list.nil?, id: "kanban_board_#{board.id}_none" %>
+                        <%= label_tag "kanban_board_#{board.id}_none", "None" %>
+                      </div>
+                      <% board_lists.each do |list| %>
+                        <div class="checkbox-item">
+                          <%= radio_button_tag "kanban_list_ids[#{board.id}]", list.id, current_board_list == list, id: "kanban_board_#{board.id}_list_#{list.id}" %>
+                          <%= label_tag "kanban_board_#{board.id}_list_#{list.id}", list.name %>
+                        </div>
+                      <% end %>
+                      <% if board_lists.empty? %>
+                        <p class="text-muted" style="font-size: 0.85rem;">No columns on this board yet. Create one from the Planning page.</p>
+                      <% end %>
+                    </div>
+                  </div>
+                <% end %>
+              </div>
+            <% else %>
+              <p class="text-muted" style="font-size: 0.85rem;">No kanban boards yet. Create one from the Planning page.</p>
+            <% end %>
+          </div>
+
+          <div class="form-group">
+            <label>Named Lists</label>
+            <div class="checkbox-group">
+              <%= hidden_field_tag "named_list_ids[]", "" %>
+              <% named_lists.each do |list| %>
+                <div class="checkbox-item">
+                  <%= check_box_tag "named_list_ids[]", list.id, idea.lists.include?(list), id: "named_list_#{list.id}" %>
+                  <%= label_tag "named_list_#{list.id}", list.name %>
+                </div>
+              <% end %>
+              <% if named_lists.empty? %>
+                <p class="text-muted" style="font-size: 0.85rem;">No named lists yet. Create one from the Planning page.</p>
+              <% end %>
+            </div>
+          </div>
+        </details>
+      <% end %>
 
       <!-- Hero Image -->
       <% hero_drawing = idea.persisted? ? idea.hero_drawing : nil %>
       <% hero_default_mode = hero_drawing ? "draw" : "file" %>
-      <div class="form-panel">
-        <h3 class="form-panel-title">Hero Image</h3>
+      <details class="form-panel" open>
+        <summary class="form-panel-title">Hero Image</summary>
         <div class="hero-mode-toggle"
              data-controller="idea-drawings"
              data-idea-drawings-role-value="hero"
@@ -179,11 +254,11 @@
             </div>
           </div>
         </div>
-      </div>
+      </details>
 
       <!-- Description (TipTap) -->
-      <div class="form-panel">
-        <h3 class="form-panel-title">Description</h3>
+      <details class="form-panel" open>
+        <summary class="form-panel-title">Description</summary>
         <div class="form-group" data-controller="editor"
              data-editor-content-value="<%= idea.description&.body&.to_html&.gsub('"', '&quot;') || '' %>"
              data-editor-upload-url-value="<%= uploads_path %>">
@@ -221,14 +296,26 @@
           </div>
           <div class="tiptap-editor" data-editor-target="editor"></div>
         </div>
-      </div>
+      </details>
+
+      <!-- Drawings -->
+      <% if idea.persisted? %>
+        <% general_drawings = idea.general_drawings.to_a %>
+        <details class="form-panel" open>
+          <summary class="form-panel-title">Drawings</summary>
+          <%= render "drawings/form_section",
+                idea: idea, role: "general", title: "Drawings",
+                mode: "list", drawings: general_drawings,
+                add_label: "Add Drawing" %>
+        </details>
+      <% end %>
 
       <!-- Attachments -->
       <% attachment_drawings = idea.persisted? ? idea.attachment_drawings.to_a : [] %>
       <% image_attachments = idea.image_attachments %>
       <% document_attachments = idea.document_attachments %>
-      <div class="form-panel">
-        <h3 class="form-panel-title">Attachments</h3>
+      <details class="form-panel" open>
+        <summary class="form-panel-title">Attachments</summary>
 
         <div class="current-attachments"
              data-controller="attachment-reorder"
@@ -297,110 +384,13 @@
                   add_label: "Add Drawing as Attachment" %>
           </div>
         <% end %>
-      </div>
-
-      <!-- Drawings -->
-      <% if idea.persisted? %>
-        <% general_drawings = idea.general_drawings.to_a %>
-        <div class="form-panel">
-          <h3 class="form-panel-title">Drawings</h3>
-          <%= render "drawings/form_section",
-                idea: idea, role: "general", title: "Drawings",
-                mode: "list", drawings: general_drawings,
-                add_label: "Add Drawing" %>
-        </div>
-      <% end %>
-
-      <!-- Topologies & Lists -->
-      <div class="form-panel">
-        <h3 class="form-panel-title">Organization</h3>
-
-        <div class="form-group">
-          <label>Topologies</label>
-          <div class="checkbox-group topology-picker">
-            <% topologies.each do |topology| %>
-              <div class="checkbox-item">
-                <%= check_box_tag 'idea[topology_ids][]', topology.id,
-                    idea.topologies.include?(topology),
-                    id: "topology_#{topology.id}",
-                    data: {
-                      template_switch_target: "topologyCheckbox",
-                      topology_fields: topology.effective_default_field_definitions.to_json,
-                      action: "change->template-switch#topologiesChanged"
-                    } %>
-                <label for="topology_<%= topology.id %>">
-                  <% if topology.color.present? %>
-                    <span class="topology-color-dot" style="background-color: <%= topology.color %>;"></span>
-                  <% end %>
-                  <%= topology.full_path %>
-                </label>
-              </div>
-            <% end %>
-            <% if topologies.empty? %>
-              <p class="text-muted" style="font-size: 0.85rem;">No topologies yet. <%= link_to "Create one", new_topology_path %>.</p>
-            <% end %>
-          </div>
-        </div>
-
-        <% unless idea.new_record? || idea.draft? %>
-          <% kanban_boards ||= [] %>
-          <% named_lists ||= [] %>
-
-          <div class="form-group">
-            <label>Kanban Boards</label>
-            <% if kanban_boards.any? %>
-              <div class="kanban-board-pickers">
-                <% kanban_boards.each do |board| %>
-                  <% board_lists = board.lists.to_a %>
-                  <% current_board_list = idea.idea_lists.joins(:list).find_by(lists: { kind: "kanban", kanban_board_id: board.id })&.list %>
-                  <div class="kanban-board-picker">
-                    <h4><%= board.name %></h4>
-                    <div class="checkbox-group">
-                      <div class="checkbox-item">
-                        <%= radio_button_tag "kanban_list_ids[#{board.id}]", "", current_board_list.nil?, id: "kanban_board_#{board.id}_none" %>
-                        <%= label_tag "kanban_board_#{board.id}_none", "None" %>
-                      </div>
-                      <% board_lists.each do |list| %>
-                        <div class="checkbox-item">
-                          <%= radio_button_tag "kanban_list_ids[#{board.id}]", list.id, current_board_list == list, id: "kanban_board_#{board.id}_list_#{list.id}" %>
-                          <%= label_tag "kanban_board_#{board.id}_list_#{list.id}", list.name %>
-                        </div>
-                      <% end %>
-                      <% if board_lists.empty? %>
-                        <p class="text-muted" style="font-size: 0.85rem;">No columns on this board yet. Create one from the Lists page.</p>
-                      <% end %>
-                    </div>
-                  </div>
-                <% end %>
-              </div>
-            <% else %>
-              <p class="text-muted" style="font-size: 0.85rem;">No kanban boards yet. Create one from the Lists page.</p>
-            <% end %>
-          </div>
-
-          <div class="form-group">
-            <label>Named Lists</label>
-            <div class="checkbox-group">
-              <%= hidden_field_tag "named_list_ids[]", "" %>
-              <% named_lists.each do |list| %>
-                <div class="checkbox-item">
-                  <%= check_box_tag "named_list_ids[]", list.id, idea.lists.include?(list), id: "named_list_#{list.id}" %>
-                  <%= label_tag "named_list_#{list.id}", list.name %>
-                </div>
-              <% end %>
-              <% if named_lists.empty? %>
-                <p class="text-muted" style="font-size: 0.85rem;">No named lists yet. Create one from the Lists page.</p>
-              <% end %>
-            </div>
-          </div>
-        <% end %>
-      </div>
+      </details>
 
       <!-- Custom Fields from Template (flat, sorted by position) -->
       <% effective_fields = idea.effective_field_definitions %>
       <% if effective_fields.present? %>
-        <div class="form-panel" data-template-switch-target="customFieldsPanel">
-          <h3 class="form-panel-title">Custom Fields</h3>
+        <details class="form-panel" open data-template-switch-target="customFieldsPanel">
+          <summary class="form-panel-title">Custom Fields</summary>
           <div class="weight-grid">
             <% effective_fields.sort_by { |f| f['position'].to_i }.each do |field| %>
               <% meta_key = field['instance_id'] || field['name'] %>
@@ -454,7 +444,7 @@
               </div>
             <% end %>
           </div>
-        </div>
+        </details>
       <% end %>
 
       <!-- Back-of-the-napkin Calculations -->
@@ -462,6 +452,20 @@
 
       <!-- Hidden container for dynamic tab panels rendered by template-switch JS -->
       <div data-template-switch-target="tabPanelsContainer"></div>
+
+      <!-- Licensing (kept at the bottom of the form on purpose) -->
+      <% if feature_enabled?(:licensing) %>
+        <details class="form-panel" open>
+          <summary class="form-panel-title">Licensing</summary>
+          <div class="form-group form-check">
+            <%= form.check_box :for_licensing, class: "form-check__input", id: "idea_for_licensing" %>
+            <label class="form-check__label" for="idea_for_licensing">
+              Track this idea for licensing
+              <span class="form-check__hint">Swaps Tools &amp; Notes for a Potential Licensors pipeline and adds it to the Licensing CRM.</span>
+            </label>
+          </div>
+        </details>
+      <% end %>
 
     </div>
 
@@ -475,6 +479,20 @@
         <div class="orphaned-list" data-template-switch-target="orphanedList"></div>
       </div>
 
+      <!-- State -->
+      <% if feature_enabled?(:idea_states) %>
+        <details class="form-panel" open>
+          <summary class="form-panel-title">State</summary>
+          <div class="form-group">
+            <%= form.label :state %>
+            <%= form.select :state,
+                Idea.states.keys.map { |k| [k.humanize, k] },
+                {},
+                class: "form-control" %>
+          </div>
+        </details>
+      <% end %>
+
       <!-- Scoring -->
       <% scoring_user = idea.user || @user %>
       <% active_scoring_system_ids = idea.active_scoring_system_ids %>
@@ -482,7 +500,7 @@
       <% legacy_scoring_system = form_scoring_systems.find { |system| system['kind'] == 'legacy_weighted' } %>
       <% scorecard_systems = form_scoring_systems.select { |system| system['kind'] == 'criterion_scorecard' } %>
       <% weights = scoring_user.scoring_weights %>
-      <div class="form-panel scoring-section"
+      <details class="form-panel scoring-section" open
            <% if legacy_scoring_system %>
              data-controller="score"
              data-score-trl-weight-value="<%= weights['trl'] %>"
@@ -490,7 +508,7 @@
              data-score-opportunity-weight-value="<%= weights['opportunity'] %>"
              data-score-timing-weight-value="<%= weights['timing'] %>"
            <% end %>>
-        <h3 class="form-panel-title">Scoring</h3>
+        <summary class="form-panel-title">Scoring</summary>
 
         <% if legacy_scoring_system %>
           <div class="scoring-grid"
@@ -604,9 +622,9 @@
           </div>
         <% end %>
 
-        <div class="computed-score-display" <%= 'data-score-target="computedScore"' if legacy_scoring_system %>>
+        <div class="computed-score-display">
           <div class="computed-score-label">Computed Score</div>
-          <div class="computed-score-value" <%= 'data-score-target="computedScore"' if legacy_scoring_system %>>
+          <div class="computed-score-value" data-score-target="computedScore">
             <%= number_with_precision(idea.computed_score || 0, precision: 2) %>
           </div>
           <% if legacy_scoring_system %>
@@ -619,7 +637,7 @@
             </div>
           <% end %>
         </div>
-      </div>
+      </details>
 
       <% ocr_parts = idea.persisted? ? idea.ocr_attachment_parts : [] %>
       <aside class="form-panel idea-form-ocr-sidebar" aria-label="Extracted attachment parts">

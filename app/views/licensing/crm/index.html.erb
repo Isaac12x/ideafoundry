@@ -1,0 +1,44 @@
+<div class="crm-page">
+  <header class="crm-header">
+    <div class="crm-header__title">
+      <h1>Licensing CRM</h1>
+      <p class="crm-header__sub">
+        <%= pluralize(@licensors.size, "licensor") %> across <%= pluralize(@ideas.size, "idea") %>
+      </p>
+    </div>
+    <div class="crm-viewtoggle" role="tablist" aria-label="View">
+      <%= link_to "Board", licensing_crm_path(view: "board"),
+            class: "crm-viewtoggle__opt #{'is-active' if @view == 'board'}", role: "tab" %>
+      <%= link_to "Table", licensing_crm_path(view: "table"),
+            class: "crm-viewtoggle__opt #{'is-active' if @view == 'table'}", role: "tab" %>
+    </div>
+  </header>
+
+  <div class="crm-stats">
+    <% Licensor::STAGE_ORDER.each do |stage| %>
+      <div class="crm-stat" style="--stage-hue: <%= Licensor.stage_hue(stage) %>">
+        <span class="crm-stat__count"><%= (@by_stage[stage] || []).size %></span>
+        <span class="crm-stat__label"><%= Licensor.stage_label(stage) %></span>
+      </div>
+    <% end %>
+  </div>
+
+  <% if @ideas.empty? %>
+    <div class="crm-empty">
+      <h2>No ideas marked for licensing yet</h2>
+      <p>Open an idea, hit <strong>Edit</strong>, and tick <em>Track this idea for licensing</em>. Its licensors show up here.</p>
+      <%= link_to "Browse ideas →", ideas_path, class: "btn btn-primary" %>
+    </div>
+  <% elsif @licensors.empty? %>
+    <div class="crm-empty">
+      <h2>No licensors yet</h2>
+      <p><%= pluralize(@ideas.size, "idea") %> flagged for licensing, but no potential licensors added. Open an idea's <strong>Potential Licensors</strong> tab to add the first.</p>
+    </div>
+  <% elsif @view == "table" %>
+    <%= render "licensing/crm/table", licensors: @licensors %>
+  <% else %>
+    <%= render "licensing/crm/board", by_stage: @by_stage %>
+  <% end %>
+
+  <%= turbo_frame_tag "licensor-panel" %>
+</div>

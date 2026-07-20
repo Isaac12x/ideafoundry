@@ -39,20 +39,38 @@ class KbMultiFormatTest < ActionDispatch::IntegrationTest
     FileUtils.rm_rf(@kb_dir) if @kb_dir
   end
 
-  # Native "App KB" (docs/kb) is listed first when it has markdown; our tmp folder follows.
+  # Native "App KB" (storage/kb) is always listed first unless hidden;
+  # our tmp folder follows it.
   def src_index
-    native = Dir.exist?(KbController::NATIVE_KB_PATH) &&
-             Dir.glob(File.join(KbController::NATIVE_KB_PATH, "**", "*.md")).any?
-    native ? 1 : 0
+    @user.kb_hide_native? ? 0 : 1
   end
 
   test "html, xlsx and docx files appear in the kb tree" do
     get kb_path
 
     assert_response :success
-    assert_select ".kb-file-link", text: /page\.html/
-    assert_select ".kb-file-link", text: /sheet\.xlsx/
-    assert_select ".kb-file-link", text: /doc\.docx/ if @pandoc
+    assert_select ".kb-file-link", text: "page.html"
+    assert_select ".kb-file-link", text: "sheet.xlsx"
+    assert_select ".kb-file-link", text: "doc.docx" if @pandoc
+  end
+
+  test "image and video viewers can be selected and copied" do
+    File.write(File.join(@kb_dir, "photo.png"), "not-a-real-png")
+    File.write(File.join(@kb_dir, "clip.mp4"), "not-a-real-video")
+
+    get kb_file_path(src: src_index, file: "photo.png")
+
+    assert_response :success
+    assert_select '.kb-document[data-controller="kb-media-copy"]'
+    assert_select '.kb-media-copy-btn[data-action="click->kb-media-copy#copy"]', text: "Copy image"
+    assert_select 'img.kb-selectable-media[tabindex="0"][data-action*="kb-media-copy#copyFromShortcut"]'
+
+    get kb_file_path(src: src_index, file: "clip.mp4")
+
+    assert_response :success
+    assert_select '.kb-document[data-controller="kb-media-copy"]'
+    assert_select '.kb-media-copy-btn[data-action="click->kb-media-copy#copy"]', text: "Copy video"
+    assert_select 'video.kb-selectable-media[tabindex="0"][data-action*="kb-media-copy#copyFromShortcut"]'
   end
 
   test "selecting an html file renders a sandboxed iframe pointing at the raw endpoint" do
@@ -65,6 +83,31 @@ class KbMultiFormatTest < ActionDispatch::IntegrationTest
     assert_not_nil sandbox, "iframe must be sandboxed"
     assert_not_includes sandbox, "allow-scripts"
     assert_not_includes sandbox, "allow-same-origin"
+  end
+
+  test "serve endpoint answers range requests with 206 partial content" do
+    File.write(File.join(@kb_dir, "clip.mp4"), "0123456789")
+
+    get kb_serve_path(src: src_index, file: "clip.mp4"), headers: { "Range" => "bytes=2-5" }
+
+    assert_response :partial_content
+    assert_equal "2345", response.body
+    assert_equal "video/mp4", response.media_type
+    assert_match %r{bytes 2-5/10}, response.headers["Content-Range"]
+  end
+
+  test "serve endpoint revalidates with 304 for unchanged files" do
+    File.write(File.join(@kb_dir, "clip.mp4"), "0123456789")
+
+    get kb_serve_path(src: src_index, file: "clip.mp4")
+    assert_response :success
+    assert_equal "0123456789", response.body
+    last_modified = response.headers["Last-Modified"]
+    assert last_modified.present?, "serve must send Last-Modified"
+
+    get kb_serve_path(src: src_index, file: "clip.mp4"),
+        headers: { "If-Modified-Since" => last_modified }
+    assert_response :not_modified
   end
 
   test "raw endpoint serves html as-is with strict CSP" do

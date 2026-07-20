@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Edit-button-gated knowledge-base studios for images, video, audio, PDFs, HTML, and opaque media, with canvas/timeline/waveform/page tools, asynchronous local rendering, atomic saves, and checksum-addressed revision history.
+- Knowledge-base drag-and-drop copies external files into the selected local folder, with collision-safe filenames and immediate Turbo tree updates.
+- Per-source and per-folder emoji/image icons, a global folder-icon default in Display settings, and favourites for knowledge-base files and folders.
+- Knowledge-base filesystem AI jobs from the context menu, including typed or FluidVoice-transcribed requests and Markdown results or errors in a local `job_results/` folder.
+- A separated “Open in Finder” action at the bottom of the knowledge-base context menu.
+- Knowledge-base folder actions for collapsing or uncollapsing every nested folder in a source.
+- Knowledge-base file headers with full extensions, created/modified dates, and selectable, copyable image and video previews.
 - Multiple scoring systems, including a founder scorecard with seven 1-5 criteria and a 24/35 gate for active work and Kanban placement.
 - Right-click idea cards can add ideas to Kanban board columns or named lists.
 - Backlog items can include multiple uploaded images with inline thumbnails.
@@ -41,6 +48,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- URL-based knowledge-base file creation now queues downloads without reloading the page and refreshes the exact destination folder when the asynchronous job finishes.
+- The keyboard-shortcuts helper now appears as `/shortcuts/` at the bottom-right edge of the notes bar.
 - Batch imports now discover local Apple Notes databases directly, preview folders and individual notes, and route cloud note apps through OAuth-oriented connection flows.
 - Local attachment OCR now uses Surya with block HTML metadata while preserving complete extracted text for saving.
 - Idea creation no longer asks for Kanban board or named-list placement; placement remains available after the idea exists.
@@ -60,6 +69,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Knowledge-base reloads reopen the last valid document instead of resetting to the first available file.
 - Local HTTPS access through `ideas.local:8443` is allowed by Rails host authorization.
 - Batch import export uploads are available again for note apps without OAuth support, and individual note selections no longer override folder selections.
 - Ask Agent now only renders while the local agent is enabled and live, and its launcher icon changes at most once per day.
@@ -79,6 +89,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
+- Knowledge-base media edits validate configured source paths, reject symlink/traversal access, invoke local tools without a shell, preserve original bytes, and record before/after checksums plus edit recipes in the human activity trail.
 - Persisted recovery passphrases are moved out of app-local storage into platform secure storage when available.
 - SQLCipher and recovery-secret configuration values are filtered from logs.
 

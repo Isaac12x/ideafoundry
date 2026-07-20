@@ -31,6 +31,9 @@
     <% if AttachmentOcrJob.ocr_supported?(attachment) %>
       <%= button_to "Run OCR", ocr_idea_attachment_path(idea, attachment), method: :post, class: "btn btn-sm", form: { style: "display:inline" } %>
     <% end %>
+    <% if AttachmentOcrJob.knowledge_extractable?(attachment) %>
+      <%= button_to "Extract knowledge", extract_knowledge_idea_attachment_path(idea, attachment), method: :post, class: "btn btn-sm", title: "Heavy on-demand OCR for long documents (books, patents)", form: { style: "display:inline" } %>
+    <% end %>
     <button type="button" class="btn btn-sm" data-action="click->attachment-viewer#openDelete" title="Remove attachment">&times;</button>
   </span>
 </li>

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_25_130000) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_19_000100) do
   create_table "action_mailbox_inbound_emails", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "message_checksum", null: false
@@ -273,6 +273,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_25_130000) do
     t.datetime "discarded_at"
     t.boolean "draft", default: false, null: false
     t.boolean "email_ingested", default: false, null: false
+    t.boolean "for_licensing", default: false, null: false
     t.string "integrity_hash"
     t.text "metadata"
     t.json "napkin_calculations"
@@ -287,6 +288,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_25_130000) do
     t.integer "trl"
     t.datetime "updated_at", null: false
     t.integer "user_id", null: false
+    t.integer "version_group_id"
+    t.integer "version_number"
+    t.boolean "version_primary", default: false, null: false
     t.index ["computed_score"], name: "index_ideas_on_computed_score"
     t.index ["cool_off_until"], name: "index_ideas_on_cool_off_until"
     t.index ["discarded_at"], name: "index_ideas_on_discarded_at"
@@ -294,7 +298,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_25_130000) do
     t.index ["state"], name: "index_ideas_on_state"
     t.index ["template_id"], name: "index_ideas_on_template_id"
     t.index ["user_id", "draft"], name: "index_ideas_on_user_id_and_draft"
+    t.index ["user_id", "for_licensing"], name: "index_ideas_on_user_id_and_for_licensing"
     t.index ["user_id"], name: "index_ideas_on_user_id"
+    t.index ["version_group_id"], name: "index_ideas_on_version_group_id"
   end
 
   create_table "kanban_boards", force: :cascade do |t|
@@ -305,6 +311,131 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_25_130000) do
     t.integer "user_id", null: false
     t.index ["user_id", "position"], name: "index_kanban_boards_on_user_id_and_position", unique: true
     t.index ["user_id"], name: "index_kanban_boards_on_user_id"
+  end
+
+  create_table "kb_downloads", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "dir", default: "", null: false
+    t.text "error"
+    t.string "filename"
+    t.string "format", default: "auto", null: false
+    t.integer "source_index", null: false
+    t.text "source_path"
+    t.string "status", default: "pending", null: false
+    t.datetime "updated_at", null: false
+    t.string "url", null: false
+    t.integer "user_id", null: false
+    t.index ["user_id", "status"], name: "index_kb_downloads_on_user_id_and_status"
+    t.index ["user_id"], name: "index_kb_downloads_on_user_id"
+  end
+
+  create_table "kb_entry_preferences", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "emoji"
+    t.string "entry_type", null: false
+    t.boolean "favorite", default: false, null: false
+    t.string "icon_kind", default: "default", null: false
+    t.text "relative_path", default: "", null: false
+    t.text "source_path", default: "", null: false
+    t.datetime "updated_at", null: false
+    t.integer "user_id", null: false
+    t.index ["user_id", "source_path", "relative_path", "entry_type"], name: "index_kb_entry_preferences_on_entry", unique: true
+    t.index ["user_id"], name: "index_kb_entry_preferences_on_user_id"
+  end
+
+  create_table "kb_fs_jobs", force: :cascade do |t|
+    t.string "context_kind", null: false
+    t.text "context_path", null: false
+    t.datetime "created_at", null: false
+    t.text "error"
+    t.datetime "finished_at"
+    t.text "prompt"
+    t.text "result_path"
+    t.integer "source_index", null: false
+    t.text "source_path", null: false
+    t.datetime "started_at"
+    t.string "status", default: "pending", null: false
+    t.text "target_dir", default: "", null: false
+    t.text "transcript"
+    t.datetime "updated_at", null: false
+    t.integer "user_id", null: false
+    t.index ["user_id", "status"], name: "index_kb_fs_jobs_on_user_id_and_status"
+    t.index ["user_id"], name: "index_kb_fs_jobs_on_user_id"
+  end
+
+  create_table "kb_media_edits", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.text "error"
+    t.datetime "finished_at"
+    t.string "media_kind", null: false
+    t.text "operations"
+    t.string "original_sha256"
+    t.string "relative_path", null: false
+    t.string "result_sha256"
+    t.string "revision_path"
+    t.integer "source_index", null: false
+    t.string "source_path", null: false
+    t.datetime "started_at"
+    t.string "status", default: "pending", null: false
+    t.datetime "updated_at", null: false
+    t.integer "user_id", null: false
+    t.index ["source_path", "relative_path"], name: "index_kb_media_edits_on_source_path_and_relative_path"
+    t.index ["user_id", "source_path", "relative_path"], name: "index_active_kb_media_edits_on_path", unique: true, where: "status IN ('pending', 'running')"
+    t.index ["user_id", "status"], name: "index_kb_media_edits_on_user_id_and_status"
+    t.index ["user_id"], name: "index_kb_media_edits_on_user_id"
+  end
+
+  create_table "knowledge_extractions", force: :cascade do |t|
+    t.bigint "attachment_id"
+    t.string "backend"
+    t.datetime "created_at", null: false
+    t.text "error"
+    t.datetime "finished_at"
+    t.integer "idea_id"
+    t.integer "kb_folder_index"
+    t.string "kb_path"
+    t.text "markdown"
+    t.bigint "output_attachment_id"
+    t.string "output_path"
+    t.integer "page_count"
+    t.integer "pages_done", default: 0, null: false
+    t.string "source_filename"
+    t.string "source_kind", null: false
+    t.datetime "started_at"
+    t.integer "status", default: 0, null: false
+    t.datetime "updated_at", null: false
+    t.index ["attachment_id"], name: "index_knowledge_extractions_on_attachment_id"
+    t.index ["idea_id"], name: "index_knowledge_extractions_on_idea_id"
+    t.index ["status"], name: "index_knowledge_extractions_on_status"
+  end
+
+  create_table "licensor_contacts", force: :cascade do |t|
+    t.integer "channel", default: 0, null: false
+    t.datetime "created_at", null: false
+    t.integer "licensor_id", null: false
+    t.datetime "occurred_at", null: false
+    t.text "summary"
+    t.datetime "updated_at", null: false
+    t.index ["licensor_id", "occurred_at"], name: "index_licensor_contacts_on_licensor_id_and_occurred_at"
+    t.index ["licensor_id"], name: "index_licensor_contacts_on_licensor_id"
+  end
+
+  create_table "licensors", force: :cascade do |t|
+    t.string "company", null: false
+    t.string "contact_email"
+    t.string "contact_name"
+    t.string "contact_url"
+    t.datetime "created_at", null: false
+    t.integer "idea_id", null: false
+    t.datetime "last_contacted_at"
+    t.string "next_action"
+    t.text "notes"
+    t.integer "position"
+    t.integer "stage", default: 0, null: false
+    t.datetime "updated_at", null: false
+    t.index ["idea_id", "stage", "position"], name: "index_licensors_on_idea_id_and_stage_and_position"
+    t.index ["idea_id"], name: "index_licensors_on_idea_id"
+    t.index ["stage"], name: "index_licensors_on_stage"
   end
 
   create_table "lists", force: :cascade do |t|
@@ -326,6 +457,20 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_25_130000) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.integer "user_id"
+  end
+
+  create_table "mood_images", force: :cascade do |t|
+    t.string "caption"
+    t.datetime "created_at", null: false
+    t.integer "idea_id"
+    t.float "pos_x", default: 0.0, null: false
+    t.float "pos_y", default: 0.0, null: false
+    t.datetime "updated_at", null: false
+    t.integer "user_id", null: false
+    t.integer "z_index", default: 0, null: false
+    t.index ["idea_id"], name: "index_mood_images_on_idea_id"
+    t.index ["user_id", "idea_id"], name: "index_mood_images_on_user_id_and_idea_id"
+    t.index ["user_id"], name: "index_mood_images_on_user_id"
   end
 
   create_table "notes", force: :cascade do |t|
@@ -372,10 +517,12 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_25_130000) do
     t.text "scoring_system_ids", default: "[]", null: false
     t.text "section_order", null: false
     t.text "tab_definitions"
+    t.integer "topology_id"
     t.datetime "updated_at", null: false
     t.integer "user_id", null: false
     t.index ["user_id", "is_default"], name: "index_templates_on_user_id_and_is_default"
     t.index ["user_id", "name"], name: "index_templates_on_user_id_and_name", unique: true
+    t.index ["user_id", "topology_id"], name: "index_templates_on_user_id_and_topology_id"
     t.index ["user_id"], name: "index_templates_on_user_id"
   end
 
@@ -451,8 +598,17 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_25_130000) do
   add_foreign_key "ideas", "templates"
   add_foreign_key "ideas", "users"
   add_foreign_key "kanban_boards", "users"
+  add_foreign_key "kb_downloads", "users"
+  add_foreign_key "kb_entry_preferences", "users"
+  add_foreign_key "kb_fs_jobs", "users"
+  add_foreign_key "kb_media_edits", "users"
+  add_foreign_key "knowledge_extractions", "ideas"
+  add_foreign_key "licensor_contacts", "licensors"
+  add_foreign_key "licensors", "ideas"
   add_foreign_key "lists", "kanban_boards"
   add_foreign_key "lists", "users"
+  add_foreign_key "mood_images", "ideas"
+  add_foreign_key "mood_images", "users"
   add_foreign_key "notes", "ideas"
   add_foreign_key "notes", "notes", column: "parent_note_id"
   add_foreign_key "submissions", "ideas"

@@ -1,0 +1,82 @@
+<%#
+  Think in Images — a moodboard + presentation surface.
+  locals: board_idea (Idea or nil for the global/KB board), board_images (ordered MoodImage relation)
+%>
+<% wall_id = mood_wall_dom_id(board_idea) %>
+<div class="mood-board"
+     data-controller="mood-board"
+     data-mood-board-create-url-value="<%= mood_images_path %>"
+     data-mood-board-idea-id-value="<%= board_idea&.id %>">
+
+  <div class="mood-board__bar">
+    <div class="mood-board__lead">
+      <h3 class="mood-board__eyebrow">Think in Images</h3>
+      <p class="mood-board__hint">Pin prints to the wall, arrange by instinct &mdash; then project them back at random to catch what words miss.</p>
+    </div>
+    <div class="mood-board__tools">
+      <button type="button" class="mood-btn" data-action="mood-board#pickFiles">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        Add prints
+      </button>
+      <button type="button" class="mood-btn mood-btn--accent" data-action="mood-board#present" data-mood-board-target="presentBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        Present
+      </button>
+    </div>
+    <input type="file" accept="image/*" multiple hidden
+           data-mood-board-target="input"
+           data-action="mood-board#uploadFromInput">
+  </div>
+
+  <div class="mood-board__wall" id="<%= wall_id %>"
+       data-mood-board-target="wall"
+       data-action="dragover->mood-board#dragOver dragleave->mood-board#dragLeave drop->mood-board#dropFiles">
+    <div class="mood-board__empty<%= ' is-hidden' if board_images.any? %>" data-mood-board-target="empty">
+      <span class="mood-board__empty-mark" aria-hidden="true"></span>
+      <p>The wall is bare.</p>
+      <span class="mood-board__empty-body">Drop image files here, or hit <b>Add prints</b>. Scatter them, pull the related ones close, and <b>Present</b> to think in flashes instead of sentences.</span>
+    </div>
+    <% board_images.each do |image| %>
+      <%= render "mood_board/image", image: image %>
+    <% end %>
+  </div>
+
+  <%# ── Presentation stage (fullscreen free-association mode) ── %>
+  <div class="mood-stage" data-mood-board-target="stage" hidden
+       data-action="click->mood-board#stageBackdrop">
+    <div class="mood-stage__frame">
+      <img class="mood-stage__img" data-mood-board-target="stageImg" alt="" draggable="false">
+    </div>
+    <div class="mood-stage__caption" data-mood-board-target="stageCaption"></div>
+
+    <div class="mood-stage__nav mood-stage__nav--prev" data-action="mood-board#prev" title="Previous (←)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+    </div>
+    <div class="mood-stage__nav mood-stage__nav--next" data-action="mood-board#next" title="Next (→)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+    </div>
+
+    <div class="mood-stage__hud">
+      <span class="mood-stage__counter" data-mood-board-target="stageCounter">1 / 1</span>
+      <button type="button" class="mood-hud-btn" data-action="mood-board#random" title="Random (R)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 3h5v5"/><path d="M4 20L21 3"/><path d="M21 16v5h-5"/><path d="M15 15l6 6"/><path d="M4 4l5 5"/></svg>
+        Random
+      </button>
+      <button type="button" class="mood-hud-btn" data-action="mood-board#togglePlay" data-mood-board-target="playBtn" title="Autoplay (Space)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        Play
+      </button>
+      <button type="button" class="mood-hud-btn" data-action="mood-board#closeStage" title="Close (Esc)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        Close
+      </button>
+    </div>
+
+    <p class="mood-stage__keys" aria-hidden="true">
+      <kbd>&larr;</kbd><kbd>&rarr;</kbd> step
+      <span>·</span> <kbd>R</kbd> random
+      <span>·</span> <kbd>space</kbd> autoplay
+      <span>·</span> <kbd>esc</kbd> close
+    </p>
+  </div>
+</div>

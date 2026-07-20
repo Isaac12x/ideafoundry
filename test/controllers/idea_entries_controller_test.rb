@@ -43,13 +43,17 @@ class IdeaEntriesControllerTest < ActionDispatch::IntegrationTest
     assert_match "idea_entry_summary_#{@idea.id}_tool", response.body
   end
 
-  test "ideas index exposes quick add controls for enabled structured tabs" do
+  test "ideas index shows inline structured entry summaries for kinds with entries" do
+    # Cards render read-only summaries (no quick-add form), and only for
+    # kinds that already have entries.
+    @idea.idea_entries.create!(kind: "tool", name: "Rails")
+
     get ideas_path
 
     assert_response :success
     assert_select "#idea_entry_summary_#{@idea.id}_tool"
-    assert_select "#idea_entry_summary_#{@idea.id}_competitor"
-    assert_select "form[action='#{idea_idea_entries_path(@idea)}']"
+    assert_select "#idea_entry_summary_#{@idea.id}_competitor", false
+    assert_select "form[action='#{idea_idea_entries_path(@idea)}']", false
   end
 
   test "lists index hides structured entry controls on kanban cards" do
@@ -65,7 +69,9 @@ class IdeaEntriesControllerTest < ActionDispatch::IntegrationTest
     assert_select "form[action='#{idea_idea_entries_path(@idea)}']", false
   end
 
-  test "topology idea listings expose quick add controls for enabled structured tabs" do
+  test "topology idea listings show inline structured entry summaries" do
+    # Cards render read-only summaries (no quick-add form).
+    @idea.idea_entries.create!(kind: "tool", name: "Rails")
     topology = @user.topologies.create!(name: "Structured Entries #{SecureRandom.hex(4)}", topology_type: :custom)
     @idea.idea_topologies.create!(topology: topology)
 
@@ -73,7 +79,7 @@ class IdeaEntriesControllerTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_select "#idea_entry_summary_#{@idea.id}_tool"
-    assert_select "form[action='#{idea_idea_entries_path(@idea)}']"
+    assert_select "form[action='#{idea_idea_entries_path(@idea)}']", false
   ensure
     topology&.destroy
   end

@@ -1,0 +1,16 @@
+<turbo-frame id="kb-content">
+  <%= form_with url: kb_fs_save_path, method: :patch, class: "kb-editor" do |f| %>
+    <%= f.hidden_field :src, value: @selected_folder_index %>
+    <%= f.hidden_field :file, value: @selected_file %>
+    <div class="kb-editor-toolbar">
+      <span class="kb-editor-filename"><%= File.basename(@selected_file) %></span>
+      <div class="kb-editor-actions">
+        <%= link_to "Cancel", kb_file_path(src: @selected_folder_index, file: @selected_file),
+              data: { turbo_frame: "kb-content" }, class: "btn btn-sm" %>
+        <%= f.submit "Save", class: "btn btn-sm btn-primary" %>
+      </div>
+    </div>
+    <%= f.text_area :content, value: @raw_content, class: "kb-editor-textarea",
+          autofocus: true, spellcheck: false %>
+  <% end %>
+</turbo-frame>

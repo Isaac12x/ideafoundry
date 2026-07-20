@@ -1,0 +1,14 @@
+<%= form_with(model: licensor, url: idea_licensors_path(idea), class: "licensor-form") do |f| %>
+  <% if licensor.errors.any? %>
+    <div class="idea-entry-errors"><%= licensor.errors.full_messages.to_sentence %></div>
+  <% end %>
+  <div class="licensor-form__grid">
+    <%= f.text_field :company, placeholder: "Company / licensor", class: "idea-entry-input", required: true, autocomplete: "off" %>
+    <%= f.text_field :contact_name, placeholder: "Contact name (optional)", class: "idea-entry-input", autocomplete: "off" %>
+    <%= f.email_field :contact_email, placeholder: "Email (optional)", class: "idea-entry-input", autocomplete: "off" %>
+    <%= f.select :stage, Licensor::STAGE_ORDER.map { |s| [Licensor.stage_label(s), s] }, {}, class: "idea-entry-input" %>
+  </div>
+  <div class="licensor-form__actions">
+    <%= f.submit "Add licensor", class: "btn btn-sm btn-primary" %>
+  </div>
+<% end %>

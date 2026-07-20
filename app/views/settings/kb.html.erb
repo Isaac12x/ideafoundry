@@ -8,14 +8,45 @@
     <% end %>
   </div>
 
-  <p class="config-description" style="max-width: 720px; margin-bottom: 1.5rem;">
-    Configure local or network-synced folder paths containing <code>.md</code> files.
-    Each folder will appear as a group in the KB sidebar. Folders are read-only.
-  </p>
+  <div class="display-page-stack">
 
   <%= form_with url: url_for(action: :update_kb), method: :patch, local: true,
-        data: { controller: "kb-folders" } do |form| %>
-    <div class="kb-folder-list" id="kb-folder-list" data-kb-folders-target="list">
+        data: { controller: "kb-folders settings-autosave", action: "change->settings-autosave#toggleChanged" } do |form| %>
+    <input type="hidden" name="hide_native_kb"
+           value="<%= @hide_native_kb ? '1' : '0' %>"
+           data-kb-folders-target="hideNativeInput" />
+
+    <div class="display-fields-card">
+      <div class="display-field-row">
+        <p class="display-field-hint" style="margin: 0;">
+          Configure local or network-synced folder paths containing <code>.md</code> files.
+          Each folder will appear as a group in the KB sidebar, where you can create,
+          rename, move, and delete files and folders.
+        </p>
+
+        <div class="kb-folder-list" id="kb-folder-list" data-kb-folders-target="list">
+      <% unless @hide_native_kb %>
+        <div class="kb-folder-entry" data-kb-folders-target="nativeRow">
+          <div class="kb-folder-row">
+            <input type="text" value="<%= KbController::NATIVE_KB_PATH %>"
+                   class="kb-folder-input" readonly disabled />
+            <span class="kb-folder-native-badge">System</span>
+            <button type="button"
+                    class="btn btn-sm kb-folder-open-btn"
+                    data-action="click->kb-folders#openFolder"
+                    title="Open in Finder">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            </button>
+            <button type="button"
+                    class="btn btn-sm btn-danger kb-folder-remove"
+                    data-action="click->kb-folders#hideNative"
+                    title="Remove">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+        </div>
+      <% end %>
+
       <% folders = @kb_folders.any? ? @kb_folders : [""] %>
       <% folders.each_with_index do |path, i| %>
         <div class="kb-folder-entry" data-kb-folders-target="row">
@@ -25,6 +56,20 @@
                    value="<%= path %>"
                    placeholder="/path/to/your/docs"
                    class="kb-folder-input" />
+            <button type="button"
+                    class="btn btn-sm kb-folder-browse-btn"
+                    data-action="click->kb-folders#browse"
+                    title="Choose folder…">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+              Browse
+            </button>
+            <button type="button"
+                    class="btn btn-sm kb-folder-open-btn"
+                    data-action="click->kb-folders#openFolder"
+                    title="Open in Finder"
+                    <%= path.present? ? "" : "disabled" %>>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            </button>
             <button type="button"
                     class="btn btn-sm btn-danger kb-folder-remove"
                     data-action="click->kb-folders#removeRow"
@@ -37,20 +82,86 @@
           <% end %>
         </div>
       <% end %>
+        </div>
+
+        <div>
+          <button type="button"
+                  class="btn btn-sm kb-folder-add-btn"
+                  data-action="click->kb-folders#addRow">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Add folder
+          </button>
+        </div>
+      </div>
     </div>
 
-    <button type="button"
-            class="btn btn-sm kb-folder-add-btn"
-            data-action="click->kb-folders#addRow">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-      Add folder
-    </button>
+    <div class="display-section-divider">
+      <h3 class="display-section-heading">Drives</h3>
+      <p class="display-section-subhead">
+        Mounted volumes and network shares. They appear in the KB sidebar with a
+        drive icon and show as <em>unmounted</em> when unavailable.
+      </p>
+    </div>
+
+    <div class="display-fields-card">
+      <div class="display-field-row">
+        <div class="kb-drive-list" data-controller="kb-drives" data-kb-drives-target="list">
+      <% @kb_drives.each do |path| %>
+        <div class="kb-folder-entry kb-drive-entry">
+          <div class="kb-folder-row">
+            <input type="text" name="kb_drives[]" value="<%= path %>" class="kb-folder-input" readonly />
+            <span class="kb-folder-native-badge <%= Dir.exist?(File.expand_path(path)) ? '' : 'is-unmounted' %>">
+              <%= Dir.exist?(File.expand_path(path)) ? "Mounted" : "Unmounted" %>
+            </span>
+            <button type="button" class="btn btn-sm btn-danger kb-folder-remove"
+                    data-action="click->kb-drives#remove" title="Remove">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+        </div>
+      <% end %>
+
+      <div class="kb-drive-row" style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+        <select class="kb-folder-input" data-kb-drives-target="volume">
+          <option value="">Choose a mounted volume…</option>
+          <% @available_volumes.each do |vol| %>
+            <option value="<%= vol %>"><%= File.basename(vol) %></option>
+          <% end %>
+        </select>
+        <button type="button" class="btn btn-sm" data-action="click->kb-drives#addVolume">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Add volume
+        </button>
+      </div>
+        </div>
+      </div>
+    </div>
 
     <div class="settings-form-actions" style="margin-top: 1.5rem;">
-      <%= form.submit "Save", class: "btn btn-primary" %>
       <%= link_to kb_path, class: "btn btn-sm" do %>
         Back to KB
       <% end %>
     </div>
   <% end %>
+
+  <div class="display-section-divider">
+    <h3 class="display-section-heading">Mount a network share</h3>
+    <p class="display-section-subhead">
+      macOS will ask for credentials and store them in your Keychain; the app
+      never sees them. The share is added to your drives once mounted.
+    </p>
+  </div>
+
+  <div class="display-fields-card kb-mount-share">
+    <div class="display-field-row">
+      <%= form_with url: settings_kb_mount_drive_path, method: :post, local: true do |form| %>
+        <div style="display: flex; gap: 0.5rem;">
+          <input type="text" name="url" placeholder="smb://server/share" class="kb-folder-input" />
+          <%= form.submit "Mount", class: "btn btn-sm" %>
+        </div>
+      <% end %>
+    </div>
+  </div>
+
+  </div>
 </div>

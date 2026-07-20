@@ -182,7 +182,7 @@ class TypingLocksControllerTest < ActionDispatch::IntegrationTest
     get ideas_path
 
     assert_response :success
-    assert_select "body[data-controller=?]", "typing-activity"
+    assert_select "body[data-controller~=?]", "typing-activity"
     assert_select "body[data-typing-activity-lock-url-value=?]", root_path
     assert_select "body[data-typing-activity-lock-action-url-value=?]", lock_typing_lock_path(return_to: ideas_path)
     assert_select "body[data-typing-activity-shortcut-value=?]", "Ctrl/Cmd+Shift+L"

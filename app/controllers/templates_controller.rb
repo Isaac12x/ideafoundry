@@ -86,7 +86,7 @@ class TemplatesController < ApplicationController
   end
 
   def template_params
-    permitted = params.require(:template).permit(:name, :is_default, scoring_system_ids: [])
+    permitted = params.require(:template).permit(:name, :is_default, :topology_id, scoring_system_ids: [])
 
     # section_order comes as indexed hash keys — convert to array
     if params[:template][:section_order].present?

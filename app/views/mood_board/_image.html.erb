@@ -1,0 +1,15 @@
+<% src = url_for(image.file) %>
+<figure class="mood-tile" id="<%= dom_id(image) %>"
+        style="left: <%= image.pos_x %>px; top: <%= image.pos_y %>px; z-index: <%= image.z_index %>;"
+        data-mood-board-target="tile"
+        data-update-url="<%= mood_image_path(image) %>"
+        data-src="<%= src %>"
+        data-caption="<%= image.caption %>"
+        data-action="pointerdown->mood-board#grab">
+  <img src="<%= src %>" alt="<%= image.caption %>" loading="lazy" draggable="false">
+  <button type="button" class="mood-tile__del"
+          data-action="pointerdown->mood-board#stopEvent click->mood-board#remove"
+          title="Remove">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+  </button>
+</figure>
