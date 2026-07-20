@@ -1,0 +1,9 @@
+<div id="<%= dom_id(job) %>" class="kb-job-row kb-job-row--<%= job.status %> <%= 'kb-async-row' unless job.failed? %>" title="<%= job.failed? ? job.error : (job.prompt.presence || 'Voice request') %>">
+  <% if job.failed? %>
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    <span>AI job error: <%= job.error.to_s.truncate(48) %></span>
+  <% else %>
+    <svg class="kb-download-spinner" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.9 4.9 7 7M17 17l2.1 2.1M2 12h3M19 12h3M4.9 19.1 7 17M17 7l2.1-2.1"/></svg>
+    <span><%= job.running? ? "AI working: " : "AI queued: " %><%= job.label %></span>
+  <% end %>
+</div>

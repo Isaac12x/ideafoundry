@@ -65,8 +65,8 @@
     "semantic_hash": ""
   },
   "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/app/models/kb_download.rb": {
-    "mtime": 1783105423.683499,
-    "ast_hash": "ec896659ee24496daf025b3f2bf25e5e",
+    "mtime": 1783973667.0286858,
+    "ast_hash": "c6f61a07966cd28b6d3d1844b102dbf1",
     "semantic_hash": ""
   },
   "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/app/models/todo_item.rb": {
@@ -95,8 +95,8 @@
     "semantic_hash": ""
   },
   "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/app/models/template.rb": {
-    "mtime": 1782400671.7629118,
-    "ast_hash": "7003dfe959b683c989318a669b0fe6e5",
+    "mtime": 1784482502.346516,
+    "ast_hash": "e80d40b6baa7b02629129326449ddc15",
     "semantic_hash": ""
   },
   "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/app/models/agent_recommendation.rb": {
@@ -190,8 +190,8 @@
     "semantic_hash": ""
   },
   "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/app/models/user.rb": {
-    "mtime": 1783526989.525521,
-    "ast_hash": "e3810d16513a886fd9f668fceabe83a2",
+    "mtime": 1784482799.756105,
+    "ast_hash": "017d003a8e7f6ad96313db83f10a6f22",
     "semantic_hash": ""
   },
   "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/app/models/concerns/records_idea_history.rb": {
@@ -280,8 +280,8 @@
     "semantic_hash": ""
   },
   "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/app/javascript/controllers/shortcuts_controller.js": {
-    "mtime": 1783540938.7972646,
-    "ast_hash": "a37fdbc78b0c6135094e3fe3f5a24a06",
+    "mtime": 1783971329.2330644,
+    "ast_hash": "8f0e208a996437039aa02f135315f25b",
     "semantic_hash": ""
   },
   "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/app/javascript/controllers/todo_form_controller.js": {
@@ -305,8 +305,8 @@
     "semantic_hash": ""
   },
   "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/app/javascript/controllers/kb_tree_controller.js": {
-    "mtime": 1783850303.0396755,
-    "ast_hash": "40dcd24f274c8d768c79344343011227",
+    "mtime": 1783974817.0930555,
+    "ast_hash": "a38d6e81ab002a974d77b9f4420251a2",
     "semantic_hash": ""
   },
   "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/app/javascript/controllers/idea_entry_form_controller.js": {
@@ -425,8 +425,8 @@
     "semantic_hash": ""
   },
   "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/app/javascript/controllers/kb_folders_controller.js": {
-    "mtime": 1782941665.5800176,
-    "ast_hash": "33194149736876d934d1ec9a431427b6",
+    "mtime": 1784482786.732352,
+    "ast_hash": "a81fff007b34acec859a6ef8fb3daf62",
     "semantic_hash": ""
   },
   "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/app/javascript/controllers/add_to_list_controller.js": {
@@ -520,8 +520,8 @@
     "semantic_hash": ""
   },
   "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/app/javascript/controllers/auto_filter_controller.js": {
-    "mtime": 1782403745.259448,
-    "ast_hash": "bf73cea197a04a84930ddb60649b781a",
+    "mtime": 1784482185.595309,
+    "ast_hash": "3e23a2cec1cbfd849f90c1d3fe0871ca",
     "semantic_hash": ""
   },
   "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/app/javascript/controllers/editor_controller.js": {
@@ -540,8 +540,8 @@
     "semantic_hash": ""
   },
   "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/app/javascript/controllers/kb_folder_controller.js": {
-    "mtime": 1783850176.0507216,
-    "ast_hash": "4af5dc801b8776b8be08e7b2fa6fa877",
+    "mtime": 1783974115.331328,
+    "ast_hash": "fb35ad00fe46b2f5234d201f6db153c4",
     "semantic_hash": ""
   },
   "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/app/javascript/controllers/passphrase_download_controller.js": {
@@ -570,8 +570,8 @@
     "semantic_hash": ""
   },
   "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/app/javascript/controllers/kb_drives_controller.js": {
-    "mtime": 1783105629.2293997,
-    "ast_hash": "aeb2b54642c6e24a41d421562eb9c307",
+    "mtime": 1784482789.394508,
+    "ast_hash": "e4681ffba1036695f9c7026fa94ed570",
     "semantic_hash": ""
   },
   "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/app/javascript/controllers/topology_graph_controller.js": {
@@ -590,8 +590,8 @@
     "semantic_hash": ""
   },
   "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/app/javascript/controllers/template_switch_controller.js": {
-    "mtime": 1781103670.686267,
-    "ast_hash": "71ea5d13cd2df1661da087588a6a1fe7",
+    "mtime": 1784482484.6543238,
+    "ast_hash": "4b37c1e8eea5110949f9417c87748a56",
     "semantic_hash": ""
   },
   "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/app/javascript/controllers/napkin_controller.js": {
@@ -635,8 +635,8 @@
     "semantic_hash": ""
   },
   "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/app/jobs/kb_download_job.rb": {
-    "mtime": 1783105458.3636236,
-    "ast_hash": "f0b75c3600f10e3a923ce37d415f22c2",
+    "mtime": 1783973667.0290132,
+    "ast_hash": "5735d4303ab6b8f8f1468c1002f66339",
     "semantic_hash": ""
   },
   "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/app/jobs/idea_digest_job.rb": {
@@ -710,13 +710,13 @@
     "semantic_hash": ""
   },
   "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/app/controllers/settings_controller.rb": {
-    "mtime": 1783433817.165711,
-    "ast_hash": "0c6a545c7cadca8fb2c65ad0f11dc98a",
+    "mtime": 1784482789.3224926,
+    "ast_hash": "7c7ecbc524f271f2a4fb824f3bda7450",
     "semantic_hash": ""
   },
   "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/app/controllers/application_controller.rb": {
-    "mtime": 1781103670.6810224,
-    "ast_hash": "7ba70732ff8b2295404d0107eb78c544",
+    "mtime": 1784482301.096581,
+    "ast_hash": "456ce80301eee453439d48706694f701",
     "semantic_hash": ""
   },
   "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/app/controllers/idea_entries_controller.rb": {
@@ -730,8 +730,8 @@
     "semantic_hash": ""
   },
   "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/app/controllers/templates_controller.rb": {
-    "mtime": 1781103670.6828585,
-    "ast_hash": "e4d33a37d13a465b6c36cfc7313ba16f",
+    "mtime": 1784482495.7601173,
+    "ast_hash": "73bb220b0742ebb761133e1b633572b4",
     "semantic_hash": ""
   },
   "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/app/controllers/exports_controller.rb": {
@@ -785,8 +785,8 @@
     "semantic_hash": ""
   },
   "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/app/controllers/kanban_boards_controller.rb": {
-    "mtime": 1781103670.681917,
-    "ast_hash": "9b8444d05498113fa2674cb86e31e02c",
+    "mtime": 1784499697.2803514,
+    "ast_hash": "4ffe52d6e8af615de97c11c905f338db",
     "semantic_hash": ""
   },
   "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/app/controllers/facts_controller.rb": {
@@ -820,8 +820,8 @@
     "semantic_hash": ""
   },
   "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/app/controllers/kb_controller.rb": {
-    "mtime": 1783850400.1250212,
-    "ast_hash": "5dca27c4860065b0d9a2608cc5d486a8",
+    "mtime": 1784482722.6656718,
+    "ast_hash": "e5273900a20dfa94ddaa968b468e9ab5",
     "semantic_hash": ""
   },
   "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/app/controllers/typing_locks_controller.rb": {
@@ -830,13 +830,13 @@
     "semantic_hash": ""
   },
   "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/app/controllers/ideas_controller.rb": {
-    "mtime": 1783117935.679866,
-    "ast_hash": "bc8cacb944c3cdc3a231b00d5b399b9a",
+    "mtime": 1784482207.5565674,
+    "ast_hash": "14feb47c2f5fd28fdef1f34749cb42c5",
     "semantic_hash": ""
   },
   "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/app/controllers/submissions_controller.rb": {
-    "mtime": 1781103670.6826897,
-    "ast_hash": "8569f6d70fb5dfc354c5c13af74d1e79",
+    "mtime": 1784482533.2437847,
+    "ast_hash": "1e8fc08385b9f6175ec10f821a2ca7f5",
     "semantic_hash": ""
   },
   "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/app/controllers/todo_items_controller.rb": {
@@ -855,8 +855,8 @@
     "semantic_hash": ""
   },
   "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/app/controllers/licensing/crm_controller.rb": {
-    "mtime": 1783118007.1848707,
-    "ast_hash": "c12dc8532ac4c0f54574936d0276599c",
+    "mtime": 1784482714.830501,
+    "ast_hash": "8faf5d381b905fc8c79bce08c6883fd8",
     "semantic_hash": ""
   },
   "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/app/controllers/local_agent/tools_controller.rb": {
@@ -870,17 +870,17 @@
     "semantic_hash": ""
   },
   "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/app/assets/builds/excalidraw_app/index.js": {
-    "mtime": 1783850579.2550607,
+    "mtime": 1784499909.2404122,
     "ast_hash": "297f48e699998c34fa3a933485592de6",
     "semantic_hash": ""
   },
   "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/app/assets/builds/graph/index.js": {
-    "mtime": 1783850579.0994837,
+    "mtime": 1784499909.0882277,
     "ast_hash": "d1869d7f405af391610649b421cebcc1",
     "semantic_hash": ""
   },
   "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/app/assets/builds/typing_unlock_animation/index.js": {
-    "mtime": 1783850579.0533242,
+    "mtime": 1784499909.0591908,
     "ast_hash": "157d75427fd99b77d7b4666b8f50c155",
     "semantic_hash": ""
   },
@@ -1335,8 +1335,8 @@
     "semantic_hash": ""
   },
   "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/test/controllers/kb_multi_format_test.rb": {
-    "mtime": 1782979626.6361105,
-    "ast_hash": "6aff34410eba7a7ef1cd38f2189cc608",
+    "mtime": 1783971520.3036919,
+    "ast_hash": "5eca54636383f12aa8d0e91cd354441b",
     "semantic_hash": ""
   },
   "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/test/controllers/templates_controller_test.rb": {
@@ -1350,8 +1350,8 @@
     "semantic_hash": ""
   },
   "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/test/controllers/kb_controller_test.rb": {
-    "mtime": 1783850542.5713987,
-    "ast_hash": "cad573e0ab9b25efd84698af61005296",
+    "mtime": 1783971545.8725636,
+    "ast_hash": "ed8cb242fa0b4a53521e81b8cfdf2135",
     "semantic_hash": ""
   },
   "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/test/controllers/licensor_contacts_controller_test.rb": {
@@ -1430,8 +1430,8 @@
     "semantic_hash": ""
   },
   "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/test/controllers/ideas_controller_test.rb": {
-    "mtime": 1783535279.4884024,
-    "ast_hash": "2aeb66b545923c037be77e90e12fa4a4",
+    "mtime": 1784499737.5810528,
+    "ast_hash": "4dffb30965f27608abf737cc08f35a00",
     "semantic_hash": ""
   },
   "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/test/controllers/webhooks_controller_test.rb": {
@@ -1565,8 +1565,8 @@
     "semantic_hash": ""
   },
   "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/bin/install": {
-    "mtime": 1781103670.7068884,
-    "ast_hash": "2f1a370ee117fbe671c7b82807755c4a",
+    "mtime": 1783976621.8965304,
+    "ast_hash": "2a4e23d49d71fa22d3404859af529147",
     "semantic_hash": ""
   },
   "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/bin/ci": {
@@ -1615,8 +1615,8 @@
     "semantic_hash": ""
   },
   "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/config/routes.rb": {
-    "mtime": 1783526980.088355,
-    "ast_hash": "5ac561fb0727273f0020876c15e654d5",
+    "mtime": 1784499800.2761595,
+    "ast_hash": "04bd5bc9c422c7c28452c201f022ec03",
     "semantic_hash": ""
   },
   "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/config/environment.rb": {
@@ -1775,8 +1775,8 @@
     "semantic_hash": ""
   },
   "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/public/assets/.sprockets-manifest-8e2b1c7282ca5c27b590c9aa96353786.json": {
-    "mtime": 1783765732.2597969,
-    "ast_hash": "64a53241c77a4de72d7c4f99b2a269cf",
+    "mtime": 1784478319.847385,
+    "ast_hash": "86cd8092d0e609d0fc75b7f8ecb74f56",
     "semantic_hash": ""
   },
   "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/public/assets/turbo-c69e22a49dcb166659137ec1b5c5feddd68aaa75b2095acf4d013b1084c38d9b.js": {
@@ -2545,8 +2545,8 @@
     "semantic_hash": ""
   },
   "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/db/schema.rb": {
-    "mtime": 1783527197.4775338,
-    "ast_hash": "9f97f891d4f6a248aed137088270e7b0",
+    "mtime": 1784482511.9344943,
+    "ast_hash": "1837092db282ca836aaea6a247ad34e2",
     "semantic_hash": ""
   },
   "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/db/seeds.rb": {
@@ -2555,7 +2555,7 @@
     "semantic_hash": ""
   },
   "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/db/queue_schema.rb": {
-    "mtime": 1783527197.487472,
+    "mtime": 1784482511.9517019,
     "ast_hash": "901a6a0cd6cb8c2e1e9aea1b5ace436a",
     "semantic_hash": ""
   },
@@ -2865,13 +2865,13 @@
     "semantic_hash": ""
   },
   "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/CHANGELOG.md": {
-    "mtime": 1781130227.2913682,
-    "ast_hash": "aa5d93f184e8f8d10125e2c6395d8e5d",
+    "mtime": 1783976646.816321,
+    "ast_hash": "479b53705da3eddf37dc0480ca6f767c",
     "semantic_hash": ""
   },
   "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/SETUP.md": {
-    "mtime": 1782766613.6096365,
-    "ast_hash": "ffeb81c114c8a0c7115b18ecca066660",
+    "mtime": 1783976621.8975377,
+    "ast_hash": "0513405ae12cbb58577352db3944bb6e",
     "semantic_hash": ""
   },
   "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/README.md": {
@@ -2880,8 +2880,8 @@
     "semantic_hash": ""
   },
   "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/VISION.md": {
-    "mtime": 1783856565.0829668,
-    "ast_hash": "36557dfe5747bcccd61b0d0cf6fdcd6b",
+    "mtime": 1783856701.5427592,
+    "ast_hash": "df4ced80631a5a900c6141b10fb13df9",
     "semantic_hash": ""
   },
   "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/docker-compose.yml": {
@@ -4942,6 +4942,326 @@
   "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/VISION-GAPS.md": {
     "mtime": 1783855819.1668112,
     "ast_hash": "697daf0e3134348728e7a7fcb91a27c9",
+    "semantic_hash": ""
+  },
+  "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/public/assets/controllers/kb_tree_controller-88a07ccbf16e8e7e4729cbf51ffe7d22eb25e3b92a130df0ad7fbaa9e172c2c2.js": {
+    "mtime": 1783894796.2816424,
+    "ast_hash": "57fbf5af9196f98843a00350191116cf",
+    "semantic_hash": ""
+  },
+  "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/public/assets/controllers/kb_folder_controller-59ea806c8c1d4583e3fa41ce2e3074801bc3f12ad62e8fbf616865c053a7d24d.js": {
+    "mtime": 1783894796.280176,
+    "ast_hash": "3158ee3afd7c502f2ccc3b341091f02a",
+    "semantic_hash": ""
+  },
+  "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/storage/kb/research/cymatics/applications/3d printing/printing.md": {
+    "mtime": 1783951476.6564434,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": ""
+  },
+  "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/storage/kb/research/cymatics/applications/3d printing/Out of all things one, and out of one all things.mp4": {
+    "mtime": 1783951551.0173635,
+    "ast_hash": "3bc744e4ec603d0d097718a71a450a66",
+    "semantic_hash": ""
+  },
+  "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/app/javascript/controllers/kb_media_copy_controller.js": {
+    "mtime": 1783971412.247231,
+    "ast_hash": "6e1ae8de9e16cd55e3f2db3879e530c9",
+    "semantic_hash": ""
+  },
+  "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/test/javascript/kb_media_copy_controller_test.mjs": {
+    "mtime": 1783971520.3042274,
+    "ast_hash": "21766cf878a63c3c26c152f70cf75e32",
+    "semantic_hash": ""
+  },
+  "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/test/javascript/kb_folder_controller_test.mjs": {
+    "mtime": 1783971520.304097,
+    "ast_hash": "2a8f33b8216f69962602323112615937",
+    "semantic_hash": ""
+  },
+  "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/public/assets/controllers/kb_folder_controller-e805de9ad48805c1f2c0d79263c80666baab92c8eb1155f3550cee4a458d0fb1.js": {
+    "mtime": 1783971693.4082236,
+    "ast_hash": "81faf02a768c375466af8f1a90517a18",
+    "semantic_hash": ""
+  },
+  "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/public/assets/controllers/kb_media_copy_controller-9101418d0d4a730ef80bd72afaac9684cac56182bf9ddf59920c6af63ed34424.js": {
+    "mtime": 1783971693.4082263,
+    "ast_hash": "cf1123772fbb1452ab3107f71d100f63",
+    "semantic_hash": ""
+  },
+  "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/public/assets/controllers/shortcuts_controller-3536bc49256cd7016a7d952ae317e39d945dba4322bcf526a07064dd7e3f6c88.js": {
+    "mtime": 1783971693.4106236,
+    "ast_hash": "2403b2481c736958692cc6da5a786dc8",
+    "semantic_hash": ""
+  },
+  "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/app/models/kb_fs_job.rb": {
+    "mtime": 1783974592.3406937,
+    "ast_hash": "63db3eee0f025bfdd2faf57677bf89d2",
+    "semantic_hash": ""
+  },
+  "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/app/models/kb_entry_preference.rb": {
+    "mtime": 1783974221.9673276,
+    "ast_hash": "69d3e08067ade3f4f5528aa8116f9894",
+    "semantic_hash": ""
+  },
+  "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/app/javascript/controllers/kb_tree_sync_controller.js": {
+    "mtime": 1783974115.3305757,
+    "ast_hash": "d71a4b0aad96ed2c581afe2d0fa68480",
+    "semantic_hash": ""
+  },
+  "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/app/javascript/controllers/kb_icon_picker_controller.js": {
+    "mtime": 1783974115.3304796,
+    "ast_hash": "86f24badda9ec0b49e8597ef9df1a5d9",
+    "semantic_hash": ""
+  },
+  "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/app/javascript/controllers/kb_icon_settings_controller.js": {
+    "mtime": 1784482639.6533136,
+    "ast_hash": "d6c5827c400f51f0825459146bf36bb7",
+    "semantic_hash": ""
+  },
+  "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/app/javascript/controllers/kb_job_controller.js": {
+    "mtime": 1783974115.3307142,
+    "ast_hash": "b3df7a40a7f812b3cdbdb603f20abfce",
+    "semantic_hash": ""
+  },
+  "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/app/jobs/kb_fs_job_runner_job.rb": {
+    "mtime": 1783974592.3416116,
+    "ast_hash": "776b02174aa8dde6dcc64aa110213ef2",
+    "semantic_hash": ""
+  },
+  "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/app/controllers/kb_fs_jobs_controller.rb": {
+    "mtime": 1783973761.423858,
+    "ast_hash": "2a625a465a567693d34f84cec75c5128",
+    "semantic_hash": ""
+  },
+  "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/app/services/fluid_voice_client.rb": {
+    "mtime": 1783973667.0293076,
+    "ast_hash": "71c3555556270062f826542c446da5cf",
+    "semantic_hash": ""
+  },
+  "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/app/services/kb/tree_broadcaster.rb": {
+    "mtime": 1783973650.4801807,
+    "ast_hash": "2846652f98954a90b582d54987ba91b4",
+    "semantic_hash": ""
+  },
+  "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/app/services/kb/context_reader.rb": {
+    "mtime": 1783974592.3414075,
+    "ast_hash": "57d6da8fb2b9b3df668c89ce9bacad9a",
+    "semantic_hash": ""
+  },
+  "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/app/services/kb/tree_builder.rb": {
+    "mtime": 1783974592.340936,
+    "ast_hash": "34bd4ccaf89248928a64170e3487cdeb",
+    "semantic_hash": ""
+  },
+  "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/app/services/local_agent/prompt_client.rb": {
+    "mtime": 1783973650.4805112,
+    "ast_hash": "2e8dad46deefb52cb9f664fcb5f0101f",
+    "semantic_hash": ""
+  },
+  "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/test/models/kb_entry_preference_test.rb": {
+    "mtime": 1783974423.7861664,
+    "ast_hash": "1264961fcb95867a0f827c7d69ad5cec",
+    "semantic_hash": ""
+  },
+  "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/test/javascript/kb_tree_controller_test.mjs": {
+    "mtime": 1783974817.093495,
+    "ast_hash": "14b3c7477187f97646bac4db78da78e4",
+    "semantic_hash": ""
+  },
+  "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/test/jobs/kb_fs_job_runner_job_test.rb": {
+    "mtime": 1783974467.6173258,
+    "ast_hash": "9dd34ec834eff132177ef007359a3843",
+    "semantic_hash": ""
+  },
+  "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/test/controllers/kb_enhancements_test.rb": {
+    "mtime": 1783974873.5156493,
+    "ast_hash": "b62ae85d1c31f08fcb816aed18fca17e",
+    "semantic_hash": ""
+  },
+  "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/test/controllers/kb_fs_jobs_controller_test.rb": {
+    "mtime": 1783974423.7854338,
+    "ast_hash": "ac01bcda4953090a0500fea64cc69375",
+    "semantic_hash": ""
+  },
+  "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/test/services/kb/context_reader_test.rb": {
+    "mtime": 1783974423.7863638,
+    "ast_hash": "ed47a255d8d7757718ff125acb30d6fa",
+    "semantic_hash": ""
+  },
+  "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/test/services/local_agent/prompt_client_test.rb": {
+    "mtime": 1783974423.78659,
+    "ast_hash": "2560659a0920a20d6554a5a87f038232",
+    "semantic_hash": ""
+  },
+  "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/db/migrate/20260713220100_create_kb_fs_jobs.rb": {
+    "mtime": 1783973561.1030111,
+    "ast_hash": "e8336277e1a91a9b29ff21deb007d0d6",
+    "semantic_hash": ""
+  },
+  "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/db/migrate/20260713220200_add_source_path_to_kb_downloads.rb": {
+    "mtime": 1783973561.1031427,
+    "ast_hash": "fb7e8b9ef5bdad4e2d323a542667a1c2",
+    "semantic_hash": ""
+  },
+  "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/db/migrate/20260713220000_create_kb_entry_preferences.rb": {
+    "mtime": 1783973561.1028323,
+    "ast_hash": "0706f92a4269da351ee9174d370f13fa",
+    "semantic_hash": ""
+  },
+  "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/handoff.md": {
+    "mtime": 1783976889.3442395,
+    "ast_hash": "a907ed36cc739605e96315e1aad689bd",
+    "semantic_hash": ""
+  },
+  "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/app/models/kb_media_edit.rb": {
+    "mtime": 1783975661.1993492,
+    "ast_hash": "1f66ac00d1368868e5786dfddbece559",
+    "semantic_hash": ""
+  },
+  "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/app/javascript/controllers/kb_media_editor_controller.js": {
+    "mtime": 1783976765.420554,
+    "ast_hash": "18a4f148cc7ff338a268445cab581598",
+    "semantic_hash": ""
+  },
+  "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/app/jobs/kb_media_edit_runner_job.rb": {
+    "mtime": 1783975793.8982146,
+    "ast_hash": "4d897a0d5ec598c6e88a4a3684cde131",
+    "semantic_hash": ""
+  },
+  "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/app/controllers/kb_media_edits_controller.rb": {
+    "mtime": 1783976765.4197516,
+    "ast_hash": "e05241576f3a3f4f0a4a733914bc471b",
+    "semantic_hash": ""
+  },
+  "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/app/services/kb/media_inspector.rb": {
+    "mtime": 1783975793.8971155,
+    "ast_hash": "448dcb9a39bbaa6f9a5d014d1e521214",
+    "semantic_hash": ""
+  },
+  "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/app/services/kb/media_types.rb": {
+    "mtime": 1783975661.2001517,
+    "ast_hash": "4f0d01d8258017002ddcdcf5f86ac2ec",
+    "semantic_hash": ""
+  },
+  "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/app/services/kb/media_edit_processor.rb": {
+    "mtime": 1783976355.3693275,
+    "ast_hash": "699dfffe2796fed9b4f2abcadae995a1",
+    "semantic_hash": ""
+  },
+  "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/test/system/kb_media_editor_system_test.rb": {
+    "mtime": 1783976402.6344805,
+    "ast_hash": "0e1c29e428f491b51d92011640312db7",
+    "semantic_hash": ""
+  },
+  "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/test/javascript/kb_media_editor_controller_test.mjs": {
+    "mtime": 1783976316.618734,
+    "ast_hash": "29746e0dec58218b5819e6ea3ed9f97a",
+    "semantic_hash": ""
+  },
+  "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/test/jobs/kb_media_edit_runner_job_test.rb": {
+    "mtime": 1783976235.4669976,
+    "ast_hash": "262cf6cf39084af92f5e0d3e942a3658",
+    "semantic_hash": ""
+  },
+  "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/test/controllers/kb_media_edits_controller_test.rb": {
+    "mtime": 1783976750.8077538,
+    "ast_hash": "0aa851e6299e55df69e02689f983fb26",
+    "semantic_hash": ""
+  },
+  "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/test/services/kb/media_edit_processor_test.rb": {
+    "mtime": 1783976235.4673095,
+    "ast_hash": "30e927621fa1016a96db4822fd2b11ad",
+    "semantic_hash": ""
+  },
+  "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/db/migrate/20260713220400_add_active_path_index_to_kb_media_edits.rb": {
+    "mtime": 1783976483.9856386,
+    "ast_hash": "e9b35023529344168aac90076eb90dbf",
+    "semantic_hash": ""
+  },
+  "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/db/migrate/20260713220300_create_kb_media_edits.rb": {
+    "mtime": 1783976483.9853137,
+    "ast_hash": "069936f8952417b87315d855b66cb5d4",
+    "semantic_hash": ""
+  },
+  "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/tmp/kb-media-manual/paper.pdf": {
+    "mtime": 1783976376.490037,
+    "ast_hash": "e933b6ff0b0e35901ae8f3a2cbc07385",
+    "semantic_hash": ""
+  },
+  "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/tmp/kb-media-manual/.ideafoundry-history/paper.pdf/20260713T205936.492121Z-paper-e9e0b3d387bf.pdf": {
+    "mtime": 1783976376.492399,
+    "ast_hash": "d5241643f7d517ab5ea257c3ed2c9c5f",
+    "semantic_hash": ""
+  },
+  "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/tmp/kb-media-manual/tone.mp3": {
+    "mtime": 1783976366.6494493,
+    "ast_hash": "967ef38d94d7724b19ee1d23ae2f4cfe",
+    "semantic_hash": ""
+  },
+  "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/tmp/kb-media-manual/clip.mp4": {
+    "mtime": 1783976366.595565,
+    "ast_hash": "8d67ab5ee50950a6f388f33e17bb3833",
+    "semantic_hash": ""
+  },
+  "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/tmp/kb-media-manual/.ideafoundry-history/tone.mp3/20260713T205926.650206Z-tone-70b925ad4bc6.mp3": {
+    "mtime": 1783976366.6503944,
+    "ast_hash": "2288f03ffb0a4e18d0a4f36b04b2f946",
+    "semantic_hash": ""
+  },
+  "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/tmp/kb-media-manual/.ideafoundry-history/clip.mp4/20260713T205926.597102Z-clip-d52f825fc531.mp4": {
+    "mtime": 1783976366.5973709,
+    "ast_hash": "ad8eb0acefeda88a6c00b9d8596c0733",
+    "semantic_hash": ""
+  },
+  "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/public/assets/controllers/kb_icon_picker_controller-4285e103408939f14126d78b55bf132300f85cedad69a9dce9e138da19fe8bd2.js": {
+    "mtime": 1784059445.3956122,
+    "ast_hash": "5a12ccd6247ba95e839c56dd8e747ba1",
+    "semantic_hash": ""
+  },
+  "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/public/assets/controllers/kb_media_editor_controller-d2631b475c9d0b170a076256fa6d82180fd1546f49a20b238253d4d97e388a35.js": {
+    "mtime": 1784059445.4004273,
+    "ast_hash": "804f568935e3b103053b0695d6d67de9",
+    "semantic_hash": ""
+  },
+  "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/public/assets/controllers/kb_folder_controller-0a3a962508c4e4a948c44e0585d7b0d3aae0de70a4325548ceba6300b482acce.js": {
+    "mtime": 1784059445.3947363,
+    "ast_hash": "b5e41f431d621bfb7fd948859685af9f",
+    "semantic_hash": ""
+  },
+  "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/public/assets/controllers/kb_tree_controller-3dfbf684643ddfa461139b3011171fb96999232f001de69c12d763cd979de2d3.js": {
+    "mtime": 1784059445.4019396,
+    "ast_hash": "b83750f83ebfc505aaf77b5e88ccefba",
+    "semantic_hash": ""
+  },
+  "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/public/assets/controllers/kb_icon_settings_controller-a68f2d52c10baff1935620842d5e8ae7dac0a91dca32a6ec17b679aaff5420d6.js": {
+    "mtime": 1784059445.3957796,
+    "ast_hash": "d5268cc5f1e012d1db1ef3dc62f15a7a",
+    "semantic_hash": ""
+  },
+  "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/public/assets/controllers/kb_job_controller-ae4de43d85f10c940f1df6c644cebb54cd05c71bc32d6dada28d8883e75f396e.js": {
+    "mtime": 1784059445.3964908,
+    "ast_hash": "52ad841eaeee452a3f5de37a9fcc46a4",
+    "semantic_hash": ""
+  },
+  "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/public/assets/controllers/kb_tree_sync_controller-002e8e93be985abf00619aacce9a22a4222e8aa4ff776c194977e1c9d104d45d.js": {
+    "mtime": 1784059445.4042034,
+    "ast_hash": "1d55b66be5da44ebec5c5495165d87b1",
+    "semantic_hash": ""
+  },
+  "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/db/migrate/20260719000100_add_topology_to_templates.rb": {
+    "mtime": 1784482494.4221914,
+    "ast_hash": "558da5f67499ae26e7eefe6aa28c744c",
+    "semantic_hash": ""
+  },
+  "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/test/models/user_features_test.rb": {
+    "mtime": 1784499877.0407567,
+    "ast_hash": "1da6e3bef5505d363cfb279a9a1e27f5",
+    "semantic_hash": ""
+  },
+  "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/test/controllers/kanban_boards_controller_test.rb": {
+    "mtime": 1784499903.5202334,
+    "ast_hash": "66c765f0884d3719424f1c50341fa6cf",
     "semantic_hash": ""
   }
 }

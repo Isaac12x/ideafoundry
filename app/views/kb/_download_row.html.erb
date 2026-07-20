@@ -1,4 +1,4 @@
-<div id="<%= dom_id(download) %>" class="kb-download-row kb-download-row--<%= download.status %>">
+<div id="<%= dom_id(download) %>" class="kb-async-row kb-download-row kb-download-row--<%= download.status %>">
   <% if download.done? %>
     <%= link_to kb_file_path(src: download.source_index, file: download.file_rel),
           data: { turbo_frame: "kb-content" }, class: "kb-file-link" do %>
