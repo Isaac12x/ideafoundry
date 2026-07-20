@@ -29,6 +29,9 @@ class KbController < ApplicationController
   )
 
   before_action :set_user
+  # Only the KB section page is feature-gated; file/tree/serve endpoints also
+  # back the notes bar and stay available.
+  before_action -> { require_feature(:kb) }, only: [:index]
 
   def index
     @folders = build_folder_tree

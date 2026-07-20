@@ -4,11 +4,10 @@ const STORAGE_KEY = 'ideas-filters-open'
 
 export default class extends Controller {
   static targets = ["form", "search", "body", "toggleBtn", "activeDot"]
-  static values = { filtersActive: Boolean }
 
   connect() {
-    const stored = localStorage.getItem(STORAGE_KEY)
-    const open = this.filtersActiveValue || stored === 'true'
+    // Closed by default; only reopen if the user left it open last session.
+    const open = localStorage.getItem(STORAGE_KEY) === 'true'
     this._setOpen(open, false)
   }
 

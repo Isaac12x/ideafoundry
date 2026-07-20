@@ -211,7 +211,6 @@ class User < ApplicationRecord
     'plan'       => 'lists',
     'ideas'      => 'ideas',
     'licensing'  => 'licensing/crm',
-    'intake'     => 'submissions',
     'topologies' => 'topologies',
     'kb'         => 'kb',
     'backlog'    => 'build_items'
@@ -220,11 +219,44 @@ class User < ApplicationRecord
 
   NAV_PAGE_LABELS = {
     'plan' => 'Plan', 'ideas' => 'Ideas', 'licensing' => 'Licensing',
-    'intake' => 'Intake', 'topologies' => 'Topologies', 'kb' => 'KB', 'backlog' => 'Backlog'
+    'topologies' => 'Topologies', 'kb' => 'KB', 'backlog' => 'Backlog'
   }.freeze
 
   # Quote assignment defaults preserve prior behaviour: banner everywhere except KB.
   DEFAULT_QUOTE_ASSIGNMENTS = NAV_PAGE_KEYS.index_with { |k| k == 'kb' ? 'none' : 'default' }.freeze
+
+  # Optional app areas that can be switched off entirely from Settings.
+  # All default to enabled; settings['features'][key] == false disables.
+  FEATURE_KEYS = %w[licensing idea_states kb].freeze
+  FEATURE_LABELS = {
+    'licensing'   => 'Licensing',
+    'idea_states' => 'Idea state tracking',
+    'kb'          => 'Knowledge Base'
+  }.freeze
+  FEATURE_DESCRIPTIONS = {
+    'licensing'   => 'Licensing CRM, licensor pipelines, and per-idea licensing tracking.',
+    'idea_states' => 'Track ideas through workflow states (new, in progress, done…).',
+    'kb'          => 'The Knowledge Base section and its folders.'
+  }.freeze
+
+  # Nav sections that only exist when their feature is enabled.
+  NAV_FEATURE_REQUIREMENTS = { 'licensing' => 'licensing', 'kb' => 'kb' }.freeze
+
+  def feature_enabled?(key)
+    settings&.dig('features', key.to_s) != false
+  end
+
+  def update_features(h)
+    h = h.to_h
+    flags = FEATURE_KEYS.index_with { |k| ActiveModel::Type::Boolean.new.cast(h[k]) }
+    self.settings ||= {}
+    if flags.values.all?
+      self.settings.delete('features')
+    else
+      self.settings['features'] = flags
+    end
+    save
+  end
 
 
   ALLOWED_TOPOLOGY_OVERRIDE_KEYS = %w[
@@ -915,6 +947,21 @@ class User < ApplicationRecord
     !nav_hidden_items.include?(key)
   end
 
+  # User-chosen nav order; unknown keys dropped, missing keys appended in default order.
+  def nav_order
+    order = Array(settings&.dig('nav', 'order')).map(&:to_s) & NAV_PAGE_KEYS
+    order + (NAV_PAGE_KEYS - order)
+  end
+
+  # Nav keys to render, in order: visible, feature-enabled sections only.
+  def nav_items_to_render
+    nav_order.select do |key|
+      next false unless nav_item_visible?(key)
+      feature = NAV_FEATURE_REQUIREMENTS[key]
+      feature.nil? || feature_enabled?(feature)
+    end
+  end
+
   def update_display_quote(params)
     h = params.to_h
     quote = h.fetch('quote', '').to_s.strip
@@ -941,7 +988,7 @@ class User < ApplicationRecord
     end
 
     apply_quote_settings(h) if h.key?('quote_library') || h.key?('quote_pages')
-    apply_nav_visibility(h) if h.key?('nav_visible')
+    apply_nav_visibility(h) if h.key?('nav_visible') || h.key?('nav_order')
 
     save
   end
@@ -1047,12 +1094,19 @@ class User < ApplicationRecord
   end
 
   # Form posts one checkbox per page under nav_visible (checked == "1" == visible);
-  # any page absent from the hash is treated as hidden.
+  # any page absent from the hash is treated as hidden. nav_order arrives as an
+  # array of keys in the user's chosen order (DOM order of the settings rows).
   def apply_nav_visibility(h)
     visible = (h['nav_visible'] || {}).to_h
     hidden = NAV_PAGE_KEYS.reject { |key| ActiveModel::Type::Boolean.new.cast(visible[key]) }
-    if hidden.present?
-      self.settings['nav'] = { 'hidden' => hidden }
+    order = Array(h['nav_order']).map(&:to_s) & NAV_PAGE_KEYS
+
+    nav = {}
+    nav['hidden'] = hidden if hidden.present?
+    nav['order'] = order if order.present? && order != NAV_PAGE_KEYS.first(order.size)
+
+    if nav.present?
+      self.settings['nav'] = nav
     else
       self.settings.delete('nav')
     end

@@ -35,11 +35,13 @@ export default class extends Controller {
 
   removeRow(event) {
     event.currentTarget.closest("[data-kb-folders-target='row']").remove();
+    this.#notifyChange();
   }
 
   hideNative() {
     this.hideNativeInputTarget.value = "1";
     this.nativeRowTarget.remove();
+    this.#notifyChange();
   }
 
   async browse(event) {
@@ -51,6 +53,7 @@ export default class extends Controller {
     if (data.path) {
       input.value = data.path;
       this.#syncOpenBtn(row);
+      this.#notifyChange();
     }
   }
 
@@ -73,5 +76,10 @@ export default class extends Controller {
 
   #csrfToken() {
     return document.querySelector('meta[name="csrf-token"]')?.content ?? "";
+  }
+
+  // JS mutations don't emit change; fire one so form-level autosave sees it
+  #notifyChange() {
+    this.element.dispatchEvent(new Event("change", { bubbles: true }));
   }
 }

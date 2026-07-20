@@ -611,7 +611,7 @@
 .topology-picker__search::placeholder { color: var(--text-muted); }
 
 .topology-tree {
-  max-height: 280px;
+  max-height: 64vh;
   overflow-y: auto;
   padding: 6px;
   scrollbar-width: thin;

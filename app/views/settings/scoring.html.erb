@@ -17,7 +17,7 @@
   <div class="scoring-config-layout">
 
     <%= form_with url: settings_scoring_path, method: :patch, local: true,
-                  data: { controller: "score" } do |form| %>
+                  data: { controller: "score settings-autosave", action: "change->settings-autosave#toggleChanged" } do |form| %>
 
       <%# ──────────────────────────────────────────────────────────────
           PANEL 1 — Weighted Readiness (the main / formula-based score)
@@ -157,7 +157,6 @@
           </div>
 
           <div class="scoring-sys-panel__actions">
-            <%= form.submit "Update Scoring Weights", class: "btn btn-primary" %>
             <%= link_to "Reset to Defaults", settings_scoring_path,
                 method: :patch,
                 params: { scoring_weights: { trl: 0.3, difficulty: -0.1, opportunity: 0.4, timing: 0.2 } },
@@ -233,9 +232,6 @@
             </section>
           <% end %>
 
-          <div class="scoring-scorecards-group__actions">
-            <button type="submit" class="btn btn-primary">Save Scorecard Settings</button>
-          </div>
         </div>
       <% end %>
 

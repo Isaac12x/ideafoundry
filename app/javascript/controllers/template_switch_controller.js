@@ -94,10 +94,17 @@ export default class extends Controller {
     return ids.length > 0 ? ids : ["weighted_readiness"]
   }
 
-  topologiesChanged() {
-    if (this.hasSelectorTarget) {
-      this.selectorTarget.dispatchEvent(new Event("change", { bubbles: true }))
+  topologiesChanged(event) {
+    if (!this.hasSelectorTarget) return
+
+    // Checking a topology with a mapped template switches the template immediately.
+    const box = event?.target
+    const templateId = box?.checked ? box.dataset.templateId : null
+    if (templateId && this.selectorTarget.querySelector(`option[value="${templateId}"]`)) {
+      this.selectorTarget.value = templateId
     }
+
+    this.selectorTarget.dispatchEvent(new Event("change", { bubbles: true }))
   }
 
   selectedTopologyFields() {
@@ -207,12 +214,12 @@ export default class extends Controller {
       })
 
       const panelHtml = `
-        <div class="form-panel form-section-draggable" data-tab-panel="${tab.name}">
-          <h3 class="form-panel-title">${tab.label || tab.name}</h3>
+        <details class="form-panel form-section-draggable" open data-tab-panel="${tab.name}">
+          <summary class="form-panel-title">${tab.label || tab.name}</summary>
           <div class="weight-grid" data-template-switch-target="tabCustomFields" data-tab-name="${tab.name}">
             ${fieldsHtml}
           </div>
-        </div>
+        </details>
       `
       container.insertAdjacentHTML("beforeend", panelHtml)
     })

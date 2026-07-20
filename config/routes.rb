@@ -38,7 +38,11 @@ Rails.application.routes.draw do
   get "submissions/import/:source/oauth", to: "submission_imports#oauth", as: :oauth_submission_import
   get "submissions/import/:source/oauth/callback", to: "submission_imports#oauth_callback", as: :oauth_callback_submission_import
 
-  resources :submissions, only: [:index, :show, :destroy] do
+  # Intake (submission review queue) lives under Ideas
+  get "ideas/intake", to: "submissions#index", as: :ideas_intake
+  get "submissions", to: redirect("/ideas/intake")
+
+  resources :submissions, only: [:show, :destroy] do
     member do
       post :approve
       post :reject
@@ -120,10 +124,15 @@ Rails.application.routes.draw do
     get "crm", to: "crm#index"
   end
 
-  # Lists and drag-and-drop functionality
-  resources :kanban_boards, only: [:create]
+  # Planning (kanban boards + named lists) and drag-and-drop functionality
+  resources :kanban_boards, only: [:create, :destroy] do
+    member do
+      patch :move
+    end
+  end
 
-  resources :lists do
+  get "lists", to: redirect("/planning"), as: :legacy_lists
+  resources :lists, path: "planning" do
     member do
       post :send_email
       post :add_idea
@@ -157,6 +166,7 @@ Rails.application.routes.draw do
   # Settings management
   get 'settings', to: 'settings#index'
   patch 'settings', to: 'settings#update_display'
+  patch 'settings/features', to: 'settings#update_features', as: :settings_features
   get 'settings/display', to: 'settings#display', as: :settings_display
   patch 'settings/display', to: 'settings#update_display'
   get 'settings/scoring', to: 'settings#scoring'

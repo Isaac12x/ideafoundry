@@ -1,6 +1,7 @@
 module Licensing
   class CrmController < ApplicationController
     before_action :set_user
+    before_action -> { require_feature(:licensing) }
 
     def index
       @ideas = @user.ideas.for_licensing.where(discarded_at: nil).order(:title)
