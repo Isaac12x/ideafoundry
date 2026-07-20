@@ -6,16 +6,19 @@ class SettingsController < ApplicationController
     @display_contrast = @user.display_contrast
   end
 
+  def features
+  end
+
   def update_features
     if @user.update_features(features_params)
       ActivityLog.record_settings!(user: @user, setting: "Features")
       respond_to do |format|
-        format.html { redirect_to settings_path, notice: 'Features updated.' }
+        format.html { redirect_to settings_features_path, notice: 'Areas updated.' }
         format.json { render json: { success: true } }
       end
     else
       respond_to do |format|
-        format.html { redirect_to settings_path, alert: 'Failed to update features.' }
+        format.html { redirect_to settings_features_path, alert: 'Failed to update areas.' }
         format.json { render json: { success: false }, status: :unprocessable_content }
       end
     end

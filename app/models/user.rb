@@ -290,7 +290,7 @@ class User < ApplicationRecord
     'media' => 'Media',
     'metadata' => 'Metadata',
     'notes' => 'Notes',
-    'todo' => 'Todo',
+    'todo' => 'To-Do',
     'history' => 'History',
     'drawing' => 'Drawings',
     'tool' => 'Tools',
