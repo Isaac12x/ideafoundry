@@ -6,17 +6,40 @@ class SettingsController < ApplicationController
     @display_contrast = @user.display_contrast
   end
 
+  def update_features
+    if @user.update_features(features_params)
+      ActivityLog.record_settings!(user: @user, setting: "Features")
+      respond_to do |format|
+        format.html { redirect_to settings_path, notice: 'Features updated.' }
+        format.json { render json: { success: true } }
+      end
+    else
+      respond_to do |format|
+        format.html { redirect_to settings_path, alert: 'Failed to update features.' }
+        format.json { render json: { success: false }, status: :unprocessable_content }
+      end
+    end
+  end
+
   def display
     load_display_settings
   end
 
   def update_display
-    if @user.update_display_quote(display_settings_params)
-      redirect_to settings_display_path, notice: 'Display settings updated.'
+    if @user.update_display_quote(display_settings_params) && update_default_kb_folder_icon(display_settings_params)
+      respond_to do |format|
+        format.html { redirect_to settings_display_path, notice: 'Display settings updated.' }
+        format.json { render json: { saved: true } }
+      end
     else
       load_display_settings
-      flash.now[:alert] = 'Failed to update display settings.'
-      render :display, status: :unprocessable_content
+      respond_to do |format|
+        format.html do
+          flash.now[:alert] = 'Failed to update display settings.'
+          render :display, status: :unprocessable_content
+        end
+        format.json { render json: { saved: false }, status: :unprocessable_entity }
+      end
     end
   end
 
@@ -285,11 +308,19 @@ class SettingsController < ApplicationController
     raw = params.require(:list_settings).permit(*User::ALLOWED_LIST_SETTING_KEYS)
 
     if @user.update_list_settings(raw)
-      redirect_to settings_lists_path, notice: 'List settings updated.'
+      respond_to do |format|
+        format.html { redirect_to settings_lists_path, notice: 'List settings updated.' }
+        format.json { render json: { saved: true } }
+      end
     else
       @list_settings = @user.list_settings
-      flash.now[:alert] = 'Failed to update list settings.'
-      render :lists, status: :unprocessable_content
+      respond_to do |format|
+        format.html do
+          flash.now[:alert] = 'Failed to update list settings.'
+          render :lists, status: :unprocessable_content
+        end
+        format.json { render json: { saved: false }, status: :unprocessable_entity }
+      end
     end
   end
 
@@ -306,12 +337,20 @@ class SettingsController < ApplicationController
     end
 
     if @user.update_topology_settings(coerced) && update_topology_template_fields
-      redirect_to settings_topologies_path, notice: 'Topology & graph settings updated.'
+      respond_to do |format|
+        format.html { redirect_to settings_topologies_path, notice: 'Topology & graph settings updated.' }
+        format.json { render json: { saved: true } }
+      end
     else
       @topology_settings = @user.topology_settings
       @topologies = @user.topologies.ordered
-      flash.now[:alert] = 'Failed to update settings.'
-      render :topologies, status: :unprocessable_content
+      respond_to do |format|
+        format.html do
+          flash.now[:alert] = 'Failed to update settings.'
+          render :topologies, status: :unprocessable_content
+        end
+        format.json { render json: { saved: false }, status: :unprocessable_entity }
+      end
     end
   end
 
@@ -356,11 +395,19 @@ class SettingsController < ApplicationController
   def update_github
     if @user.update_github_settings(github_params)
       ActivityLog.record_settings!(user: @user, setting: "GitHub")
-      redirect_to settings_github_path, notice: "GitHub settings updated."
+      respond_to do |format|
+        format.html { redirect_to settings_github_path, notice: "GitHub settings updated." }
+        format.json { render json: { saved: true } }
+      end
     else
       @github_settings = @user.github_settings
-      flash.now[:alert] = "Failed to update GitHub settings."
-      render :github, status: :unprocessable_content
+      respond_to do |format|
+        format.html do
+          flash.now[:alert] = "Failed to update GitHub settings."
+          render :github, status: :unprocessable_content
+        end
+        format.json { render json: { saved: false }, status: :unprocessable_entity }
+      end
     end
   end
 
@@ -519,14 +566,22 @@ class SettingsController < ApplicationController
     hide_native = params[:hide_native_kb] == "1"
     if @user.update_kb_folders(paths, hide_native: hide_native, drives: drives)
       ActivityLog.record_settings!(user: @user, setting: "KB Folders", details: { paths: paths, drives: drives })
-      redirect_to settings_kb_path, notice: "KB folders updated."
+      respond_to do |format|
+        format.html { redirect_to settings_kb_path, notice: "KB folders updated." }
+        format.json { render json: { saved: true } }
+      end
     else
       @kb_folders = paths
       @kb_drives = drives
       @hide_native_kb = hide_native
       @available_volumes = mounted_volumes
-      flash.now[:alert] = "Failed to update KB folders."
-      render :kb, status: :unprocessable_content
+      respond_to do |format|
+        format.html do
+          flash.now[:alert] = "Failed to update KB folders."
+          render :kb, status: :unprocessable_content
+        end
+        format.json { render json: { saved: false }, status: :unprocessable_entity }
+      end
     end
   end
 
@@ -675,10 +730,15 @@ class SettingsController < ApplicationController
     params.require(:email_settings).permit(:recipients)
   end
 
+  def features_params
+    params.fetch(:features, {}).permit(*User::FEATURE_KEYS)
+  end
+
   def display_settings_params
     params.require(:display_settings).permit(
       :quote, :contrast, :nav_text_hidden,
-      quote_library: [], nav_visible: User::NAV_PAGE_KEYS, quote_pages: User::NAV_PAGE_KEYS
+      :kb_default_icon_kind, :kb_default_folder_emoji, :kb_default_folder_icon,
+      quote_library: [], nav_visible: User::NAV_PAGE_KEYS, nav_order: [], quote_pages: User::NAV_PAGE_KEYS
     )
   end
 
@@ -690,6 +750,25 @@ class SettingsController < ApplicationController
     @quote_library = @user.quote_library
     @quote_page_assignments = @user.quote_page_assignments
     @nav_hidden_items = @user.nav_hidden_items
+    @kb_default_folder_preference = KbEntryPreference.default_folder_for(@user)
+  end
+
+  def update_default_kb_folder_icon(settings)
+    kind = settings[:kb_default_icon_kind].to_s
+    return true if kind.blank?
+
+    preference = KbEntryPreference.default_folder_for(@user)
+    preference.save! unless preference.persisted?
+    preference.set_icon!(
+      kind: kind,
+      emoji: settings[:kb_default_folder_emoji],
+      image: settings[:kb_default_folder_icon]
+    )
+    ActivityLog.record_settings!(user: @user, setting: "Knowledge Base Display", details: { icon_kind: kind })
+    true
+  rescue ActiveRecord::RecordInvalid, ArgumentError => error
+    @user.errors.add(:base, error.message)
+    false
   end
 
   def typing_lock_params

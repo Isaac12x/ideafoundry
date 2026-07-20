@@ -1,5 +1,5 @@
 <div class="filters-panel">
-  <%= form_with url: submissions_path, method: :get do |form| %>
+  <%= form_with url: ideas_intake_path, method: :get do |form| %>
     <%= form.hidden_field :status, value: params[:status] %>
     <div class="filters-grid">
       <div class="filter-group">
@@ -27,7 +27,7 @@
     </div>
 
     <div class="filter-actions">
-      <%= link_to "Clear", submissions_path(status: params[:status]), class: "btn btn-sm" %>
+      <%= link_to "Clear", ideas_intake_path(status: params[:status]), class: "btn btn-sm" %>
       <%= form.submit "Apply", class: "btn btn-sm btn-primary" %>
     </div>
   <% end %>

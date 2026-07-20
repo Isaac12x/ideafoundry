@@ -13,7 +13,7 @@
     </div>
   </div>
 
-  <%= form_with url: settings_topologies_path, method: :patch, local: true do |form| %>
+  <%= form_with url: settings_topologies_path, method: :patch, local: true, data: { controller: "settings-autosave", action: "change->settings-autosave#toggleChanged" } do |form| %>
 
     <!-- Graph Visuals -->
     <div class="config-section">
@@ -244,7 +244,6 @@
     </div>
 
     <div class="config-actions">
-      <%= form.submit "Save Settings", class: "btn btn-primary" %>
       <%= link_to "Reset to Defaults", settings_topologies_path,
           method: :patch,
           params: { topology_settings: User::DEFAULT_TOPOLOGY_SETTINGS },

@@ -8,7 +8,9 @@
 
   <div class="page-header">
     <div class="header-left">
-      <h2>Lists</h2>
+      <h2>Planning</h2>
+    </div>
+    <div class="header-actions">
       <div class="view-toggle">
         <button class="view-toggle__btn active" data-tabs-target="tab" data-tab-name="kanban" data-action="click->tabs#switch">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:2px;"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
@@ -20,38 +22,41 @@
         </button>
       </div>
     </div>
-    <div class="header-actions">
-      <%= link_to ideas_path, class: "btn" do %>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
-        All Ideas
-      <% end %>
-      <%= link_to new_list_path(kind: "named"), class: "btn" do %>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
-        New Named List
-      <% end %>
-    </div>
   </div>
 
   <div data-tabs-target="panel" data-tab-panel="kanban">
-    <div class="kanban-board-toolbar">
-      <%= form_with model: @kanban_board, url: kanban_boards_path, local: true, class: "inline-list-form kanban-board-form" do |form| %>
-        <%= form.text_field :name, class: "form-control", placeholder: "New board name" %>
-        <%= form.submit "Create Board", class: "btn btn-primary" %>
-      <% end %>
-    </div>
-
     <div class="kanban-boards">
-      <% @kanban_boards.each do |board| %>
+      <% @kanban_boards.each_with_index do |board, board_index| %>
         <section class="kanban-board" data-kanban-board-id="<%= board.id %>">
           <div class="kanban-board-header">
             <div>
               <h3><%= board.name %></h3>
               <p><%= pluralize(board.lists.size, "column") %></p>
             </div>
-            <%= link_to new_list_path(kind: "kanban", kanban_board_id: board.id), class: "btn btn-sm btn-primary" do %>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
-              New Column
-            <% end %>
+            <div class="kanban-board-header-actions">
+              <% if @kanban_boards.size > 1 %>
+                <%= button_to move_kanban_board_path(board, direction: "up"), method: :patch,
+                      class: "btn btn-sm", title: "Move board up", disabled: board_index.zero?,
+                      form: { style: "display:inline" } do %>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="18 15 12 9 6 15"/></svg>
+                <% end %>
+                <%= button_to move_kanban_board_path(board, direction: "down"), method: :patch,
+                      class: "btn btn-sm", title: "Move board down", disabled: board_index == @kanban_boards.size - 1,
+                      form: { style: "display:inline" } do %>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                <% end %>
+              <% end %>
+              <%= link_to new_list_path(kind: "kanban", kanban_board_id: board.id), class: "btn btn-sm btn-primary" do %>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+                New Column
+              <% end %>
+              <%= button_to kanban_board_path(board), method: :delete,
+                    class: "btn btn-sm btn-danger", title: "Delete board",
+                    form: { style: "display:inline" },
+                    data: { turbo_confirm: "Delete \"#{board.name}\" and its #{pluralize(board.lists.size, 'column')}? Ideas stay in your library." } do %>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+              <% end %>
+            </div>
           </div>
 
           <div class="lists-grid">
@@ -100,6 +105,13 @@
           <p>Create a board to start organizing ideas.</p>
         </div>
       <% end %>
+
+      <div class="kanban-board-toolbar kanban-board-toolbar--below">
+        <%= form_with model: @kanban_board, url: kanban_boards_path, local: true, class: "inline-list-form kanban-board-form" do |form| %>
+          <%= form.text_field :name, class: "form-control", placeholder: "New board name" %>
+          <%= form.submit "Create Board", class: "btn btn-primary" %>
+        <% end %>
+      </div>
     </div>
   </div>
 
@@ -125,8 +137,14 @@
         <div class="empty-state">
           <h3>No named lists yet</h3>
           <p>Create a named list for shortlists, launch candidates, or any custom collection.</p>
-          <%= link_to "Create Named List", new_list_path(kind: "named"), class: "btn btn-primary" %>
         </div>
+      <% end %>
+    </div>
+
+    <div class="named-lists-footer">
+      <%= link_to new_list_path(kind: "named"), class: "btn" do %>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+        New Named List
       <% end %>
     </div>
   </div>

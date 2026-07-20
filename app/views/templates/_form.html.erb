@@ -26,6 +26,19 @@
         </div>
         <span class="form-text">New ideas will automatically use this template</span>
 
+        <div class="form-group" style="margin-top: 1rem;">
+          <label for="template_topology_id">Topology</label>
+          <%= form.select :topology_id,
+              options_for_select(
+                [['None', '']] + (template.user || @user).topologies.ordered.map { |t| [t.full_path, t.id] },
+                template.topology_id
+              ),
+              {},
+              class: "form-control",
+              id: "template_topology_id" %>
+          <span class="form-text">Selecting this topology on a new idea switches to this template automatically</span>
+        </div>
+
         <% scoring_systems = @scoring_systems || template.user&.available_scoring_systems || [] %>
         <% selected_scoring_system_ids = template.enabled_scoring_system_ids %>
         <% if scoring_systems.any? %>

@@ -38,7 +38,11 @@ Rails.application.routes.draw do
   get "submissions/import/:source/oauth", to: "submission_imports#oauth", as: :oauth_submission_import
   get "submissions/import/:source/oauth/callback", to: "submission_imports#oauth_callback", as: :oauth_callback_submission_import
 
-  resources :submissions, only: [:index, :show, :destroy] do
+  # Intake (submission review queue) lives under Ideas
+  get "ideas/intake", to: "submissions#index", as: :ideas_intake
+  get "submissions", to: redirect("/ideas/intake")
+
+  resources :submissions, only: [:show, :destroy] do
     member do
       post :approve
       post :reject
@@ -120,10 +124,15 @@ Rails.application.routes.draw do
     get "crm", to: "crm#index"
   end
 
-  # Lists and drag-and-drop functionality
-  resources :kanban_boards, only: [:create]
+  # Planning (kanban boards + named lists) and drag-and-drop functionality
+  resources :kanban_boards, only: [:create, :destroy] do
+    member do
+      patch :move
+    end
+  end
 
-  resources :lists do
+  get "lists", to: redirect("/planning"), as: :legacy_lists
+  resources :lists, path: "planning" do
     member do
       post :send_email
       post :add_idea
@@ -157,6 +166,7 @@ Rails.application.routes.draw do
   # Settings management
   get 'settings', to: 'settings#index'
   patch 'settings', to: 'settings#update_display'
+  patch 'settings/features', to: 'settings#update_features', as: :settings_features
   get 'settings/display', to: 'settings#display', as: :settings_display
   patch 'settings/display', to: 'settings#update_display'
   get 'settings/scoring', to: 'settings#scoring'
@@ -227,10 +237,17 @@ Rails.application.routes.draw do
   post 'knowledge-base/extract', to: 'kb#extract', as: :kb_extract
   get 'knowledge-base/edit', to: 'kb#edit', as: :kb_edit
   patch 'knowledge-base/save', to: 'kb#fs_save', as: :kb_fs_save
+  post 'knowledge-base/media-edits', to: 'kb_media_edits#create', as: :kb_media_edits
+  get 'knowledge-base/media-edits/:id', to: 'kb_media_edits#show', as: :kb_media_edit
   post 'knowledge-base/fs/create', to: 'kb#fs_create', as: :kb_fs_create
+  post 'knowledge-base/fs/upload', to: 'kb#fs_upload', as: :kb_fs_upload
   patch 'knowledge-base/fs/rename', to: 'kb#fs_rename', as: :kb_fs_rename
   patch 'knowledge-base/fs/move', to: 'kb#fs_move', as: :kb_fs_move
+  patch 'knowledge-base/fs/preference', to: 'kb#fs_preference', as: :kb_fs_preference
+  post 'knowledge-base/fs/open', to: 'kb#fs_open', as: :kb_fs_open
   delete 'knowledge-base/fs', to: 'kb#fs_delete', as: :kb_fs_delete
+  get 'knowledge-base/tree', to: 'kb#tree', as: :kb_tree
+  post 'knowledge-base/jobs', to: 'kb_fs_jobs#create', as: :kb_fs_jobs
   resources :facts, only: [:create, :destroy]
   resources :maxims, only: [:create, :destroy]
 

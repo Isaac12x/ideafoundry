@@ -32,17 +32,17 @@ class SubmissionsController < ApplicationController
 
   def reject
     @submission.reject!(params[:review_notes])
-    redirect_to submissions_path, notice: "Submission rejected."
+    redirect_to ideas_intake_path, notice: "Submission rejected."
   end
 
   def reopen
     @submission.reopen!
-    redirect_to submissions_path, notice: "Submission reopened."
+    redirect_to ideas_intake_path, notice: "Submission reopened."
   end
 
   def destroy
     @submission.destroy!
-    redirect_to submissions_path, notice: "Submission deleted."
+    redirect_to ideas_intake_path, notice: "Submission deleted."
   end
 
   private

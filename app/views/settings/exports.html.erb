@@ -98,7 +98,7 @@
           Configure automatic backups. Scheduled backups run daily at 2 AM and follow your frequency setting.
         </p>
 
-        <%= form_with url: settings_backup_path, method: :patch, local: true, data: { controller: "settings-autosave" } do |f| %>
+        <%= form_with url: settings_backup_path, method: :patch, local: true, data: { controller: "settings-autosave", action: "change->settings-autosave#toggleChanged" } do |f| %>
           <div class="weight-grid">
             <div class="weight-item">
               <label class="weight-label">Frequency</label>
@@ -136,8 +136,7 @@
                         "true",
                         ActiveModel::Type::Boolean.new.cast(@backup_settings["auto_cleanup"]),
                         id: "backup_auto_cleanup",
-                        class: "tab-toggle__input",
-                        data: { action: "change->settings-autosave#toggleChanged" } %>
+                        class: "tab-toggle__input" %>
                   <span class="tab-toggle__track" aria-hidden="true">
                     <span class="tab-toggle__thumb"></span>
                   </span>
@@ -157,8 +156,7 @@
                         "true",
                         ActiveModel::Type::Boolean.new.cast(@backup_settings["email_notification"]),
                         id: "backup_email_notification",
-                        class: "tab-toggle__input",
-                        data: { action: "change->settings-autosave#toggleChanged" } %>
+                        class: "tab-toggle__input" %>
                   <span class="tab-toggle__track" aria-hidden="true">
                     <span class="tab-toggle__thumb"></span>
                   </span>
@@ -167,19 +165,18 @@
             </div>
           </div>
 
-          <div class="config-actions">
-            <%= f.submit "Save Backup Settings", class: "btn btn-primary" %>
-            <% if @active_backup %>
-              <span class="btn btn-secondary" disabled>Backup in progress...</span>
-            <% else %>
-              <%= button_to "Backup Now", settings_backup_now_path, method: :post, class: "btn btn-secondary" %>
-            <% end %>
-          </div>
-          <% if @last_backup %>
-            <p class="config-description" style="margin: 0.75rem 0 0;">
-              Last backup: <%= time_ago_in_words(@last_backup.created_at) %> ago
-            </p>
+        <% end %>
+        <div class="config-actions">
+          <% if @active_backup %>
+            <span class="btn btn-secondary" disabled>Backup in progress...</span>
+          <% else %>
+            <%= button_to "Backup Now", settings_backup_now_path, method: :post, class: "btn btn-secondary" %>
           <% end %>
+        </div>
+        <% if @last_backup %>
+          <p class="config-description" style="margin: 0.75rem 0 0;">
+            Last backup: <%= time_ago_in_words(@last_backup.created_at) %> ago
+          </p>
         <% end %>
       </div>
     </div>

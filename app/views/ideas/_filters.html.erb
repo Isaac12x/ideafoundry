@@ -9,8 +9,7 @@
   ].any?
 %>
 <div class="filters-panel"
-     data-controller="auto-filter"
-     data-auto-filter-filters-active-value="<%= filters_active %>">
+     data-controller="auto-filter">
   <%= form_with url: ideas_path, method: :get, data: { turbo_frame: "ideas_list", auto_filter_target: "form" } do |form| %>
     <div class="filter-top-bar">
       <div class="filter-search-bar">
@@ -25,17 +24,19 @@
 
     <div class="filter-body" data-auto-filter-target="body">
       <div class="filters-grid">
-        <div class="filter-group">
-          <%= form.label :state, "State" %>
-          <%= form.select :state,
-              options_for_select(
-                [['All States', 'all']] + Idea.states.keys.map { |k| [k.humanize, k] },
-                params[:state]
-              ),
-              {},
-              class: "form-control",
-              data: { action: "change->auto-filter#submit" } %>
-        </div>
+        <% if feature_enabled?(:idea_states) %>
+          <div class="filter-group">
+            <%= form.label :state, "State" %>
+            <%= form.select :state,
+                options_for_select(
+                  [['All States', 'all']] + Idea.states.keys.map { |k| [k.humanize, k] },
+                  params[:state]
+                ),
+                {},
+                class: "form-control",
+                data: { action: "change->auto-filter#submit" } %>
+          </div>
+        <% end %>
 
         <div class="filter-group">
           <%= form.label :topology_id, "Topology" %>
@@ -88,7 +89,7 @@
                   ['Score', 'score'],
                   ['TRL', 'trl']
                 ],
-                params[:sort_by] || 'created_at'
+                params[:sort_by] || 'score'
               ),
               {},
               class: "form-control",
