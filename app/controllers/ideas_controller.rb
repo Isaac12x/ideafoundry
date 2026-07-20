@@ -26,6 +26,9 @@ class IdeasController < ApplicationController
 
   def show
     @inline_agent_recommendations = @user.agent_recommendations.pending.where(target: @idea).recent.limit(8)
+    @user.default_kanban_board if @user.kanban_boards.none?
+    @kanban_boards = @user.kanban_boards.ordered.includes(:lists)
+    @named_lists   = @user.lists.named.ordered
   end
 
   def new
@@ -277,20 +280,32 @@ class IdeasController < ApplicationController
       return
     end
 
-    search_term = "%#{query.downcase}%"
+    q_lower     = query.downcase
+    search_term = "%#{q_lower}%"
     ideas = @user.ideas.non_draft.where(discarded_at: nil)
                  .left_joins(:rich_text_description)
-                 .where("LOWER(ideas.title) LIKE :q OR LOWER(action_text_rich_texts.body) LIKE :q", q: search_term)
+                 .where(
+                   "LOWER(ideas.title) LIKE :q OR LOWER(ideas.tldr) LIKE :q OR LOWER(action_text_rich_texts.body) LIKE :q",
+                   q: search_term
+                 )
                  .distinct
                  .order(updated_at: :desc)
                  .limit(20)
                  .map do |idea|
+      desc_plain = (idea.description.to_plain_text rescue "").gsub(/\s+/, " ").strip
+      matches    = []
+      matches << { field: "title",       snippet: excerpt_match(idea.title,     query) } if idea.title.downcase.include?(q_lower)
+      matches << { field: "tldr",        snippet: excerpt_match(idea.tldr.to_s, query) } if idea.tldr.to_s.downcase.include?(q_lower)
+      matches << { field: "description", snippet: excerpt_match(desc_plain,     query) } if desc_plain.downcase.include?(q_lower)
+
       {
-        id: idea.id,
-        title: idea.title,
-        state: idea.state,
-        score: idea.computed_score,
-        url: idea_path(idea)
+        id:       idea.id,
+        title:    idea.title,
+        state:    idea.state,
+        score:    idea.computed_score,
+        url:      idea_path(idea),
+        list_ids: idea.idea_lists.map(&:list_id),
+        matches:  matches
       }
     end
 
@@ -298,6 +313,18 @@ class IdeasController < ApplicationController
   end
 
   private
+
+  def excerpt_match(text, query, radius: 70)
+    return "" if text.blank?
+    idx = text.downcase.index(query.downcase)
+    return text.truncate(radius * 2) unless idx
+    start_pos = [0, idx - radius].max
+    end_pos   = [text.length, idx + query.length + radius].min
+    snippet   = text[start_pos...end_pos].gsub(/\s+/, " ").strip
+    snippet   = "…#{snippet}" if start_pos > 0
+    snippet   = "#{snippet}…" if end_pos < text.length
+    snippet
+  end
 
   def set_idea
     # Use with_discarded to find ideas even if they're archived
