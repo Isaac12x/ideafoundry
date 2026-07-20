@@ -86,7 +86,7 @@ class DrawingsControllerTest < ActionDispatch::IntegrationTest
     assert_difference("Drawing.count", -1) do
       delete idea_drawing_path(@idea, d)
     end
-    assert_redirected_to idea_path(@idea, anchor: "drawing")
+    assert_redirected_to idea_path(@idea, anchor: "media")
   end
 
   test "GET show 404s for a drawing on another idea" do

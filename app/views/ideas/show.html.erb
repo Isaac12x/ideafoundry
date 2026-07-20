@@ -18,75 +18,83 @@
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
         Back
       <% end %>
-      <div class="header-actions">
-        <%= link_to edit_idea_path(@idea), class: "btn btn-sm btn-primary" do %>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-          Edit
-        <% end %>
-        <div class="atl-wrapper"
-             data-controller="add-to-list"
-             data-add-to-list-add-url-value="<%= add_to_list_idea_path(@idea) %>"
-             data-add-to-list-kanban-boards-value="<%= idea_context_kanban_boards_json(@kanban_boards) %>"
-             data-add-to-list-named-lists-value="<%= idea_context_named_lists_json(@named_lists) %>"
-             data-add-to-list-current-list-ids-value="<%= idea_context_list_ids(@idea) %>">
-          <button type="button" class="btn btn-sm" data-add-to-list-target="button" data-action="click->add-to-list#toggle">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
-            Add to list
-          </button>
-          <div class="atl-dropdown" data-add-to-list-target="dropdown" hidden></div>
-        </div>
-        <% if idea_licensing_active %>
-          <%= link_to licensing_crm_path, class: "btn btn-sm" do %>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="5"/><path d="M8.5 12.5L7 22l5-3 5 3-1.5-9.5"/></svg>
-            Licensing CRM
+      <div class="idea-actions-menu" data-controller="dropdown-menu">
+        <button type="button" class="btn btn-sm idea-actions-menu__trigger" aria-expanded="false" aria-label="Idea actions"
+                data-dropdown-menu-target="trigger" data-action="click->dropdown-menu#toggle">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+        </button>
+        <div class="idea-actions-menu__dropdown" hidden data-dropdown-menu-target="dropdown"
+             data-action="keydown.esc@window->dropdown-menu#closeOnEscape">
+          <%= link_to edit_idea_path(@idea), class: "idea-actions-menu__item" do %>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            Edit
           <% end %>
-        <% end %>
-        <%= button_to create_version_idea_path(@idea), method: :post, class: "btn btn-sm", form: { style: "display: inline" }, data: { turbo_confirm: "Create a new version (full copy) of this idea?" } do %>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3v12M18 9a3 3 0 100-6 3 3 0 000 6zM6 21a3 3 0 100-6 3 3 0 000 6zM15 6a9 9 0 01-9 9"/></svg>
-          New version
-        <% end %>
-        <% if @user.email_configured? %>
-          <%= button_to send_email_idea_path(@idea), method: :post, class: "btn btn-sm btn-email", form: { style: "display: inline" }, data: { turbo_confirm: "Send this idea to #{@user.email_recipients.join(', ')}?" } do %>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-            Email
+          <div class="atl-wrapper idea-actions-menu__item-wrapper"
+               data-controller="add-to-list"
+               data-add-to-list-add-url-value="<%= add_to_list_idea_path(@idea) %>"
+               data-add-to-list-kanban-boards-value="<%= idea_context_kanban_boards_json(@kanban_boards) %>"
+               data-add-to-list-named-lists-value="<%= idea_context_named_lists_json(@named_lists) %>"
+               data-add-to-list-current-list-ids-value="<%= idea_context_list_ids(@idea) %>">
+            <button type="button" class="idea-actions-menu__item" data-add-to-list-target="button" data-action="click->add-to-list#toggle">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+              Add to list
+            </button>
+            <div class="atl-dropdown" data-add-to-list-target="dropdown" hidden></div>
+          </div>
+          <% if idea_licensing_active %>
+            <%= link_to licensing_crm_path, class: "idea-actions-menu__item" do %>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="5"/><path d="M8.5 12.5L7 22l5-3 5 3-1.5-9.5"/></svg>
+              Licensing CRM
+            <% end %>
           <% end %>
-        <% end %>
-        <div class="reminder-wrapper" data-controller="reminder"
-             data-reminder-title-value="<%= @idea.title %>"
-             data-reminder-url-value="<%= idea_url(@idea) %>"
-             data-reminder-score-value="<%= number_with_precision(@idea.computed_score || 0, precision: 1) %>"
-             data-reminder-state-value="<%= @idea.state.humanize %>"
-             data-reminder-snippet-value="<%= truncate(strip_tags(@idea.description.to_s), length: 200) %>">
-          <button type="button" class="btn btn-sm btn-reminder" aria-expanded="false" data-action="click->reminder#toggle">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-            Remind
-          </button>
-          <div class="reminder-popover hidden" role="dialog" aria-label="Set reminder" data-reminder-target="popover" data-action="click@window->reminder#closeOnOutsideClick keydown.esc@window->reminder#closeOnEscape">
-            <label class="reminder-label" for="reminder-datetime">When?</label>
-            <input type="datetime-local" id="reminder-datetime" class="reminder-input" data-reminder-target="datetime">
-            <div class="reminder-actions">
-              <button type="button" class="btn btn-sm btn-primary" data-action="click->reminder#downloadIcs">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
-                .ics
-              </button>
-              <button type="button" class="btn btn-sm btn-primary" data-action="click->reminder#openGoogle">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/></svg>
-                Google
-              </button>
+          <%= button_to create_version_idea_path(@idea), method: :post, class: "idea-actions-menu__item", form: { class: "idea-actions-menu__item-wrapper" }, data: { turbo_confirm: "Create a new version (full copy) of this idea?" } do %>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3v12M18 9a3 3 0 100-6 3 3 0 000 6zM6 21a3 3 0 100-6 3 3 0 000 6zM15 6a9 9 0 01-9 9"/></svg>
+            New version
+          <% end %>
+          <% if @user.email_configured? %>
+            <%= button_to send_email_idea_path(@idea), method: :post, class: "idea-actions-menu__item idea-actions-menu__item--email", form: { class: "idea-actions-menu__item-wrapper" }, data: { turbo_confirm: "Send this idea to #{@user.email_recipients.join(', ')}?" } do %>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+              Email
+            <% end %>
+          <% end %>
+          <div class="reminder-wrapper idea-actions-menu__item-wrapper" data-controller="reminder"
+               data-reminder-title-value="<%= @idea.title %>"
+               data-reminder-url-value="<%= idea_url(@idea) %>"
+               data-reminder-score-value="<%= number_with_precision(@idea.computed_score || 0, precision: 1) %>"
+               data-reminder-state-value="<%= @idea.state.humanize %>"
+               data-reminder-snippet-value="<%= truncate(strip_tags(@idea.description.to_s), length: 200) %>">
+            <button type="button" class="idea-actions-menu__item idea-actions-menu__item--reminder" aria-expanded="false" data-action="click->reminder#toggle">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              Remind
+            </button>
+            <div class="reminder-popover hidden" role="dialog" aria-label="Set reminder" data-reminder-target="popover" data-action="click@window->reminder#closeOnOutsideClick keydown.esc@window->reminder#closeOnEscape">
+              <label class="reminder-label" for="reminder-datetime">When?</label>
+              <input type="datetime-local" id="reminder-datetime" class="reminder-input" data-reminder-target="datetime">
+              <div class="reminder-actions">
+                <button type="button" class="btn btn-sm btn-primary" data-action="click->reminder#downloadIcs">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+                  .ics
+                </button>
+                <button type="button" class="btn btn-sm btn-primary" data-action="click->reminder#openGoogle">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/></svg>
+                  Google
+                </button>
+              </div>
             </div>
           </div>
+          <div class="idea-actions-menu__divider"></div>
+          <% if @idea.archived? %>
+            <%= button_to "Restore", restore_idea_path(@idea), method: :post, class: "idea-actions-menu__item", form: { class: "idea-actions-menu__item-wrapper" } %>
+          <% else %>
+            <%= button_to "Archive", archive_idea_path(@idea), method: :post, class: "idea-actions-menu__item", form: { class: "idea-actions-menu__item-wrapper", data: { turbo_confirm: "Archive this idea? You can restore it later from the archived view." } } %>
+          <% end %>
+          <%= link_to idea_path(@idea), method: :delete,
+                      data: { turbo_method: :delete, turbo_confirm: "Are you sure? This permanently deletes the idea." },
+                      class: "idea-actions-menu__item idea-actions-menu__item--danger" do %>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+            Delete
+          <% end %>
         </div>
-        <% if @idea.archived? %>
-          <%= button_to "Restore", restore_idea_path(@idea), method: :post, class: "btn btn-sm btn-primary" %>
-        <% else %>
-          <%= button_to "Archive", archive_idea_path(@idea), method: :post, class: "btn btn-sm", form: { data: { turbo_confirm: "Archive this idea? You can restore it later from the archived view." } } %>
-        <% end %>
-        <%= link_to idea_path(@idea), method: :delete,
-                    data: { turbo_method: :delete, turbo_confirm: "Are you sure? This permanently deletes the idea." },
-                    class: "btn btn-sm btn-danger" do %>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-          Delete
-        <% end %>
       </div>
     </div>
 
@@ -215,7 +223,12 @@
         <% end %>
       </div>
     <% end %>
-    <% idea_mood_images = @idea.mood_images.includes(file_attachment: :blob).ordered.to_a %>
+    <% comp_enabled    = @user.idea_tab_enabled?('competitor') %>
+    <% pot_enabled     = @user.idea_tab_enabled?('potential_competitor') %>
+    <% tool_enabled    = @user.idea_tab_enabled?('tool') && !idea_licensing_active %>
+    <% media_enabled   = @user.idea_tab_enabled?('media') %>
+    <% drawing_enabled = @user.idea_tab_enabled?('drawing') %>
+    <% general_enabled = @user.idea_tab_enabled?('metadata') || tool_enabled || comp_enabled || pot_enabled %>
     <div data-controller="tabs" data-tabs-default-tab-value="description">
       <div class="tabs-nav" data-controller="drag-scroll">
         <button data-tabs-target="tab" data-tab-name="description" data-action="click->tabs#switch" class="tab-button active">
@@ -232,14 +245,14 @@
             Scores
           </button>
         <% end %>
-        <% if @user.idea_tab_enabled?('media') %>
+        <% if media_enabled || drawing_enabled %>
           <button data-tabs-target="tab" data-tab-name="media" data-action="click->tabs#switch" class="tab-button">
             Media
           </button>
         <% end %>
-        <% if @user.idea_tab_enabled?('metadata') %>
-          <button data-tabs-target="tab" data-tab-name="metadata" data-action="click->tabs#switch" class="tab-button">
-            Metadata
+        <% if general_enabled %>
+          <button data-tabs-target="tab" data-tab-name="general" data-action="click->tabs#switch" class="tab-button">
+            General
           </button>
         <% end %>
         <% if @idea.effective_field_definitions.present? %>
@@ -251,22 +264,6 @@
             </button>
           <% end %>
         <% end %>
-        <% if @user.idea_tab_enabled?('tool') && !idea_licensing_active %>
-          <% tool_count = @idea.idea_entries.where(kind: 'tool').count %>
-          <button data-tabs-target="tab" data-tab-name="tool" data-action="click->tabs#switch" class="tab-button">
-            <span id="idea_entries_tab_label_<%= @idea.id %>_tool">Tools<% if tool_count > 0 %> (<%= tool_count %>)<% end %></span>
-          </button>
-        <% end %>
-        <% comp_enabled = @user.idea_tab_enabled?('competitor') %>
-        <% pot_enabled  = @user.idea_tab_enabled?('potential_competitor') %>
-        <% if comp_enabled || pot_enabled %>
-          <% comp_count = comp_enabled ? @idea.idea_entries.where(kind: 'competitor').count : 0 %>
-          <% pot_count  = pot_enabled  ? @idea.idea_entries.where(kind: 'potential_competitor').count : 0 %>
-          <% merged_count = comp_count + pot_count %>
-          <button data-tabs-target="tab" data-tab-name="competitors" data-action="click->tabs#switch" class="tab-button">
-            <span id="idea_entries_tab_label_<%= @idea.id %>_competitors">Competitors<% if merged_count > 0 %> (<%= merged_count %>)<% end %></span>
-          </button>
-        <% end %>
         <% if @user.idea_tab_enabled?('notes') && !idea_licensing_active %>
           <% note_count = @idea.notes.count %>
           <button data-tabs-target="tab" data-tab-name="notes" data-action="click->tabs#switch" class="tab-button">
@@ -276,7 +273,7 @@
         <% if @user.idea_tab_enabled?('todo') %>
           <% todo_count = @idea.todo_items.count %>
           <button data-tabs-target="tab" data-tab-name="todo" data-action="click->tabs#switch" class="tab-button">
-            <span id="todo_tab_label_<%= @idea.id %>">Todo<% if todo_count > 0 %> (<%= todo_count %>)<% end %></span>
+            <span id="todo_tab_label_<%= @idea.id %>">To-Do<% if todo_count > 0 %> (<%= todo_count %>)<% end %></span>
           </button>
         <% end %>
         <% if @user.idea_tab_enabled?('history') %>
@@ -284,17 +281,8 @@
             History<% if @idea.versions.any? %> (<%= @idea.versions.count %>)<% end %>
           </button>
         <% end %>
-        <% if @user.idea_tab_enabled?('drawing') %>
-          <% drawing_count = @idea.drawings.count %>
-          <button data-tabs-target="tab" data-tab-name="drawing" data-action="click->tabs#switch" class="tab-button">
-            Drawings<% if drawing_count > 0 %> (<%= drawing_count %>)<% end %>
-          </button>
-        <% end %>
-        <button data-tabs-target="tab" data-tab-name="images" data-action="click->tabs#switch" class="tab-button">
-          Think in Images<% if idea_mood_images.any? %> (<%= idea_mood_images.size %>)<% end %>
-        </button>
         <button data-tabs-target="tab" data-tab-name="enrichment" data-action="click->tabs#switch" class="tab-button">
-          Enrich<% if @idea.enriched? %> &check;<% end %>
+          Enrichment<% if @idea.enriched? %> &check;<% end %>
         </button>
       </div>
 
@@ -407,210 +395,227 @@
 
         <% end %>
 
-        <!-- Media Tab -->
-        <% if @user.idea_tab_enabled?('media') %>
+        <!-- Media Tab (Attachments + Drawings) -->
+        <% if media_enabled || drawing_enabled %>
         <div data-tabs-target="panel" data-tab-panel="media" class="tab-panel hidden">
           <div class="media-section">
-            <h3>Attachments</h3>
-            <% attachment_drawings = @idea.attachment_drawings %>
-            <% image_attachments = @idea.image_attachments %>
-            <% document_attachments = @idea.document_attachments %>
-            <%= render "ideas/knowledge_sidebar", idea: @idea %>
-            <% if image_attachments.any? || document_attachments.any? || attachment_drawings.any? %>
-              <% if image_attachments.any? || attachment_drawings.any? %>
-                <div class="media-section__group media-section__group--images">
-                  <div class="media-section__group-header">
-                    <h4>Images</h4>
-                    <span><%= image_attachments.size + attachment_drawings.size %></span>
-                  </div>
-                  <div class="attachments-grid">
-                    <% image_attachments.each do |attachment| %>
-                      <div class="attachment-item">
-                        <%= link_to rails_blob_path(attachment, disposition: "inline"), target: "_blank", rel: "noopener" do %>
-                          <%= image_tag rails_blob_path(attachment, disposition: "inline"), class: "attachment-thumbnail", alt: attachment.filename.to_s %>
-                        <% end %>
-                        <div class="attachment-info">
-                          <p class="attachment-name"><%= attachment.filename %></p>
-                          <p class="attachment-size"><%= number_to_human_size(attachment.byte_size) %></p>
-                          <%= link_to "Open", rails_blob_path(attachment, disposition: "inline"), target: "_blank", rel: "noopener", class: "btn btn-sm" %>
-                        </div>
-                      </div>
-                    <% end %>
-                    <% attachment_drawings.each do |drawing| %>
-                      <div class="attachment-item attachment-item--drawing">
-                        <% if drawing.rendered_png.attached? %>
-                          <%= image_tag drawing.rendered_png, class: "attachment-thumbnail", alt: drawing.title %>
-                        <% else %>
-                          <div class="attachment-file">
-                            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            <% if media_enabled %>
+            <div class="media-section__group">
+              <h3>Attachments</h3>
+              <% attachment_drawings = @idea.attachment_drawings %>
+              <% image_attachments = @idea.image_attachments %>
+              <% document_attachments = @idea.document_attachments %>
+              <%= render "ideas/knowledge_sidebar", idea: @idea %>
+              <% if image_attachments.any? || document_attachments.any? || attachment_drawings.any? %>
+                <% if image_attachments.any? || attachment_drawings.any? %>
+                  <div class="media-section__group media-section__group--images">
+                    <div class="media-section__group-header">
+                      <h4>Images</h4>
+                      <span><%= image_attachments.size + attachment_drawings.size %></span>
+                    </div>
+                    <div class="attachments-grid">
+                      <% image_attachments.each do |attachment| %>
+                        <div class="attachment-item">
+                          <%= link_to rails_blob_path(attachment, disposition: "inline"), target: "_blank", rel: "noopener" do %>
+                            <%= image_tag rails_blob_path(attachment, disposition: "inline"), class: "attachment-thumbnail", alt: attachment.filename.to_s %>
+                          <% end %>
+                          <div class="attachment-info">
+                            <p class="attachment-name"><%= attachment.filename %></p>
+                            <p class="attachment-size"><%= number_to_human_size(attachment.byte_size) %></p>
+                            <%= link_to "Open", rails_blob_path(attachment, disposition: "inline"), target: "_blank", rel: "noopener", class: "btn btn-sm" %>
                           </div>
-                        <% end %>
-                        <div class="attachment-info">
-                          <p class="attachment-name"><%= drawing.title %></p>
-                          <p class="attachment-size">drawing</p>
-                          <%= link_to "Open", idea_drawing_path(@idea, drawing), class: "btn btn-sm" %>
                         </div>
-                      </div>
-                    <% end %>
+                      <% end %>
+                      <% attachment_drawings.each do |drawing| %>
+                        <div class="attachment-item attachment-item--drawing">
+                          <% if drawing.rendered_png.attached? %>
+                            <%= image_tag drawing.rendered_png, class: "attachment-thumbnail", alt: drawing.title %>
+                          <% else %>
+                            <div class="attachment-file">
+                              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                            </div>
+                          <% end %>
+                          <div class="attachment-info">
+                            <p class="attachment-name"><%= drawing.title %></p>
+                            <p class="attachment-size">drawing</p>
+                            <%= link_to "Open", idea_drawing_path(@idea, drawing), class: "btn btn-sm" %>
+                          </div>
+                        </div>
+                      <% end %>
+                    </div>
                   </div>
-                </div>
-              <% end %>
+                <% end %>
 
-              <% if document_attachments.any? %>
-                <div class="media-section__group media-section__group--documents">
-                  <div class="media-section__group-header">
-                    <h4>Documents</h4>
-                    <span><%= document_attachments.size %></span>
-                  </div>
-                  <div class="attachments-grid">
-                    <% document_attachments.each do |attachment| %>
-                      <div class="attachment-item">
-                        <%= link_to rails_blob_path(attachment, disposition: "inline"), target: "_blank", rel: "noopener" do %>
-                          <div class="attachment-file">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                            </svg>
+                <% if document_attachments.any? %>
+                  <div class="media-section__group media-section__group--documents">
+                    <div class="media-section__group-header">
+                      <h4>Documents</h4>
+                      <span><%= document_attachments.size %></span>
+                    </div>
+                    <div class="attachments-grid">
+                      <% document_attachments.each do |attachment| %>
+                        <div class="attachment-item">
+                          <%= link_to rails_blob_path(attachment, disposition: "inline"), target: "_blank", rel: "noopener" do %>
+                            <div class="attachment-file">
+                              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                              </svg>
+                            </div>
+                          <% end %>
+                          <div class="attachment-info">
+                            <p class="attachment-name"><%= attachment.filename %></p>
+                            <p class="attachment-size"><%= number_to_human_size(attachment.byte_size) %></p>
+                            <%= link_to "Open", rails_blob_path(attachment, disposition: "inline"), target: "_blank", rel: "noopener", class: "btn btn-sm" %>
                           </div>
-                        <% end %>
-                        <div class="attachment-info">
-                          <p class="attachment-name"><%= attachment.filename %></p>
-                          <p class="attachment-size"><%= number_to_human_size(attachment.byte_size) %></p>
-                          <%= link_to "Open", rails_blob_path(attachment, disposition: "inline"), target: "_blank", rel: "noopener", class: "btn btn-sm" %>
                         </div>
-                      </div>
-                    <% end %>
+                      <% end %>
+                    </div>
                   </div>
+                <% end %>
+              <% else %>
+                <div class="empty-state-small">
+                  <p>No attachments yet.</p>
+                  <%= link_to "Add Attachments", edit_idea_path(@idea), class: "btn btn-primary btn-sm" %>
                 </div>
               <% end %>
-            <% else %>
-              <div class="empty-state-small">
-                <p>No attachments yet.</p>
-                <%= link_to "Add Attachments", edit_idea_path(@idea), class: "btn btn-primary btn-sm" %>
-              </div>
+            </div>
+            <% end %>
+
+            <% if drawing_enabled %>
+            <div class="media-section__group">
+              <%= render "drawings/tab", idea: @idea %>
+            </div>
             <% end %>
           </div>
         </div>
 
         <% end %>
 
-        <!-- Metadata Tab -->
-        <% if @user.idea_tab_enabled?('metadata') %>
-        <div data-tabs-target="panel" data-tab-panel="metadata" class="tab-panel hidden">
-          <div class="metadata-grid">
-            <div class="metadata-group">
-              <h3>Lifecycle</h3>
-              <div class="metadata-item-detail">
-                <label>Current State</label>
-                <span class="idea-state <%= @idea.state %>"><%= @idea.state.humanize %></span>
-              </div>
-              <div class="metadata-item-detail">
-                <label>Attempt Count</label>
-                <span><%= @idea.attempt_count %></span>
-              </div>
-              <% if @idea.cool_off_until.present? %>
-                <div class="metadata-item-detail">
-                  <label>Cool-off Until</label>
-                  <span><%= @idea.cool_off_until.strftime("%B %d, %Y at %I:%M %p") %></span>
+        <!-- General Tab (Metadata + Competitors + Tools) -->
+        <% if general_enabled %>
+        <div data-tabs-target="panel" data-tab-panel="general" class="tab-panel hidden">
+          <div class="media-section">
+            <% if @user.idea_tab_enabled?('metadata') %>
+            <div class="media-section__group">
+              <h3>Metadata</h3>
+              <div class="metadata-grid">
+                <div class="metadata-group">
+                  <h3>Lifecycle</h3>
+                  <div class="metadata-item-detail">
+                    <label>Current State</label>
+                    <span class="idea-state <%= @idea.state %>"><%= @idea.state.humanize %></span>
+                  </div>
+                  <div class="metadata-item-detail">
+                    <label>Attempt Count</label>
+                    <span><%= @idea.attempt_count %></span>
+                  </div>
+                  <% if @idea.cool_off_until.present? %>
+                    <div class="metadata-item-detail">
+                      <label>Cool-off Until</label>
+                      <span><%= @idea.cool_off_until.strftime("%B %d, %Y at %I:%M %p") %></span>
+                    </div>
+                  <% end %>
                 </div>
-              <% end %>
-            </div>
 
-            <div class="metadata-group">
-              <h3>Organization</h3>
-              <% if @idea.topologies.any? %>
-                <div class="metadata-item-detail">
-                  <label>Topologies</label>
-                  <div class="topology-tags">
-                    <% @idea.topologies.each do |topology| %>
-                      <%= link_to ideas_path(topology_id: topology.id), class: "topology-badge", style: "--badge-color: #{topology.color || 'var(--accent)'}" do %>
-                        <span class="topology-color-dot" style="background-color: <%= topology.color || 'var(--accent)' %>"></span>
-                        <%= topology.full_path %>
-                      <% end %>
+                <div class="metadata-group">
+                  <h3>Organization</h3>
+                  <% if @idea.topologies.any? %>
+                    <div class="metadata-item-detail">
+                      <label>Topologies</label>
+                      <div class="topology-tags">
+                        <% @idea.topologies.each do |topology| %>
+                          <%= link_to ideas_path(topology_id: topology.id), class: "topology-badge", style: "--badge-color: #{topology.color || 'var(--accent)'}" do %>
+                            <span class="topology-color-dot" style="background-color: <%= topology.color || 'var(--accent)' %>"></span>
+                            <%= topology.full_path %>
+                          <% end %>
+                        <% end %>
+                      </div>
+                    </div>
+                  <% end %>
+                  <div class="metadata-item-detail">
+                    <label>Lists</label>
+                    <% if @idea.lists.any? %>
+                      <div class="lists-tags-small">
+                        <% @idea.lists.each do |list| %>
+                          <%= link_to list.name, list_path(list), class: "list-tag-small" %>
+                        <% end %>
+                      </div>
+                    <% else %>
+                      <span class="text-muted">Not in any lists</span>
                     <% end %>
                   </div>
                 </div>
-              <% end %>
-              <div class="metadata-item-detail">
-                <label>Lists</label>
-                <% if @idea.lists.any? %>
-                  <div class="lists-tags-small">
-                    <% @idea.lists.each do |list| %>
-                      <%= link_to list.name, list_path(list), class: "list-tag-small" %>
-                    <% end %>
+
+                <div class="metadata-group">
+                  <h3>Timestamps</h3>
+                  <div class="metadata-item-detail">
+                    <label>Created</label>
+                    <span><%= @idea.created_at.strftime("%B %d, %Y at %I:%M %p") %></span>
                   </div>
-                <% else %>
-                  <span class="text-muted">Not in any lists</span>
-                <% end %>
+                  <div class="metadata-item-detail">
+                    <label>Last Updated</label>
+                    <span><%= @idea.updated_at.strftime("%B %d, %Y at %I:%M %p") %></span>
+                  </div>
+                </div>
               </div>
             </div>
+            <% end %>
 
-            <div class="metadata-group">
-              <h3>Timestamps</h3>
-              <div class="metadata-item-detail">
-                <label>Created</label>
-                <span><%= @idea.created_at.strftime("%B %d, %Y at %I:%M %p") %></span>
-              </div>
-              <div class="metadata-item-detail">
-                <label>Last Updated</label>
-                <span><%= @idea.updated_at.strftime("%B %d, %Y at %I:%M %p") %></span>
-              </div>
-            </div>
-
-          </div>
-        </div>
-
-        <% end %>
-
-        <!-- Tools Tab -->
-        <% if @user.idea_tab_enabled?('tool') && !idea_licensing_active %>
-          <div data-tabs-target="panel" data-tab-panel="tool" class="tab-panel hidden">
-            <%= render "idea_entries/tab", idea: @idea, kind: 'tool' %>
-          </div>
-        <% end %>
-
-        <!-- Merged Competitors Tab (real + potential) -->
-        <% if comp_enabled || pot_enabled %>
-          <div data-tabs-target="panel" data-tab-panel="competitors" class="tab-panel hidden">
-            <div data-controller="competitor-toggle" class="competitor-toggle-wrapper">
-              <% default_kind = comp_enabled ? 'competitor' : 'potential_competitor' %>
-              <div class="competitor-segmented" role="tablist">
+            <% if comp_enabled || pot_enabled %>
+            <div class="media-section__group">
+              <h3>Competitors</h3>
+              <div data-controller="competitor-toggle" class="competitor-toggle-wrapper">
+                <% default_kind = comp_enabled ? 'competitor' : 'potential_competitor' %>
+                <% comp_count = comp_enabled ? @idea.idea_entries.where(kind: 'competitor').count : 0 %>
+                <% pot_count  = pot_enabled  ? @idea.idea_entries.where(kind: 'potential_competitor').count : 0 %>
+                <div class="competitor-segmented" role="tablist">
+                  <% if comp_enabled %>
+                    <button type="button"
+                            role="tab"
+                            data-competitor-toggle-target="tab"
+                            data-subtab="competitor"
+                            data-action="click->competitor-toggle#switch"
+                            class="competitor-segmented__option <%= 'is-active' if default_kind == 'competitor' %>">
+                      Competitors<% if comp_count > 0 %> <span class="competitor-segmented__count"><%= comp_count %></span><% end %>
+                    </button>
+                  <% end %>
+                  <% if pot_enabled %>
+                    <button type="button"
+                            role="tab"
+                            data-competitor-toggle-target="tab"
+                            data-subtab="potential_competitor"
+                            data-action="click->competitor-toggle#switch"
+                            class="competitor-segmented__option <%= 'is-active' if default_kind == 'potential_competitor' %>">
+                      Potential<% if pot_count > 0 %> <span class="competitor-segmented__count"><%= pot_count %></span><% end %>
+                    </button>
+                  <% end %>
+                </div>
                 <% if comp_enabled %>
-                  <button type="button"
-                          role="tab"
-                          data-competitor-toggle-target="tab"
-                          data-subtab="competitor"
-                          data-action="click->competitor-toggle#switch"
-                          class="competitor-segmented__option <%= 'is-active' if default_kind == 'competitor' %>">
-                    Competitors<% if comp_count > 0 %> <span class="competitor-segmented__count"><%= comp_count %></span><% end %>
-                  </button>
+                  <div data-competitor-toggle-target="panel"
+                       data-subpanel="competitor"
+                       class="competitor-subpanel <%= 'hidden' unless default_kind == 'competitor' %>">
+                    <%= render "idea_entries/tab", idea: @idea, kind: 'competitor' %>
+                  </div>
                 <% end %>
                 <% if pot_enabled %>
-                  <button type="button"
-                          role="tab"
-                          data-competitor-toggle-target="tab"
-                          data-subtab="potential_competitor"
-                          data-action="click->competitor-toggle#switch"
-                          class="competitor-segmented__option <%= 'is-active' if default_kind == 'potential_competitor' %>">
-                    Potential<% if pot_count > 0 %> <span class="competitor-segmented__count"><%= pot_count %></span><% end %>
-                  </button>
+                  <div data-competitor-toggle-target="panel"
+                       data-subpanel="potential_competitor"
+                       class="competitor-subpanel <%= 'hidden' unless default_kind == 'potential_competitor' %>">
+                    <%= render "idea_entries/tab", idea: @idea, kind: 'potential_competitor' %>
+                  </div>
                 <% end %>
               </div>
-              <% if comp_enabled %>
-                <div data-competitor-toggle-target="panel"
-                     data-subpanel="competitor"
-                     class="competitor-subpanel <%= 'hidden' unless default_kind == 'competitor' %>">
-                  <%= render "idea_entries/tab", idea: @idea, kind: 'competitor' %>
-                </div>
-              <% end %>
-              <% if pot_enabled %>
-                <div data-competitor-toggle-target="panel"
-                     data-subpanel="potential_competitor"
-                     class="competitor-subpanel <%= 'hidden' unless default_kind == 'potential_competitor' %>">
-                  <%= render "idea_entries/tab", idea: @idea, kind: 'potential_competitor' %>
-                </div>
-              <% end %>
             </div>
+            <% end %>
+
+            <% if tool_enabled %>
+            <div class="media-section__group">
+              <h3>Tools</h3>
+              <%= render "idea_entries/tab", idea: @idea, kind: 'tool' %>
+            </div>
+            <% end %>
           </div>
+        </div>
         <% end %>
 
         <!-- Custom Field Tabs -->
@@ -823,18 +828,6 @@
           <% end %>
         </div>
         <% end %>
-
-        <!-- Drawings Tab -->
-        <% if @user.idea_tab_enabled?('drawing') %>
-        <div data-tabs-target="panel" data-tab-panel="drawing" class="tab-panel hidden">
-          <%= render "drawings/tab", idea: @idea %>
-        </div>
-        <% end %>
-
-        <!-- Think in Images Tab -->
-        <div data-tabs-target="panel" data-tab-panel="images" class="tab-panel hidden">
-          <%= render "mood_board/board", board_idea: @idea, board_images: idea_mood_images %>
-        </div>
 
         <!-- Enrichment Tab -->
         <div data-tabs-target="panel" data-tab-panel="enrichment" class="tab-panel hidden">
