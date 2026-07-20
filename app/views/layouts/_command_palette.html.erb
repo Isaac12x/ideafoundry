@@ -2,37 +2,18 @@
         data-controller="command-palette"
         data-command-palette-search-url-value="<%= search_ideas_path %>"
         data-action="click->command-palette#backdropClick cancel->command-palette#onCancel"
-        aria-label="Search ideas">
-  <div class="cp-header">
-    <div class="cp-search-wrap">
-      <svg class="cp-search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-        <circle cx="11" cy="11" r="8"/>
-        <path d="m21 21-4.35-4.35"/>
-      </svg>
-      <input class="cp-input"
-             type="search"
-             placeholder="Search ideas…"
-             autocomplete="off"
-             spellcheck="false"
-             aria-label="Search ideas"
-             data-command-palette-target="input"
-             data-action="input->command-palette#search keydown->command-palette#navigate">
+        aria-labelledby="command_palette_title">
+  <div class="command-palette__frame">
+    <div class="command-palette__header">
+      <h2 id="command_palette_title">Search Ideas</h2>
+      <kbd>Ctrl/Cmd+K</kbd>
     </div>
-  </div>
-
-  <div class="cp-results"
-       role="listbox"
-       aria-label="Matching ideas"
-       data-command-palette-target="results">
-    <p class="cp-hint">Type to search by title, summary or description</p>
-  </div>
-
-  <div class="cp-footer">
-    <span class="cp-kbd-hint">
-      <kbd>↑</kbd><kbd>↓</kbd> navigate &nbsp;
-      <kbd>↵</kbd> open &nbsp;
-      <kbd>esc</kbd> close
-    </span>
-    <span class="cp-trigger-hint"><kbd>⌘P</kbd> anywhere</span>
+    <input type="search"
+           class="command-palette__input"
+           placeholder="Search title or description..."
+           autocomplete="off"
+           data-command-palette-target="input"
+           data-action="input->command-palette#search keydown->command-palette#navigate">
+    <div class="command-palette__results" data-command-palette-target="results"></div>
   </div>
 </dialog>

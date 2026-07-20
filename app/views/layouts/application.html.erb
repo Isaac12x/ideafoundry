@@ -23,13 +23,33 @@
       controller_path.to_s == "recovery_secrets"
     typing_activity_enabled = @user&.security_lock_enabled? && !security_lock_screen
     typing_lock_shortcut = "Ctrl/Cmd+Shift+L"
-    display_quote = @user&.display_quote.to_s.strip
+    quote_page_key = User.nav_page_key(controller_path)
+    display_quote = @user&.quote_for_page(quote_page_key).to_s.strip
     display_contrast = @user&.display_contrast.to_s
+    show_notes = !security_lock_screen
+    body_controllers = ["activity-panel"]
+    body_controllers << "shortcuts" unless security_lock_screen
+    body_controllers << "typing-activity" if typing_activity_enabled
+    body_controllers << "kb-notes" if show_notes
   %>
-  <body class="<%= body_class %>"
+  <body class="<%= [body_class, show_notes ? 'has-notes-bar' : nil].compact.join(' ') %>"
         data-contrast="<%= display_contrast.presence || 'normal' %>"
         style="--contrast: <%= (@user&.display_contrast || 100) %>%"
-        data-controller="activity-panel<%= typing_activity_enabled ? ' typing-activity' : '' %>"
+        data-controller="<%= body_controllers.join(' ') %>"
+        <% unless security_lock_screen %>
+          data-shortcuts-plan-url-value="<%= lists_path %>"
+          data-shortcuts-ideas-url-value="<%= ideas_path %>"
+          data-shortcuts-licensing-url-value="<%= feature_enabled?(:licensing) ? licensing_crm_path : '' %>"
+          data-shortcuts-intake-url-value="<%= ideas_intake_path %>"
+          data-shortcuts-topologies-url-value="<%= topologies_path %>"
+          data-shortcuts-kb-url-value="<%= feature_enabled?(:kb) ? kb_path : '' %>"
+          data-shortcuts-backlog-url-value="<%= backlog_enabled? ? build_items_path : '' %>"
+          data-shortcuts-settings-url-value="<%= settings_path %>"
+          data-shortcuts-new-idea-url-value="<%= new_idea_path %>"
+          data-shortcuts-new-list-url-value="<%= new_list_path(kind: 'named') %>"
+          data-shortcuts-new-topology-url-value="<%= new_topology_path %>"
+          data-shortcuts-import-url-value="<%= new_submission_import_path %>"
+        <% end %>
         <% if typing_activity_enabled %>
           data-typing-activity-url-value="<%= typing_lock_activity_path %>"
           data-typing-activity-lock-url-value="<%= root_path %>"
@@ -37,59 +57,59 @@
           data-typing-activity-shortcut-value="<%= typing_lock_shortcut %>"
           data-typing-activity-timeout-seconds-value="<%= @user.security_lock_timeout_seconds %>"
         <% end %>>
-    <header class="app-header">
+    <header class="app-header<%= ' nav-text-hidden' if @user&.nav_text_hidden? %>">
       <div class="header-brand">
         <h1 class="logo"><%= link_to "Idea Foundry", root_path %></h1>
       </div>
       <div class="header-right">
         <nav class="header-nav">
-          <%= link_to lists_path, class: "nav-pill #{controller_name == 'lists' ? 'active' : ''}" do %>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-            Lists
-          <% end %>
-          <%= link_to ideas_path, class: "nav-pill #{controller_name == 'ideas' ? 'active' : ''}" do %>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
-            Ideas
-          <% end %>
-          <% pending_count = @user&.submissions&.pending&.count || 0 %>
-          <%= link_to submissions_path, class: "nav-pill #{controller_name == 'submissions' ? 'active' : ''}" do %>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-            Intake
-            <% if pending_count > 0 %>
-              <span class="nav-badge"><%= pending_count %></span>
+          <%
+            nav_defs = {
+              'plan' => {
+                path: lists_path, label: 'Plan', active: controller_name == 'lists',
+                key: 'g p', shortcut: 'Go to Plan',
+                icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 7v7"/><path d="M12 7v4"/><path d="M16 7v9"/></svg>'
+              },
+              'ideas' => {
+                path: ideas_path, label: 'Ideas', active: %w[ideas submissions].include?(controller_name),
+                key: 'g i', shortcut: 'Go to Ideas',
+                icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>'
+              },
+              'licensing' => {
+                path: licensing_crm_path, label: 'Licensing', active: controller_path == 'licensing/crm',
+                key: 'g l', shortcut: 'Go to Licensing',
+                icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="2" x2="12" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>'
+              },
+              'topologies' => {
+                path: topologies_path, label: 'Topologies', active: controller_name == 'topologies',
+                key: 'g t', shortcut: 'Go to Topologies',
+                icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12h-8"/><path d="M21 6H8"/><path d="M21 18h-8"/><path d="M3 6v4c0 1.1.9 2 2 2h3"/><path d="M3 10v6c0 1.1.9 2 2 2h3"/></svg>'
+              },
+              'kb' => {
+                path: kb_path, label: 'KB', active: controller_name == 'kb',
+                key: 'g k', shortcut: 'Go to Knowledge Base',
+                icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>'
+              },
+              'backlog' => {
+                path: backlog_enabled? ? build_items_path : nil, label: 'Backlog', active: controller_name == 'build_items',
+                key: 'g b', shortcut: 'Go to Backlog',
+                icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/></svg>'
+              }
+            }
+          %>
+          <% (@user&.nav_items_to_render || []).each do |nav_key| %>
+            <% item = nav_defs[nav_key] %>
+            <% next if item.nil? || item[:path].nil? %>
+            <%= link_to item[:path], class: "nav-pill #{item[:active] ? 'active' : ''}", data: { shortcut_key: item[:key], shortcut_label: item[:shortcut], shortcut_group: "Navigation" } do %>
+              <%= item[:icon].html_safe %>
+              <span class="nav-label"><%= item[:label] %></span>
             <% end %>
           <% end %>
-          <%= link_to topologies_path, class: "nav-pill #{controller_name == 'topologies' ? 'active' : ''}" do %>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h10M4 18h6"/><circle cx="20" cy="12" r="2"/><circle cx="14" cy="18" r="2"/></svg>
-            Topologies
-          <% end %>
 
-          <%= link_to kb_path, class: "nav-pill #{controller_name == 'kb' ? 'active' : ''}" do %>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>
-            KB
-          <% end %>
-
-          <% if backlog_enabled? %>
-            <%= link_to build_items_path, class: "nav-pill #{controller_name == 'build_items' ? 'active' : ''}" do %>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/><path d="M9 14l2 2 4-4"/></svg>
-              Backlog
-            <% end %>
-          <% end %>
-
-          <%= link_to settings_path, class: "nav-pill #{controller_name == 'settings' ? 'active' : ''}" do %>
+          <%= link_to settings_path, class: "nav-pill #{controller_name == 'settings' ? 'active' : ''}", data: { shortcut_key: "g s", shortcut_label: "Go to Settings", shortcut_group: "Navigation" } do %>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12.22 2h-.44a2 2 0 00-2 2v.18a2 2 0 01-1 1.73l-.43.25a2 2 0 01-2 0l-.15-.08a2 2 0 00-2.73.73l-.22.38a2 2 0 00.73 2.73l.15.1a2 2 0 011 1.72v.51a2 2 0 01-1 1.74l-.15.09a2 2 0 00-.73 2.73l.22.38a2 2 0 002.73.73l.15-.08a2 2 0 012 0l.43.25a2 2 0 011 1.73V20a2 2 0 002 2h.44a2 2 0 002-2v-.18a2 2 0 011-1.73l.43-.25a2 2 0 012 0l.15.08a2 2 0 002.73-.73l.22-.39a2 2 0 00-.73-2.73l-.15-.08a2 2 0 01-1-1.74v-.5a2 2 0 011-1.74l.15-.09a2 2 0 00.73-2.73l-.22-.38a2 2 0 00-2.73-.73l-.15.08a2 2 0 01-2 0l-.43-.25a2 2 0 01-1-1.73V4a2 2 0 00-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
-            Settings
+            <span class="nav-label">Settings</span>
           <% end %>
-
-          <button class="nav-pill nav-activity-trigger"
-                  title="Activity log"
-                  aria-label="Open activity log"
-                  data-action="click->activity-panel#open">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="10"/>
-              <polyline points="12 6 12 12 16 14"/>
-            </svg>
-          </button>
 
           <% if typing_activity_enabled %>
             <%= button_to lock_typing_lock_path(return_to: request.fullpath),
@@ -97,6 +117,7 @@
                   class: "nav-pill nav-lock-button",
                   title: "Lock (#{typing_lock_shortcut})",
                   aria: { label: "Lock" },
+                  data: { shortcut_key: "Ctrl/Cmd+Shift+L", shortcut_label: "Lock workspace", shortcut_group: "Global" },
                   form: {
                     class: "nav-lock-form",
                     data: { typing_activity_target: "lockForm" }
@@ -105,7 +126,7 @@
                 <rect x="5" y="11" width="14" height="10" rx="2"/>
                 <path d="M8 11V8a4 4 0 018 0v3"/>
               </svg>
-              Lock
+              <span class="nav-label">Lock</span>
             <% end %>
           <% end %>
         </nav>
@@ -113,8 +134,9 @@
     </header>
 
     <%= render "layouts/ask_agent", security_lock_screen: security_lock_screen unless security_lock_screen %>
+    <%= render "layouts/command_palette" unless security_lock_screen %>
 
-    <% if display_quote.present? %>
+    <% if display_quote.present? && controller_name != 'settings' && !security_lock_screen %>
       <div class="app-quote-banner">
         <%= simple_format(display_quote, { class: "app-quote-banner__text" }, sanitize: true) %>
       </div>
@@ -123,20 +145,28 @@
     <%= render 'upgrades/toast' %>
 
     <main class="app-main">
-      <% if notice %>
-        <div class="alert alert-success"><%= notice %></div>
-      <% end %>
-      <% if notice == nil && params[:upgraded].present? %>
-        <div class="alert alert-success">App upgraded successfully.</div>
-      <% end %>
-      <% if alert %>
-        <div class="alert alert-error"><%= alert %></div>
-      <% end %>
+      <div id="flash"><%= render "layouts/flash" %></div>
 
       <%= yield %>
     </main>
 
     <%= render "layouts/activity_panel" %>
-    <%= render "layouts/command_palette" unless security_lock_screen %>
+
+    <% if show_notes %>
+      <div class="app-notes-bar">
+        <div class="kb-notes-bar">
+          <div class="kb-notes-tab-strip" data-action="click->kb-notes#barClick">
+            <div class="kb-notes-tabs" data-kb-notes-target="tabList"></div>
+            <button class="kb-notes-add-btn" data-action="click->kb-notes#addTab" title="Add note tab">+</button>
+            <%= render "layouts/shortcut_cheatsheet" %>
+          </div>
+          <div class="kb-notes-panel-overlay" data-kb-notes-target="panel">
+            <div class="kb-notes-editor-body">
+              <div data-kb-notes-target="editorEl"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    <% end %>
   </body>
 </html>

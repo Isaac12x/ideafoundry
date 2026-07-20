@@ -1,0 +1,32 @@
+<div class="crm-table-wrap" id="crm-table">
+  <% licensors.group_by(&:idea).each do |idea, rows| %>
+    <div class="crm-tgroup">
+      <div class="crm-tgroup__head">
+        <%= link_to idea.title, idea_path(idea), class: "crm-tgroup__idea" %>
+        <span class="crm-tgroup__count"><%= rows.size %></span>
+      </div>
+      <table class="crm-table">
+        <thead>
+          <tr>
+            <th>Company</th><th>Stage</th><th>Contact</th><th>Last contacted</th><th>Next action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% rows.each do |licensor| %>
+            <tr class="crm-trow">
+              <td>
+                <a href="<%= licensor_path(licensor) %>" data-turbo-frame="licensor-panel" class="crm-trow__company">
+                  <%= licensor.company %>
+                </a>
+              </td>
+              <td><%= render "licensors/stage_pill", stage: licensor.stage %></td>
+              <td class="crm-trow__contact"><%= [licensor.contact_name, licensor.contact_email].reject(&:blank?).join(" · ").presence || "—" %></td>
+              <td class="crm-trow__muted"><%= licensor.last_contacted_at ? "#{time_ago_in_words(licensor.last_contacted_at)} ago" : "—" %></td>
+              <td class="crm-trow__muted"><%= licensor.next_action.presence || "—" %></td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  <% end %>
+</div>

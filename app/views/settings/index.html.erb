@@ -2,13 +2,40 @@
 <div class="settings-container">
   <div class="page-header">
     <h2>Settings</h2>
-    <%= link_to ideas_path, class: "btn btn-sm" do %>
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-      Back to Ideas
-    <% end %>
+    <div style="display:flex;gap:0.5rem;align-items:center;">
+      <button class="btn btn-sm" title="Activity log" data-action="click->activity-panel#open">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        Activity
+      </button>
+    </div>
   </div>
 
   <div class="settings-list">
+    <div class="settings-group-label">Features</div>
+
+    <%= form_with url: settings_features_path, method: :patch, local: true,
+          class: "settings-features-form", data: { controller: "settings-autosave" } do |form| %>
+      <div class="tab-toggle-list">
+        <% User::FEATURE_KEYS.each do |key| %>
+          <label class="tab-toggle" for="feature_<%= key %>">
+            <div class="tab-toggle__text">
+              <span class="tab-toggle__name"><%= User::FEATURE_LABELS[key] %></span>
+              <span class="tab-toggle__description"><%= User::FEATURE_DESCRIPTIONS[key] %></span>
+            </div>
+            <span class="tab-toggle__switch">
+              <%= hidden_field_tag "features[#{key}]", "0", id: nil %>
+              <%= check_box_tag "features[#{key}]", "1", @user.feature_enabled?(key),
+                    id: "feature_#{key}", class: "tab-toggle__input",
+                    data: { action: "change->settings-autosave#toggleChanged" } %>
+              <span class="tab-toggle__track" aria-hidden="true">
+                <span class="tab-toggle__thumb"></span>
+              </span>
+            </span>
+          </label>
+        <% end %>
+      </div>
+    <% end %>
+
     <div class="settings-group-label">Appearance</div>
 
     <%= link_to settings_display_path, class: "settings-row" do %>
@@ -81,12 +108,14 @@
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
     <% end %>
 
-    <%= link_to settings_kb_path, class: "settings-row" do %>
-      <div class="settings-row-info">
-        <h3>KB Folders</h3>
-        <p>Configure folders of markdown documents for the Knowledge Base</p>
-      </div>
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+    <% if feature_enabled?(:kb) %>
+      <%= link_to settings_kb_path, class: "settings-row" do %>
+        <div class="settings-row-info">
+          <h3>KB Folders</h3>
+          <p>Configure folders of markdown documents for the Knowledge Base</p>
+        </div>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+      <% end %>
     <% end %>
 
     <%= link_to settings_api_keys_path, class: "settings-row" do %>

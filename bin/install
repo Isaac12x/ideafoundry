@@ -38,6 +38,21 @@ if ! command -v node &>/dev/null; then
   brew install node
 fi
 
+# --- Local media editing toolchain ---
+typeset -A MEDIA_PACKAGES=(
+  ffmpeg ffmpeg
+  magick imagemagick
+  gs ghostscript
+  pdftk pdftk-java
+  pdfinfo poppler
+)
+for command package in ${(kv)MEDIA_PACKAGES}; do
+  if ! command -v "$command" &>/dev/null; then
+    echo "==> Installing media editor dependency: $package..."
+    brew install "$package"
+  fi
+done
+
 # --- Caddy ---
 if ! command -v caddy &>/dev/null; then
   echo "==> Installing Caddy..."

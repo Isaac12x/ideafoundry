@@ -1,0 +1,22 @@
+<div class="licensors-tab" id="licensors_tab_<%= idea.id %>">
+  <div class="licensors-tab__intro">
+    <p>Potential licensors for this idea. Advance stages and log contacts here, or manage the full pipeline in the
+      <%= link_to "Licensing CRM →", licensing_crm_path, class: "licensors-crm-link" %>.</p>
+  </div>
+
+  <%= render "licensors/form", idea: idea, licensor: (local_assigns[:licensor] || Licensor.new) %>
+
+  <div class="licensors-list" id="licensors_list_<%= idea.id %>">
+    <% licensors = idea.licensors.ordered %>
+    <% if licensors.any? %>
+      <% licensors.each do |l| %>
+        <%= render "licensors/licensor", licensor: l %>
+      <% end %>
+    <% else %>
+      <div class="licensors-empty">
+        <p>No potential licensors yet</p>
+        <span class="notes-empty-hint">Add your first licensor above</span>
+      </div>
+    <% end %>
+  </div>
+</div>

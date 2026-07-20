@@ -1,10 +1,10 @@
 class IdeasController < ApplicationController
   before_action :set_user
-  before_action :set_idea, only: [:show, :edit, :update, :destroy, :send_email, :approve_pending_email, :discard_pending_email, :enrich, :enrichment_status, :archive, :restore, :add_to_list]
+  before_action :set_idea, only: [:show, :edit, :update, :destroy, :send_email, :approve_pending_email, :discard_pending_email, :enrich, :enrichment_status, :archive, :restore, :add_to_list, :create_version, :make_primary]
   before_action :check_cool_off_period, only: [:edit, :update]
 
   def index
-    @ideas = @user.ideas.non_draft.includes(:lists, :idea_lists, :topologies, :idea_entries)
+    @ideas = @user.ideas.non_draft.primary_or_standalone.includes(:lists, :idea_lists, :topologies, :idea_entries)
     @user.default_kanban_board if @user.kanban_boards.none?
     @kanban_boards = @user.kanban_boards.ordered.includes(:lists)
     @named_lists = @user.lists.named.ordered
@@ -257,6 +257,20 @@ class IdeasController < ApplicationController
     end
   end
 
+  # POST /ideas/:id/create_version
+  def create_version
+    copy = @idea.create_new_version!
+    redirect_to idea_path(copy), notice: "Created v#{copy.version_number}."
+  rescue => e
+    redirect_to idea_path(@idea), alert: "Could not create version: #{e.message}"
+  end
+
+  # POST /ideas/:id/make_primary
+  def make_primary
+    @idea.make_primary_version!
+    redirect_to idea_path(@idea), notice: "v#{@idea.version_number} is now the primary version."
+  end
+
   # GET /ideas/search?q=...
   # Quick search endpoint returning JSON results.
   def search
@@ -467,7 +481,7 @@ class IdeasController < ApplicationController
 
   def idea_params
     permitted = params.require(:idea).permit(
-      :title, :tldr, :state, :template_id,
+      :title, :tldr, :state, :template_id, :for_licensing,
       :trl, :difficulty, :opportunity, :timing,
       :difficulty_explanation, :opportunity_explanation, :timing_explanation,
       :description,
@@ -564,7 +578,7 @@ class IdeasController < ApplicationController
   end
 
   def apply_sorting(ideas)
-    sort_by = params[:sort_by] || 'created_at'
+    sort_by = params[:sort_by] || 'score'
     sort_order = params[:sort_order] || 'desc'
     
     case sort_by

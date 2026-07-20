@@ -1,0 +1,14 @@
+<a class="crm-card" id="crm_card_<%= licensor.id %>"
+   href="<%= licensor_path(licensor) %>" data-turbo-frame="licensor-panel"
+   draggable="true"
+   data-licensor-board-target="card"
+   data-id="<%= licensor.id %>" data-stage="<%= licensor.stage %>">
+  <span class="crm-card__company"><%= licensor.company %></span>
+  <span class="crm-card__idea"><%= licensor.idea.title %></span>
+  <div class="crm-card__foot">
+    <span class="crm-card__contact"><%= licensor.contact_name.presence || licensor.contact_email.presence || "—" %></span>
+    <span class="crm-card__contacted">
+      <%= licensor.last_contacted_at ? "#{time_ago_in_words(licensor.last_contacted_at)} ago" : "—" %>
+    </span>
+  </div>
+</a>

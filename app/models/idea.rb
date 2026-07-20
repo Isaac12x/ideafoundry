@@ -16,7 +16,9 @@ class Idea < ApplicationRecord
   has_many :todo_items, dependent: :destroy
   has_many :notes, dependent: :destroy
   has_many :idea_entries, dependent: :destroy
+  has_many :licensors, dependent: :destroy
   has_many :drawings, dependent: :destroy
+  has_many :mood_images, dependent: :destroy
   has_one :github_repository, dependent: :destroy
   has_one_attached :hero_image
   has_many_attached :attachments
@@ -65,6 +67,7 @@ class Idea < ApplicationRecord
   # Scopes
   scope :active, -> { where.not(state: [:rejected, :shipped]).where(discarded_at: nil, draft: false) }
   scope :non_draft, -> { where(draft: false) }
+  scope :for_licensing, -> { where(for_licensing: true) }
   scope :drafts, -> { where(draft: true) }
   scope :stale_drafts, ->(older_than = 24.hours.ago) { drafts.where("ideas.updated_at < ?", older_than) }
   scope :by_state, ->(state) { where(state: state) }
@@ -74,6 +77,8 @@ class Idea < ApplicationRecord
   scope :kept, -> { where(discarded_at: nil) }
   scope :discarded, -> { where.not(discarded_at: nil) }
   scope :with_discarded, -> { unscope(:where).where.not(discarded_at: nil) }
+  # Standalone ideas (no versions) plus the primary of each version group — what index/lists should show
+  scope :primary_or_standalone, -> { where("version_group_id IS NULL OR version_primary = ?", true) }
 
   def hero_drawing
     drawings.hero.first
@@ -259,6 +264,56 @@ class Idea < ApplicationRecord
   def cool_off_duration_in_words
     return nil unless in_cool_off?
     distance_of_time_in_words(Time.current, cool_off_until)
+  end
+
+  # Idea versions (v1, v2 ...) — full alternate copies linked by version_group_id.
+  # Distinct from `versions` (the per-idea auto-history of snapshots).
+  def versioned?
+    version_group_id.present?
+  end
+
+  def idea_versions
+    return Idea.none unless versioned?
+    Idea.where(version_group_id: version_group_id).order(:version_number)
+  end
+
+  # Deep-copy this idea into a new linked version and make the copy primary.
+  # Reuses Version snapshot/restore so all associations & media are copied for free.
+  def create_new_version!
+    group = version_group_id || id
+    copy = nil
+    transaction do
+      unless versioned?
+        update_columns(version_group_id: id, version_number: 1, version_primary: true)
+      end
+      next_number = Idea.where(version_group_id: group).maximum(:version_number).to_i + 1
+      snapshot = Version.snapshot_for(self)
+
+      self.class.without_history_tracking do
+        copy = Idea.new(user: user, state: state, title: title)
+        copy.version_group_id = group
+        copy.version_number = next_number
+        copy.version_primary = false
+        copy.save!(validate: false)
+        Version.new(idea: copy, commit_message: "seed", snapshot_data: snapshot)
+               .apply_snapshot_to(copy, include_lists: false)
+        copy.update_columns(integrity_hash: nil) # ponytail: fresh copy shouldn't share dedup hash
+      end
+
+      Idea.where(version_group_id: group).update_all(version_primary: false)
+      copy.update_columns(version_primary: true)
+    end
+    copy.record_history!("Created v#{copy.version_number} from v#{version_number}", force: true)
+    copy
+  end
+
+  def make_primary_version!
+    return false unless versioned?
+    transaction do
+      Idea.where(version_group_id: version_group_id).update_all(version_primary: false)
+      update_columns(version_primary: true)
+    end
+    true
   end
 
   # Version control methods
