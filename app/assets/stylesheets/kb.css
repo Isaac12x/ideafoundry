@@ -1672,7 +1672,7 @@ body.has-notes-bar.kb-page .kb-content-area {
   display: flex;
   align-items: center;
   gap: 0.9rem;
-  padding: 0.2rem 0 1rem;
+  padding: 1.15rem 1.25rem 1rem;
 }
 
 .kb-default-icon-settings__preview strong {
@@ -1705,17 +1705,9 @@ body.has-notes-bar.kb-page .kb-content-area {
   object-fit: cover;
 }
 
-.kb-default-icon-settings .kb-icon-tabs {
-  margin-inline: -0.2rem;
-  padding-inline: 0.2rem;
-}
-
-.kb-default-icon-settings .kb-icon-panel {
-  padding-inline: 0;
-}
-
 .kb-icon-reset {
   justify-self: start;
+  margin: 0 1.25rem 1.15rem;
 }
 
 @media (pointer: coarse) {
