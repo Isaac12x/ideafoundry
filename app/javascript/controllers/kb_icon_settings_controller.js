@@ -33,6 +33,7 @@ export default class extends Controller {
     this.element.querySelectorAll(".kb-emoji-choice").forEach((button) => {
       button.classList.toggle("is-selected", button === event.currentTarget)
     })
+    this.notifyChange()
   }
 
   imageChanged() {
@@ -57,5 +58,11 @@ export default class extends Controller {
     this.previewTarget.textContent = "📁"
     this.previewTarget.classList.remove("has-image")
     this.element.querySelectorAll(".kb-emoji-choice").forEach((button) => button.classList.remove("is-selected"))
+    this.notifyChange()
+  }
+
+  // Hidden fields set from JS don't emit change; fire one so form-level autosave sees it
+  notifyChange() {
+    this.element.dispatchEvent(new Event("change", { bubbles: true }))
   }
 }

@@ -10,7 +10,7 @@ class ApplicationController < ActionController::Base
   VOICE_ID_RETURN_TO_SESSION_KEY = "voice_id_return_to"
   VOICE_ID_TIMEOUT = 5.minutes
 
-  helper_method :backlog_enabled?
+  helper_method :backlog_enabled?, :feature_enabled?
 
   prepend_around_action :with_recovery_secret_from_session
   prepend_before_action :set_user
@@ -66,6 +66,17 @@ class ApplicationController < ActionController::Base
 
   def backlog_enabled?
     Rails.application.config.x.backlog_enabled == true
+  end
+
+  def feature_enabled?(key)
+    set_user unless defined?(@user) && @user
+    @user.feature_enabled?(key)
+  end
+
+  def require_feature(key)
+    return if feature_enabled?(key)
+
+    redirect_to root_path, alert: "#{User::FEATURE_LABELS[key.to_s] || key.to_s.humanize} is not enabled."
   end
 
   def require_typing_unlock

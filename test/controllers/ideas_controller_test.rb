@@ -22,7 +22,7 @@ class IdeasControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_select "body[data-controller~=?]", "shortcuts"
     assert_select "body[data-shortcuts-ideas-url-value=?]", ideas_path
-    assert_select ".kb-notes-tab-strip .shortcuts-toggle[title=?]", "Keyboard shortcuts (/shortcuts/)", text: "/shortcuts/"
+    assert_select ".kb-notes-tab-strip .shortcuts-toggle[title=?]", "Keyboard shortcuts", text: "⌘"
     assert_select ".shortcuts-panel[data-shortcuts-target=?]", "panel"
     assert_select ".command-palette[data-controller=?][data-command-palette-search-url-value=?]",
                   "command-palette", search_ideas_path
