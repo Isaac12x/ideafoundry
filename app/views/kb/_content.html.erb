@@ -1,15 +1,132 @@
 <% kind = content&.kind %>
-<% if kind == :markdown && content.html.present? %>
-  <article class="kb-markdown rich-text-content">
-    <%= content.html %>
-  </article>
-<% elsif kind == :embed %>
-  <iframe class="kb-embed"
-          src="<%= content.raw_url %>"
-          sandbox
-          referrerpolicy="no-referrer"
-          loading="lazy"
-          title="<%= selected_file %>"></iframe>
+<% if content.present? && kind != :missing %>
+  <% copyable_media = %i[image video].include?(kind) %>
+  <div class="kb-document kb-document--<%= kind %>"
+       <% if copyable_media %>
+         data-controller="kb-media-copy"
+         data-kb-media-copy-url-value="<%= content.serve_url %>"
+         data-kb-media-copy-mime-type-value="<%= content.mime_type %>"
+         data-kb-media-copy-filename-value="<%= content.filename %>"
+       <% end %>>
+    <%= render "kb/file_metadata", content: content %>
+
+    <div class="kb-document__body kb-document__body--<%= kind %>">
+      <% if kind == :markdown %>
+        <div class="kb-markdown-wrap"
+             data-controller="kb-resume"
+             data-kb-resume-key-value="<%= content.src %>:<%= content.rel %>">
+          <article class="kb-markdown rich-text-content">
+            <% if content.html.present? %>
+              <%= content.html %>
+            <% else %>
+              <p class="kb-markdown-blank">This file is empty. Hit Edit to start writing.</p>
+            <% end %>
+          </article>
+        </div>
+
+      <% elsif kind == :embed %>
+        <iframe class="kb-embed"
+                src="<%= content.raw_url %>"
+                sandbox
+                referrerpolicy="no-referrer"
+                loading="lazy"
+                title="<%= content.filename %>"></iframe>
+
+      <% elsif kind == :pdf %>
+        <div class="kb-pdf-wrap">
+          <div class="kb-pdf-viewer"
+               data-controller="kb-pdf"
+               data-kb-pdf-url-value="<%= content.serve_url %>"
+               data-kb-pdf-key-value="<%= content.src %>:<%= content.rel %>"
+               title="<%= content.filename %>"></div>
+          <% if content.output_rel.present? %>
+            <div class="kb-media-action-bar">
+              <%= link_to "View extracted knowledge", kb_file_path(src: content.src, file: content.output_rel),
+                    data: { turbo_frame: "kb-content" }, class: "btn btn-sm" %>
+            </div>
+          <% end %>
+        </div>
+
+      <% elsif kind == :image %>
+        <div class="kb-image-view">
+          <img src="<%= content.serve_url %>"
+               alt="<%= content.filename %>"
+               class="kb-image-preview kb-selectable-media"
+               draggable="true"
+               tabindex="0"
+               title="Select, then press Ctrl/Cmd+C to copy"
+               data-action="click->kb-media-copy#select keydown->kb-media-copy#copyFromShortcut" />
+          <% if content.output_rel.present? %>
+            <%= link_to "View extracted knowledge", kb_file_path(src: content.src, file: content.output_rel),
+                  data: { turbo_frame: "kb-content" }, class: "btn btn-sm" %>
+          <% end %>
+        </div>
+
+      <% elsif kind == :video %>
+        <div class="kb-video-view">
+          <video class="kb-video-player kb-selectable-media"
+                 controls
+                 preload="metadata"
+                 tabindex="0"
+                 title="Select, then press Ctrl/Cmd+C to copy"
+                 data-action="click->kb-media-copy#select keydown->kb-media-copy#copyFromShortcut"
+                 data-controller="kb-resume"
+                 data-kb-resume-key-value="<%= content.src %>:<%= content.rel %>">
+            <source src="<%= content.serve_url %>" type="<%= content.mime_type %>">
+            Your browser does not support video playback.
+          </video>
+        </div>
+
+      <% elsif kind == :audio %>
+        <div class="kb-audio-view">
+          <audio class="kb-audio-player" controls preload="metadata"
+                 data-controller="kb-resume"
+                 data-kb-resume-key-value="<%= content.src %>:<%= content.rel %>">
+            <source src="<%= content.serve_url %>" type="<%= content.mime_type %>">
+            Your browser does not support audio playback.
+          </audio>
+        </div>
+
+      <% elsif kind == :long_doc %>
+        <% extraction = content.extraction %>
+        <article class="kb-long-doc">
+          <header class="kb-long-doc__header">
+            <p class="kb-long-doc__hint">Right-click this file in the sidebar to extract its knowledge as markdown.</p>
+          </header>
+
+          <% if extraction&.in_flight? %>
+            <div class="kb-long-doc__status"
+                 data-controller="extraction-status"
+                 data-extraction-status-url-value="<%= kb_file_path(src: content.src, file: content.rel) %>"
+                 data-extraction-status-active-value="true">
+              <p><strong><%= extraction.status.humanize %></strong>
+                <% if extraction.page_count.to_i.positive? %>
+                  — page <%= extraction.pages_done %>/<%= extraction.page_count %> (<%= extraction.progress_percent %>%)
+                <% end %>
+              </p>
+              <progress max="100" value="<%= extraction.progress_percent %>"></progress>
+            </div>
+          <% else %>
+            <% if extraction&.failed? %>
+              <p class="kb-long-doc__error">Last extraction failed: <%= extraction.error %></p>
+            <% end %>
+            <% if content.output_rel.present? %>
+              <%= link_to "View extracted knowledge", kb_file_path(src: content.src, file: content.output_rel),
+                    data: { turbo_frame: "kb-content" }, class: "btn btn-sm" %>
+            <% end %>
+          <% end %>
+        </article>
+      <% elsif kind == :generic %>
+        <div class="kb-generic-file">
+          <%= render "kb/file_icon", extension: File.extname(content.filename).downcase %>
+          <p>This file is stored in the knowledge base but does not have an inline preview.</p>
+          <%= link_to "Download #{content.filename}", content.serve_url,
+                class: "btn btn-primary btn-sm", data: { turbo: false } %>
+        </div>
+      <% end %>
+    </div>
+  </div>
+
 <% elsif defined?(selected_file) && selected_file.present? %>
   <div class="kb-content-empty">
     <p>File not found or could not be read.</p>

@@ -1,0 +1,5 @@
+<%= turbo_stream.update "flash", partial: "layouts/flash" %>
+<%= turbo_stream.replace "kb-sidebar-tree", partial: "kb/tree" %>
+<% if @update_content %>
+  <%= turbo_stream.update "kb-content", partial: "kb/content", locals: { content: @content, selected_file: @selected_file } %>
+<% end %>

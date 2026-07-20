@@ -5,7 +5,9 @@ class KbLayoutStylesTest < ActiveSupport::TestCase
     view = Rails.root.join("app/views/kb/index.html.erb").read
     css = Rails.root.join("app/assets/stylesheets/kb.css").read
 
-    assert_includes view, '<div class="kb-shell" data-controller="tabs" data-tabs-default-tab-value="<%= kb_default_tab %>">'
+    assert_includes view, '<div class="kb-shell"'
+    assert_includes view, 'data-controller="tabs kb-tree"'
+    assert_includes view, 'data-tabs-default-tab-value="<%= kb_default_tab %>"'
     assert_includes view, 'data-tab-panel="facts" class="kb-panel-full kb-facts-panel-full hidden"'
     assert_includes view, 'data-tab-panel="maxims" class="kb-panel-full kb-maxims-panel-full hidden"'
 

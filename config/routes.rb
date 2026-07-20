@@ -38,7 +38,11 @@ Rails.application.routes.draw do
   get "submissions/import/:source/oauth", to: "submission_imports#oauth", as: :oauth_submission_import
   get "submissions/import/:source/oauth/callback", to: "submission_imports#oauth_callback", as: :oauth_callback_submission_import
 
-  resources :submissions, only: [:index, :show, :destroy] do
+  # Intake (submission review queue) lives under Ideas
+  get "ideas/intake", to: "submissions#index", as: :ideas_intake
+  get "submissions", to: redirect("/ideas/intake")
+
+  resources :submissions, only: [:show, :destroy] do
     member do
       post :approve
       post :reject
@@ -69,6 +73,8 @@ Rails.application.routes.draw do
       post :archive
       post :restore
       post :add_to_list
+      post :create_version
+      post :make_primary
     end
     collection do
       get :archived
@@ -78,9 +84,12 @@ Rails.application.routes.draw do
     resources :attachments, only: [:create, :destroy, :update], controller: :idea_attachments do
       collection do
         patch :reorder
+        get :search
       end
       member do
         post :ocr
+        post :extract_knowledge
+        get :extraction_status
         patch :update
       end
     end
@@ -102,14 +111,28 @@ Rails.application.routes.draw do
     end
     resources :notes, only: [:create, :destroy]
     resources :idea_entries, only: [:create, :update, :destroy]
+    resources :licensors, only: [:create]
     resources :drawings, only: [:new, :show, :create, :update, :destroy]
     resources :agent_tokens, only: [:create, :destroy], controller: :idea_agent_tokens
   end
 
-  # Lists and drag-and-drop functionality
-  resources :kanban_boards, only: [:create]
+  # Licensing CRM
+  resources :licensors, only: [:show, :update, :destroy] do
+    resources :contacts, only: [:create, :destroy], controller: :licensor_contacts
+  end
+  namespace :licensing do
+    get "crm", to: "crm#index"
+  end
 
-  resources :lists do
+  # Planning (kanban boards + named lists) and drag-and-drop functionality
+  resources :kanban_boards, only: [:create, :destroy] do
+    member do
+      patch :move
+    end
+  end
+
+  get "lists", to: redirect("/planning"), as: :legacy_lists
+  resources :lists, path: "planning" do
     member do
       post :send_email
       post :add_idea
@@ -122,6 +145,9 @@ Rails.application.routes.draw do
 
   # Uploads for TipTap editor images
   resources :uploads, only: [:create]
+
+  # Think in Images — visual thinking board (idea-scoped or global/KB board)
+  resources :mood_images, only: [:create, :update, :destroy]
 
   # Topology management
   resources :topologies do
@@ -140,6 +166,7 @@ Rails.application.routes.draw do
   # Settings management
   get 'settings', to: 'settings#index'
   patch 'settings', to: 'settings#update_display'
+  patch 'settings/features', to: 'settings#update_features', as: :settings_features
   get 'settings/display', to: 'settings#display', as: :settings_display
   patch 'settings/display', to: 'settings#update_display'
   get 'settings/scoring', to: 'settings#scoring'
@@ -206,10 +233,28 @@ Rails.application.routes.draw do
   get 'knowledge-base/file', to: 'kb#file', as: :kb_file
   get 'kb/file', to: redirect('/knowledge-base/file')
   get 'knowledge-base/raw', to: 'kb#raw', as: :kb_raw
+  get 'knowledge-base/serve', to: 'kb#serve', as: :kb_serve
+  post 'knowledge-base/extract', to: 'kb#extract', as: :kb_extract
+  get 'knowledge-base/edit', to: 'kb#edit', as: :kb_edit
+  patch 'knowledge-base/save', to: 'kb#fs_save', as: :kb_fs_save
+  post 'knowledge-base/media-edits', to: 'kb_media_edits#create', as: :kb_media_edits
+  get 'knowledge-base/media-edits/:id', to: 'kb_media_edits#show', as: :kb_media_edit
+  post 'knowledge-base/fs/create', to: 'kb#fs_create', as: :kb_fs_create
+  post 'knowledge-base/fs/upload', to: 'kb#fs_upload', as: :kb_fs_upload
+  patch 'knowledge-base/fs/rename', to: 'kb#fs_rename', as: :kb_fs_rename
+  patch 'knowledge-base/fs/move', to: 'kb#fs_move', as: :kb_fs_move
+  patch 'knowledge-base/fs/preference', to: 'kb#fs_preference', as: :kb_fs_preference
+  post 'knowledge-base/fs/open', to: 'kb#fs_open', as: :kb_fs_open
+  delete 'knowledge-base/fs', to: 'kb#fs_delete', as: :kb_fs_delete
+  get 'knowledge-base/tree', to: 'kb#tree', as: :kb_tree
+  post 'knowledge-base/jobs', to: 'kb_fs_jobs#create', as: :kb_fs_jobs
   resources :facts, only: [:create, :destroy]
   resources :maxims, only: [:create, :destroy]
 
   # Settings - KB folders
+  get  'settings/kb/pick-folder', to: 'settings#pick_folder_dialog', as: :settings_kb_pick_folder
+  post 'settings/kb/open-folder', to: 'settings#open_kb_folder',    as: :settings_kb_open_folder
+  post 'settings/kb/mount-drive', to: 'settings#mount_kb_drive',    as: :settings_kb_mount_drive
   get 'settings/kb', to: 'settings#kb', as: :settings_kb
   patch 'settings/kb', to: 'settings#update_kb'
   get 'settings/activity', to: 'settings#activity', as: :settings_activity

@@ -14,7 +14,7 @@
       Software ideas with a GitHub URL are checked for repository metadata and release availability.
     </p>
 
-    <%= form_with url: settings_github_path, method: :patch, local: true do |form| %>
+    <%= form_with url: settings_github_path, method: :patch, local: true, data: { controller: "settings-autosave", action: "change->settings-autosave#toggleChanged" } do |form| %>
       <div class="form-group">
         <%= label_tag "github_settings_token", "GitHub Token" %>
         <%= password_field_tag "github_settings[token]",
@@ -41,9 +41,6 @@
             placeholder: "https://api.github.com" %>
       </div>
 
-      <div class="config-actions">
-        <%= form.submit "Save GitHub Settings", class: "btn btn-primary" %>
-      </div>
     <% end %>
   </div>
 </div>

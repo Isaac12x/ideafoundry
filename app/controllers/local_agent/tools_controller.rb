@@ -43,9 +43,12 @@ module LocalAgent
     end
 
     def agent_run
-      return if params[:agent_run_id].blank?
+      # The Python runner sends the run id as a header; accept the param too.
+      run_id = params[:agent_run_id].presence ||
+               request.headers["X-Idea-Foundry-Agent-Run-Id"].presence
+      return if run_id.blank?
 
-      @user.agent_runs.find_by(id: params[:agent_run_id])
+      @user.agent_runs.find_by(id: run_id)
     end
 
     def root_tool_name

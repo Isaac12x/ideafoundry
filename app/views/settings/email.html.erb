@@ -12,13 +12,13 @@
 
   <div class="scoring-config-layout">
     <div class="scoring-config-main">
+      <%= form_with url: settings_notifications_path, method: :patch, local: true, data: { controller: "settings-autosave", action: "change->settings-autosave#toggleChanged" } do |f| %>
       <div class="config-section">
         <h3>Email Configuration</h3>
         <p class="config-description">
-          Configure default recipients and sender details for sharing ideas and lists via email.
+          Configure default recipients for sharing ideas and lists via email.
         </p>
 
-        <%= form_with url: settings_email_path, method: :patch, local: true do |f| %>
           <div class="weight-grid">
             <div class="weight-item" style="grid-column: 1 / -1;">
               <label class="weight-label">Default Recipients</label>
@@ -32,39 +32,7 @@
                        placeholder="alice@example.com, bob@example.com">
               </div>
             </div>
-
-            <div class="weight-item">
-              <label class="weight-label">From Name</label>
-              <span class="weight-description">Sender name displayed in emails</span>
-              <div class="weight-input-group">
-                <input type="text"
-                       name="email_settings[from_name]"
-                       value="<%= @email_settings['from_name'] %>"
-                       class="weight-input"
-                       style="text-align: left;"
-                       placeholder="<%= @user.name %>">
-              </div>
-            </div>
-
-            <div class="weight-item">
-              <label class="weight-label">From Email</label>
-              <span class="weight-description">Sender email address</span>
-              <div class="weight-input-group">
-                <input type="email"
-                       name="email_settings[from_email]"
-                       value="<%= @email_settings['from_email'] %>"
-                       class="weight-input"
-                       style="text-align: left;"
-                       placeholder="<%= @user.email %>">
-              </div>
-            </div>
           </div>
-
-          <div class="config-actions">
-            <%= f.submit "Save Email Settings", class: "btn btn-primary" %>
-            <%= link_to "Cancel", settings_path, class: "btn" %>
-          </div>
-        <% end %>
       </div>
       <div class="" style="margin-top: 2rem;">
         <div class="">
@@ -74,7 +42,6 @@
               Choose which events trigger email notifications. Emails are sent to the recipients configured above.
             </p>
 
-            <%= form_with url: settings_notifications_path, method: :patch, local: true, data: { controller: "settings-autosave" } do |f| %>
               <div class="email-trigger-list">
                 <% User::ALLOWED_NOTIFICATION_TRIGGERS.each do |trigger| %>
                   <div class="email-trigger-item">
@@ -83,8 +50,7 @@
                            value="<%= trigger %>"
                            id="trigger_<%= trigger %>"
                            <%= 'checked' if @notification_triggers.include?(trigger) %>
-                           class="email-checkbox"
-                           data-action="change->settings-autosave#toggleChanged">
+                           class="email-checkbox">
                     <label for="trigger_<%= trigger %>" class="email-trigger-label">
                       <%= trigger.humanize %>
                     </label>
@@ -122,8 +88,7 @@
                                name="notification_content[<%= evt %>][include_scores]"
                                value="true"
                                <%= 'checked' if (@notification_content.dig(evt, 'include_scores') != false) %>
-                               class="email-checkbox"
-                               data-action="change->settings-autosave#toggleChanged">
+                               class="email-checkbox">
                         Scores
                       </label>
                       <label class="email-event-toggle">
@@ -132,8 +97,7 @@
                                name="notification_content[<%= evt %>][include_description]"
                                value="true"
                                <%= 'checked' if (@notification_content.dig(evt, 'include_description') != false) %>
-                               class="email-checkbox"
-                               data-action="change->settings-autosave#toggleChanged">
+                               class="email-checkbox">
                         Description
                       </label>
                       <% if evt == "webhook_triggered" %>
@@ -143,8 +107,7 @@
                                  name="notification_content[<%= evt %>][include_external_content]"
                                  value="true"
                                  <%= 'checked' if (@notification_content.dig(evt, 'include_external_content') != false) %>
-                                 class="email-checkbox"
-                                 data-action="change->settings-autosave#toggleChanged">
+                                 class="email-checkbox">
                           External content
                         </label>
                       <% end %>
@@ -153,13 +116,10 @@
                 <% end %>
               </div>
 
-              <div class="config-actions">
-                <%= f.submit "Save Notification Preferences", class: "btn btn-primary" %>
-              </div>
-            <% end %>
           </div>
         </div>
       </div>
+      <% end %>
     </div>
 
     <div class="scoring-config-sidebar">

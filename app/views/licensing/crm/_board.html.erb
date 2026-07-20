@@ -1,0 +1,18 @@
+<div id="crm-board" class="crm-board" data-controller="licensor-board">
+  <% Licensor::STAGE_ORDER.each do |stage| %>
+    <% cards = by_stage[stage] || [] %>
+    <section class="crm-col" style="--stage-hue: <%= Licensor.stage_hue(stage) %>">
+      <header class="crm-col__head">
+        <span class="crm-col__name"><%= Licensor.stage_label(stage) %></span>
+        <span class="crm-col__count"><%= cards.size %></span>
+      </header>
+      <div class="crm-col__cards"
+           data-licensor-board-target="column"
+           data-stage="<%= stage %>">
+        <% cards.each do |licensor| %>
+          <%= render "licensing/crm/card", licensor: licensor %>
+        <% end %>
+      </div>
+    </section>
+  <% end %>
+</div>

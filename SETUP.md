@@ -11,6 +11,10 @@
 - **libvips** (for image processing)
   - macOS: `brew install vips`
   - Debian/Ubuntu: `apt-get install libvips`
+- **Local media toolchain** (for knowledge-base video, audio, image metadata, and PDF editing)
+  - macOS: `brew install ffmpeg imagemagick ghostscript pdftk-java poppler`
+  - Debian/Ubuntu: `apt-get install ffmpeg imagemagick ghostscript pdftk-java poppler-utils`
+  - `bin/install` installs missing tools automatically on macOS; the production Docker image includes them.
 
 ## Local Development Setup
 
@@ -88,6 +92,33 @@ The first OCR request downloads the Surya model into the `ocr-model-cache` compo
 and can take several minutes.
 The service returns complete plain text for saving plus Surya HTML blocks in metadata for
 rendering extracted pages.
+
+### On-demand knowledge extraction (long documents)
+
+Short documents keep the synchronous Surya path above. Documents longer than
+`OCR_LONG_DOC_PAGE_THRESHOLD` pages (default 10) — books, patents — are routed to
+a heavy **Unlimited-OCR** backend that runs *on demand*: started when an
+extraction is enqueued and stopped after `OCR_LONG_IDLE_TIMEOUT` seconds of
+idle. Output is parsed markdown kept beside the source — written next to the
+book in its KB folder, or attached to the idea (and mirrored into attachment
+search + enrichment). Extractions run on the isolated `long_ocr` Solid Queue
+worker so they never block normal jobs. You can also force the heavy path from
+the UI with **Extract knowledge**.
+
+Backend selection (`OCR_LONG_BACKEND=auto|vllm|llamacpp|remote`):
+
+- **vllm** — NVIDIA box, recipe image (`unlimited-ocr` compose service, `gpu` profile).
+- **llamacpp** — Apple Silicon / CPU port via `llama-server` (`unlimited-ocr-llama`); see `long_ocr_service/README.md`.
+- **remote** — set `OCR_LONG_SERVICE_URL` to an already-running endpoint (no lifecycle management).
+
+```bash
+# Build the on-demand backends (kept out of the default graph):
+docker compose --profile gpu build unlimited-ocr-llama
+```
+
+Lifecycle management drives `docker compose` and therefore needs docker CLI
+access on whatever host runs the `long_ocr` worker (host launchd run, a mounted
+docker socket, or a remote backend).
 
 When Rails runs directly under launchd/systemd, `bin/start_idea_app.sh` starts compose sidecars in the background **without blocking Rails**. Sidecar startup uses existing images only (`docker compose up -d --no-build` per service); it does not rebuild OCR on every boot. Voice ID and OCR are optional — if a sidecar image is missing or fails to start, the app still comes up and only that feature is unavailable until you build or fix the service manually.
 
