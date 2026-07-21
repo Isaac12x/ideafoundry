@@ -5,22 +5,29 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta
       name="description"
-      content="Idea Foundry is a private idea management system for capturing, scoring, organizing, and shipping entrepreneurial ideas."
+      content="Idea Foundry is the CRM and planner for ideas: capture in seconds, score, develop, then build, sell, or pass on — local, encrypted, with full provenance."
     >
-    <title>Idea Foundry | Personal Idea Management</title>
+    <title>Idea Foundry | The CRM + planner for ideas</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..700&display=swap"
+      rel="stylesheet"
+    >
     <style>
       :root {
-        color-scheme: light;
-        --paper: oklch(0.955 0.017 155);
-        --paper-strong: oklch(0.99 0.006 228);
-        --ink: oklch(0.18 0.03 222);
-        --muted: oklch(0.43 0.035 205);
-        --line: oklch(0.82 0.025 172);
-        --forge: oklch(0.56 0.17 28);
-        --copper: oklch(0.69 0.12 58);
-        --verdigris: oklch(0.58 0.13 176);
-        --steel: oklch(0.3 0.045 245);
-        --shadow: 0 26px 60px oklch(0.22 0.035 215 / 18%);
+        color-scheme: dark;
+        --ink: oklch(0.17 0.018 40);
+        --ink-deep: oklch(0.14 0.015 40);
+        --parchment: oklch(0.94 0.018 75);
+        --parchment-dim: oklch(0.78 0.025 70);
+        --muted: oklch(0.66 0.028 55);
+        --line: oklch(0.32 0.02 50);
+        --ember: oklch(0.66 0.17 38);
+        --gold: oklch(0.8 0.11 82);
+        --display: "Fraunces", Charter, "Iowan Old Style", Georgia, serif;
+        --body: Charter, "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+        --ui: "Avenir Next", "Trebuchet MS", sans-serif;
       }
 
       * {
@@ -33,104 +40,15 @@
 
       body {
         margin: 0;
-        background: var(--paper);
-        color: var(--ink);
-        font-family: Charter, "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+        background: var(--ink);
+        color: var(--parchment);
+        font-family: var(--body);
         font-size: 1rem;
         line-height: 1.6;
-        letter-spacing: 0;
       }
 
       a {
         color: inherit;
-      }
-
-      .site-shell {
-        min-height: 100vh;
-        overflow: hidden;
-      }
-
-      .hero {
-        position: relative;
-        display: grid;
-        min-height: 78vh;
-        align-items: end;
-        isolation: isolate;
-        background:
-          linear-gradient(90deg, oklch(0.13 0.035 220 / 90%), oklch(0.19 0.05 175 / 48%)),
-          url("https://raw.githubusercontent.com/Isaac12x/ideafoundry/master/public/idea-foundry-banner.png") center / cover;
-      }
-
-      .hero::after {
-        position: absolute;
-        inset: auto 0 0;
-        height: 38%;
-        content: "";
-        background: linear-gradient(180deg, transparent, var(--paper));
-        z-index: 0;
-      }
-
-      .nav {
-        position: absolute;
-        inset: 0 0 auto;
-        z-index: 2;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 1rem;
-        width: min(1120px, calc(100% - 40px));
-        margin: 0 auto;
-        padding: 1.15rem 0;
-        color: oklch(0.98 0.006 92);
-      }
-
-      .brand {
-        font-family: Avenir Next, "Trebuchet MS", sans-serif;
-        font-size: 0.88rem;
-        font-weight: 800;
-        text-transform: uppercase;
-      }
-
-      .nav-links {
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-        font-family: Avenir Next, "Trebuchet MS", sans-serif;
-        font-size: 0.86rem;
-        font-weight: 700;
-      }
-
-      .nav-links a,
-      .button {
-        text-decoration: none;
-      }
-
-      .hero-inner {
-        position: relative;
-        z-index: 1;
-        width: min(1120px, calc(100% - 40px));
-        margin: 0 auto;
-        padding: 8rem 0 5rem;
-        color: oklch(0.985 0.008 92);
-      }
-
-      .eyebrow {
-        display: flex;
-        align-items: center;
-        gap: 0.7rem;
-        margin: 0 0 1.25rem;
-        font-family: Avenir Next, "Trebuchet MS", sans-serif;
-        font-size: 0.82rem;
-        font-weight: 800;
-        text-transform: uppercase;
-      }
-
-      .eyebrow::before {
-        display: block;
-        width: 3.8rem;
-        height: 0.18rem;
-        content: "";
-        background: var(--copper);
       }
 
       h1,
@@ -140,20 +58,140 @@
         margin-top: 0;
       }
 
+      .content {
+        width: min(1120px, calc(100% - 44px));
+        margin: 0 auto;
+      }
+
+      /* ---------- Hero: full-viewport video gate ---------- */
+
+      .hero {
+        position: relative;
+        display: grid;
+        min-height: 100svh;
+        align-items: end;
+        isolation: isolate;
+        overflow: hidden;
+        background: var(--ink-deep);
+      }
+
+      .hero-video {
+        position: absolute;
+        inset: 0;
+        z-index: -1;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
+      /* Legibility scrims; the bottom one melts the footage into the page ink
+         so scrolling out of the hero is seamless. */
+      .hero::before {
+        position: absolute;
+        inset: 0;
+        z-index: 0;
+        content: "";
+        background:
+          linear-gradient(180deg, oklch(0.14 0.015 40 / 55%), transparent 26%),
+          linear-gradient(180deg, transparent 46%, oklch(0.15 0.016 40 / 82%) 84%, var(--ink));
+      }
+
+      .nav {
+        position: absolute;
+        inset: 0 0 auto;
+        z-index: 2;
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 1rem;
+        width: min(1120px, calc(100% - 44px));
+        margin: 0 auto;
+        padding: 1.4rem 0;
+      }
+
+      .brand {
+        font-family: var(--display);
+        font-size: 1.06rem;
+        font-weight: 600;
+        letter-spacing: 0.01em;
+        text-decoration: none;
+      }
+
+      .nav-links {
+        display: flex;
+        gap: 1.6rem;
+        font-family: var(--ui);
+        font-size: 0.8rem;
+        font-weight: 600;
+        letter-spacing: 0.09em;
+        text-transform: uppercase;
+      }
+
+      .nav-links a {
+        color: var(--parchment-dim);
+        text-decoration: none;
+        transition: color 0.25s ease;
+      }
+
+      .nav-links a:hover {
+        color: var(--parchment);
+      }
+
+      .hero-inner {
+        position: relative;
+        z-index: 1;
+        width: min(1120px, calc(100% - 44px));
+        margin: 0 auto;
+        padding: 9rem 0 clamp(3rem, 7vh, 5.5rem);
+      }
+
+      .meta-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.55rem 1.5rem;
+        margin: 0 0 1.3rem;
+        color: var(--parchment-dim);
+        font-family: var(--ui);
+        font-size: 0.78rem;
+        font-weight: 600;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+
+      .meta-row span::before {
+        margin-right: 0.65rem;
+        content: "";
+        display: inline-block;
+        width: 0.38rem;
+        height: 0.38rem;
+        border-radius: 50%;
+        background: var(--ember);
+        vertical-align: 0.08rem;
+      }
+
       h1 {
-        max-width: 10ch;
-        margin-bottom: 1.15rem;
-        font-size: 4.65rem;
-        line-height: 0.93;
-        font-weight: 800;
+        max-width: 14ch;
+        margin-bottom: 1.1rem;
+        font-family: var(--display);
+        font-size: clamp(2.9rem, 7.4vw, 6rem);
+        font-weight: 550;
+        line-height: 0.98;
+        letter-spacing: -0.015em;
         text-wrap: balance;
       }
 
+      h1 em {
+        font-style: italic;
+        font-weight: 480;
+        color: var(--gold);
+      }
+
       .hero-copy {
-        max-width: 42rem;
-        margin-bottom: 2rem;
-        color: oklch(0.94 0.011 92);
-        font-size: 1.22rem;
+        max-width: 52ch;
+        margin-bottom: 2.1rem;
+        color: var(--parchment-dim);
+        font-size: clamp(1.05rem, 1.6vw, 1.22rem);
+        text-wrap: pretty;
       }
 
       .actions {
@@ -165,161 +203,459 @@
       .button {
         display: inline-flex;
         align-items: center;
-        min-height: 2.9rem;
-        padding: 0.72rem 1rem;
+        justify-content: center;
+        min-height: 3rem;
+        padding: 0.7rem 1.55rem;
         border: 1px solid transparent;
-        border-radius: 6px;
-        font-family: Avenir Next, "Trebuchet MS", sans-serif;
-        font-size: 0.9rem;
-        font-weight: 800;
+        border-radius: 99px;
+        font-family: var(--ui);
+        font-size: 0.88rem;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+        text-decoration: none;
+        transition: background-color 0.25s ease, border-color 0.25s ease, color 0.25s ease;
       }
 
       .button-primary {
-        background: var(--verdigris);
-        color: oklch(0.13 0.03 185);
+        background: var(--parchment);
+        color: oklch(0.2 0.02 40);
+      }
+
+      .button-primary:hover {
+        background: var(--gold);
       }
 
       .button-secondary {
-        border-color: oklch(0.96 0.01 92 / 55%);
-        color: oklch(0.98 0.006 92);
+        border-color: oklch(0.94 0.018 75 / 35%);
+        color: var(--parchment);
       }
+
+      .button-secondary:hover {
+        border-color: oklch(0.94 0.018 75 / 75%);
+      }
+
+      .status-note {
+        margin: 1.5rem 0 0;
+        color: var(--parchment-dim);
+        font-family: var(--display);
+        font-size: 0.95rem;
+        font-style: italic;
+      }
+
+      /* Staggered hero entrance */
+      @media (prefers-reduced-motion: no-preference) {
+        .meta-row,
+        h1,
+        .hero-copy,
+        .actions,
+        .status-note {
+          animation: rise 1s cubic-bezier(0.22, 1, 0.36, 1) both;
+        }
+
+        h1 {
+          animation-delay: 0.15s;
+        }
+
+        .hero-copy {
+          animation-delay: 0.3s;
+        }
+
+        .actions {
+          animation-delay: 0.45s;
+        }
+
+        .status-note {
+          animation-delay: 0.6s;
+        }
+
+        @keyframes rise {
+          from {
+            opacity: 0;
+            transform: translateY(1.4rem);
+          }
+        }
+
+        /* Scroll reveal for bands; the hidden state is applied by JS so the
+           page stays visible without it. */
+        .will-reveal {
+          opacity: 0;
+          transform: translateY(1.6rem);
+          transition: opacity 0.8s cubic-bezier(0.22, 1, 0.36, 1), transform 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        .will-reveal.in {
+          opacity: 1;
+          transform: none;
+        }
+      }
+
+      /* ---------- Bands below the fold ---------- */
 
       .band {
-        padding: 4.8rem 0;
-      }
-
-      .band-alt {
-        background: var(--paper-strong);
-      }
-
-      .content {
-        width: min(1120px, calc(100% - 40px));
-        margin: 0 auto;
-      }
-
-      .intro-grid {
-        display: grid;
-        grid-template-columns: minmax(0, 1.1fr) minmax(280px, 0.9fr);
-        gap: 4rem;
-        align-items: start;
+        padding: clamp(4.5rem, 9vh, 7rem) 0;
       }
 
       .section-kicker {
-        margin-bottom: 0.75rem;
-        color: var(--forge);
-        font-family: Avenir Next, "Trebuchet MS", sans-serif;
-        font-size: 0.78rem;
-        font-weight: 800;
+        margin-bottom: 0.9rem;
+        color: var(--ember);
+        font-family: var(--ui);
+        font-size: 0.76rem;
+        font-weight: 700;
+        letter-spacing: 0.14em;
         text-transform: uppercase;
       }
 
       h2 {
-        max-width: 14ch;
-        margin-bottom: 1.1rem;
-        font-size: 2.8rem;
-        line-height: 1;
-        font-weight: 800;
+        max-width: 18ch;
+        margin-bottom: 1.2rem;
+        font-family: var(--display);
+        font-size: clamp(2rem, 4vw, 3.1rem);
+        font-weight: 550;
+        line-height: 1.04;
+        letter-spacing: -0.01em;
         text-wrap: balance;
       }
 
       .lede {
-        max-width: 47rem;
+        max-width: 56ch;
         color: var(--muted);
-        font-size: 1.13rem;
+        font-size: 1.12rem;
+      }
+
+      /* Capture: type-specimen row of forms an idea can take */
+      .specimen {
+        margin: 2.8rem 0 1.6rem;
+        font-family: var(--display);
+        font-size: clamp(1.9rem, 5.2vw, 4rem);
+        font-weight: 480;
+        font-style: italic;
+        line-height: 1.2;
+        letter-spacing: -0.01em;
+        text-wrap: balance;
+      }
+
+      .specimen span + span::before {
+        content: "·";
+        margin: 0 0.32em;
+        color: var(--gold);
+        font-style: normal;
+      }
+
+      .intro-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(300px, 0.95fr);
+        gap: clamp(2.5rem, 6vw, 5.5rem);
+        align-items: start;
       }
 
       .flow {
         display: grid;
-        gap: 0.65rem;
         padding: 0;
         margin: 0;
         list-style: none;
+        counter-reset: step;
       }
 
       .flow li {
         display: grid;
-        grid-template-columns: 5.4rem 1fr;
+        grid-template-columns: 3.6rem 5.2rem 1fr;
         gap: 1rem;
-        padding: 0.9rem 0;
+        align-items: baseline;
+        padding: 1.15rem 0;
+        border-top: 1px solid var(--line);
+        counter-increment: step;
+      }
+
+      .flow li:last-child {
         border-bottom: 1px solid var(--line);
       }
 
+      .flow li::before {
+        content: "0" counter(step);
+        color: var(--gold);
+        font-family: var(--display);
+        font-size: 1.05rem;
+        font-style: italic;
+      }
+
       .flow strong {
-        color: var(--steel);
-        font-family: Avenir Next, "Trebuchet MS", sans-serif;
-        font-size: 0.8rem;
+        font-family: var(--ui);
+        font-size: 0.78rem;
+        font-weight: 700;
+        letter-spacing: 0.1em;
         text-transform: uppercase;
       }
 
+      .flow span {
+        color: var(--muted);
+        font-size: 0.98rem;
+      }
+
+      /* The decide fork: four ends an idea can reach */
+      .fork {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 1.1rem 2rem;
+        margin: 1.5rem 0 0;
+        padding: 0 0 0 3.6rem;
+        list-style: none;
+      }
+
+      .fork li {
+        display: grid;
+        grid-template-columns: 1.4rem 1fr;
+        column-gap: 0.4rem;
+      }
+
+      .fork li::before {
+        grid-row: 1 / span 2;
+        content: "→";
+        color: var(--gold);
+        font-family: var(--display);
+        font-style: italic;
+      }
+
+      .fork strong {
+        grid-column: 2;
+        font-family: var(--ui);
+        font-size: 0.78rem;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+      }
+
+      .fork span {
+        grid-column: 2;
+        color: var(--muted);
+        font-size: 0.92rem;
+      }
+
+      .loop-note {
+        margin-top: 1.6rem;
+        color: var(--parchment-dim);
+        font-family: var(--display);
+        font-size: 1.15rem;
+        font-style: italic;
+      }
+
+      /* Features: ruled editorial grid, no cards */
       .feature-grid {
         display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 1rem;
-        margin-top: 2.4rem;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0 clamp(2.5rem, 5vw, 4.5rem);
+        margin-top: 3rem;
+        counter-reset: feat;
       }
 
       .feature {
-        min-height: 15rem;
-        padding: 1.25rem;
-        border: 1px solid var(--line);
-        border-radius: 8px;
-        background: var(--paper-strong);
+        padding: 1.5rem 0 1.7rem;
+        border-top: 1px solid var(--line);
+        counter-increment: feat;
       }
 
       .feature h3 {
-        margin-bottom: 0.7rem;
-        font-size: 1.2rem;
-        line-height: 1.2;
+        margin-bottom: 0.55rem;
+        font-family: var(--display);
+        font-size: 1.35rem;
+        font-weight: 550;
+        line-height: 1.15;
+      }
+
+      .feature h3::before {
+        margin-right: 0.8rem;
+        content: "0" counter(feat);
+        color: var(--ember);
+        font-size: 0.95rem;
+        font-style: italic;
       }
 
       .feature p {
+        max-width: 46ch;
         margin-bottom: 0;
         color: var(--muted);
+        font-size: 0.98rem;
       }
 
-      .feature:nth-child(2) {
-        border-color: color-mix(in oklch, var(--verdigris), var(--line) 50%);
-      }
-
-      .feature:nth-child(4) {
-        border-color: color-mix(in oklch, var(--forge), var(--line) 45%);
-      }
-
-      .callout {
+      /* Trust: the four vows, ruled in gold */
+      .vows {
         display: grid;
-        grid-template-columns: minmax(0, 1fr) auto;
-        gap: 2rem;
-        align-items: center;
-        padding: 2rem;
-        border: 1px solid color-mix(in oklch, var(--steel), var(--line) 60%);
-        border-radius: 8px;
-        background: oklch(0.18 0.034 222);
-        color: var(--paper-strong);
-        box-shadow: var(--shadow);
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0 clamp(2.5rem, 5vw, 4.5rem);
+        margin-top: 3rem;
       }
 
-      .callout h2 {
-        margin-bottom: 0.65rem;
-        color: var(--paper-strong);
+      .vow {
+        padding: 1.5rem 0 1.7rem;
+        border-top: 1px solid oklch(0.8 0.11 82 / 45%);
       }
 
-      .callout p {
-        max-width: 48rem;
+      .vow h3 {
+        margin-bottom: 0.55rem;
+        font-family: var(--display);
+        font-size: 1.35rem;
+        font-weight: 550;
+        line-height: 1.15;
+      }
+
+      .vow p {
+        max-width: 48ch;
         margin-bottom: 0;
-        color: oklch(0.89 0.016 90);
+        color: var(--muted);
+        font-size: 0.98rem;
       }
 
-      .callout .button {
-        background: var(--verdigris);
-        color: oklch(0.12 0.025 190);
+      /* Paired deep dives (agent/KB, marketplace/legacy) */
+      .duo {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: clamp(2.5rem, 5vw, 4.5rem);
+        margin-top: 3rem;
+      }
+
+      .duo article {
+        padding-top: 1.5rem;
+        border-top: 1px solid var(--line);
+      }
+
+      .duo h3 {
+        margin-bottom: 0.55rem;
+        font-family: var(--display);
+        font-size: 1.5rem;
+        font-weight: 550;
+        line-height: 1.15;
+      }
+
+      .duo p {
+        max-width: 52ch;
+        color: var(--muted);
+        font-size: 0.98rem;
+      }
+
+      .duo p:last-child {
+        margin-bottom: 0;
+      }
+
+      /* Ecosystem: the vault and its satellites */
+      .orbit {
+        display: grid;
+        padding: 0;
+        margin: 3rem 0 0;
+        list-style: none;
+      }
+
+      .orbit li {
+        display: grid;
+        grid-template-columns: 10rem 1fr;
+        gap: 1rem;
+        align-items: baseline;
+        padding: 1.05rem 0;
+        border-top: 1px solid var(--line);
+      }
+
+      .orbit li:last-child {
+        border-bottom: 1px solid var(--line);
+      }
+
+      .orbit .sat {
+        font-family: var(--display);
+        font-size: 1.1rem;
+        font-style: italic;
+        color: var(--gold);
+      }
+
+      .soon {
+        display: block;
+        margin-top: 0.1rem;
+        color: var(--ember);
+        font-family: var(--ui);
+        font-size: 0.6rem;
+        font-weight: 700;
+        font-style: normal;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        vertical-align: 0.18em;
         white-space: nowrap;
       }
 
-      .footer {
-        padding: 2rem 0 3rem;
+      .orbit span {
         color: var(--muted);
-        font-family: Avenir Next, "Trebuchet MS", sans-serif;
-        font-size: 0.86rem;
+        font-size: 0.98rem;
+      }
+
+      .contract {
+        max-width: 30ch;
+        margin: 2.2rem 0 0;
+        font-family: var(--display);
+        font-size: clamp(1.35rem, 2.4vw, 1.8rem);
+        font-style: italic;
+        font-weight: 480;
+        line-height: 1.3;
+        text-wrap: balance;
+      }
+
+      /* Non-goals: stark statements */
+      .statement-line {
+        max-width: none;
+        margin-bottom: 1.9rem;
+        font-family: var(--display);
+        font-size: clamp(1.7rem, 3.6vw, 2.8rem);
+        font-weight: 550;
+        line-height: 1.12;
+        letter-spacing: -0.01em;
+        text-wrap: balance;
+      }
+
+      .statement-line:last-child {
+        margin-bottom: 0;
+      }
+
+      .statement-line span {
+        display: block;
+        margin-top: 0.45rem;
+        font-family: var(--body);
+        font-size: 1.05rem;
+        font-weight: normal;
+        letter-spacing: 0;
+        color: var(--muted);
+      }
+
+      /* Callout */
+      .callout {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 2.5rem;
+        align-items: center;
+        padding: clamp(2.2rem, 5vh, 3.4rem) 0;
+        border-top: 1px solid var(--gold);
+        border-bottom: 1px solid var(--gold);
+      }
+
+      .callout h2 {
+        margin-bottom: 0.6rem;
+      }
+
+      .callout p {
+        max-width: 52ch;
+        margin-bottom: 0;
+        color: var(--muted);
+      }
+
+      .callout .button {
+        border-color: var(--gold);
+        color: var(--gold);
+      }
+
+      .callout .button:hover {
+        background: var(--gold);
+        color: oklch(0.2 0.02 40);
+      }
+
+      .footer {
+        padding: 1.6rem 0 2.6rem;
+        border-top: 1px solid var(--line);
+        color: var(--muted);
+        font-family: var(--ui);
+        font-size: 0.82rem;
       }
 
       .footer .content {
@@ -330,61 +666,44 @@
       }
 
       @media (max-width: 860px) {
-        .nav {
-          align-items: flex-start;
-          flex-direction: column;
-        }
-
-        .hero {
-          min-height: 82vh;
-        }
-
-        .hero-inner {
-          padding-top: 9rem;
-          padding-bottom: 4rem;
-        }
-
-        h1 {
-          font-size: 3.45rem;
-        }
-
-        h2 {
-          font-size: 2.25rem;
-        }
-
         .intro-grid,
+        .feature-grid,
+        .vows,
+        .duo,
         .callout {
           grid-template-columns: 1fr;
         }
 
-        .feature-grid {
-          grid-template-columns: 1fr;
+        .flow li {
+          grid-template-columns: 3rem 1fr;
         }
 
-        .callout {
-          padding: 1.35rem;
+        .flow span {
+          grid-column: 2;
+        }
+
+        .fork {
+          padding-left: 3rem;
+        }
+
+        .orbit li {
+          grid-template-columns: 1fr;
+          gap: 0.15rem;
         }
       }
 
       @media (max-width: 560px) {
+        .nav {
+          flex-direction: column;
+          gap: 0.6rem;
+        }
+
         .nav-links {
-          width: 100%;
-          justify-content: space-between;
-          gap: 0.5rem;
+          gap: 1.1rem;
         }
 
-        h1 {
-          font-size: 2.7rem;
-        }
-
-        .hero-copy,
-        .lede {
-          font-size: 1.02rem;
-        }
-
-        .flow li {
-          grid-template-columns: 1fr;
-          gap: 0.2rem;
+        .hero-inner {
+          padding-top: 10rem;
         }
 
         .actions,
@@ -392,104 +711,218 @@
           width: 100%;
         }
 
-        .button {
-          justify-content: center;
+        .fork {
+          grid-template-columns: 1fr;
+          padding-left: 0;
         }
       }
     </style>
   </head>
   <body>
-    <main class="site-shell">
+    <main>
       <section class="hero" aria-label="Idea Foundry overview">
+        <video
+          class="hero-video"
+          src="assets/landing-background.mp4"
+          poster="assets/poster.jpg"
+          autoplay
+          muted
+          playsinline
+          preload="auto"
+          aria-hidden="true"
+        ></video>
+
         <nav class="nav" aria-label="Primary navigation">
           <a class="brand" href="#top">Idea Foundry</a>
           <div class="nav-links">
-            <a href="#workflow">Workflow</a>
-            <a href="#features">Features</a>
+            <a href="#lifecycle">Lifecycle</a>
+            <a href="#platform">Platform</a>
+            <a href="#trust">Trust</a>
+            <a href="#ecosystem">Ecosystem</a>
             <a href="https://github.com/Isaac12x/ideafoundry">GitHub</a>
           </div>
         </nav>
 
         <div class="hero-inner" id="top">
-          <p class="eyebrow">Personal idea management</p>
-          <h1>Idea Foundry</h1>
+          <p class="meta-row">
+            <span>Local-first</span>
+            <span>Encrypted vault</span>
+            <span>MIT licensed</span>
+          </p>
+          <h1>From <em>spark</em> to shipped, sold, or sealed.</h1>
           <p class="hero-copy">
-            A private workspace for entrepreneurs to capture raw ideas, score their potential,
-            organize the work, map relationships, and keep a full history as concepts move from spark to shipped.
+            The CRM and planner for ideas. Capture in seconds in any format, score it your way,
+            develop it with research — then build it, license it, park it, or pass it on.
+            Full provenance at every step.
           </p>
           <div class="actions" aria-label="Project links">
             <a class="button button-primary" href="https://github.com/Isaac12x/ideafoundry#install-macos">Install locally</a>
-            <a class="button button-secondary" href="#features">Explore features</a>
+            <a class="button button-secondary" href="#capture">Explore the concept</a>
           </div>
+          <p class="status-note">
+            In active development — this page describes the full design; not all of it is built yet.
+          </p>
         </div>
       </section>
 
-      <section class="band" id="workflow">
+      <section class="band" id="capture">
+        <div class="content">
+          <p class="section-kicker">The capture promise</p>
+          <h2>Captured in seconds. Never lost.</h2>
+          <p class="lede">
+            Friction at capture kills ideas — fast, lossless capture is the one promise
+            the whole ecosystem serves. An idea arrives however it occurs to you:
+          </p>
+          <p class="specimen" aria-label="Capture formats">
+            <span>text</span><span>voice</span><span>video</span><span>image</span><span>drawing</span>
+          </p>
+          <p class="meta-row" aria-label="Capture origins">
+            <span>In app</span>
+            <span>Mobile</span>
+            <span>Email</span>
+            <span>Browser extension</span>
+          </p>
+        </div>
+      </section>
+
+      <section class="band" id="lifecycle">
         <div class="content intro-grid">
           <div>
-            <p class="section-kicker">What it does</p>
-            <h2>Turns scattered ideas into a working portfolio.</h2>
+            <p class="section-kicker">The lifecycle</p>
+            <h2>One pipeline, four ends.</h2>
             <p class="lede">
-              Idea Foundry is built for one person who needs a serious system without multi-tenant overhead.
-              It combines intake, lifecycle states, weighted scoring, notes, templates, boards, drawings,
-              and relationship maps in a local-first Rails app.
+              Every feature hangs off the canonical stages. Scoring is yours to define — each
+              user builds their own weighted scheme, and scores are versioned like everything
+              else: how your judgement changed is itself provenance.
             </p>
+            <p class="loop-note">An idea can loop back at any point — it never loses its history.</p>
           </div>
 
-          <ol class="flow" aria-label="Idea Foundry workflow">
-            <li>
-              <strong>Capture</strong>
-              <span>Record ideas directly, send them by email, or start from reusable templates.</span>
-            </li>
-            <li>
-              <strong>Assess</strong>
-              <span>Score TRL, difficulty, opportunity, and timing with configurable weights.</span>
-            </li>
-            <li>
-              <strong>Shape</strong>
-              <span>Use notes, drawings, todo lists, and rich text to develop the strongest concepts.</span>
-            </li>
-            <li>
-              <strong>Ship</strong>
-              <span>Move ideas through validation, backlog work, export, and backup workflows.</span>
-            </li>
-          </ol>
+          <div>
+            <ol class="flow" aria-label="Idea lifecycle stages">
+              <li>
+                <strong>Capture</strong>
+                <span>Seconds, any format, from anywhere.</span>
+              </li>
+              <li>
+                <strong>Score</strong>
+                <span>Your own criteria and weights, tracked over time.</span>
+              </li>
+              <li>
+                <strong>Triage</strong>
+                <span>Decide what deserves attention now, later, or never.</span>
+              </li>
+              <li>
+                <strong>Develop</strong>
+                <span>Research and experiments, connected to your knowledge base.</span>
+              </li>
+              <li>
+                <strong>Decide</strong>
+                <span>Every developed idea reaches one of four ends —</span>
+              </li>
+            </ol>
+            <ul class="fork" aria-label="Decision outcomes">
+              <li>
+                <strong>Build</strong>
+                <span>Graduate to execution PM.</span>
+              </li>
+              <li>
+                <strong>License / sell</strong>
+                <span>Publish to the marketplace.</span>
+              </li>
+              <li>
+                <strong>Park</strong>
+                <span>Archive it; come back when it's time.</span>
+              </li>
+              <li>
+                <strong>Legacy</strong>
+                <span>Seal it for succession.</span>
+              </li>
+            </ul>
+          </div>
         </div>
       </section>
 
-      <section class="band band-alt" id="features">
+      <section class="band" id="platform">
         <div class="content">
-          <p class="section-kicker">Core system</p>
-          <h2>Built for repeated decisions.</h2>
+          <p class="section-kicker">Platform parts</p>
+          <h2>One application, eight rooms.</h2>
           <p class="lede">
-            The app keeps both the strategic view and the working detail close at hand, so an idea can be ranked,
-            connected, revised, and recovered without leaving the workspace.
+            Ideas are paramount, and so is everything related to them. Collaboration is per
+            idea, between people or teams — 1-to-1 through many-to-many — never by default.
           </p>
 
-          <div class="feature-grid" aria-label="Idea Foundry feature areas">
+          <div class="feature-grid" aria-label="Idea Foundry platform parts">
             <article class="feature">
-              <h3>Lifecycle pipeline</h3>
-              <p>Track ideas from new intake through triage, trials, cool-off, validation, shipping, parking, or rejection.</p>
+              <h3>Ideas workbench</h3>
+              <p>The core: capture, triage, develop, score, and plan every idea in one place.</p>
             </article>
             <article class="feature">
-              <h3>Weighted scoring</h3>
-              <p>Compare ideas with configurable criteria and trend history instead of relying on gut feel alone.</p>
+              <h3>Notes</h3>
+              <p>Writing in service of ideas, attached where the thinking happens.</p>
             </article>
             <article class="feature">
-              <h3>Boards and lists</h3>
-              <p>Organize ideas on kanban boards, custom lists, and optional build backlog lanes.</p>
+              <h3>Knowledge base</h3>
+              <p>Your research substrate — anything you collect, connectable to ideas as evidence.</p>
             </article>
             <article class="feature">
-              <h3>Topology graph</h3>
-              <p>Explore categories, parent-child relationships, and adjacent concepts in an interactive 3D graph.</p>
+              <h3>Execution PM</h3>
+              <p>Project management for the ideas that graduate to being built.</p>
             </article>
             <article class="feature">
-              <h3>Version history</h3>
-              <p>Snapshot each idea, compare revisions, and restore earlier versions when a direction needs to be recovered.</p>
+              <h3>Internal CRM</h3>
+              <p>Your own contacts and relationships, tied to the ideas they touch.</p>
             </article>
             <article class="feature">
-              <h3>Exports and backups</h3>
-              <p>Create encrypted or archive exports and schedule daily backup notifications for local resilience.</p>
+              <h3>IP platform</h3>
+              <p>The legal side: provenance, protection, licensing, and defensive publication.</p>
+            </article>
+            <article class="feature">
+              <h3>Marketplace</h3>
+              <p>A curated public face for the ideas you decide are up for grabs.</p>
+            </article>
+            <article class="feature">
+              <h3>Legacy</h3>
+              <p>Succession for ideas and research — they outlive you, on your terms.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="band" id="trust">
+        <div class="content">
+          <p class="section-kicker">Trust &amp; provenance</p>
+          <h2>Pre-patent IP demands promises.</h2>
+
+          <div class="vows" aria-label="Trust promises">
+            <article class="vow">
+              <h3>Local and encrypted</h3>
+              <p>
+                The database is encrypted at rest with keys you set. Your machine is the vault
+                and the source of truth — nothing leaves without an explicit action, and
+                anything that does is encrypted to your keys first.
+              </p>
+            </article>
+            <article class="vow">
+              <h3>Full provenance</h3>
+              <p>
+                Who had what idea, when. Version history, activity log, authorship signals —
+                the story of an idea is reconstructable end to end.
+              </p>
+            </article>
+            <article class="vow">
+              <h3>Agents on a leash</h3>
+              <p>
+                Agents are local to the app and act only through scoped, revocable tokens.
+                Anything outward-facing — email, publish, sell — requires your approval.
+              </p>
+            </article>
+            <article class="vow">
+              <h3>No lock-in</h3>
+              <p>
+                Everything exports to open formats at any time. Required for legacy,
+                honest everywhere else.
+              </p>
             </article>
           </div>
         </div>
@@ -497,12 +930,141 @@
 
       <section class="band">
         <div class="content">
+          <p class="section-kicker">Working the ideas</p>
+          <h2>Help that never leaks.</h2>
+
+          <div class="duo">
+            <article>
+              <h3>A local agent</h3>
+              <p>
+                No third-party LLM ever sees your ideas. The agent lives in the app with the
+                whole context, and helps organically: shaping, scoring, organizing, enriching —
+                including web search that discloses nothing of yours.
+              </p>
+              <p>
+                In the IP platform it becomes an expert IP and corporate lawyer. Every
+                contribution is attributed and logged; human and agent authorship are always
+                distinguishable.
+              </p>
+            </article>
+            <article>
+              <h3>A knowledge base as evidence</h3>
+              <p>
+                Add anything — papers, references, your own research — and connect it to ideas
+                as support, prior art, contradiction, or inspiration.
+              </p>
+              <p>
+                An idea with a KB trail is a developed idea. The trail is part of its
+                provenance, and part of its sale value.
+              </p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="band">
+        <div class="content">
+          <p class="section-kicker">Beyond the vault</p>
+          <h2>Sell it, or pass it on.</h2>
+
+          <div class="duo">
+            <article>
+              <h3>Marketplace</h3>
+              <p>
+                You decide an idea is up for grabs. Buyers and bidders meet it on a separate,
+                company-hosted webapp that only ever holds the curated face you chose to
+                publish — pitch and selected artifacts. The vault stays private.
+              </p>
+              <p>
+                Sale, royalties, NDAs, escrow, and valuation are all handled mechanics.
+              </p>
+            </article>
+            <article id="legacy">
+              <h3>Legacy</h3>
+              <p>
+                Legacy here means succession, not sentiment: your ideas and research are an
+                intellectual estate. Because everything carries provenance, what you pass on
+                is not a folder of files but an attributed, dated body of thought — who
+                conceived what, when, and the evidence behind it. Heirs inherit the proof
+                along with the work.
+              </p>
+              <p>
+                Designate who receives what: everything to one successor, or partitioned —
+                these ideas to one person, that research to another — each partition encrypted
+                with its own key. The encrypted database is delivered by the noder; the key
+                travels by a separate, untraceable channel. Whoever holds both holds the rights.
+              </p>
+              <p>
+                Defensive publication as prior art is in scope, through the IP platform.
+              </p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="band" id="ecosystem">
+        <div class="content">
+          <p class="section-kicker">Ecosystem</p>
+          <h2>A vault with satellites.</h2>
+          <p class="lede">
+            Idea Foundry owns the data. Everything around it exists to capture, carry,
+            and back up — without ever being able to read what it holds.
+          </p>
+
+          <ul class="orbit" aria-label="Ecosystem components">
+            <li>
+              <span class="sat">ideafoundry</span>
+              <span>This app — the source of truth, the vault, the workbench.</span>
+            </li>
+            <li>
+              <span class="sat">zephyrus <em class="soon">coming soon</em></span>
+              <span>Mobile capture; encrypts media and sends it to your paired instance.</span>
+            </li>
+            <li>
+              <span class="sat">oracle <em class="soon">coming soon</em></span>
+              <span>Encrypted store-and-forward; holds captures until your instance is back online.</span>
+            </li>
+            <li>
+              <span class="sat">noder <em class="soon">coming soon</em></span>
+              <span>Resilience — encrypted 3-2-1 backups, and the hand that executes legacy transitions.</span>
+            </li>
+            <li>
+              <span class="sat">relay <em class="soon">coming soon</em></span>
+              <span>Carries collaboration traffic between parties; run your own or use a hosted one.</span>
+            </li>
+            <li>
+              <span class="sat">marketplace <em class="soon">coming soon</em></span>
+              <span>Company-hosted webapp where buyers meet the ideas you published.</span>
+            </li>
+          </ul>
+
+          <p class="contract">Satellites capture, relay, and back up — always ciphertext, never plaintext.</p>
+        </div>
+      </section>
+
+      <section class="band">
+        <div class="content">
+          <p class="section-kicker">Non-goals</p>
+          <p class="statement-line">
+            Not a social network.
+            <span>Sharing is deliberate, scoped, and per idea.</span>
+          </p>
+          <p class="statement-line">
+            Not a cloud service.
+            <span>No central server ever holds plaintext.</span>
+          </p>
+        </div>
+      </section>
+
+      <section class="band">
+        <div class="content">
           <div class="callout">
             <div>
-              <p class="section-kicker">Run it privately</p>
-              <h2>Local by design.</h2>
+              <p class="section-kicker">Run it yourself</p>
+              <h2>Yours by design.</h2>
               <p>
-                Idea Foundry is a single-user app intended for local machines or private servers behind network-level access control.
+                MIT licensed — anyone can run it, own it, and extend it, on a local machine
+                or a private server behind your own access control.
               </p>
             </div>
             <a class="button" href="https://github.com/Isaac12x/ideafoundry">View source</a>
@@ -513,9 +1075,54 @@
 
     <footer class="footer">
       <div class="content">
-        <span>Idea Foundry project overview</span>
+        <span>Made with ❤️ by Isaac AR <a href="https://fortisvincere.com">@FortisVincere.com</a></span>
         <a href="https://github.com/Isaac12x/ideafoundry">github.com/Isaac12x/ideafoundry</a>
       </div>
     </footer>
+
+    <script>
+      // The clip ends on the Idea Foundry brand card, so it plays once and
+      // holds the final frame. Reduced-motion users get the poster instead.
+      const v = document.querySelector(".hero-video");
+      const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+      if (reduceMotion) {
+        v.removeAttribute("autoplay");
+        v.pause();
+      } else {
+        // On a cold load the autoplay attempt can fire before any data is
+        // buffered, and some browsers ignore the muted content attribute for
+        // autoplay policy. Force-mute and retry until playback sticks.
+        const tryPlay = () => {
+          if (!v.paused || v.ended) return;
+          v.muted = true;
+          v.play().catch(() => {});
+        };
+        tryPlay();
+        v.addEventListener("loadeddata", tryPlay);
+        v.addEventListener("canplay", tryPlay);
+        document.addEventListener("visibilitychange", tryPlay);
+        addEventListener("pointerdown", tryPlay, { once: true });
+      }
+
+      // Scroll reveal; hidden state is only ever applied here, so the page
+      // renders fully without JS or with reduced motion.
+      if (!reduceMotion && "IntersectionObserver" in window) {
+        const io = new IntersectionObserver(
+          (entries) => {
+            for (const entry of entries) {
+              if (entry.isIntersecting) {
+                entry.target.classList.add("in");
+                io.unobserve(entry.target);
+              }
+            }
+          },
+          { rootMargin: "0px 0px -12% 0px" }
+        );
+        document.querySelectorAll(".band .content").forEach((el) => {
+          el.classList.add("will-reveal");
+          io.observe(el);
+        });
+      }
+    </script>
   </body>
 </html>
