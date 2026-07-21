@@ -1,0 +1,122 @@
+{
+  "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/docs/file-storage.md": {
+    "mtime": 1781126595.6191785,
+    "ast_hash": "380431d527e3b1527c0ed1fd8999acda",
+    "semantic_hash": ""
+  },
+  "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/docs/index.html": {
+    "mtime": 1784656151.603736,
+    "ast_hash": "258f1a97ee1f5de388fb0a58023adb8a",
+    "semantic_hash": ""
+  },
+  "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/docs/local-voice-id.md": {
+    "mtime": 1781103670.712025,
+    "ast_hash": "56229b24cf4bf7e2ed52e120989acd10",
+    "semantic_hash": ""
+  },
+  "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/docs/plans/2026-02-22-email-template-themes-plan.md": {
+    "mtime": 1771786780.3608377,
+    "ast_hash": "38d50a74abcb82ae45b7478fce883402",
+    "semantic_hash": ""
+  },
+  "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/docs/plans/2026-05-14-ip-continuity-and-relatedness.md": {
+    "mtime": 1781103670.712197,
+    "ast_hash": "a52d136255f9518573217b74e46e72a9",
+    "semantic_hash": ""
+  },
+  "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/docs/plans/2026-02-20-settings-topologies-design.md": {
+    "mtime": 1771592981.746302,
+    "ast_hash": "b69117e31fa46b72243b6ba8975ed216",
+    "semantic_hash": ""
+  },
+  "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/docs/plans/2026-02-22-build-next-backlog-design.md": {
+    "mtime": 1771782031.5139492,
+    "ast_hash": "257c4555982170416c36507122d5dff2",
+    "semantic_hash": ""
+  },
+  "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/docs/plans/2026-02-22-build-next-backlog-plan.md": {
+    "mtime": 1771782194.5984473,
+    "ast_hash": "7f821c0d540b2a009108370af22c1900",
+    "semantic_hash": ""
+  },
+  "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/docs/plans/2026-02-22-email-template-themes-design.md": {
+    "mtime": 1771786658.6893275,
+    "ast_hash": "d39c0ac3018191b3997551f727effbdc",
+    "semantic_hash": ""
+  },
+  "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/docs/plans/2026-02-20-settings-topologies-plan.md": {
+    "mtime": 1771593167.3208852,
+    "ast_hash": "84be6fa475b6a8a62ae5e330745f66cc",
+    "semantic_hash": ""
+  },
+  "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/docs/superpowers/plans/2026-05-13-idea-agent-document-access.md": {
+    "mtime": 1781103670.7128205,
+    "ast_hash": "7da393467b4a08858c7cb23f7bf62364",
+    "semantic_hash": ""
+  },
+  "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/docs/superpowers/plans/2026-05-16-voice-id-inline-enrollment.md": {
+    "mtime": 1781103670.71294,
+    "ast_hash": "5ea8620498b85b3ab622a5ea29ca843e",
+    "semantic_hash": ""
+  },
+  "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/docs/superpowers/plans/2026-04-30-napkin-calculations.md": {
+    "mtime": 1781103670.7126021,
+    "ast_hash": "611832dc6f14f80f6c9a2b52804533b4",
+    "semantic_hash": ""
+  },
+  "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/docs/superpowers/plans/2026-05-19-display-settings-page.md": {
+    "mtime": 1781103670.7131093,
+    "ast_hash": "066557777b23521f9beca3e26b1f8c6f",
+    "semantic_hash": ""
+  },
+  "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/docs/superpowers/specs/2026-03-28-calendar-reminder-design.md": {
+    "mtime": 1781103670.7154634,
+    "ast_hash": "9795efd2643242542f6cbc173b4446a7",
+    "semantic_hash": ""
+  },
+  "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/docs/superpowers/specs/2026-05-25-local-idea-foundry-agent-design.md": {
+    "mtime": 1781103670.7163644,
+    "ast_hash": "fc10db9a1e76b5c5840b3b68edd92254",
+    "semantic_hash": ""
+  },
+  "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/docs/superpowers/specs/2026-04-30-napkin-calculations-design.md": {
+    "mtime": 1781103670.71582,
+    "ast_hash": "80ea52b2257a3ee371b1388ddce0757b",
+    "semantic_hash": ""
+  },
+  "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/docs/superpowers/specs/2026-07-04-licensing-crm-design.md": {
+    "mtime": 1784536356.8094084,
+    "ast_hash": "f858e16bc81b6f2f4bcce6880ad37be8",
+    "semantic_hash": ""
+  },
+  "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/docs/superpowers/specs/2026-05-23-app-upgrade-path-design.md": {
+    "mtime": 1781103670.7162225,
+    "ast_hash": "b09f7a49abbf030e4d6c44bc3a395ac8",
+    "semantic_hash": ""
+  },
+  "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/docs/superpowers/specs/2026-05-19-display-settings-page-design.md": {
+    "mtime": 1781103670.716123,
+    "ast_hash": "01c15c706ad8e2d1914a6a02732dbe4a",
+    "semantic_hash": ""
+  },
+  "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/docs/superpowers/specs/2026-05-16-voice-id-inline-enrollment-design.md": {
+    "mtime": 1781103670.7159357,
+    "ast_hash": "f91a36448a039469dac6f73383378f51",
+    "semantic_hash": ""
+  },
+  "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/docs/superpowers/specs/2026-05-19-attachment-system-design.md": {
+    "mtime": 1781103670.7160416,
+    "ast_hash": "13e671b28dd0cef73250e053ee17830d",
+    "semantic_hash": ""
+  },
+  "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/docs/assets/poster.jpg": {
+    "mtime": 1784650599.0937583,
+    "ast_hash": "4f3ad033044462fc995abeaa5c677018",
+    "semantic_hash": ""
+  },
+  "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/docs/assets/landing-background.mp4": {
+    "mtime": 1784656046.5004292,
+    "ast_hash": "15965518f0a88e2744814a566c27cb5e",
+    "semantic_hash": ""
+  }
+}
