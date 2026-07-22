@@ -11,7 +11,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
-      href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..700&amp;display=swap"
       rel="stylesheet"
     >
     <style>
@@ -119,6 +119,7 @@
 
       .nav-links {
         display: flex;
+        flex-wrap: wrap;
         gap: 1.6rem;
         font-family: var(--ui);
         font-size: 0.8rem;
@@ -334,6 +335,10 @@
         text-wrap: balance;
       }
 
+      .specimen span {
+        display: inline-block;
+      }
+
       .specimen span + span::before {
         content: "·";
         margin: 0 0.32em;
@@ -438,6 +443,68 @@
         font-style: italic;
       }
 
+      /* Progress: an honest release ledger rather than a feature wall */
+      .progress-ledger {
+        margin-top: 3rem;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .progress-entry {
+        display: grid;
+        grid-template-columns: 7rem minmax(9rem, 0.55fr) minmax(0, 1.45fr);
+        gap: clamp(1rem, 3vw, 2.5rem);
+        align-items: baseline;
+        padding: 1.35rem 0 1.5rem;
+        border-top: 1px solid var(--line);
+      }
+
+      .progress-entry time,
+      .feature-status {
+        color: var(--ember);
+        font-family: var(--ui);
+        font-size: 0.7rem;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+
+      .progress-entry h3 {
+        margin-bottom: 0;
+        font-family: var(--display);
+        font-size: 1.22rem;
+        font-weight: 550;
+        line-height: 1.2;
+      }
+
+      .progress-entry p {
+        margin-bottom: 0;
+        color: var(--muted);
+        font-size: 0.96rem;
+      }
+
+      .progress-entry-current {
+        border-color: oklch(0.8 0.11 82 / 60%);
+      }
+
+      .progress-entry-current time,
+      .progress-entry-current h3 {
+        color: var(--gold);
+      }
+
+      .ledger-note {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem 1.2rem;
+        margin-top: 1.4rem;
+        color: var(--muted);
+        font-size: 0.92rem;
+      }
+
+      .ledger-note a {
+        color: var(--parchment-dim);
+        text-underline-offset: 0.2em;
+      }
+
       /* Features: ruled editorial grid, no cards */
       .feature-grid {
         display: grid;
@@ -467,6 +534,15 @@
         color: var(--ember);
         font-size: 0.95rem;
         font-style: italic;
+      }
+
+      .feature-status {
+        display: block;
+        margin-bottom: 0.55rem;
+      }
+
+      .feature-status-roadmap {
+        color: var(--muted);
       }
 
       .feature p {
@@ -690,6 +766,14 @@
           grid-template-columns: 1fr;
           gap: 0.15rem;
         }
+
+        .progress-entry {
+          grid-template-columns: 6rem 1fr;
+        }
+
+        .progress-entry p {
+          grid-column: 2;
+        }
       }
 
       @media (max-width: 560px) {
@@ -715,6 +799,15 @@
           grid-template-columns: 1fr;
           padding-left: 0;
         }
+
+        .progress-entry {
+          grid-template-columns: 1fr;
+          gap: 0.35rem;
+        }
+
+        .progress-entry p {
+          grid-column: 1;
+        }
       }
     </style>
   </head>
@@ -735,6 +828,7 @@
         <nav class="nav" aria-label="Primary navigation">
           <a class="brand" href="#top">Idea Foundry</a>
           <div class="nav-links">
+            <a href="#now">Now</a>
             <a href="#lifecycle">Lifecycle</a>
             <a href="#platform">Platform</a>
             <a href="#trust">Trust</a>
@@ -747,7 +841,7 @@
           <p class="meta-row">
             <span>Local-first</span>
             <span>Encrypted vault</span>
-            <span>MIT licensed</span>
+            <span>Source available</span>
           </p>
           <h1>From <em>spark</em> to shipped, sold, or sealed.</h1>
           <p class="hero-copy">
@@ -760,7 +854,7 @@
             <a class="button button-secondary" href="#capture">Explore the concept</a>
           </div>
           <p class="status-note">
-            In active development — this page describes the full design; not all of it is built yet.
+            Working software in active development — see what is built now and what remains ahead.
           </p>
         </div>
       </section>
@@ -781,6 +875,65 @@
             <span>Mobile</span>
             <span>Email</span>
             <span>Browser extension</span>
+          </p>
+        </div>
+      </section>
+
+      <section class="band" id="now">
+        <div class="content">
+          <p class="section-kicker">Built over time</p>
+          <h2>From idea tracker to idea operating system.</h2>
+          <p class="lede">
+            Idea Foundry began with lifecycle, scoring, and Kanban. Each release has moved it
+            toward the larger promise: one local place to capture, develop, protect, and act on ideas.
+          </p>
+
+          <div class="progress-ledger" aria-label="Idea Foundry development timeline">
+            <article class="progress-entry">
+              <time datetime="2026-02">Feb 2026</time>
+              <h3>Foundations · v1.0</h3>
+              <p>
+                Lifecycle tracking, weighted scoring, Kanban, 3D topology, rich editing,
+                templates, version history, exports, and backups established the workbench.
+              </p>
+            </article>
+            <article class="progress-entry">
+              <time datetime="2026-03">Mar 2026</time>
+              <h3>Intake &amp; notes · v1.2–1.3</h3>
+              <p>
+                Email intake, external submission keys, threaded notes, reminders, and local
+                HTTPS widened the path from a passing thought into durable work.
+              </p>
+            </article>
+            <article class="progress-entry">
+              <time datetime="2026-05">May 2026</time>
+              <h3>The private vault · v1.4+</h3>
+              <p>
+                SQLCipher encryption, typing and voice locks, recoverable drafts, multiple
+                boards and scoring systems, app-owned agents, scoped tokens, and note imports.
+              </p>
+            </article>
+            <article class="progress-entry">
+              <time datetime="2026-06">Jun 2026</time>
+              <h3>Planning at scale</h3>
+              <p>
+                Planning views, fast command-palette search, infinite idea browsing, mobile
+                pairing, file storage, activity provenance, and local OCR expanded daily use.
+              </p>
+            </article>
+            <article class="progress-entry progress-entry-current">
+              <time datetime="2026-07">Now · Jul 2026</time>
+              <h3>The KB becomes a studio</h3>
+              <p>
+                Live local files, favourites and custom icons, filesystem AI jobs, and revision-safe
+                image, video, audio, PDF, and HTML editing turn research into an active workspace.
+              </p>
+            </article>
+          </div>
+
+          <p class="ledger-note">
+            <span>The workbench, notes, knowledge base, and planning tools run today.</span>
+            <a href="https://github.com/Isaac12x/ideafoundry/blob/master/CHANGELOG.md">Read the complete changelog →</a>
           </p>
         </div>
       </section>
@@ -854,34 +1007,42 @@
 
           <div class="feature-grid" aria-label="Idea Foundry platform parts">
             <article class="feature">
+              <span class="feature-status">Built · expanding</span>
               <h3>Ideas workbench</h3>
               <p>The core: capture, triage, develop, score, and plan every idea in one place.</p>
             </article>
             <article class="feature">
+              <span class="feature-status">Built</span>
               <h3>Notes</h3>
-              <p>Writing in service of ideas, attached where the thinking happens.</p>
+              <p>Threaded writing in service of ideas, attached where the thinking happens.</p>
             </article>
             <article class="feature">
+              <span class="feature-status">Built · active focus</span>
               <h3>Knowledge base</h3>
-              <p>Your research substrate — anything you collect, connectable to ideas as evidence.</p>
+              <p>Local files, media studios, AI jobs, and research connected to ideas as evidence.</p>
             </article>
             <article class="feature">
+              <span class="feature-status">Built · expanding</span>
               <h3>Execution PM</h3>
-              <p>Project management for the ideas that graduate to being built.</p>
+              <p>Planning and optional backlog tools for the ideas that graduate to being built.</p>
             </article>
             <article class="feature">
+              <span class="feature-status feature-status-roadmap">Roadmap</span>
               <h3>Internal CRM</h3>
               <p>Your own contacts and relationships, tied to the ideas they touch.</p>
             </article>
             <article class="feature">
+              <span class="feature-status feature-status-roadmap">In design</span>
               <h3>IP platform</h3>
               <p>The legal side: provenance, protection, licensing, and defensive publication.</p>
             </article>
             <article class="feature">
+              <span class="feature-status feature-status-roadmap">Roadmap</span>
               <h3>Marketplace</h3>
               <p>A curated public face for the ideas you decide are up for grabs.</p>
             </article>
             <article class="feature">
+              <span class="feature-status feature-status-roadmap">In design</span>
               <h3>Legacy</h3>
               <p>Succession for ideas and research — they outlive you, on your terms.</p>
             </article>
@@ -1063,8 +1224,9 @@
               <p class="section-kicker">Run it yourself</p>
               <h2>Yours by design.</h2>
               <p>
-                MIT licensed — anyone can run it, own it, and extend it, on a local machine
-                or a private server behind your own access control.
+                Clone and run it on a local machine or private server behind your own access
+                control. The project vision targets MIT licensing; a formal redistribution
+                license is not yet included in the repository.
               </p>
             </div>
             <a class="button" href="https://github.com/Isaac12x/ideafoundry">View source</a>
