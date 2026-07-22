@@ -160,12 +160,13 @@ Branch: `fix/named-installations`
 - The LaunchAgent passes its installation name back to the production startup script, and reinstalling one named service now stops that exact launchd label only.
 - Recovery-aware production database preparation and asset compilation now receive the freshly generated secret key, preventing installation from failing immediately after plist generation or when encrypted data still needs its recovery passphrase.
 - Installer reruns reuse an available Bundler executable instead of prompting to overwrite `bundle` and `bundler` on every run.
+- macOS privacy-protected checkout locations are rejected before service registration, avoiding LaunchAgents that loop with exit code 127 because they cannot read scripts under Desktop, Documents, or Downloads.
 - README, setup guidance, changelog, and focused installation-name tests cover the new interface and parallel-install example.
 
 ### Verification
 
 - `PARALLEL_WORKERS=1 bin/rails test` — 725 tests, 2,860 assertions, all passing.
-- Focused installation parser, derived-port, and installer wiring suite — 11 tests, 51 assertions, all passing, including empty and overlong name rejection.
+- Focused installation parser, derived-port, and installer wiring suite — 12 tests, 55 assertions, all passing, including invalid name and protected-path rejection.
 - `zsh -n` — shared helper, installer, and production startup script all parse successfully.
 - Rendered a `research` LaunchAgent with separate ports and verified it with `plutil`; label, argument, Compose project, port, and log path all resolved to the named installation.
 - Rendered and validated a named installation's isolated Caddy configuration and confirmed every derived `idea-test` listener port was available alongside the running legacy installation.
