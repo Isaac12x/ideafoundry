@@ -174,3 +174,20 @@ Branch: `fix/named-installations`
 - Both entry points return usage status 64 for an invalid installation name before performing startup or installation work.
 - `git diff --check` — passed.
 - `graphify update .` — completed successfully. Pre-existing generated `graphify-out/` changes remain outside this feature commit.
+
+## 2026-07-23 — Fresh-install recovery guard
+
+Branch: `fix/named-installations-master`
+
+### Delivered
+
+- Missing and zero-byte production databases are treated as uninitialized first-run state, not encrypted data requiring recovery.
+- The SQLCipher connection hook lets Rails prepare a zero-byte database as plaintext until the user explicitly enables database encryption in Security settings.
+- Recovery and typing-lock screens no longer mount the workspace activity drawer, shared app dialog, or their Stimulus controller.
+- Regression coverage distinguishes missing/empty databases from genuinely encrypted files and verifies the minimal recovery layout.
+
+### Verification
+
+- Focused SQLCipher and recovery layout suite — 20 tests, 63 assertions, all passing.
+- `PARALLEL_WORKERS=1 bin/rails test` — 729 tests, 2,888 assertions, all passing.
+- `bin/rails zeitwerk:check` — passed.
