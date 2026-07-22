@@ -22,6 +22,16 @@ HTTPS_PORT="${IDEA_APP_HTTPS_PORT:-$(idea_app_default_port "$INSTALLATION_NAME" 
 CADDY_HTTP_PORT="${IDEA_APP_CADDY_HTTP_PORT:-$(idea_app_default_port "$INSTALLATION_NAME" caddy_http)}"
 CADDY_ADMIN_PORT="${IDEA_APP_CADDY_ADMIN_PORT:-$(idea_app_default_port "$INSTALLATION_NAME" caddy_admin)}"
 SKIP_CADDY="${IDEA_APP_SKIP_CADDY:-$(idea_app_default_skip_caddy "$INSTALLATION_NAME")}"
+idea_app_validate_port "$APP_PORT" PORT || exit $?
+idea_app_validate_port "$VOICE_ID_HOST_PORT" VOICE_ID_PORT || exit $?
+idea_app_validate_port "$OCR_SERVICE_HOST_PORT" OCR_SERVICE_PORT || exit $?
+idea_app_validate_port "$HTTPS_PORT" IDEA_APP_HTTPS_PORT || exit $?
+idea_app_validate_port "$CADDY_HTTP_PORT" IDEA_APP_CADDY_HTTP_PORT || exit $?
+idea_app_validate_port "$CADDY_ADMIN_PORT" IDEA_APP_CADDY_ADMIN_PORT || exit $?
+if [[ "$SKIP_CADDY" != "0" && "$SKIP_CADDY" != "1" ]]; then
+  echo "IDEA_APP_SKIP_CADDY must be 0 or 1 (received: $SKIP_CADDY)." >&2
+  exit 64
+fi
 
 echo "==> Idea Foundry installer"
 echo "    Installation: $INSTALLATION_NAME | User: $USERNAME | Ruby: $RUBY_VERSION | App: $APP_DIR"
@@ -120,7 +130,15 @@ if launchctl print "gui/$(id -u)/$PLIST_LABEL" >/dev/null 2>&1; then
     launchctl unload "$PLIST_DEST" 2>/dev/null || true
 fi
 
-# --- Generate plist from template ---
+# --- DB setup ---
+echo "==> Preparing database..."
+SECRET_KEY_BASE="$SECRET_KEY_BASE" RAILS_ENV=production bin/rails db:prepare_if_unlocked
+
+# --- Asset precompile ---
+echo "==> Precompiling assets..."
+SECRET_KEY_BASE="$SECRET_KEY_BASE" RAILS_ENV=production bin/rails assets:precompile
+
+# --- Generate, load, and start LaunchAgent only after setup succeeds ---
 echo "==> Installing LaunchAgent → $PLIST_DEST"
 sed -e "s|__USERNAME__|${USERNAME}|g" \
     -e "s|__INSTALLATION_NAME__|${INSTALLATION_NAME}|g" \
@@ -136,15 +154,6 @@ sed -e "s|__USERNAME__|${USERNAME}|g" \
     -e "s|__SECRET_KEY_BASE__|${SECRET_KEY_BASE}|g" \
     "$APP_DIR/com.USERNAME.idea-app.plist" > "$PLIST_DEST"
 
-# --- DB setup ---
-echo "==> Preparing database..."
-SECRET_KEY_BASE="$SECRET_KEY_BASE" RAILS_ENV=production bin/rails db:prepare_if_unlocked
-
-# --- Asset precompile ---
-echo "==> Precompiling assets..."
-SECRET_KEY_BASE="$SECRET_KEY_BASE" RAILS_ENV=production bin/rails assets:precompile
-
-# --- Load + start ---
 echo "==> Starting service..."
 launchctl load -w "$PLIST_DEST"
 

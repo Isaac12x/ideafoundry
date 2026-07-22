@@ -18,6 +18,16 @@ export IDEA_APP_HTTPS_PORT="${IDEA_APP_HTTPS_PORT:-$(idea_app_default_port "$INS
 export IDEA_APP_CADDY_HTTP_PORT="${IDEA_APP_CADDY_HTTP_PORT:-$(idea_app_default_port "$INSTALLATION_NAME" caddy_http)}"
 export IDEA_APP_CADDY_ADMIN_PORT="${IDEA_APP_CADDY_ADMIN_PORT:-$(idea_app_default_port "$INSTALLATION_NAME" caddy_admin)}"
 export IDEA_APP_SKIP_CADDY="${IDEA_APP_SKIP_CADDY:-$(idea_app_default_skip_caddy "$INSTALLATION_NAME")}"
+idea_app_validate_port "$PORT" PORT || exit $?
+idea_app_validate_port "$VOICE_ID_PORT" VOICE_ID_PORT || exit $?
+idea_app_validate_port "$OCR_SERVICE_PORT" OCR_SERVICE_PORT || exit $?
+idea_app_validate_port "$IDEA_APP_HTTPS_PORT" IDEA_APP_HTTPS_PORT || exit $?
+idea_app_validate_port "$IDEA_APP_CADDY_HTTP_PORT" IDEA_APP_CADDY_HTTP_PORT || exit $?
+idea_app_validate_port "$IDEA_APP_CADDY_ADMIN_PORT" IDEA_APP_CADDY_ADMIN_PORT || exit $?
+if [[ "$IDEA_APP_SKIP_CADDY" != "0" && "$IDEA_APP_SKIP_CADDY" != "1" ]]; then
+  echo "IDEA_APP_SKIP_CADDY must be 0 or 1 (received: $IDEA_APP_SKIP_CADDY)." >&2
+  exit 64
+fi
 export VOICE_ID_SERVICE_URL="${VOICE_ID_SERVICE_URL:-http://127.0.0.1:${VOICE_ID_PORT}}"
 export OCR_SERVICE_URL="${OCR_SERVICE_URL:-http://127.0.0.1:${OCR_SERVICE_PORT}/extract}"
 export OCR_SERVICE_TIMEOUT="${OCR_SERVICE_TIMEOUT:-900}"

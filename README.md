@@ -72,7 +72,7 @@ bin/install personal
 bin/install research
 ```
 
-The default name remains `idea-app` at `https://ideas.local:8443`. Other names deterministically receive their own ports and print their URL when installation finishes. Explicit port environment variables still override those defaults. The production launcher accepts the same name directly, for example `bin/start_idea_app.sh research`; `IDEA_APP_INSTALLATION_NAME` can be used instead of the positional argument.
+The default name remains `idea-app` at `https://ideas.local:8443`. Other names deterministically receive their own ports and print their URL when installation finishes. Explicit port environment variables still override those defaults and must contain port numbers from 1 to 65535. The production launcher accepts the same name directly, for example `bin/start_idea_app.sh research`; `IDEA_APP_INSTALLATION_NAME` can be used instead of the positional argument.
 
 Once running, use the URL printed by the installer.
 

@@ -107,6 +107,26 @@ class IdeaAppInstallationTest < ActiveSupport::TestCase
     refute status.success?
   end
 
+  test "validates explicit port overrides" do
+    %w[1 3333 65535].each do |port|
+      _stdout, stderr, status = run_helper("idea_app_validate_port", port, "PORT")
+      assert status.success?, stderr
+    end
+
+    %w[0 65536 abc 33.3].each do |port|
+      _stdout, stderr, status = run_helper("idea_app_validate_port", port, "PORT")
+      assert_equal 64, status.exitstatus
+      assert_includes stderr, "PORT must be an integer from 1 to 65535"
+    end
+  end
+
+  test "writes the LaunchAgent only after production setup succeeds" do
+    installer = Rails.root.join("bin/install").read
+
+    assert_operator installer.index("==> Preparing database"), :<, installer.index("==> Installing LaunchAgent")
+    assert_operator installer.index("==> Precompiling assets"), :<, installer.index("==> Installing LaunchAgent")
+  end
+
   private
 
   def resolve_name(*arguments, env: {})
