@@ -97,6 +97,16 @@ class IdeaAppInstallationTest < ActiveSupport::TestCase
     assert_includes installer, 'SECRET_KEY_BASE="$SECRET_KEY_BASE" RAILS_ENV=production bin/rails assets:precompile'
   end
 
+  test "identifies macOS folders that LaunchAgents cannot read" do
+    %w[Desktop Documents Downloads].each do |folder|
+      _stdout, _stderr, status = run_helper("idea_app_launchd_protected_path", "/Users/test/#{folder}/ideafoundry", "/Users/test")
+      assert status.success?, "expected #{folder} to be protected"
+    end
+
+    _stdout, _stderr, status = run_helper("idea_app_launchd_protected_path", "/Users/test/Applications/IdeaFoundry/idea-test", "/Users/test")
+    refute status.success?
+  end
+
   private
 
   def resolve_name(*arguments, env: {})
