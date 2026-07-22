@@ -192,7 +192,7 @@ bin/jobs
 
 ### macOS LaunchAgent
 
-Run `bin/install [installation-name]` to generate and load a name-scoped LaunchAgent. Its label, plist filename, logs, and Compose project all include the installation name. The legacy default is `idea-app`. To run clones concurrently, give each one a name and non-overlapping `PORT`, `VOICE_ID_PORT`, and `OCR_SERVICE_PORT` values when invoking the installer; those values are persisted in the generated plist.
+Run `bin/install [installation-name]` to generate and load a name-scoped LaunchAgent. Its label, plist filename, logs, Compose project, application/sidecar ports, and local HTTPS proxy are isolated by installation name. The legacy `idea-app` default keeps ports 3333/8000/8001 and the system Caddy URL at `https://ideas.local:8443`; other names deterministically receive separate ports and an installation-local Caddy process. Explicit `PORT`, `VOICE_ID_PORT`, `OCR_SERVICE_PORT`, `IDEA_APP_HTTPS_PORT`, `IDEA_APP_CADDY_HTTP_PORT`, and `IDEA_APP_CADDY_ADMIN_PORT` values override the derived defaults and are persisted in the generated plist.
 
 A LaunchAgent plist is included at `com.iamin.idea-app.plist` for auto-starting in production on macOS login. Adjust the paths in the plist to match your installation, then:
 

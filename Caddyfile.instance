@@ -1,0 +1,9 @@
+{
+	https_port __HTTPS_PORT__
+	http_port __CADDY_HTTP_PORT__
+	admin 127.0.0.1:__CADDY_ADMIN_PORT__
+}
+
+ideas.local {
+	reverse_proxy 127.0.0.1:__PORT__
+}
