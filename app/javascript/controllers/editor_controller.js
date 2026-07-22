@@ -147,10 +147,16 @@ export default class extends Controller {
     })
   }
 
-  _insertLink() {
+  async _insertLink() {
     const prev = this._editor.getAttributes("link").href || ""
-    const url = prompt("URL:", prev)
-    if (url === null) return
+    const url = await window.AppDialog?.prompt("Enter the destination for this link. Leave it empty to remove the current link.", {
+      title: "Add a link",
+      inputLabel: "URL",
+      defaultValue: prev,
+      placeholder: "https://example.com",
+      confirmLabel: "Apply link",
+    })
+    if (url == null) return
     if (url === "") {
       this._editor.chain().focus().extendMarkRange("link").unsetLink().run()
     } else {

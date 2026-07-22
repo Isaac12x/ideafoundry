@@ -39,6 +39,27 @@ Branch: `feature/web`
 - `git diff --check` — passed.
 - `graphify update .` — completed successfully; generated `graphify-out/` changes remain outside the documentation commit.
 
+## 2026-07-22 — App-styled dialogs and notes-tab safety
+
+Branch: `fix/app-styled-dialogs`
+
+### Delivered
+
+- Added one accessible, promise-based Idea Foundry dialog for alerts, confirmations, and text prompts, with keyboard/backdrop cancellation, focus handling, reduced-motion support, queued requests, and amber/red semantic treatments.
+- Routed every Turbo `data-turbo-confirm` action through the shared dialog and migrated the remaining direct browser alert/confirm/prompt calls in the editor, knowledge-base tree, drawings, and encrypted draft flow.
+- Replaced the notes-toolbar browser prompt with a styled “Add note tab” form and added an explicit destructive confirmation before a custom tab and its local content are deleted.
+- Corrected the custom note-tab markup so its tab and delete controls are separate, valid buttons with an accessible delete label.
+- Kept the reusable prompt input structurally hidden outside prompt mode so security pages do not gain a dormant typed-input fallback.
+
+### Verification
+
+- `node --test test/javascript/*.mjs` — 26 tests, all passing.
+- `PARALLEL_WORKERS=1 bin/rails test` — 713 tests, 2,808 assertions, all passing.
+- `bin/rails test test/system/app_dialog_system_test.rb` — 2 headless Chrome tests, 14 assertions, all passing; exercised add, cancel-delete, confirm-delete, and Turbo-confirm flows.
+- `RAILS_ENV=test bin/rails assets:precompile` and `bin/rails zeitwerk:check` — completed successfully.
+- Add and destructive-dialog states were visually checked at 1400×1400 against the app’s Dark Forge design system.
+- `git diff --check` — passed.
+
 ## 2026-07-13 — Knowledge-base media editing studios
 
 Branch: `feature/kb-media-editors` (stacked on `feature/kb-live-filesystem-jobs`)
