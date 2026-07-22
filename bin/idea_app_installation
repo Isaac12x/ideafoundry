@@ -98,3 +98,13 @@ idea_app_launchd_protected_path() {
     *) return 1 ;;
   esac
 }
+
+idea_app_validate_port() {
+  local port="$1"
+  local variable_name="$2"
+
+  if [[ ! "$port" =~ ^[0-9]+$ ]] || (( port < 1 || port > 65535 )); then
+    echo "$variable_name must be an integer from 1 to 65535 (received: $port)." >&2
+    return 64
+  fi
+}
