@@ -28,6 +28,14 @@
     <string>__VOICE_ID_PORT__</string>
     <key>OCR_SERVICE_PORT</key>
     <string>__OCR_SERVICE_PORT__</string>
+    <key>IDEA_APP_HTTPS_PORT</key>
+    <string>__HTTPS_PORT__</string>
+    <key>IDEA_APP_CADDY_HTTP_PORT</key>
+    <string>__CADDY_HTTP_PORT__</string>
+    <key>IDEA_APP_CADDY_ADMIN_PORT</key>
+    <string>__CADDY_ADMIN_PORT__</string>
+    <key>IDEA_APP_SKIP_CADDY</key>
+    <string>__SKIP_CADDY__</string>
     <key>IDEA_APP_INSTALLATION_NAME</key>
     <string>__INSTALLATION_NAME__</string>
     <key>COMPOSE_PROJECT_NAME</key>

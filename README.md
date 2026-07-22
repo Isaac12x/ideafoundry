@@ -63,16 +63,16 @@ bin/install
 
 This handles: Homebrew, rbenv, Ruby 3.4.5, Node.js, Caddy, gems, npm deps, DB setup, asset precompilation, `/etc/hosts` entry, Apache httpd disable, and LaunchAgent registration. On startup, the LaunchAgent also starts the Docker/Podman Compose sidecar services when a container runtime is available. Requires `sudo` for hosts file and httpd changes.
 
-Give each installation a name when running more than one clone. The name keeps its LaunchAgent, logs, and Compose resources separate. Concurrent installations also need distinct host ports; values supplied during installation are saved in that installation's LaunchAgent:
+Give each installation a name when running more than one clone. The name keeps its LaunchAgent, logs, Compose resources, Rails/sidecar ports, and HTTPS proxy separate:
 
 ```bash
 bin/install personal
-PORT=3334 VOICE_ID_PORT=8010 OCR_SERVICE_PORT=8011 bin/install research
+bin/install research
 ```
 
-The default name remains `idea-app`. The production launcher accepts the same name directly, for example `bin/start_idea_app.sh research`; `IDEA_APP_INSTALLATION_NAME` can be used instead of the positional argument.
+The default name remains `idea-app` at `https://ideas.local:8443`. Other names deterministically receive their own ports and print their URL when installation finishes. Explicit port environment variables still override those defaults. The production launcher accepts the same name directly, for example `bin/start_idea_app.sh research`; `IDEA_APP_INSTALLATION_NAME` can be used instead of the positional argument.
 
-Once running: **https://ideas.local:8443**
+Once running, use the URL printed by the installer.
 
 Logs: `/tmp/<installation-name>.out` and `/tmp/<installation-name>.err`
 

@@ -10,10 +10,14 @@ source "$APP_DIR/bin/idea_app_installation"
 INSTALLATION_NAME="$(idea_app_installation_name "$@")" || exit $?
 export IDEA_APP_INSTALLATION_NAME="$INSTALLATION_NAME"
 export RAILS_ENV="${RAILS_ENV:-production}"
-export PORT="${PORT:-3333}"
+export PORT="${PORT:-$(idea_app_default_port "$INSTALLATION_NAME" app)}"
 export COMPOSE_PROJECT_NAME="${COMPOSE_PROJECT_NAME:-$INSTALLATION_NAME}"
-export VOICE_ID_PORT="${VOICE_ID_PORT:-8000}"
-export OCR_SERVICE_PORT="${OCR_SERVICE_PORT:-8001}"
+export VOICE_ID_PORT="${VOICE_ID_PORT:-$(idea_app_default_port "$INSTALLATION_NAME" voice_id)}"
+export OCR_SERVICE_PORT="${OCR_SERVICE_PORT:-$(idea_app_default_port "$INSTALLATION_NAME" ocr)}"
+export IDEA_APP_HTTPS_PORT="${IDEA_APP_HTTPS_PORT:-$(idea_app_default_port "$INSTALLATION_NAME" https)}"
+export IDEA_APP_CADDY_HTTP_PORT="${IDEA_APP_CADDY_HTTP_PORT:-$(idea_app_default_port "$INSTALLATION_NAME" caddy_http)}"
+export IDEA_APP_CADDY_ADMIN_PORT="${IDEA_APP_CADDY_ADMIN_PORT:-$(idea_app_default_port "$INSTALLATION_NAME" caddy_admin)}"
+export IDEA_APP_SKIP_CADDY="${IDEA_APP_SKIP_CADDY:-$(idea_app_default_skip_caddy "$INSTALLATION_NAME")}"
 export VOICE_ID_SERVICE_URL="${VOICE_ID_SERVICE_URL:-http://127.0.0.1:${VOICE_ID_PORT}}"
 export OCR_SERVICE_URL="${OCR_SERVICE_URL:-http://127.0.0.1:${OCR_SERVICE_PORT}/extract}"
 export OCR_SERVICE_TIMEOUT="${OCR_SERVICE_TIMEOUT:-900}"
@@ -137,19 +141,28 @@ else
   echo "$JOBS_PID" > tmp/pids/solid_queue.pid
 fi
 
-# HTTPS for ideas.local is handled by the system Caddy on :8443
-# (/opt/homebrew/etc/Caddyfile → localhost:$PORT). Skip the app-local
-# Caddy unless explicitly re-enabled for standalone runs.
-if [[ "${IDEA_APP_SKIP_CADDY:-1}" == "1" ]]; then
-  echo "==> IDEA_APP_SKIP_CADDY=1; using system Caddy for ideas.local:${PORT}."
+# The legacy installation keeps using the system Caddy on :8443. Named
+# installations run isolated Caddy processes on their stable derived ports.
+CADDY_CONFIG=""
+if [[ "$IDEA_APP_SKIP_CADDY" == "1" ]]; then
+  echo "==> IDEA_APP_SKIP_CADDY=1; using system Caddy at https://ideas.local:${IDEA_APP_HTTPS_PORT}."
 else
-  caddy start --config "$APP_DIR/Caddyfile" --pidfile "$APP_DIR/tmp/pids/caddy.pid"
+  INSTANCE_RUNTIME_DIR="$APP_DIR/tmp/installations/$INSTALLATION_NAME"
+  CADDY_CONFIG="$INSTANCE_RUNTIME_DIR/Caddyfile"
+  mkdir -p "$INSTANCE_RUNTIME_DIR" "$APP_DIR/tmp/pids"
+  sed -e "s|__PORT__|${PORT}|g" \
+      -e "s|__HTTPS_PORT__|${IDEA_APP_HTTPS_PORT}|g" \
+      -e "s|__CADDY_HTTP_PORT__|${IDEA_APP_CADDY_HTTP_PORT}|g" \
+      -e "s|__CADDY_ADMIN_PORT__|${IDEA_APP_CADDY_ADMIN_PORT}|g" \
+      "$APP_DIR/Caddyfile.instance" > "$CADDY_CONFIG"
+  echo "==> Starting installation Caddy at https://ideas.local:${IDEA_APP_HTTPS_PORT}."
+  caddy start --config "$CADDY_CONFIG" --adapter caddyfile --pidfile "$APP_DIR/tmp/pids/caddy-${INSTALLATION_NAME}.pid"
 fi
 
 cleanup() {
-  if [[ "${IDEA_APP_SKIP_CADDY:-1}" != "1" ]]; then
+  if [[ "$IDEA_APP_SKIP_CADDY" != "1" ]]; then
     echo "==> Shutting down Caddy..."
-    caddy stop --config "$APP_DIR/Caddyfile" 2>/dev/null || true
+    caddy stop --config "$CADDY_CONFIG" --adapter caddyfile 2>/dev/null || true
   fi
   if [[ -n "$JOBS_PID" ]]; then
     echo "==> Shutting down SolidQueue (PID $JOBS_PID)..."

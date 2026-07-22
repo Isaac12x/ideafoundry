@@ -19,3 +19,55 @@ idea_app_installation_name() {
 
   print -r -- "$installation_name"
 }
+
+# Named installations receive a stable port slot so the name alone is enough
+# to keep Rails, sidecars, and the local Caddy proxy off another install's
+# listeners. Explicit environment variables can still override every port.
+idea_app_port_slot() {
+  local installation_name="$1"
+  local checksum_output checksum
+
+  checksum_output="$(print -rn -- "$installation_name" | cksum)"
+  checksum="${checksum_output%% *}"
+  print -r -- "$((checksum % 8000))"
+}
+
+idea_app_default_port() {
+  local installation_name="$1"
+  local service="$2"
+
+  if [[ "$installation_name" == "idea-app" ]]; then
+    case "$service" in
+      app) print -r -- 3333 ;;
+      voice_id) print -r -- 8000 ;;
+      ocr) print -r -- 8001 ;;
+      https) print -r -- 8443 ;;
+      caddy_http) print -r -- 8080 ;;
+      caddy_admin) print -r -- 2019 ;;
+      *) echo "Unknown Idea Foundry service port: $service" >&2; return 64 ;;
+    esac
+    return 0
+  fi
+
+  local slot="$(idea_app_port_slot "$installation_name")"
+  local base
+  case "$service" in
+    app) base=10000 ;;
+    voice_id) base=18000 ;;
+    ocr) base=26000 ;;
+    https) base=34000 ;;
+    caddy_http) base=42000 ;;
+    caddy_admin) base=50000 ;;
+    *) echo "Unknown Idea Foundry service port: $service" >&2; return 64 ;;
+  esac
+
+  print -r -- "$((base + slot))"
+}
+
+idea_app_default_skip_caddy() {
+  if [[ "$1" == "idea-app" ]]; then
+    print -r -- 1
+  else
+    print -r -- 0
+  fi
+}

@@ -156,15 +156,17 @@ Branch: `fix/named-installations`
 - `bin/install [installation-name]` and `bin/start_idea_app.sh [installation-name]` now share validated installation-name parsing, with `idea-app` retained as the no-argument default and `IDEA_APP_INSTALLATION_NAME` supported for environment-driven launches.
 - Each generated macOS LaunchAgent uses a name-scoped label, plist filename, stdout/stderr paths, and Docker/Podman Compose project name, preventing separate clones from taking over each other's service and container resources.
 - Installer-time `PORT`, `VOICE_ID_PORT`, and `OCR_SERVICE_PORT` overrides are persisted in the generated plist so concurrently running clones can avoid host-port collisions.
+- Non-default names now derive stable, disjoint Rails, sidecar, HTTPS, Caddy HTTP, and Caddy admin ports automatically and run an installation-local Caddy proxy, so a name alone is sufficient for side-by-side operation.
 - The LaunchAgent passes its installation name back to the production startup script, and reinstalling one named service now stops that exact launchd label only.
 - README, setup guidance, changelog, and focused installation-name tests cover the new interface and parallel-install example.
 
 ### Verification
 
-- `PARALLEL_WORKERS=1 bin/rails test` — 719 tests, 2,822 assertions, all passing.
-- Focused installation parser suite — 6 tests, 14 assertions, all passing.
+- `PARALLEL_WORKERS=1 bin/rails test` — 721 tests, 2,847 assertions, all passing.
+- Focused installation parser and derived-port suite — 8 tests, 39 assertions, all passing.
 - `zsh -n` — shared helper, installer, and production startup script all parse successfully.
 - Rendered a `research` LaunchAgent with separate ports and verified it with `plutil`; label, argument, Compose project, port, and log path all resolved to the named installation.
+- Rendered and validated a named installation's isolated Caddy configuration and confirmed every derived `idea-test` listener port was available alongside the running legacy installation.
 - Both entry points return usage status 64 for an invalid installation name before performing startup or installation work.
 - `git diff --check` — passed.
 - `graphify update .` — completed successfully. Pre-existing generated `graphify-out/` changes remain outside this feature commit.

@@ -10,12 +10,17 @@ HOMEDIR=$HOME
 PLIST_LABEL="com.${USERNAME}.${INSTALLATION_NAME}"
 PLIST_NAME="${PLIST_LABEL}.plist"
 PLIST_DEST="$HOMEDIR/Library/LaunchAgents/$PLIST_NAME"
-APP_PORT="${PORT:-3333}"
-VOICE_ID_HOST_PORT="${VOICE_ID_PORT:-8000}"
-OCR_SERVICE_HOST_PORT="${OCR_SERVICE_PORT:-8001}"
+APP_PORT="${PORT:-$(idea_app_default_port "$INSTALLATION_NAME" app)}"
+VOICE_ID_HOST_PORT="${VOICE_ID_PORT:-$(idea_app_default_port "$INSTALLATION_NAME" voice_id)}"
+OCR_SERVICE_HOST_PORT="${OCR_SERVICE_PORT:-$(idea_app_default_port "$INSTALLATION_NAME" ocr)}"
+HTTPS_PORT="${IDEA_APP_HTTPS_PORT:-$(idea_app_default_port "$INSTALLATION_NAME" https)}"
+CADDY_HTTP_PORT="${IDEA_APP_CADDY_HTTP_PORT:-$(idea_app_default_port "$INSTALLATION_NAME" caddy_http)}"
+CADDY_ADMIN_PORT="${IDEA_APP_CADDY_ADMIN_PORT:-$(idea_app_default_port "$INSTALLATION_NAME" caddy_admin)}"
+SKIP_CADDY="${IDEA_APP_SKIP_CADDY:-$(idea_app_default_skip_caddy "$INSTALLATION_NAME")}"
 
 echo "==> Idea Foundry installer"
 echo "    Installation: $INSTALLATION_NAME | User: $USERNAME | Ruby: $RUBY_VERSION | App: $APP_DIR"
+echo "    Ports: Rails $APP_PORT | Voice ID $VOICE_ID_HOST_PORT | OCR $OCR_SERVICE_HOST_PORT | HTTPS $HTTPS_PORT"
 
 # --- Homebrew ---
 if ! command -v brew &>/dev/null; then
@@ -117,6 +122,10 @@ sed -e "s|__USERNAME__|${USERNAME}|g" \
     -e "s|__PORT__|${APP_PORT}|g" \
     -e "s|__VOICE_ID_PORT__|${VOICE_ID_HOST_PORT}|g" \
     -e "s|__OCR_SERVICE_PORT__|${OCR_SERVICE_HOST_PORT}|g" \
+    -e "s|__HTTPS_PORT__|${HTTPS_PORT}|g" \
+    -e "s|__CADDY_HTTP_PORT__|${CADDY_HTTP_PORT}|g" \
+    -e "s|__CADDY_ADMIN_PORT__|${CADDY_ADMIN_PORT}|g" \
+    -e "s|__SKIP_CADDY__|${SKIP_CADDY}|g" \
     -e "s|__SECRET_KEY_BASE__|${SECRET_KEY_BASE}|g" \
     "$APP_DIR/com.USERNAME.idea-app.plist" > "$PLIST_DEST"
 
@@ -136,4 +145,4 @@ echo ""
 echo "==> Done! Idea Foundry installation '$INSTALLATION_NAME' is running."
 echo "    Service: $PLIST_NAME"
 echo "    Logs:    /tmp/${INSTALLATION_NAME}.out & /tmp/${INSTALLATION_NAME}.err"
-echo "    URL:     https://ideas.local:8443"
+echo "    URL:     https://ideas.local:${HTTPS_PORT}"
