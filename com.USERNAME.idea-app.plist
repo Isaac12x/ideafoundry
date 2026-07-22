@@ -4,12 +4,13 @@
 <plist version="1.0">
 <dict>
   <key>Label</key>
-  <string>com.__USERNAME__.idea-app</string>
+  <string>com.__USERNAME__.__INSTALLATION_NAME__</string>
 
   <key>ProgramArguments</key>
   <array>
     <string>/bin/zsh</string>
     <string>__APPDIR__/bin/start_idea_app.sh</string>
+    <string>__INSTALLATION_NAME__</string>
   </array>
 
   <key>WorkingDirectory</key>
@@ -22,7 +23,15 @@
     <key>RAILS_ENV</key>
     <string>production</string>
     <key>PORT</key>
-    <string>3333</string>
+    <string>__PORT__</string>
+    <key>VOICE_ID_PORT</key>
+    <string>__VOICE_ID_PORT__</string>
+    <key>OCR_SERVICE_PORT</key>
+    <string>__OCR_SERVICE_PORT__</string>
+    <key>IDEA_APP_INSTALLATION_NAME</key>
+    <string>__INSTALLATION_NAME__</string>
+    <key>COMPOSE_PROJECT_NAME</key>
+    <string>__INSTALLATION_NAME__</string>
     <key>SECRET_KEY_BASE</key>
     <string>__SECRET_KEY_BASE__</string>
   </dict>
@@ -34,8 +43,8 @@
   <true/>
 
   <key>StandardOutPath</key>
-  <string>/tmp/idea-app.out</string>
+  <string>/tmp/__INSTALLATION_NAME__.out</string>
   <key>StandardErrorPath</key>
-  <string>/tmp/idea-app.err</string>
+  <string>/tmp/__INSTALLATION_NAME__.err</string>
 </dict>
 </plist>
