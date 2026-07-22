@@ -163,7 +163,7 @@ Branch: `fix/named-installations`
 ### Verification
 
 - `PARALLEL_WORKERS=1 bin/rails test` — 721 tests, 2,847 assertions, all passing.
-- Focused installation parser and derived-port suite — 8 tests, 39 assertions, all passing.
+- Focused installation parser and derived-port suite — 10 tests, 47 assertions, all passing, including empty and overlong name rejection.
 - `zsh -n` — shared helper, installer, and production startup script all parse successfully.
 - Rendered a `research` LaunchAgent with separate ports and verified it with `plutil`; label, argument, Compose project, port, and log path all resolved to the named installation.
 - Rendered and validated a named installation's isolated Caddy configuration and confirmed every derived `idea-test` listener port was available alongside the running legacy installation.
