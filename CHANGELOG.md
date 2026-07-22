@@ -71,6 +71,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Fresh production installations now prepare missing or empty databases without asking for a nonexistent recovery passphrase, and recovery screens no longer mount workspace-only activity/dialog controls.
 - Named installations now keep their LaunchAgents, logs, and Docker/Podman Compose resources separate, while preserving `idea-app` as the default.
 - Browser-native prompts, alerts, and confirmations now use a shared Idea Foundry dialog, including styled add/delete flows for notes-toolbar tabs and consistent destructive treatment across Turbo actions.
 - Knowledge-base reloads reopen the last valid document instead of resetting to the first available file.

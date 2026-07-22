@@ -116,6 +116,24 @@ class SqlcipherInitializerTest < ActiveSupport::TestCase
     File.delete(path) if path&.exist?
   end
 
+  test "empty SQLCipher databases are allowed to be prepared before UI encryption is enabled" do
+    path = Rails.root.join("tmp/empty_sqlcipher_initializer_test.sqlite3")
+    FileUtils.touch(path)
+    connection = FakeConnection.new(nil)
+
+    RecoverySecret.stub(:present?, false) do
+      SQLite3.stub(:sqlcipher?, false) do
+        assert_nothing_raised do
+          Probe.new(connection, database: path.to_s).apply_key!
+        end
+      end
+    end
+
+    assert_empty connection.executed_sql
+  ensure
+    File.delete(path) if path&.exist?
+  end
+
   test "encrypted SQLCipher database raises recovery prompt when the loaded passphrase cannot unlock it" do
     path = Rails.root.join("tmp/encrypted_sqlcipher_bad_key_initializer_test.sqlite3")
     File.binwrite(path, "not a sqlite header")

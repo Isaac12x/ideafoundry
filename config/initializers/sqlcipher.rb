@@ -13,6 +13,15 @@ module IdeaFoundrySqlcipherConnectionKey
     path = database_path
     encrypted_database = encrypted_sqlcipher_database?(path)
 
+    # SQLite opens a missing database by creating a zero-byte file before this
+    # hook runs. Treat that file as an uninitialized database so db:prepare can
+    # create the first-run plaintext schema. Encryption remains an explicit
+    # action in Settings; there is no recovery secret to request yet.
+    if empty_sqlite_database?(path)
+      Rails.logger.info("SQLCipher database at #{path} is empty; allowing first-run database preparation before UI encryption is enabled.")
+      return
+    end
+
     if plaintext_sqlite_database?(path)
       Rails.logger.warn("SQLCipher database at #{path} is plaintext; open /settings/security to encrypt it from the UI.")
       return
@@ -55,6 +64,12 @@ module IdeaFoundrySqlcipherConnectionKey
 
   def plaintext_sqlite_database?(path = database_path)
     path.present? && File.file?(path) && File.binread(path, 16) == "SQLite format 3\0"
+  rescue SystemCallError
+    false
+  end
+
+  def empty_sqlite_database?(path = database_path)
+    path.present? && File.file?(path) && File.zero?(path)
   rescue SystemCallError
     false
   end
