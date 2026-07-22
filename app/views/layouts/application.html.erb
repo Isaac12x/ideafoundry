@@ -27,7 +27,8 @@
     display_quote = @user&.quote_for_page(quote_page_key).to_s.strip
     display_contrast = @user&.display_contrast.to_s
     show_notes = !security_lock_screen
-    body_controllers = ["activity-panel"]
+    body_controllers = []
+    body_controllers << "activity-panel" unless security_lock_screen
     body_controllers << "shortcuts" unless security_lock_screen
     body_controllers << "typing-activity" if typing_activity_enabled
     body_controllers << "kb-notes" if show_notes
@@ -35,7 +36,9 @@
   <body class="<%= [body_class, show_notes ? 'has-notes-bar' : nil].compact.join(' ') %>"
         data-contrast="<%= display_contrast.presence || 'normal' %>"
         style="--contrast: <%= (@user&.display_contrast || 100) %>%"
-        data-controller="<%= body_controllers.join(' ') %>"
+        <% if body_controllers.any? %>
+          data-controller="<%= body_controllers.join(' ') %>"
+        <% end %>
         <% unless security_lock_screen %>
           data-shortcuts-plan-url-value="<%= lists_path %>"
           data-shortcuts-ideas-url-value="<%= ideas_path %>"
@@ -150,8 +153,8 @@
       <%= yield %>
     </main>
 
-    <%= render "layouts/activity_panel" %>
-    <%= render "layouts/app_dialog" %>
+    <%= render "layouts/activity_panel" unless security_lock_screen %>
+    <%= render "layouts/app_dialog" unless security_lock_screen %>
 
     <% if show_notes %>
       <div class="app-notes-bar">

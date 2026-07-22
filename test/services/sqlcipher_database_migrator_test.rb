@@ -64,6 +64,18 @@ class SqlcipherDatabaseMigratorTest < ActiveSupport::TestCase
     end
   end
 
+  test "missing and empty databases do not require a recovery passphrase on first run" do
+    missing_path = @root.join("missing.sqlite3")
+    empty_path = @root.join("empty.sqlite3")
+    FileUtils.touch(empty_path)
+
+    RecoverySecret.stub(:present?, false) do
+      SqlcipherDatabaseMigrator.stub(:configured_database_paths, [missing_path.to_s, empty_path.to_s]) do
+        assert_empty SqlcipherDatabaseMigrator.locked_database_paths_without_recovery_secret(env: "production")
+      end
+    end
+  end
+
   test "locked database detection skips prepare when the loaded recovery passphrase cannot unlock the database" do
     encrypted_path = @root.join("encrypted.sqlite3")
     File.binwrite(encrypted_path, "not a sqlite header")
