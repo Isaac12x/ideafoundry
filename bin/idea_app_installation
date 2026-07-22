@@ -86,3 +86,15 @@ idea_app_default_skip_caddy() {
     print -r -- 0
   fi
 }
+
+idea_app_launchd_protected_path() {
+  local app_dir="$1"
+  local home_dir="$2"
+
+  case "$app_dir" in
+    "$home_dir/Desktop"|"$home_dir/Desktop/"*|\
+    "$home_dir/Documents"|"$home_dir/Documents/"*|\
+    "$home_dir/Downloads"|"$home_dir/Downloads/"*) return 0 ;;
+    *) return 1 ;;
+  esac
+}

@@ -7,6 +7,11 @@ INSTALLATION_NAME="$(idea_app_installation_name "$@")" || exit $?
 RUBY_VERSION=$(cat "$APP_DIR/.ruby-version")
 USERNAME=$(whoami)
 HOMEDIR=$HOME
+if idea_app_launchd_protected_path "$APP_DIR" "$HOMEDIR"; then
+  echo "Cannot install a LaunchAgent from a macOS privacy-protected folder: $APP_DIR" >&2
+  echo "Move the checkout outside Desktop, Documents, or Downloads (for example, ~/Applications/IdeaFoundry/$INSTALLATION_NAME) and rerun bin/install." >&2
+  exit 78
+fi
 PLIST_LABEL="com.${USERNAME}.${INSTALLATION_NAME}"
 PLIST_NAME="${PLIST_LABEL}.plist"
 PLIST_DEST="$HOMEDIR/Library/LaunchAgents/$PLIST_NAME"

@@ -61,6 +61,8 @@ cd idea-app
 bin/install
 ```
 
+Keep installed checkouts outside macOS privacy-protected `Desktop`, `Documents`, and `Downloads` folders; `launchd` cannot reliably read scripts from those locations. `~/Applications/IdeaFoundry/<installation-name>` is a suitable location.
+
 This handles: Homebrew, rbenv, Ruby 3.4.5, Node.js, Caddy, gems, npm deps, DB setup, asset precompilation, `/etc/hosts` entry, Apache httpd disable, and LaunchAgent registration. On startup, the LaunchAgent also starts the Docker/Podman Compose sidecar services when a container runtime is available. Requires `sudo` for hosts file and httpd changes.
 
 Give each installation a name when running more than one clone. The name keeps its LaunchAgent, logs, Compose resources, Rails/sidecar ports, and HTTPS proxy separate:
