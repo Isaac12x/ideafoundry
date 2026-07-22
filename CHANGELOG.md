@@ -71,6 +71,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Fresh production installations now prepare missing or empty databases without asking for a nonexistent recovery passphrase, and recovery screens no longer mount workspace-only activity/dialog controls.
 - Named installations now keep their LaunchAgents, logs, Docker/Podman Compose resources, host ports, and local HTTPS proxies separate, while preserving `idea-app` and its legacy ports as the default.
 - Fresh installs pass their generated secret key into production database preparation and asset compilation, and defer database preparation when encrypted data still needs its recovery passphrase.
 - Installer reruns no longer reinstall Bundler or prompt to overwrite its executables when `bundle` is already available.
