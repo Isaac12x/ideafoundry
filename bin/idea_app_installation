@@ -9,11 +9,26 @@ idea_app_installation_name() {
     return 64
   fi
 
-  local installation_name="${1:-${IDEA_APP_INSTALLATION_NAME:-idea-app}}"
+  if (( $# == 1 )) && [[ -z "$1" ]]; then
+    echo "Installation name cannot be empty." >&2
+    return 64
+  fi
+
+  local installation_name
+  if (( $# == 1 )); then
+    installation_name="$1"
+  else
+    installation_name="${IDEA_APP_INSTALLATION_NAME:-idea-app}"
+  fi
 
   if [[ ! "$installation_name" =~ ^[a-z0-9][a-z0-9_-]*$ ]]; then
     echo "Invalid installation name: $installation_name" >&2
     echo "Use lowercase letters, digits, dashes, or underscores; begin with a letter or digit." >&2
+    return 64
+  fi
+
+  if (( ${#installation_name} > 63 )); then
+    echo "Installation name is too long: use at most 63 characters." >&2
     return 64
   fi
 

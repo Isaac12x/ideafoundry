@@ -46,6 +46,25 @@ class IdeaAppInstallationTest < ActiveSupport::TestCase
     assert_includes stderr, "Usage:"
   end
 
+  test "rejects an explicitly empty installation name" do
+    _stdout, stderr, status = resolve_name("")
+
+    assert_equal 64, status.exitstatus
+    assert_includes stderr, "Installation name cannot be empty"
+  end
+
+  test "limits installation names to 63 characters" do
+    accepted_name = "a" * 63
+    stdout, stderr, status = resolve_name(accepted_name)
+
+    assert status.success?, stderr
+    assert_equal "#{accepted_name}\n", stdout
+
+    _stdout, stderr, status = resolve_name("a" * 64)
+    assert_equal 64, status.exitstatus
+    assert_includes stderr, "at most 63 characters"
+  end
+
   test "preserves legacy ports and system Caddy behavior for idea-app" do
     assert_equal "3333\n", run_helper("idea_app_default_port", "idea-app", "app").first
     assert_equal "8000\n", run_helper("idea_app_default_port", "idea-app", "voice_id").first
