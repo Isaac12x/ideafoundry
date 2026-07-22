@@ -1,5 +1,25 @@
 # Handoff
 
+## 2026-07-22 — Project history and macOS service documentation
+
+Branch: `feature/web`
+
+### Delivered
+
+- Updated the GitHub Pages overview with an editorial build timeline from v1.0 through the current knowledge-base work.
+- Marked the eight platform areas as built, expanding, in design, or roadmap so the working product is distinct from the long-term vision.
+- Rewrote the README feature snapshot around the current capture, planning, knowledge-base, provenance, security, agent, and backup capabilities.
+- Added a matching release-history summary, corrected the documented Rails/database stack, and replaced the install placeholder with the repository URL.
+- Recommended pairing the installed macOS LaunchAgent with LaunchControl for service state, runtime stats, logs, controls, keep-running automation, and critical-service notifications.
+
+### Verification
+
+- `tidy -errors -quiet docs/index.html` — passed with no HTML errors or warnings.
+- Headless Chrome at 1440×1000 and 500×844 — visually checked the release ledger; the narrow viewport has no horizontal overflow.
+- Repository, asset, heading, and external GitHub link checks — passed.
+- `git diff --check` — passed.
+- `graphify update .` — completed successfully; generated `graphify-out/` changes remain outside the documentation commit.
+
 ## 2026-07-13 — Knowledge-base media editing studios
 
 Branch: `feature/kb-media-editors` (stacked on `feature/kb-live-filesystem-jobs`)
