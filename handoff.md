@@ -159,6 +159,7 @@ Branch: `fix/named-installations`
 - Non-default names now derive stable, disjoint Rails, sidecar, HTTPS, Caddy HTTP, and Caddy admin ports automatically and run an installation-local Caddy proxy, so a name alone is sufficient for side-by-side operation.
 - The LaunchAgent passes its installation name back to the production startup script, and reinstalling one named service now stops that exact launchd label only.
 - Recovery-aware production database preparation and asset compilation now receive the freshly generated secret key, preventing installation from failing immediately after plist generation or when encrypted data still needs its recovery passphrase.
+- Installer reruns reuse an available Bundler executable instead of prompting to overwrite `bundle` and `bundler` on every run.
 - README, setup guidance, changelog, and focused installation-name tests cover the new interface and parallel-install example.
 
 ### Verification
