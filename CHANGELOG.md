@@ -49,6 +49,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Refined the project-site narrative around capture, provenance, and the working product, and made the hero film return to its still artwork after playing once.
 - URL-based knowledge-base file creation now queues downloads without reloading the page and refreshes the exact destination folder when the asynchronous job finishes.
 - The keyboard-shortcuts helper now appears as `/shortcuts/` at the bottom-right edge of the notes bar.
 - Batch imports now discover local Apple Notes databases directly, preview folders and individual notes, and route cloud note apps through OAuth-oriented connection flows.
