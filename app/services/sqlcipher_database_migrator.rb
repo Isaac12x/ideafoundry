@@ -34,6 +34,8 @@ class SqlcipherDatabaseMigrator
     return true unless RecoverySecret.present?
 
     !encrypted_database_openable_with_current_key?(path)
+  rescue SystemCallError
+    false
   end
 
   def self.encrypted_database_openable_with_current_key?(path)

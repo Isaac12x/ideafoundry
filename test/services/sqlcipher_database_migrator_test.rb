@@ -76,6 +76,16 @@ class SqlcipherDatabaseMigratorTest < ActiveSupport::TestCase
     end
   end
 
+  test "a database removed during startup inspection is treated as missing" do
+    disappearing_path = Object.new
+    disappearing_path.define_singleton_method(:file?) { true }
+    disappearing_path.define_singleton_method(:size) { raise Errno::ENOENT }
+
+    Pathname.stub(:new, disappearing_path) do
+      refute SqlcipherDatabaseMigrator.locked_database_path_for_startup?("removed.sqlite3")
+    end
+  end
+
   test "locked database detection skips prepare when the loaded recovery passphrase cannot unlock the database" do
     encrypted_path = @root.join("encrypted.sqlite3")
     File.binwrite(encrypted_path, "not a sqlite header")
