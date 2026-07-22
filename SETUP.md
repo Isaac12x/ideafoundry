@@ -120,7 +120,7 @@ Lifecycle management drives `docker compose` and therefore needs docker CLI
 access on whatever host runs the `long_ocr` worker (host launchd run, a mounted
 docker socket, or a remote backend).
 
-When Rails runs directly under launchd/systemd, `bin/start_idea_app.sh` starts compose sidecars in the background **without blocking Rails**. Sidecar startup uses existing images only (`docker compose up -d --no-build` per service); it does not rebuild OCR on every boot. Voice ID and OCR are optional — if a sidecar image is missing or fails to start, the app still comes up and only that feature is unavailable until you build or fix the service manually.
+When Rails runs directly under launchd/systemd, `bin/start_idea_app.sh [installation-name]` starts compose sidecars in the background **without blocking Rails**. The installation name defaults to `idea-app` and becomes the Compose project name, so separate clones do not share containers, networks, or volumes. Sidecar startup uses existing images only (`docker compose up -d --no-build` per service); it does not rebuild OCR on every boot. Voice ID and OCR are optional — if a sidecar image is missing or fails to start, the app still comes up and only that feature is unavailable until you build or fix the service manually.
 
 Sidecar logs: `log/compose-sidecars.log`. Useful environment variables:
 
@@ -191,6 +191,8 @@ bin/jobs
 ```
 
 ### macOS LaunchAgent
+
+Run `bin/install [installation-name]` to generate and load a name-scoped LaunchAgent. Its label, plist filename, logs, and Compose project all include the installation name. The legacy default is `idea-app`. To run clones concurrently, give each one a name and non-overlapping `PORT`, `VOICE_ID_PORT`, and `OCR_SERVICE_PORT` values when invoking the installer; those values are persisted in the generated plist.
 
 A LaunchAgent plist is included at `com.iamin.idea-app.plist` for auto-starting in production on macOS login. Adjust the paths in the plist to match your installation, then:
 
