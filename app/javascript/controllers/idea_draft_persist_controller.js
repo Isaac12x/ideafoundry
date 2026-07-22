@@ -77,8 +77,13 @@ export default class extends Controller {
     }
   }
 
-  discard() {
-    if (!confirm("Discard the saved idea draft on this device?")) return;
+  async discard() {
+    const confirmed = await window.AppDialog?.confirm("Discard the saved idea draft on this device? This cannot be undone.", {
+      title: "Discard saved draft?",
+      confirmLabel: "Discard draft",
+      variant: "danger",
+    });
+    if (!confirmed) return;
     this.clearStoredDraft();
     this.hidePrompt();
   }
@@ -159,7 +164,7 @@ export default class extends Controller {
       this.errorTarget.textContent = message;
       return;
     }
-    alert(message);
+    window.AppDialog?.alert(message, { title: "Draft couldn’t be protected", confirmLabel: "Got it" });
   }
 
   cryptoOptions() {
