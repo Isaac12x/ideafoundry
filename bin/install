@@ -131,11 +131,11 @@ sed -e "s|__USERNAME__|${USERNAME}|g" \
 
 # --- DB setup ---
 echo "==> Preparing database..."
-RAILS_ENV=production bin/rails db:prepare
+SECRET_KEY_BASE="$SECRET_KEY_BASE" RAILS_ENV=production bin/rails db:prepare
 
 # --- Asset precompile ---
 echo "==> Precompiling assets..."
-RAILS_ENV=production bin/rails assets:precompile
+SECRET_KEY_BASE="$SECRET_KEY_BASE" RAILS_ENV=production bin/rails assets:precompile
 
 # --- Load + start ---
 echo "==> Starting service..."

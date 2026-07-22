@@ -158,12 +158,13 @@ Branch: `fix/named-installations`
 - Installer-time `PORT`, `VOICE_ID_PORT`, and `OCR_SERVICE_PORT` overrides are persisted in the generated plist so concurrently running clones can avoid host-port collisions.
 - Non-default names now derive stable, disjoint Rails, sidecar, HTTPS, Caddy HTTP, and Caddy admin ports automatically and run an installation-local Caddy proxy, so a name alone is sufficient for side-by-side operation.
 - The LaunchAgent passes its installation name back to the production startup script, and reinstalling one named service now stops that exact launchd label only.
+- Production database preparation and asset compilation now receive the freshly generated secret key, preventing installation from failing immediately after plist generation.
 - README, setup guidance, changelog, and focused installation-name tests cover the new interface and parallel-install example.
 
 ### Verification
 
 - `PARALLEL_WORKERS=1 bin/rails test` — 721 tests, 2,847 assertions, all passing.
-- Focused installation parser and derived-port suite — 10 tests, 47 assertions, all passing, including empty and overlong name rejection.
+- Focused installation parser, derived-port, and installer wiring suite — 11 tests, 51 assertions, all passing, including empty and overlong name rejection.
 - `zsh -n` — shared helper, installer, and production startup script all parse successfully.
 - Rendered a `research` LaunchAgent with separate ports and verified it with `plutil`; label, argument, Compose project, port, and log path all resolved to the named installation.
 - Rendered and validated a named installation's isolated Caddy configuration and confirmed every derived `idea-test` listener port was available alongside the running legacy installation.
