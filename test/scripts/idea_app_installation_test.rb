@@ -46,15 +46,45 @@ class IdeaAppInstallationTest < ActiveSupport::TestCase
     assert_includes stderr, "Usage:"
   end
 
+  test "preserves legacy ports and system Caddy behavior for idea-app" do
+    assert_equal "3333\n", run_helper("idea_app_default_port", "idea-app", "app").first
+    assert_equal "8000\n", run_helper("idea_app_default_port", "idea-app", "voice_id").first
+    assert_equal "8001\n", run_helper("idea_app_default_port", "idea-app", "ocr").first
+    assert_equal "8443\n", run_helper("idea_app_default_port", "idea-app", "https").first
+    assert_equal "1\n", run_helper("idea_app_default_skip_caddy", "idea-app").first
+  end
+
+  test "derives stable non-overlapping ports for a named installation" do
+    ports = %w[app voice_id ocr https caddy_http caddy_admin].map do |service|
+      stdout, stderr, status = run_helper("idea_app_default_port", "idea-test", service)
+      assert status.success?, stderr
+      Integer(stdout)
+    end
+
+    assert_equal ports, ports.uniq
+    assert_includes 10_000...18_000, ports[0]
+    assert_includes 18_000...26_000, ports[1]
+    assert_includes 26_000...34_000, ports[2]
+    assert_includes 34_000...42_000, ports[3]
+    assert_includes 42_000...50_000, ports[4]
+    assert_includes 50_000...58_000, ports[5]
+    assert_equal "0\n", run_helper("idea_app_default_skip_caddy", "idea-test").first
+  end
+
   private
 
   def resolve_name(*arguments, env: {})
+    run_helper("idea_app_installation_name", *arguments, env: env)
+  end
+
+  def run_helper(function_name, *arguments, env: {})
     Open3.capture3(
       env,
       "/bin/zsh",
       "-c",
-      'source "$1"; shift; idea_app_installation_name "$@"',
+      'function_name="$1"; helper="$2"; shift 2; source "$helper"; "$function_name" "$@"',
       "idea-app-installation-test",
+      function_name,
       HELPER,
       *arguments
     )
