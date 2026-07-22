@@ -2,14 +2,40 @@
 set -e
 
 APP_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+source "$APP_DIR/bin/idea_app_installation"
+INSTALLATION_NAME="$(idea_app_installation_name "$@")" || exit $?
 RUBY_VERSION=$(cat "$APP_DIR/.ruby-version")
 USERNAME=$(whoami)
 HOMEDIR=$HOME
-PLIST_NAME="com.${USERNAME}.idea-app.plist"
+if idea_app_launchd_protected_path "$APP_DIR" "$HOMEDIR"; then
+  echo "Cannot install a LaunchAgent from a macOS privacy-protected folder: $APP_DIR" >&2
+  echo "Move the checkout outside Desktop, Documents, or Downloads (for example, ~/Applications/IdeaFoundry/$INSTALLATION_NAME) and rerun bin/install." >&2
+  exit 78
+fi
+PLIST_LABEL="com.${USERNAME}.${INSTALLATION_NAME}"
+PLIST_NAME="${PLIST_LABEL}.plist"
 PLIST_DEST="$HOMEDIR/Library/LaunchAgents/$PLIST_NAME"
+APP_PORT="${PORT:-$(idea_app_default_port "$INSTALLATION_NAME" app)}"
+VOICE_ID_HOST_PORT="${VOICE_ID_PORT:-$(idea_app_default_port "$INSTALLATION_NAME" voice_id)}"
+OCR_SERVICE_HOST_PORT="${OCR_SERVICE_PORT:-$(idea_app_default_port "$INSTALLATION_NAME" ocr)}"
+HTTPS_PORT="${IDEA_APP_HTTPS_PORT:-$(idea_app_default_port "$INSTALLATION_NAME" https)}"
+CADDY_HTTP_PORT="${IDEA_APP_CADDY_HTTP_PORT:-$(idea_app_default_port "$INSTALLATION_NAME" caddy_http)}"
+CADDY_ADMIN_PORT="${IDEA_APP_CADDY_ADMIN_PORT:-$(idea_app_default_port "$INSTALLATION_NAME" caddy_admin)}"
+SKIP_CADDY="${IDEA_APP_SKIP_CADDY:-$(idea_app_default_skip_caddy "$INSTALLATION_NAME")}"
+idea_app_validate_port "$APP_PORT" PORT || exit $?
+idea_app_validate_port "$VOICE_ID_HOST_PORT" VOICE_ID_PORT || exit $?
+idea_app_validate_port "$OCR_SERVICE_HOST_PORT" OCR_SERVICE_PORT || exit $?
+idea_app_validate_port "$HTTPS_PORT" IDEA_APP_HTTPS_PORT || exit $?
+idea_app_validate_port "$CADDY_HTTP_PORT" IDEA_APP_CADDY_HTTP_PORT || exit $?
+idea_app_validate_port "$CADDY_ADMIN_PORT" IDEA_APP_CADDY_ADMIN_PORT || exit $?
+if [[ "$SKIP_CADDY" != "0" && "$SKIP_CADDY" != "1" ]]; then
+  echo "IDEA_APP_SKIP_CADDY must be 0 or 1 (received: $SKIP_CADDY)." >&2
+  exit 64
+fi
 
-echo "==> idea-app installer"
-echo "    User: $USERNAME | Ruby: $RUBY_VERSION | App: $APP_DIR"
+echo "==> Idea Foundry installer"
+echo "    Installation: $INSTALLATION_NAME | User: $USERNAME | Ruby: $RUBY_VERSION | App: $APP_DIR"
+echo "    Ports: Rails $APP_PORT | Voice ID $VOICE_ID_HOST_PORT | OCR $OCR_SERVICE_HOST_PORT | HTTPS $HTTPS_PORT"
 
 # --- Homebrew ---
 if ! command -v brew &>/dev/null; then
@@ -77,7 +103,9 @@ fi
 
 # --- Bundler + gems ---
 echo "==> Installing gems..."
-gem install bundler --no-document 2>/dev/null || true
+if ! command -v bundle >/dev/null 2>&1; then
+  gem install bundler --no-document
+fi
 bundle install --jobs 4
 
 # --- Node modules (esbuild, 3D graph) ---
@@ -95,35 +123,42 @@ else
   echo "$SECRET_KEY_BASE" > "$SECRET_FILE"
 fi
 
-# --- Unload old plist if running ---
-if launchctl list 2>/dev/null | grep -q "com\.${USERNAME}\.idea-app"; then
+# --- Unload this installation's old plist if running ---
+if launchctl print "gui/$(id -u)/$PLIST_LABEL" >/dev/null 2>&1; then
   echo "==> Stopping existing service..."
-  launchctl bootout "gui/$(id -u)/$PLIST_NAME" 2>/dev/null || \
+  launchctl bootout "gui/$(id -u)/$PLIST_LABEL" 2>/dev/null || \
     launchctl unload "$PLIST_DEST" 2>/dev/null || true
 fi
 
-# --- Generate plist from template ---
-echo "==> Installing LaunchAgent → $PLIST_DEST"
-sed -e "s|__USERNAME__|${USERNAME}|g" \
-    -e "s|__APPDIR__|${APP_DIR}|g" \
-    -e "s|__HOMEDIR__|${HOMEDIR}|g" \
-    -e "s|__SECRET_KEY_BASE__|${SECRET_KEY_BASE}|g" \
-    "$APP_DIR/com.USERNAME.idea-app.plist" > "$PLIST_DEST"
-
 # --- DB setup ---
 echo "==> Preparing database..."
-RAILS_ENV=production bin/rails db:prepare
+SECRET_KEY_BASE="$SECRET_KEY_BASE" RAILS_ENV=production bin/rails db:prepare_if_unlocked
 
 # --- Asset precompile ---
 echo "==> Precompiling assets..."
-RAILS_ENV=production bin/rails assets:precompile
+SECRET_KEY_BASE="$SECRET_KEY_BASE" RAILS_ENV=production bin/rails assets:precompile
 
-# --- Load + start ---
+# --- Generate, load, and start LaunchAgent only after setup succeeds ---
+echo "==> Installing LaunchAgent → $PLIST_DEST"
+sed -e "s|__USERNAME__|${USERNAME}|g" \
+    -e "s|__INSTALLATION_NAME__|${INSTALLATION_NAME}|g" \
+    -e "s|__APPDIR__|${APP_DIR}|g" \
+    -e "s|__HOMEDIR__|${HOMEDIR}|g" \
+    -e "s|__PORT__|${APP_PORT}|g" \
+    -e "s|__VOICE_ID_PORT__|${VOICE_ID_HOST_PORT}|g" \
+    -e "s|__OCR_SERVICE_PORT__|${OCR_SERVICE_HOST_PORT}|g" \
+    -e "s|__HTTPS_PORT__|${HTTPS_PORT}|g" \
+    -e "s|__CADDY_HTTP_PORT__|${CADDY_HTTP_PORT}|g" \
+    -e "s|__CADDY_ADMIN_PORT__|${CADDY_ADMIN_PORT}|g" \
+    -e "s|__SKIP_CADDY__|${SKIP_CADDY}|g" \
+    -e "s|__SECRET_KEY_BASE__|${SECRET_KEY_BASE}|g" \
+    "$APP_DIR/com.USERNAME.idea-app.plist" > "$PLIST_DEST"
+
 echo "==> Starting service..."
 launchctl load -w "$PLIST_DEST"
 
 echo ""
-echo "==> Done! idea-app is running."
+echo "==> Done! Idea Foundry installation '$INSTALLATION_NAME' is running."
 echo "    Service: $PLIST_NAME"
-echo "    Logs:    /tmp/idea-app.out & /tmp/idea-app.err"
-echo "    URL:     https://ideas.local:8443"
+echo "    Logs:    /tmp/${INSTALLATION_NAME}.out & /tmp/${INSTALLATION_NAME}.err"
+echo "    URL:     https://ideas.local:${HTTPS_PORT}"

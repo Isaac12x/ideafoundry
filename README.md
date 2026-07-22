@@ -61,11 +61,22 @@ cd idea-app
 bin/install
 ```
 
+Keep installed checkouts outside macOS privacy-protected `Desktop`, `Documents`, and `Downloads` folders; `launchd` cannot reliably read scripts from those locations. `~/Applications/IdeaFoundry/<installation-name>` is a suitable location.
+
 This handles: Homebrew, rbenv, Ruby 3.4.5, Node.js, Caddy, gems, npm deps, DB setup, asset precompilation, `/etc/hosts` entry, Apache httpd disable, and LaunchAgent registration. On startup, the LaunchAgent also starts the Docker/Podman Compose sidecar services when a container runtime is available. Requires `sudo` for hosts file and httpd changes.
 
-Once running: **https://ideas.local:8443**
+Give each installation a name when running more than one clone. The name keeps its LaunchAgent, logs, Compose resources, Rails/sidecar ports, and HTTPS proxy separate:
 
-Logs: `/tmp/idea-app.out` and `/tmp/idea-app.err`
+```bash
+bin/install personal
+bin/install research
+```
+
+The default name remains `idea-app` at `https://ideas.local:8443`. Other names deterministically receive their own ports and print their URL when installation finishes. Explicit port environment variables still override those defaults and must contain port numbers from 1 to 65535. The production launcher accepts the same name directly, for example `bin/start_idea_app.sh research`; `IDEA_APP_INSTALLATION_NAME` can be used instead of the positional argument.
+
+Once running, use the URL printed by the installer.
+
+Logs: `/tmp/<installation-name>.out` and `/tmp/<installation-name>.err`
 
 ### Recommended macOS companion: LaunchControl
 
