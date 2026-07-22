@@ -85,7 +85,12 @@ export default class extends Controller {
   async delete(event) {
     event.preventDefault();
     const btn = event.currentTarget;
-    if (!confirm("Delete this drawing?")) return;
+    const confirmed = await window.AppDialog?.confirm("Delete this drawing? This cannot be undone.", {
+      title: "Delete drawing?",
+      confirmLabel: "Delete drawing",
+      variant: "danger",
+    });
+    if (!confirmed) return;
 
     const url = this.showUrlPatternValue.replace("__ID__", btn.dataset.drawingId);
     const res = await fetch(url, {
