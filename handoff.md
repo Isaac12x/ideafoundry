@@ -146,3 +146,25 @@ Branch: `feature/kb-live-filesystem-jobs` (stacked on `feature/kb-navigation-med
 ### Workspace note
 
 The `graphify-out/` artifacts and rebuild lock/cache entries were already dirty before this task. They are refreshed as required but intentionally excluded from the feature commit.
+
+## 2026-07-23 — Named side-by-side installations
+
+Branch: `fix/named-installations`
+
+### Delivered
+
+- `bin/install [installation-name]` and `bin/start_idea_app.sh [installation-name]` now share validated installation-name parsing, with `idea-app` retained as the no-argument default and `IDEA_APP_INSTALLATION_NAME` supported for environment-driven launches.
+- Each generated macOS LaunchAgent uses a name-scoped label, plist filename, stdout/stderr paths, and Docker/Podman Compose project name, preventing separate clones from taking over each other's service and container resources.
+- Installer-time `PORT`, `VOICE_ID_PORT`, and `OCR_SERVICE_PORT` overrides are persisted in the generated plist so concurrently running clones can avoid host-port collisions.
+- The LaunchAgent passes its installation name back to the production startup script, and reinstalling one named service now stops that exact launchd label only.
+- README, setup guidance, changelog, and focused installation-name tests cover the new interface and parallel-install example.
+
+### Verification
+
+- `PARALLEL_WORKERS=1 bin/rails test` — 719 tests, 2,822 assertions, all passing.
+- Focused installation parser suite — 6 tests, 14 assertions, all passing.
+- `zsh -n` — shared helper, installer, and production startup script all parse successfully.
+- Rendered a `research` LaunchAgent with separate ports and verified it with `plutil`; label, argument, Compose project, port, and log path all resolved to the named installation.
+- Both entry points return usage status 64 for an invalid installation name before performing startup or installation work.
+- `git diff --check` — passed.
+- `graphify update .` — completed successfully. Pre-existing generated `graphify-out/` changes remain outside this feature commit.
