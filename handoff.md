@@ -146,3 +146,31 @@ Branch: `feature/kb-live-filesystem-jobs` (stacked on `feature/kb-navigation-med
 ### Workspace note
 
 The `graphify-out/` artifacts and rebuild lock/cache entries were already dirty before this task. They are refreshed as required but intentionally excluded from the feature commit.
+
+## 2026-07-23 — Named side-by-side installations
+
+Branch: `fix/named-installations`
+
+### Delivered
+
+- `bin/install [installation-name]` and `bin/start_idea_app.sh [installation-name]` now share validated installation-name parsing, with `idea-app` retained as the no-argument default and `IDEA_APP_INSTALLATION_NAME` supported for environment-driven launches.
+- Each generated macOS LaunchAgent uses a name-scoped label, plist filename, stdout/stderr paths, and Docker/Podman Compose project name, preventing separate clones from taking over each other's service and container resources.
+- Installer-time `PORT`, `VOICE_ID_PORT`, and `OCR_SERVICE_PORT` overrides are persisted in the generated plist so concurrently running clones can avoid host-port collisions.
+- Non-default names now derive stable, disjoint Rails, sidecar, HTTPS, Caddy HTTP, and Caddy admin ports automatically and run an installation-local Caddy proxy, so a name alone is sufficient for side-by-side operation.
+- The LaunchAgent passes its installation name back to the production startup script, and reinstalling one named service now stops that exact launchd label only.
+- Recovery-aware production database preparation and asset compilation now receive the freshly generated secret key, preventing installation from failing immediately after plist generation or when encrypted data still needs its recovery passphrase.
+- Installer reruns reuse an available Bundler executable instead of prompting to overwrite `bundle` and `bundler` on every run.
+- macOS privacy-protected checkout locations are rejected before service registration, avoiding LaunchAgents that loop with exit code 127 because they cannot read scripts under Desktop, Documents, or Downloads.
+- Explicit listener overrides are range-checked, and plist generation occurs only after database and asset setup succeeds so failed installs do not leave dead LaunchAgent files.
+- README, setup guidance, changelog, and focused installation-name tests cover the new interface and parallel-install example.
+
+### Verification
+
+- `PARALLEL_WORKERS=1 bin/rails test` — 725 tests, 2,860 assertions, all passing.
+- Focused installation parser, derived-port, and installer wiring suite — 14 tests, 72 assertions, all passing, including invalid name, port, and protected-path rejection.
+- `zsh -n` — shared helper, installer, and production startup script all parse successfully.
+- Rendered a `research` LaunchAgent with separate ports and verified it with `plutil`; label, argument, Compose project, port, and log path all resolved to the named installation.
+- Rendered and validated a named installation's isolated Caddy configuration and confirmed every derived `idea-test` listener port was available alongside the running legacy installation.
+- Both entry points return usage status 64 for an invalid installation name before performing startup or installation work.
+- `git diff --check` — passed.
+- `graphify update .` — completed successfully. Pre-existing generated `graphify-out/` changes remain outside this feature commit.
