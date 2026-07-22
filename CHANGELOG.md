@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Project-site and README development timelines that distinguish the working product from the longer-term platform direction, plus a macOS LaunchControl companion recommendation for easier LaunchAgent monitoring and recovery.
 - Edit-button-gated knowledge-base studios for images, video, audio, PDFs, HTML, and opaque media, with canvas/timeline/waveform/page tools, asynchronous local rendering, atomic saves, and checksum-addressed revision history.
 - Knowledge-base drag-and-drop copies external files into the selected local folder, with collision-safe filenames and immediate Turbo tree updates.
 - Per-source and per-folder emoji/image icons, a global folder-icon default in Display settings, and favourites for knowledge-base files and folders.
