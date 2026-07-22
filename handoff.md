@@ -1,5 +1,24 @@
 # Handoff
 
+## 2026-07-22 — Project site hero and copy refinement
+
+Branch: `feature/web`
+
+### Delivered
+
+- Reframed the landing-page copy around Idea Foundry's capture promise, private workbench, full provenance, and honest split between working software and the wider roadmap.
+- Layered the existing still artwork beneath the hero film; the film autoplays once and crossfades back to the still on completion or playback error.
+- Reduced-motion visitors now see the still immediately with autoplay disabled.
+- Updated the page title, description, calls to action, section headlines, and supporting copy for clarity and consistency.
+
+### Verification
+
+- `tidy -errors -quiet docs/index.html` — passed with no HTML errors or warnings.
+- Browser automation at 1512×982 and 390×844 — visually checked the page and confirmed no narrow-viewport horizontal overflow.
+- Normal motion — video played from 0 to 10.04 seconds, fired its end state, and reached zero opacity over the poster.
+- Reduced motion — video remained hidden and paused while the poster rendered immediately.
+- `git diff --check` — passed.
+
 ## 2026-07-22 — Project history and macOS service documentation
 
 Branch: `feature/web`

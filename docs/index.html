@@ -5,9 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta
       name="description"
-      content="Idea Foundry is the CRM and planner for ideas: capture in seconds, score, develop, then build, sell, or pass on — local, encrypted, with full provenance."
+      content="Idea Foundry is the private workbench for ideas: capture anything in seconds, develop it with evidence, and keep its full history from first spark to final decision."
     >
-    <title>Idea Foundry | The CRM + planner for ideas</title>
+    <title>Idea Foundry | The private workbench for ideas</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
@@ -75,13 +75,27 @@
         background: var(--ink-deep);
       }
 
+      .hero-poster,
       .hero-video {
         position: absolute;
         inset: 0;
-        z-index: -1;
         width: 100%;
         height: 100%;
         object-fit: cover;
+      }
+
+      .hero-poster {
+        z-index: -2;
+      }
+
+      .hero-video {
+        z-index: -1;
+        opacity: 1;
+        transition: opacity 0.8s cubic-bezier(0.7, 0, 0.84, 0);
+      }
+
+      .hero-video.is-finished {
+        opacity: 0;
       }
 
       /* Legibility scrims; the bottom one melts the footage into the page ink
@@ -809,11 +823,28 @@
           grid-column: 1;
         }
       }
+
+      @media (prefers-reduced-motion: reduce) {
+        html {
+          scroll-behavior: auto;
+        }
+
+        .hero-video {
+          display: none;
+        }
+      }
     </style>
   </head>
   <body>
     <main>
       <section class="hero" aria-label="Idea Foundry overview">
+        <img
+          class="hero-poster"
+          src="assets/poster.jpg"
+          alt=""
+          width="1280"
+          height="720"
+        >
         <video
           class="hero-video"
           src="assets/landing-background.mp4"
@@ -839,22 +870,22 @@
 
         <div class="hero-inner" id="top">
           <p class="meta-row">
-            <span>Local-first</span>
-            <span>Encrypted vault</span>
-            <span>Source available</span>
+            <span>Capture in seconds</span>
+            <span>Local &amp; encrypted</span>
+            <span>Full provenance</span>
           </p>
-          <h1>From <em>spark</em> to shipped, sold, or sealed.</h1>
+          <h1>Catch the <em>spark.</em> Keep the whole story.</h1>
           <p class="hero-copy">
-            The CRM and planner for ideas. Capture in seconds in any format, score it your way,
-            develop it with research — then build it, license it, park it, or pass it on.
-            Full provenance at every step.
+            Idea Foundry is the private workbench for ideas. Capture anything in seconds,
+            decide what deserves attention, develop it with evidence, then build, license,
+            archive, or pass it on — without losing a single step.
           </p>
           <div class="actions" aria-label="Project links">
-            <a class="button button-primary" href="https://github.com/Isaac12x/ideafoundry#install-macos">Install locally</a>
-            <a class="button button-secondary" href="#capture">Explore the concept</a>
+            <a class="button button-primary" href="https://github.com/Isaac12x/ideafoundry#install-macos">Install on macOS</a>
+            <a class="button button-secondary" href="#now">See what works today</a>
           </div>
           <p class="status-note">
-            Working software in active development — see what is built now and what remains ahead.
+            The core workbench runs today. The wider idea economy is being built in public.
           </p>
         </div>
       </section>
@@ -864,8 +895,8 @@
           <p class="section-kicker">The capture promise</p>
           <h2>Captured in seconds. Never lost.</h2>
           <p class="lede">
-            Friction at capture kills ideas — fast, lossless capture is the one promise
-            the whole ecosystem serves. An idea arrives however it occurs to you:
+            Your best ideas rarely arrive neatly typed. Save the thought before its context
+            disappears; every format enters the same durable inbox, ready when you are.
           </p>
           <p class="specimen" aria-label="Capture formats">
             <span>text</span><span>voice</span><span>video</span><span>image</span><span>drawing</span>
@@ -882,10 +913,10 @@
       <section class="band" id="now">
         <div class="content">
           <p class="section-kicker">Built over time</p>
-          <h2>From idea tracker to idea operating system.</h2>
+          <h2>A workbench today. An operating system in progress.</h2>
           <p class="lede">
-            Idea Foundry began with lifecycle, scoring, and Kanban. Each release has moved it
-            toward the larger promise: one local place to capture, develop, protect, and act on ideas.
+            Capture, scoring, organization, research, planning, and provenance already work
+            locally. Each release connects more of the journey around a single source of truth.
           </p>
 
           <div class="progress-ledger" aria-label="Idea Foundry development timeline">
@@ -942,13 +973,12 @@
         <div class="content intro-grid">
           <div>
             <p class="section-kicker">The lifecycle</p>
-            <h2>One pipeline, four ends.</h2>
+            <h2>One idea. Five stages. Four possible futures.</h2>
             <p class="lede">
-              Every feature hangs off the canonical stages. Scoring is yours to define — each
-              user builds their own weighted scheme, and scores are versioned like everything
-              else: how your judgement changed is itself provenance.
+              Capture it, score it your way, triage it, and develop it with research and
+              experiments. Then decide: build, license, archive, or preserve it for a successor.
             </p>
-            <p class="loop-note">An idea can loop back at any point — it never loses its history.</p>
+            <p class="loop-note">Change your mind as often as the work demands. The history stays intact.</p>
           </div>
 
           <div>
@@ -999,10 +1029,10 @@
       <section class="band" id="platform">
         <div class="content">
           <p class="section-kicker">Platform parts</p>
-          <h2>One application, eight rooms.</h2>
+          <h2>Every part of the work, under one roof.</h2>
           <p class="lede">
-            Ideas are paramount, and so is everything related to them. Collaboration is per
-            idea, between people or teams — 1-to-1 through many-to-many — never by default.
+            Ideas do not live alone. Notes, evidence, plans, relationships, rights, and
+            collaborators stay connected to the idea they serve — shared deliberately, never by default.
           </p>
 
           <div class="feature-grid" aria-label="Idea Foundry platform parts">
@@ -1053,7 +1083,8 @@
       <section class="band" id="trust">
         <div class="content">
           <p class="section-kicker">Trust &amp; provenance</p>
-          <h2>Pre-patent IP demands promises.</h2>
+          <h2>Your ideas are IP before they are products.</h2>
+          <p class="lede">Privacy, provenance, control, and portability are requirements — not upgrades.</p>
 
           <div class="vows" aria-label="Trust promises">
             <article class="vow">
@@ -1092,7 +1123,7 @@
       <section class="band">
         <div class="content">
           <p class="section-kicker">Working the ideas</p>
-          <h2>Help that never leaks.</h2>
+          <h2>Useful intelligence, without the disclosure.</h2>
 
           <div class="duo">
             <article>
@@ -1126,7 +1157,7 @@
       <section class="band">
         <div class="content">
           <p class="section-kicker">Beyond the vault</p>
-          <h2>Sell it, or pass it on.</h2>
+          <h2>Turn an idea into an asset — or an inheritance.</h2>
 
           <div class="duo">
             <article>
@@ -1137,7 +1168,7 @@
                 publish — pitch and selected artifacts. The vault stays private.
               </p>
               <p>
-                Sale, royalties, NDAs, escrow, and valuation are all handled mechanics.
+                The roadmap covers valuation, NDAs, escrow, sales, and royalties.
               </p>
             </article>
             <article id="legacy">
@@ -1166,10 +1197,10 @@
       <section class="band" id="ecosystem">
         <div class="content">
           <p class="section-kicker">Ecosystem</p>
-          <h2>A vault with satellites.</h2>
+          <h2>Your vault stays the source of truth.</h2>
           <p class="lede">
-            Idea Foundry owns the data. Everything around it exists to capture, carry,
-            and back up — without ever being able to read what it holds.
+            The services around Idea Foundry capture, carry, and back up your work. They move
+            ciphertext; your local instance keeps the readable data and the keys.
           </p>
 
           <ul class="orbit" aria-label="Ecosystem components">
@@ -1222,14 +1253,13 @@
           <div class="callout">
             <div>
               <p class="section-kicker">Run it yourself</p>
-              <h2>Yours by design.</h2>
+              <h2>Run the foundry on your terms.</h2>
               <p>
-                Clone and run it on a local machine or private server behind your own access
-                control. The project vision targets MIT licensing; a formal redistribution
-                license is not yet included in the repository.
+                Install on your Mac, or run it on a private server behind access controls you
+                choose. Your machine remains the vault; open exports keep your work portable.
               </p>
             </div>
-            <a class="button" href="https://github.com/Isaac12x/ideafoundry">View source</a>
+            <a class="button" href="https://github.com/Isaac12x/ideafoundry">View the repository</a>
           </div>
         </div>
       </section>
@@ -1243,13 +1273,15 @@
     </footer>
 
     <script>
-      // The clip ends on the Idea Foundry brand card, so it plays once and
-      // holds the final frame. Reduced-motion users get the poster instead.
+      // Play the opening clip once, then return to the still artwork beneath it.
+      // Reduced-motion users start and stay on that still image.
       const v = document.querySelector(".hero-video");
       const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+      const showPoster = () => v.classList.add("is-finished");
       if (reduceMotion) {
         v.removeAttribute("autoplay");
         v.pause();
+        showPoster();
       } else {
         // On a cold load the autoplay attempt can fire before any data is
         // buffered, and some browsers ignore the muted content attribute for
@@ -1262,6 +1294,8 @@
         tryPlay();
         v.addEventListener("loadeddata", tryPlay);
         v.addEventListener("canplay", tryPlay);
+        v.addEventListener("ended", showPoster, { once: true });
+        v.addEventListener("error", showPoster, { once: true });
         document.addEventListener("visibilitychange", tryPlay);
         addEventListener("pointerdown", tryPlay, { once: true });
       }
