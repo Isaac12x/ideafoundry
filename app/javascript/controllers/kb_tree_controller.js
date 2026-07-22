@@ -151,7 +151,10 @@ export default class extends Controller {
     })
     if (!response.ok) {
       const result = await response.json().catch(() => ({}))
-      window.alert(result.error || "Finder could not open this entry.")
+      await window.AppDialog?.alert(result.error || "Finder could not open this entry.", {
+        title: "Couldn’t open Finder",
+        confirmLabel: "Got it",
+      })
     }
   }
 
@@ -169,17 +172,20 @@ export default class extends Controller {
     })
   }
 
-  destroy(event) {
+  async destroy(event) {
     event.stopPropagation()
     const node = this._node
     const name = node.rel.split("/").pop()
     const message = node.type === "dir"
       ? `Delete folder "${name}" and everything inside it?`
       : `Delete "${name}"?`
-    if (!window.confirm(message)) {
-      this._hide()
-      return
-    }
+    this._hide()
+    const confirmed = await window.AppDialog?.confirm(message, {
+      title: node.type === "dir" ? "Delete folder?" : "Delete file?",
+      confirmLabel: "Delete",
+      variant: "danger",
+    })
+    if (!confirmed) return
     this._submitForm(this.deleteUrlValue, "delete", { src: node.src, path: node.rel })
   }
 

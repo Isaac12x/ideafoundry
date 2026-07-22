@@ -1,0 +1,43 @@
+<dialog class="app-dialog"
+        data-controller="app-dialog"
+        data-action="click->app-dialog#backdropClose cancel->app-dialog#cancel close->app-dialog#closed"
+        aria-labelledby="app_dialog_title"
+        aria-describedby="app_dialog_message">
+  <form class="app-dialog__sheet"
+        method="dialog"
+        data-app-dialog-target="form"
+        data-action="submit->app-dialog#submit">
+    <header class="app-dialog__header">
+      <div>
+        <span class="app-dialog__eyebrow" data-app-dialog-target="eyebrow">Idea Foundry</span>
+        <h2 id="app_dialog_title" data-app-dialog-target="title">Confirm action</h2>
+      </div>
+      <button type="button"
+              class="app-dialog__close"
+              data-action="app-dialog#cancel"
+              aria-label="Close dialog">×</button>
+    </header>
+
+    <div class="app-dialog__body">
+      <p id="app_dialog_message" class="app-dialog__message" data-app-dialog-target="message"></p>
+
+      <label class="app-dialog__field" data-app-dialog-target="field">
+        <span data-app-dialog-target="inputLabel">Value</span>
+        <input type="hidden"
+               class="app-dialog__input"
+               autocomplete="off"
+               data-app-dialog-target="input">
+      </label>
+    </div>
+
+    <footer class="app-dialog__actions">
+      <button type="button"
+              class="btn btn-sm"
+              data-app-dialog-target="cancelButton"
+              data-action="app-dialog#cancel">Cancel</button>
+      <button type="submit"
+              class="btn btn-primary btn-sm"
+              data-app-dialog-target="confirmButton">Confirm</button>
+    </footer>
+  </form>
+</dialog>

@@ -71,6 +71,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Browser-native prompts, alerts, and confirmations now use a shared Idea Foundry dialog, including styled add/delete flows for notes-toolbar tabs and consistent destructive treatment across Turbo actions.
 - Knowledge-base reloads reopen the last valid document instead of resetting to the first available file.
 - Local HTTPS access through `ideas.local:8443` is allowed by Rails host authorization.
 - Batch import export uploads are available again for note apps without OAuth support, and individual note selections no longer override folder selections.
