@@ -27,6 +27,8 @@ class SqlcipherDatabaseMigrator
 
   def self.locked_database_path_for_startup?(path)
     path = Pathname.new(path.to_s)
+    # A first run has no database file (or SQLite has only touched an empty
+    # placeholder). There is no encrypted data to recover in either case.
     return false unless path.file? && path.size.positive?
     return false if plaintext_sqlite_database?(path)
     return true unless RecoverySecret.present?
