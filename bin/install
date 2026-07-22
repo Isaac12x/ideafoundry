@@ -131,7 +131,7 @@ sed -e "s|__USERNAME__|${USERNAME}|g" \
 
 # --- DB setup ---
 echo "==> Preparing database..."
-SECRET_KEY_BASE="$SECRET_KEY_BASE" RAILS_ENV=production bin/rails db:prepare
+SECRET_KEY_BASE="$SECRET_KEY_BASE" RAILS_ENV=production bin/rails db:prepare_if_unlocked
 
 # --- Asset precompile ---
 echo "==> Precompiling assets..."

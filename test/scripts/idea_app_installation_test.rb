@@ -93,7 +93,7 @@ class IdeaAppInstallationTest < ActiveSupport::TestCase
   test "installer passes its generated secret to production setup commands" do
     installer = Rails.root.join("bin/install").read
 
-    assert_includes installer, 'SECRET_KEY_BASE="$SECRET_KEY_BASE" RAILS_ENV=production bin/rails db:prepare'
+    assert_includes installer, 'SECRET_KEY_BASE="$SECRET_KEY_BASE" RAILS_ENV=production bin/rails db:prepare_if_unlocked'
     assert_includes installer, 'SECRET_KEY_BASE="$SECRET_KEY_BASE" RAILS_ENV=production bin/rails assets:precompile'
   end
 

@@ -72,7 +72,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Named installations now keep their LaunchAgents, logs, Docker/Podman Compose resources, host ports, and local HTTPS proxies separate, while preserving `idea-app` and its legacy ports as the default.
-- Fresh installs pass their generated secret key into production database preparation and asset compilation.
+- Fresh installs pass their generated secret key into production database preparation and asset compilation, and defer database preparation when encrypted data still needs its recovery passphrase.
 - Browser-native prompts, alerts, and confirmations now use a shared Idea Foundry dialog, including styled add/delete flows for notes-toolbar tabs and consistent destructive treatment across Turbo actions.
 - Knowledge-base reloads reopen the last valid document instead of resetting to the first available file.
 - Local HTTPS access through `ideas.local:8443` is allowed by Rails host authorization.
