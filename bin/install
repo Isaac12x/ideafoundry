@@ -2,14 +2,20 @@
 set -e
 
 APP_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+source "$APP_DIR/bin/idea_app_installation"
+INSTALLATION_NAME="$(idea_app_installation_name "$@")" || exit $?
 RUBY_VERSION=$(cat "$APP_DIR/.ruby-version")
 USERNAME=$(whoami)
 HOMEDIR=$HOME
-PLIST_NAME="com.${USERNAME}.idea-app.plist"
+PLIST_LABEL="com.${USERNAME}.${INSTALLATION_NAME}"
+PLIST_NAME="${PLIST_LABEL}.plist"
 PLIST_DEST="$HOMEDIR/Library/LaunchAgents/$PLIST_NAME"
+APP_PORT="${PORT:-3333}"
+VOICE_ID_HOST_PORT="${VOICE_ID_PORT:-8000}"
+OCR_SERVICE_HOST_PORT="${OCR_SERVICE_PORT:-8001}"
 
-echo "==> idea-app installer"
-echo "    User: $USERNAME | Ruby: $RUBY_VERSION | App: $APP_DIR"
+echo "==> Idea Foundry installer"
+echo "    Installation: $INSTALLATION_NAME | User: $USERNAME | Ruby: $RUBY_VERSION | App: $APP_DIR"
 
 # --- Homebrew ---
 if ! command -v brew &>/dev/null; then
@@ -95,18 +101,22 @@ else
   echo "$SECRET_KEY_BASE" > "$SECRET_FILE"
 fi
 
-# --- Unload old plist if running ---
-if launchctl list 2>/dev/null | grep -q "com\.${USERNAME}\.idea-app"; then
+# --- Unload this installation's old plist if running ---
+if launchctl print "gui/$(id -u)/$PLIST_LABEL" >/dev/null 2>&1; then
   echo "==> Stopping existing service..."
-  launchctl bootout "gui/$(id -u)/$PLIST_NAME" 2>/dev/null || \
+  launchctl bootout "gui/$(id -u)/$PLIST_LABEL" 2>/dev/null || \
     launchctl unload "$PLIST_DEST" 2>/dev/null || true
 fi
 
 # --- Generate plist from template ---
 echo "==> Installing LaunchAgent → $PLIST_DEST"
 sed -e "s|__USERNAME__|${USERNAME}|g" \
+    -e "s|__INSTALLATION_NAME__|${INSTALLATION_NAME}|g" \
     -e "s|__APPDIR__|${APP_DIR}|g" \
     -e "s|__HOMEDIR__|${HOMEDIR}|g" \
+    -e "s|__PORT__|${APP_PORT}|g" \
+    -e "s|__VOICE_ID_PORT__|${VOICE_ID_HOST_PORT}|g" \
+    -e "s|__OCR_SERVICE_PORT__|${OCR_SERVICE_HOST_PORT}|g" \
     -e "s|__SECRET_KEY_BASE__|${SECRET_KEY_BASE}|g" \
     "$APP_DIR/com.USERNAME.idea-app.plist" > "$PLIST_DEST"
 
@@ -123,7 +133,7 @@ echo "==> Starting service..."
 launchctl load -w "$PLIST_DEST"
 
 echo ""
-echo "==> Done! idea-app is running."
+echo "==> Done! Idea Foundry installation '$INSTALLATION_NAME' is running."
 echo "    Service: $PLIST_NAME"
-echo "    Logs:    /tmp/idea-app.out & /tmp/idea-app.err"
+echo "    Logs:    /tmp/${INSTALLATION_NAME}.out & /tmp/${INSTALLATION_NAME}.err"
 echo "    URL:     https://ideas.local:8443"
