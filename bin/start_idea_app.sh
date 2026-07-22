@@ -1,14 +1,17 @@
 #!/bin/zsh
 
-# Startup script for idea-app (production)
-# Used by LaunchAgent com.<username>.idea-app
+# Startup script for a named Idea Foundry installation (production)
+# Used by LaunchAgent com.<username>.<installation-name>
 
 set -e
 
 APP_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+source "$APP_DIR/bin/idea_app_installation"
+INSTALLATION_NAME="$(idea_app_installation_name "$@")" || exit $?
+export IDEA_APP_INSTALLATION_NAME="$INSTALLATION_NAME"
 export RAILS_ENV="${RAILS_ENV:-production}"
 export PORT="${PORT:-3333}"
-export COMPOSE_PROJECT_NAME="${COMPOSE_PROJECT_NAME:-idea-app}"
+export COMPOSE_PROJECT_NAME="${COMPOSE_PROJECT_NAME:-$INSTALLATION_NAME}"
 export VOICE_ID_PORT="${VOICE_ID_PORT:-8000}"
 export OCR_SERVICE_PORT="${OCR_SERVICE_PORT:-8001}"
 export VOICE_ID_SERVICE_URL="${VOICE_ID_SERVICE_URL:-http://127.0.0.1:${VOICE_ID_PORT}}"
@@ -20,6 +23,8 @@ export PATH="$HOME/.rbenv/bin:$HOME/.rbenv/shims:/opt/homebrew/bin:/usr/local/bi
 eval "$(rbenv init - zsh)"
 
 cd "$APP_DIR"
+
+echo "==> Starting Idea Foundry installation '$INSTALLATION_NAME' (Compose project: $COMPOSE_PROJECT_NAME)."
 
 typeset -a COMPOSE_CMD
 
