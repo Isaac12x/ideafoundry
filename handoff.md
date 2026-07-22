@@ -191,3 +191,5 @@ Branch: `fix/named-installations-master`
 - Focused SQLCipher and recovery layout suite — 20 tests, 63 assertions, all passing.
 - `PARALLEL_WORKERS=1 bin/rails test` — 729 tests, 2,888 assertions, all passing.
 - `bin/rails zeitwerk:check` — passed.
+- Restarted the `idea-test` LaunchAgent and verified `https://ideas.local:40733/` returns HTTP 200 without a recovery redirect; both production databases were prepared with valid plaintext SQLite headers.
+- Directly verified `/recovery-secret` omits the activity panel, app dialog, and activity Stimulus controller in the live rendered HTML.
