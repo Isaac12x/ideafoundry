@@ -193,3 +193,4 @@ Branch: `fix/named-installations-master`
 - `bin/rails zeitwerk:check` — passed.
 - Restarted the `idea-test` LaunchAgent and verified `https://ideas.local:40733/` returns HTTP 200 without a recovery redirect; both production databases were prepared with valid plaintext SQLite headers.
 - Directly verified `/recovery-secret` omits the activity panel, app dialog, and activity Stimulus controller in the live rendered HTML.
+- Added startup file-race handling after review so a database removed between existence and size checks is safely treated as missing.
