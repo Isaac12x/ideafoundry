@@ -71,6 +71,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Concurrent `bin/dev` instances now scan from the preferred Rails port and use the next free TCP port instead of failing on port 3000 conflicts.
 - Fresh installations now start with no Kanban boards, lists, or ideas, and empty Ideas/Planning page visits no longer create a board.
 - Removed the globally mounted Activity drawer that exposed unstyled Activity, close, and reload controls above the notes bar.
 - Fresh production installations now prepare missing or empty databases without asking for a nonexistent recovery passphrase, and recovery screens no longer mount workspace-only activity/dialog controls.

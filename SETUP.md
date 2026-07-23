@@ -40,10 +40,10 @@ bin/dev
 The repository includes Bundler config that builds the `sqlite3` gem against SQLCipher. If production database tasks fail with `SQLite3 gem is not linked with SQLCipher`, install SQLCipher and rerun `bundle install` so Bundler compiles the source gem instead of using a precompiled plain-SQLite gem.
 
 This runs two processes via `Procfile.dev`:
-- `web` — Rails server on port 3000
+- `web` — Rails server on port 3000, or the next free port when another instance is already using it
 - `js` — esbuild watching `app/javascript/graph/` for changes
 
-Open `http://localhost:3000`.
+`bin/dev` prints the selected URL when it has to move off port 3000. Set a preferred starting point with `PORT=4000 bin/dev`, or require an exact Foreman port with `bin/dev -p 4000`.
 
 ## Credentials
 
