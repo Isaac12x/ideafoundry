@@ -19,6 +19,23 @@ class ListsControllerTest < ActionDispatch::IntegrationTest
     assert_select "[data-list-kind=?]", "kanban", text: /#{@kanban_list.name}/
   end
 
+  test "index leaves an empty workspace without boards or lists" do
+    empty_user = User.create!(email: "empty-planning@example.com", name: "Empty Planning")
+
+    User.stub(:first, empty_user) do
+      assert_no_difference [
+        -> { empty_user.kanban_boards.count },
+        -> { empty_user.lists.count },
+        -> { empty_user.ideas.count }
+      ] do
+        get lists_path
+      end
+    end
+
+    assert_response :success
+    assert_select ".empty-state", text: /No kanban boards yet/
+  end
+
   test "index groups kanban columns by board" do
     board = @user.kanban_boards.create!(name: "Validation")
     @user.lists.create!(name: "Validate", kind: :kanban, kanban_board: board)
