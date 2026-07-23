@@ -32,6 +32,9 @@ class RecoverySecretsControllerTest < ActionDispatch::IntegrationTest
     assert_select "form[action=?][method=?]", recovery_secret_path, "post"
     assert_select "input[type=?][name=?]", "password", "recovery_passphrase"
     assert_select "input[type=?][name=?][value=?]", "hidden", "return_to", settings_security_path
+    assert_select "body[data-controller]", count: 0
+    assert_select ".activity-panel", count: 0
+    assert_select ".app-dialog", count: 0
   end
 
   test "locked SQLCipher database asks for recovery before reading typing lock settings" do

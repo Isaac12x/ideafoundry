@@ -64,15 +64,25 @@ class SqlcipherDatabaseMigratorTest < ActiveSupport::TestCase
     end
   end
 
-  test "defers missing and empty SQLCipher databases until a recovery passphrase is available" do
+  test "missing and empty databases do not require a recovery passphrase on first run" do
     missing_path = @root.join("missing.sqlite3")
     empty_path = @root.join("empty.sqlite3")
     FileUtils.touch(empty_path)
 
     RecoverySecret.stub(:present?, false) do
       SqlcipherDatabaseMigrator.stub(:configured_database_paths, [missing_path.to_s, empty_path.to_s]) do
-        assert_equal [missing_path.to_s, empty_path.to_s], SqlcipherDatabaseMigrator.locked_database_paths_without_recovery_secret(env: "production")
+        assert_empty SqlcipherDatabaseMigrator.locked_database_paths_without_recovery_secret(env: "production")
       end
+    end
+  end
+
+  test "a database removed during startup inspection is treated as missing" do
+    disappearing_path = Object.new
+    disappearing_path.define_singleton_method(:file?) { true }
+    disappearing_path.define_singleton_method(:size) { raise Errno::ENOENT }
+
+    Pathname.stub(:new, disappearing_path) do
+      refute SqlcipherDatabaseMigrator.locked_database_path_for_startup?("removed.sqlite3")
     end
   end
 
