@@ -76,7 +76,9 @@ storage/                # SQLite DBs + Active Storage files
 ### Running the Dev Server
 
 ```bash
-bin/dev                          # Rails + esbuild watcher
+bin/dev                          # Rails + esbuild watcher; picks a free port from 3000
+PORT=4000 bin/dev                # Start scanning for a free port at 4000
+bin/dev -p 4000                  # Require an explicit Foreman port
 BACKLOG_ENABLED=true bin/dev     # Enable the optional backlog while developing
 # Or separately:
 bin/rails server -p 3000         # Rails only
