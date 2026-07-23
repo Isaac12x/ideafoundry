@@ -16,11 +16,30 @@ class IdeasControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
   end
 
+  test "index does not create planning records for an empty workspace" do
+    empty_user = User.create!(email: "empty-ideas@example.com", name: "Empty Ideas")
+
+    User.stub(:first, empty_user) do
+      assert_no_difference [
+        -> { empty_user.kanban_boards.count },
+        -> { empty_user.lists.count },
+        -> { empty_user.ideas.count }
+      ] do
+        get ideas_url
+      end
+    end
+
+    assert_response :success
+    assert_select ".empty-state", text: /No ideas found/
+  end
+
   test "layout exposes global shortcuts, contextual cheatsheet, and command palette" do
     get ideas_url
 
     assert_response :success
     assert_select "body[data-controller~=?]", "shortcuts"
+    assert_select "body[data-controller~=?]", "activity-panel", count: 0
+    assert_select ".activity-panel", count: 0
     assert_select "body[data-shortcuts-ideas-url-value=?]", ideas_path
     assert_select ".kb-notes-tab-strip .shortcuts-toggle[title=?]", "Keyboard shortcuts", text: "⌘"
     assert_select ".shortcuts-panel[data-shortcuts-target=?]", "panel"

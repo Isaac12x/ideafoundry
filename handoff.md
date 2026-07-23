@@ -194,3 +194,27 @@ Branch: `fix/named-installations-master`
 - Restarted the `idea-test` LaunchAgent and verified `https://ideas.local:40733/` returns HTTP 200 without a recovery redirect; both production databases were prepared with valid plaintext SQLite headers.
 - Directly verified `/recovery-secret` omits the activity panel, app dialog, and activity Stimulus controller in the live rendered HTML.
 - Added startup file-race handling after review so a database removed between existence and size checks is safely treated as missing.
+
+## 2026-07-23 — Empty first-run workspace and activity drawer removal
+
+Branch: `fix/empty-first-run`
+
+### Delivered
+
+- Fresh database seeding now creates only the default local user and leaves Kanban boards, lists, ideas, and memberships empty.
+- Ideas, idea details/forms, and Planning no longer create a default Kanban board as a side effect of a page request.
+- The new-column form can reuse an existing board without creating one on GET; an actual submitted Kanban column can still create its required default board.
+- Removed the globally mounted Activity drawer, its Settings trigger, and the raw Activity/close/reload markup that appeared above the notes bar. The dedicated Activity audit page remains available from Settings.
+- Added regression coverage for empty seeding, side-effect-free empty Ideas/Planning pages, and the absence of the global Activity drawer.
+
+### Verification
+
+- `PARALLEL_WORKERS=1 bin/rails test test/db/seeds_test.rb test/controllers/ideas_controller_test.rb test/controllers/lists_controller_test.rb test/controllers/recovery_secrets_controller_test.rb` — 61 tests, 244 assertions, all passing.
+- `PARALLEL_WORKERS=1 bin/rails test` — 733 tests, 2,909 assertions, all passing.
+- `node --test test/javascript/*.mjs` — 26 tests, all passing.
+- `bin/rails zeitwerk:check` and `git diff --check` — passed.
+- `graphify update .` — completed successfully.
+
+### Workspace note
+
+- The pre-existing dirty `graphify-out/` artifacts remain outside the feature commit and are refreshed after source changes as required.
