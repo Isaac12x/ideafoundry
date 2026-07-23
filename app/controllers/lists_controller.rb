@@ -4,7 +4,6 @@ class ListsController < ApplicationController
 
   def index
     @default_view = normalized_list_view(params[:view].presence || @user.list_settings['default_view'])
-    @user.default_kanban_board if @user.kanban_boards.none?
     @kanban_boards = @user.kanban_boards.ordered.includes(lists: { ideas: [:idea_lists, :idea_entries, :github_repository] })
     @kanban_board = @user.kanban_boards.build
     @kanban_lists = @user.lists.kanban.includes(:kanban_board, ideas: [:idea_lists, :idea_entries, :github_repository]).order(:kanban_board_id, :position)
@@ -191,7 +190,9 @@ class ListsController < ApplicationController
   end
 
   def normalized_kanban_board_id(id)
-    @user.kanban_boards.exists?(id: id) ? id : @user.default_kanban_board.id
+    return id if @user.kanban_boards.exists?(id: id)
+
+    @user.kanban_boards.ordered.pick(:id)
   end
 
   def load_kanban_boards
