@@ -1,0 +1,37 @@
+#!/usr/bin/env ruby
+
+require "socket"
+
+unless ARGV.length == 1 && ARGV.first.match?(/\A\d+\z/)
+  warn "Usage: bin/find_available_port START_PORT"
+  exit 64
+end
+
+start_port = Integer(ARGV.first, 10)
+unless (1..65_535).cover?(start_port)
+  warn "START_PORT must be an integer from 1 to 65535 (received: #{ARGV.first})."
+  exit 64
+end
+
+(start_port..65_535).each do |port|
+  sockets = []
+
+  begin
+    sockets << TCPServer.new("127.0.0.1", port)
+    sockets << TCPServer.new("::1", port)
+    sockets.each(&:close)
+    puts port
+    exit 0
+  rescue Errno::EADDRINUSE, Errno::EACCES
+    sockets.each(&:close)
+    next
+  rescue Errno::EAFNOSUPPORT, Errno::EADDRNOTAVAIL
+    # IPv6 can be disabled on otherwise supported development hosts.
+    sockets.each(&:close)
+    puts port
+    exit 0
+  end
+end
+
+warn "No available TCP port found at or above #{start_port}."
+exit 1

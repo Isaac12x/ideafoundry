@@ -87,7 +87,7 @@ Idea Foundry runs more smoothly as an always-available local service when its La
 ### Development
 
 ```bash
-bin/dev              # starts Rails + esbuild watcher (dev mode)
+bin/dev              # starts Rails + esbuild watcher on port 3000 or the next free port
 BACKLOG_ENABLED=true bin/dev  # starts dev mode with the optional backlog enabled
 ```
 

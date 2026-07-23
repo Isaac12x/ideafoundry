@@ -242,3 +242,25 @@ Branch: `fix/empty-first-run`
 ### Workspace note
 
 - The pre-existing dirty `graphify-out/` artifacts remain outside the feature commit and are refreshed after source changes as required.
+
+## 2026-07-23 — Concurrent development ports
+
+Branch: `fix/concurrent-dev-ports`
+
+### Delivered
+
+- `bin/dev` now keeps port 3000 when it is free and scans upward to the next free TCP port when another local instance already owns the preferred port.
+- The development Procfile now consumes Foreman's selected `PORT`, while explicit `-p` and `--port` options remain authoritative.
+- `PORT=<number> bin/dev` selects a different starting point for automatic scanning, and the launcher prints the alternate URL when it moves.
+- Focused launcher coverage exercises free, occupied, and explicit-override behavior.
+
+### Verification
+
+- `PARALLEL_WORKERS=1 bin/rails test test/scripts/dev_launcher_test.rb` — 3 tests, 9 assertions, all passing.
+- `PARALLEL_WORKERS=1 bin/rails test` — 736 tests, 2,918 assertions, all passing.
+- `sh -n bin/dev`, `ruby -c bin/find_available_port`, and `git diff --check` — passed.
+- `graphify update .` — completed successfully.
+
+### Workspace note
+
+- Pre-existing generated `graphify-out/` changes and cache entries remain outside this feature commit.
