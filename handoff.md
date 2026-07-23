@@ -219,3 +219,26 @@ Branch: `security/fix-github-vulnerabilities`
 - `node --test test/javascript/*.mjs` — 26 tests, all passing.
 - `PARALLEL_WORKERS=1 bin/rails test` — 730 tests, 2,889 assertions, all passing.
 - `graphify update .` — refreshed 12,183 nodes and 39,375 edges.
+## 2026-07-23 — Empty first-run workspace and activity drawer removal
+
+Branch: `fix/empty-first-run`
+
+### Delivered
+
+- Fresh database seeding now creates only the default local user and leaves Kanban boards, lists, ideas, and memberships empty.
+- Ideas, idea details/forms, and Planning no longer create a default Kanban board as a side effect of a page request.
+- The new-column form can reuse an existing board without creating one on GET; an actual submitted Kanban column can still create its required default board.
+- Removed the globally mounted Activity drawer, its Settings trigger, and the raw Activity/close/reload markup that appeared above the notes bar. The dedicated Activity audit page remains available from Settings.
+- Added regression coverage for empty seeding, side-effect-free empty Ideas/Planning pages, and the absence of the global Activity drawer.
+
+### Verification
+
+- `PARALLEL_WORKERS=1 bin/rails test test/db/seeds_test.rb test/controllers/ideas_controller_test.rb test/controllers/lists_controller_test.rb test/controllers/recovery_secrets_controller_test.rb` — 61 tests, 244 assertions, all passing.
+- `PARALLEL_WORKERS=1 bin/rails test` — 733 tests, 2,909 assertions, all passing.
+- `node --test test/javascript/*.mjs` — 26 tests, all passing.
+- `bin/rails zeitwerk:check` and `git diff --check` — passed.
+- `graphify update .` — completed successfully.
+
+### Workspace note
+
+- The pre-existing dirty `graphify-out/` artifacts remain outside the feature commit and are refreshed after source changes as required.
