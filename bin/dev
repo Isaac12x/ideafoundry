@@ -5,4 +5,20 @@ if ! gem list foreman -i --silent; then
   gem install foreman
 fi
 
-exec foreman start -f Procfile.dev "$@"
+# Let an explicit Foreman port option win unchanged.
+for argument in "$@"; do
+  case "$argument" in
+    -p|--port|-p=*|--port=*)
+      exec foreman start -f Procfile.dev "$@"
+      ;;
+  esac
+done
+
+preferred_port="${PORT:-3000}"
+selected_port="$(bin/find_available_port "$preferred_port")" || exit $?
+
+if [ "$selected_port" != "$preferred_port" ]; then
+  echo "Port $preferred_port is already in use; starting Idea Foundry on http://localhost:$selected_port."
+fi
+
+exec foreman start -f Procfile.dev -p "$selected_port" "$@"
