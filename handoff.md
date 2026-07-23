@@ -195,6 +195,30 @@ Branch: `fix/named-installations-master`
 - Directly verified `/recovery-secret` omits the activity panel, app dialog, and activity Stimulus controller in the live rendered HTML.
 - Added startup file-race handling after review so a database removed between existence and size checks is safely treated as missing.
 
+## 2026-07-23 — GitHub vulnerability remediation
+
+Branch: `security/fix-github-vulnerabilities`
+
+### Delivered
+
+- Inventoried every available GitHub security channel: 22 open Dependabot alerts, no code-scanning analysis, and one historical secret-scanning alert.
+- Resolved all JavaScript dependency findings in both npm and Yarn by pinning DOMPurify 3.4.12, Immutable 4.3.9, lodash-es 4.18.1, and Nano ID 5.0.9, then regenerated the committed browser bundles.
+- Upgraded the OCR service to Pillow 12.3.0, covering all 12 Pillow alerts.
+- Added a uv resolver override for Surya 0.20.0's stale `Pillow <11` metadata bound and a Docker build-time import assertion for the exact Surya classes the service uses.
+- Confirmed the historical Google API key finding came from Excalidraw's public Firebase client configuration in an old generated bundle, then resolved the alert as a false positive. Current bundles sanitize that configuration and the existing local-only verifier rejects any recurrence.
+
+### Verification
+
+- `npm audit` — 0 vulnerabilities.
+- `yarn audit --groups dependencies` — 0 vulnerabilities.
+- `npm ls dompurify immutable lodash-es nanoid --all` — only the patched versions resolve.
+- `uv pip compile --override ocr_service/overrides.txt ocr_service/requirements.txt` — resolves Pillow 12.3.0 with Surya 0.20.0.
+- `podman build --tag idea-app-ocr-security-test ocr_service` — passed, including the Pillow version and Surya import assertion.
+- OCR container import/health smoke test — passed.
+- `npm run build` and `npm run verify:excalidraw-local-only` — passed.
+- `node --test test/javascript/*.mjs` — 26 tests, all passing.
+- `PARALLEL_WORKERS=1 bin/rails test` — 730 tests, 2,889 assertions, all passing.
+- `graphify update .` — refreshed 12,183 nodes and 39,375 edges.
 ## 2026-07-23 — Empty first-run workspace and activity drawer removal
 
 Branch: `fix/empty-first-run`
