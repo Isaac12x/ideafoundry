@@ -28,7 +28,6 @@
     display_contrast = @user&.display_contrast.to_s
     show_notes = !security_lock_screen
     body_controllers = []
-    body_controllers << "activity-panel" unless security_lock_screen
     body_controllers << "shortcuts" unless security_lock_screen
     body_controllers << "typing-activity" if typing_activity_enabled
     body_controllers << "kb-notes" if show_notes
@@ -153,7 +152,6 @@
       <%= yield %>
     </main>
 
-    <%= render "layouts/activity_panel" unless security_lock_screen %>
     <%= render "layouts/app_dialog" unless security_lock_screen %>
 
     <% if show_notes %>
