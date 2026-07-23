@@ -5,7 +5,6 @@ class IdeasController < ApplicationController
 
   def index
     @ideas = @user.ideas.non_draft.primary_or_standalone.includes(:lists, :idea_lists, :topologies, :idea_entries)
-    @user.default_kanban_board if @user.kanban_boards.none?
     @kanban_boards = @user.kanban_boards.ordered.includes(:lists)
     @named_lists = @user.lists.named.ordered
 
@@ -26,7 +25,6 @@ class IdeasController < ApplicationController
 
   def show
     @inline_agent_recommendations = @user.agent_recommendations.pending.where(target: @idea).recent.limit(8)
-    @user.default_kanban_board if @user.kanban_boards.none?
     @kanban_boards = @user.kanban_boards.ordered.includes(:lists)
     @named_lists   = @user.lists.named.ordered
   end
@@ -335,7 +333,6 @@ class IdeasController < ApplicationController
   end
 
   def load_form_options
-    @user.default_kanban_board if @user.kanban_boards.none?
     @kanban_boards = @user.kanban_boards.ordered.includes(:lists)
     @lists = @user.lists.kanban.includes(:kanban_board).order(:kanban_board_id, :position)
     @named_lists = @user.lists.named.ordered
