@@ -98,6 +98,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
+- Remediated the open GitHub dependency alerts by pinning patched DOMPurify, Immutable, lodash-es, Nano ID, and Pillow releases across npm, Yarn, and the local OCR image.
 - Knowledge-base media edits validate configured source paths, reject symlink/traversal access, invoke local tools without a shell, preserve original bytes, and record before/after checksums plus edit recipes in the human activity trail.
 - Persisted recovery passphrases are moved out of app-local storage into platform secure storage when available.
 - SQLCipher and recovery-secret configuration values are filtered from logs.
