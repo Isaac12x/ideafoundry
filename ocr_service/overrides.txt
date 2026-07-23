@@ -1,0 +1,3 @@
+# Surya 0.20.0 still declares Pillow <11, but its OCR paths are compatible with
+# Pillow 12 and GitHub's Pillow advisories require 12.3.0 or newer.
+pillow==12.3.0
