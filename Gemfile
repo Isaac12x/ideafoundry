@@ -3,7 +3,7 @@ source "https://rubygems.org"
 ruby "3.4.5"
 
 # Bundle edge Rails instead: gem "rails", github: "rails/rails", branch: "main"
-gem "rails", "~> 8.1.3"
+gem "rails", "~> 8.1.4"
 
 # The original asset pipeline for Rails [https://github.com/rails/sprockets-rails]
 gem "sprockets-rails"
@@ -46,16 +46,16 @@ gem "solid_queue"
 gem "solid_cache"
 
 # Action Mailbox for email processing
-gem "actionmailbox", "~> 8.1.3"
+gem "actionmailbox", "~> 8.1.4"
 
 # Action Text for rich text content
-gem "actiontext", "~> 8.1.3"
+gem "actiontext", "~> 8.1.4"
 
 # Image processing for Active Storage variants
 gem "image_processing", "~> 1.2"
 
 # ZIP file handling for exports
-gem "rubyzip", "~> 2.3"
+gem "rubyzip", "~> 3.7"
 
 # Pagination
 gem "kaminari"
@@ -111,6 +111,6 @@ end
 gem "redcarpet", "~> 3.6"
 
 # Read .xlsx spreadsheets for KB rendering (converted to HTML tables)
-gem "roo", "~> 2.10"
+gem "roo", "~> 3.0"
 
 gem "rack-attack"
