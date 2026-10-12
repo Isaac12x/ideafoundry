@@ -7,25 +7,32 @@ export default class extends Controller {
 
   connect() {
     // Closed by default; only reopen if the user left it open last session.
-    const open = localStorage.getItem(STORAGE_KEY) === 'true'
+    let open = false
+    try { open = localStorage.getItem(STORAGE_KEY) === 'true' } catch { /* storage unavailable */ }
     this._setOpen(open, false)
   }
 
+  disconnect() {
+    clearTimeout(this._debounce)
+  }
+
   toggleCollapse() {
+    if (!this.hasBodyTarget) return
     const open = this.bodyTarget.classList.contains('filter-body--collapsed')
     this._setOpen(open, true)
   }
 
   _setOpen(open, save) {
+    if (!this.hasBodyTarget) return
     this.bodyTarget.classList.toggle('filter-body--collapsed', !open)
     if (this.hasToggleBtnTarget) {
       this.toggleBtnTarget.classList.toggle('filter-toggle-btn--open', open)
     }
-    if (save) localStorage.setItem(STORAGE_KEY, String(open))
+    if (save) try { localStorage.setItem(STORAGE_KEY, String(open)) } catch { /* storage unavailable */ }
   }
 
   submit() {
-    this.formTarget.requestSubmit()
+    if (this.hasFormTarget) this.formTarget.requestSubmit()
   }
 
   debouncedSubmit() {

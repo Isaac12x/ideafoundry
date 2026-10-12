@@ -26,7 +26,7 @@ export default class extends Controller {
     this._recording = false;
     this._enrollmentBlocked = false;
     if (this.element.classList.contains("voice-id-shell--opening")) {
-      window.setTimeout(() => {
+      this._redirectTimer = window.setTimeout(() => {
         window.location.assign(this.redirectUrlValue || "/");
       }, 1700);
       return;
@@ -35,6 +35,11 @@ export default class extends Controller {
     if (this._isEnrollment() && !this._recordingSupported()) {
       this._blockEnrollment(this._enrollmentUnavailableMessage("Voice recording is not available in this browser."));
     }
+  }
+
+  disconnect() {
+    window.clearTimeout(this._redirectTimer);
+    this._stream?.getTracks().forEach((track) => track.stop());
   }
 
   async record() {
@@ -47,6 +52,7 @@ export default class extends Controller {
       this.statusTarget.textContent = "Listening locally… say the phrase now.";
       const startedAt = performance.now();
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      this._stream = stream;
       const chunks = [];
       const mimeType = this.supportedMimeType();
       const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
@@ -84,6 +90,7 @@ export default class extends Controller {
         this.submitUnlockSample(sample);
       }
     } catch (error) {
+      this._stream?.getTracks().forEach((track) => track.stop());
       this.statusTarget.textContent = error.message || "Could not capture speech locally. Try again or type the transcript manually.";
     }
   }

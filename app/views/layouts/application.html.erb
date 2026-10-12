@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
     <title>Idea Foundry</title>
     <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -13,7 +13,6 @@
 
     <%= stylesheet_link_tag "application", "data-turbo-track": "reload" %>
     <%= javascript_importmap_tags %>
-    <meta name="graph-bundle-url" content="<%= asset_path('graph/index.js') %>">
   </head>
 
   <%
@@ -21,14 +20,15 @@
     security_lock_screen = body_class.include?("typing-lock-page") ||
       controller_path.to_s.start_with?("typing_locks") ||
       controller_path.to_s == "recovery_secrets"
-    typing_activity_enabled = @user&.security_lock_enabled? && !security_lock_screen
-    typing_lock_shortcut = "Ctrl/Cmd+Shift+L"
+    backlog_only = backlog_lock_bypass_active?
+    typing_activity_enabled = @user&.security_lock_enabled? && !security_lock_screen && !backlog_only
+    typing_lock_shortcut = "Ctrl/Cmd+L"
     quote_page_key = User.nav_page_key(controller_path)
     display_quote = @user&.quote_for_page(quote_page_key).to_s.strip
     display_contrast = @user&.display_contrast.to_s
-    show_notes = !security_lock_screen
+    show_notes = !security_lock_screen && !backlog_only
     body_controllers = []
-    body_controllers << "shortcuts" unless security_lock_screen
+    body_controllers << "shortcuts" unless security_lock_screen || backlog_only
     body_controllers << "typing-activity" if typing_activity_enabled
     body_controllers << "kb-notes" if show_notes
   %>
@@ -38,7 +38,7 @@
         <% if body_controllers.any? %>
           data-controller="<%= body_controllers.join(' ') %>"
         <% end %>
-        <% unless security_lock_screen %>
+        <% unless security_lock_screen || backlog_only %>
           data-shortcuts-plan-url-value="<%= lists_path %>"
           data-shortcuts-ideas-url-value="<%= ideas_path %>"
           data-shortcuts-licensing-url-value="<%= feature_enabled?(:licensing) ? licensing_crm_path : '' %>"
@@ -59,12 +59,15 @@
           data-typing-activity-shortcut-value="<%= typing_lock_shortcut %>"
           data-typing-activity-timeout-seconds-value="<%= @user.security_lock_timeout_seconds %>"
         <% end %>>
+    <% unless security_lock_screen %>
+      <a class="skip-link" href="#main-content">Skip to main content</a>
+    <% end %>
     <header class="app-header<%= ' nav-text-hidden' if @user&.nav_text_hidden? %>">
       <div class="header-brand">
         <h1 class="logo"><%= link_to "Idea Foundry", root_path %></h1>
       </div>
       <div class="header-right">
-        <nav class="header-nav">
+        <nav class="header-nav" aria-label="Primary">
           <%
             nav_defs = {
               'plan' => {
@@ -102,7 +105,7 @@
           <% (@user&.nav_items_to_render || []).each do |nav_key| %>
             <% item = nav_defs[nav_key] %>
             <% next if item.nil? || item[:path].nil? %>
-            <%= link_to item[:path], class: "nav-pill #{item[:active] ? 'active' : ''}", data: { shortcut_key: item[:key], shortcut_label: item[:shortcut], shortcut_group: "Navigation" } do %>
+            <%= link_to item[:path], class: "nav-pill #{item[:active] ? 'active' : ''}", aria: { current: (item[:active] ? "page" : nil) }, data: { shortcut_key: item[:key], shortcut_label: item[:shortcut], shortcut_group: "Navigation" } do %>
               <%= item[:icon].html_safe %>
               <span class="nav-label"><%= item[:label] %></span>
             <% end %>
@@ -119,7 +122,7 @@
                   class: "nav-pill nav-lock-button",
                   title: "Lock (#{typing_lock_shortcut})",
                   aria: { label: "Lock" },
-                  data: { shortcut_key: "Ctrl/Cmd+Shift+L", shortcut_label: "Lock workspace", shortcut_group: "Global" },
+                  data: { shortcut_key: "Ctrl/Cmd+L", shortcut_label: "Lock workspace", shortcut_group: "Global" },
                   form: {
                     class: "nav-lock-form",
                     data: { typing_activity_target: "lockForm" }
@@ -135,8 +138,16 @@
       </div>
     </header>
 
-    <%= render "layouts/ask_agent", security_lock_screen: security_lock_screen unless security_lock_screen %>
-    <%= render "layouts/command_palette" unless security_lock_screen %>
+    <% if security_lock_screen && controller_path != "recovery_secrets" && backlog_escape_available? %>
+      <%= render "layouts/backlog_escape" %>
+    <% end %>
+
+    <% if backlog_only %>
+      <%= render "layouts/backlog_only_strip" %>
+    <% end %>
+
+    <%= render "layouts/ask_agent", security_lock_screen: security_lock_screen unless security_lock_screen || backlog_only %>
+    <%= render "layouts/command_palette" unless security_lock_screen || backlog_only %>
 
     <% if display_quote.present? && controller_name != 'settings' && !security_lock_screen %>
       <div class="app-quote-banner">
@@ -146,7 +157,7 @@
 
     <%= render 'upgrades/toast' %>
 
-    <main class="app-main">
+    <main class="app-main" id="main-content" tabindex="-1">
       <div id="flash"><%= render "layouts/flash" %></div>
 
       <%= yield %>
@@ -159,7 +170,7 @@
         <div class="kb-notes-bar">
           <div class="kb-notes-tab-strip" data-action="click->kb-notes#barClick">
             <div class="kb-notes-tabs" data-kb-notes-target="tabList"></div>
-            <button class="kb-notes-add-btn" data-action="click->kb-notes#addTab" title="Add note tab">+</button>
+            <button class="kb-notes-add-btn" data-action="click->kb-notes#addTab" title="Add note tab" aria-label="Add note tab">+</button>
             <%= render "layouts/shortcut_cheatsheet" %>
           </div>
           <div class="kb-notes-panel-overlay" data-kb-notes-target="panel">

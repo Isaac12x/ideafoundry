@@ -13,7 +13,7 @@ class CreateKbEntryPreferences < ActiveRecord::Migration[8.1]
     end
 
     add_index :kb_entry_preferences,
-              [:user_id, :source_path, :relative_path, :entry_type],
+              [ :user_id, :source_path, :relative_path, :entry_type ],
               unique: true,
               name: "index_kb_entry_preferences_on_entry"
   end

@@ -1,4 +1,5 @@
 import { Controller } from "@hotwired/stimulus";
+import { loadExcalidrawAssets } from "lib/excalidraw_loader";
 
 // Manages drawings within the idea form: opens an Excalidraw modal to
 // create/edit drawings, refreshes thumbnails after save, deletes on demand.
@@ -20,7 +21,9 @@ export default class extends Controller {
     role: String,
     createUrl: String,
     showUrlPattern: String,
-    thumbnailMode: { type: String, default: "list" }
+    thumbnailMode: { type: String, default: "list" },
+    bundleUrl: String,
+    stylesheetUrl: String,
   };
 
   connect() {
@@ -34,6 +37,9 @@ export default class extends Controller {
     this.element.removeEventListener("drawing:saved", this.boundSaved);
     document.removeEventListener("excalidraw:ready", this.boundReady);
     this._unmount();
+    if (this.hasModalTarget && !this.modalTarget.classList.contains("hidden")) {
+      document.body.classList.remove("modal-open");
+    }
   }
 
   // ---- Modal lifecycle ----
@@ -93,10 +99,16 @@ export default class extends Controller {
     if (!confirmed) return;
 
     const url = this.showUrlPatternValue.replace("__ID__", btn.dataset.drawingId);
-    const res = await fetch(url, {
-      method: "DELETE",
-      headers: { "Accept": "application/json", "X-CSRF-Token": this._csrf() },
-    });
+    let res;
+    try {
+      res = await fetch(url, {
+        method: "DELETE",
+        headers: { "Accept": "application/json", "X-CSRF-Token": this._csrf() },
+      });
+    } catch {
+      window.AppDialog?.alert("The drawing could not be deleted. Try again.", { title: "Delete failed", confirmLabel: "Got it" });
+      return;
+    }
     if (res.ok) {
       const item = btn.closest("[data-drawing-item]");
       if (item) item.remove();
@@ -124,7 +136,11 @@ export default class extends Controller {
 
   // ---- Internals ----
 
-  _openMount(opts) {
+  async _openMount(opts) {
+    if (this.bundleUrlValue) {
+      await loadExcalidrawAssets(this.bundleUrlValue, this.stylesheetUrlValue);
+    }
+
     const mount = this.mountTarget;
     this._unmount();
 
@@ -191,7 +207,7 @@ export default class extends Controller {
     const title = data.title || "Untitled";
     item.innerHTML = `
       <div class="drawing-thumb__image">
-        ${png ? `<img src="${png}" alt="${this._esc(title)}" />` : `<div class="drawing-thumb__placeholder">No preview</div>`}
+        ${png ? `<img src="${this._esc(png)}" alt="${this._esc(title)}" />` : `<div class="drawing-thumb__placeholder">No preview</div>`}
       </div>
       <div class="drawing-thumb__row">
         <span class="drawing-thumb__title">${this._esc(title)}</span>

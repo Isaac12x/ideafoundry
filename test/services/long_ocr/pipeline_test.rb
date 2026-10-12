@@ -26,6 +26,21 @@ class LongOcrPipelineTest < ActiveSupport::TestCase
     end
   end
 
+  test "KB extraction refuses files inside a private project" do
+    Dir.mktmpdir do |dir|
+      FileUtils.mkdir_p(File.join(dir, "proj"))
+      File.write(File.join(dir, "proj", ".kb-project.yml"), "private: true\n")
+      source = File.join(dir, "proj", "patent.pdf")
+      File.write(source, "%PDF-1.4 fake")
+      extraction = KnowledgeExtraction.create!(source_kind: KnowledgeExtraction::KB_FILE, kb_folder_index: 0,
+                                               kb_path: source, status: :pending)
+
+      assert_raises(RuntimeError) { run_pipeline(extraction) }
+      assert extraction.reload.failed?
+      assert_match(/private project/, extraction.error)
+    end
+  end
+
   test "KB extraction writes <book>.md beside the source and completes" do
     Dir.mktmpdir do |dir|
       source = File.join(dir, "patent.pdf")

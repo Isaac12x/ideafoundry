@@ -22,8 +22,8 @@ class TypingFingerprint
       {
         "version" => 1,
         "sample_count" => normalized.size,
-        "keys" => grouped_stats(normalized.map { |event| [event[:key], event[:hold]] }),
-        "digraphs" => grouped_stats(flights.map { |flight| [flight[:digraph], flight[:latency]] }),
+        "keys" => grouped_stats(normalized.map { |event| [ event[:key], event[:hold] ] }),
+        "digraphs" => grouped_stats(flights.map { |flight| [ flight[:digraph], flight[:latency] ] }),
         "global" => {
           "hold" => stats(normalized.map { |event| event[:hold] }),
           "flight" => stats(flights.map { |flight| flight[:latency] })
@@ -129,9 +129,9 @@ class TypingFingerprint
       return if template_stat.blank? || sample_stat.blank?
       return if template_stat["count"].to_i.zero? || sample_stat["count"].to_i.zero?
 
-      spread = [template_stat["stddev"].to_f, stddev_floor].max
+      spread = [ template_stat["stddev"].to_f, stddev_floor ].max
       z_score = (sample_stat["mean"].to_f - template_stat["mean"].to_f).abs / spread
-      similarity = 1.0 - ([z_score, MAX_Z_SCORE].min / MAX_Z_SCORE)
+      similarity = 1.0 - ([ z_score, MAX_Z_SCORE ].min / MAX_Z_SCORE)
 
       weight.times { similarities << similarity }
     end

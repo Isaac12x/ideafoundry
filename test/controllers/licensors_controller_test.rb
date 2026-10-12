@@ -69,6 +69,30 @@ class LicensorsControllerTest < ActionDispatch::IntegrationTest
     assert_no_match(/data-tab-name="notes"/, response.body)
   end
 
+  test "licensing can be toggled straight from the idea page" do
+    @idea.update!(for_licensing: false)
+
+    post toggle_licensing_idea_path(@idea)
+    assert @idea.reload.for_licensing?
+    assert_redirected_to idea_path(@idea)
+
+    post toggle_licensing_idea_path(@idea)
+    assert_not @idea.reload.for_licensing?
+  end
+
+  test "the idea page offers the licensing toggle without going through edit" do
+    @idea.update!(for_licensing: false)
+    get idea_path(@idea)
+    assert_response :success
+    assert_match toggle_licensing_idea_path(@idea), response.body
+    assert_match "Track for licensing", response.body
+
+    @idea.update!(for_licensing: true)
+    get idea_path(@idea)
+    assert_match "Stop tracking for licensing", response.body
+    assert_match new_idea_licensor_import_path(@idea), response.body
+  end
+
   test "a licensor belonging to another user is not reachable" do
     other = User.create!(email: "other-#{SecureRandom.hex(4)}@example.com", name: "Other")
     other_idea = other.ideas.create!(title: "Theirs", for_licensing: true)

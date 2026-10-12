@@ -15,7 +15,7 @@
       <% end %>
       <div class="note-actions">
         <% if depth < max_depth %>
-          <button class="note-action-btn note-reply-btn"
+          <button type="button" class="note-action-btn note-reply-btn"
                   data-action="click->note-tree#toggleReply"
                   data-note-tree-note-id-param="<%= note.id %>"
                   title="Reply">
@@ -38,7 +38,7 @@
   <% if replies.any? %>
     <div class="note-children" data-note-tree-target="children" data-note-id="<%= note.id %>">
       <% if replies.size > 2 && depth > 0 %>
-        <button class="note-collapse-btn" data-action="click->note-tree#toggleCollapse" data-note-tree-note-id-param="<%= note.id %>">
+        <button type="button" class="note-collapse-btn" data-action="click->note-tree#toggleCollapse" data-note-tree-note-id-param="<%= note.id %>">
           <svg class="note-collapse-chevron" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
           <span data-note-tree-target="collapseLabel" data-note-id="<%= note.id %>"><%= replies.size %> replies</span>
         </button>

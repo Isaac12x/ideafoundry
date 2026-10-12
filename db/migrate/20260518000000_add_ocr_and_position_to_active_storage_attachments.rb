@@ -6,7 +6,7 @@ class AddOcrAndPositionToActiveStorageAttachments < ActiveRecord::Migration[8.0]
     add_column :active_storage_attachments, :ocr_metadata, :text
     add_column :active_storage_attachments, :ocr_error, :text
 
-    add_index :active_storage_attachments, [:record_type, :record_id, :name, :position],
+    add_index :active_storage_attachments, [ :record_type, :record_id, :name, :position ],
               name: "index_active_storage_attachments_on_record_position"
     add_index :active_storage_attachments, :ocr_status
   end

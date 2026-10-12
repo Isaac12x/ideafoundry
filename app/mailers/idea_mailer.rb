@@ -2,7 +2,7 @@ class IdeaMailer < ApplicationMailer
   def share_idea(idea, recipient_email, sender_name: nil, event_type: nil, metadata: {})
     @idea = idea
     @user = idea.user
-    @theme = event_type ? EmailPresetHelper.preset_for(event_type, @user) : EmailPresetHelper::PRESETS['neutral']
+    @theme = event_type ? EmailPresetHelper.preset_for(event_type, @user) : EmailPresetHelper::PRESETS["neutral"]
     @sender_name = sender_name || @user.name
     @event_type = event_type
     @metadata = metadata
@@ -20,7 +20,7 @@ class IdeaMailer < ApplicationMailer
     @list = list
     @ideas = list.ideas.includes(:topologies).order("idea_lists.position")
     @user = list.user
-    @theme = EmailPresetHelper::PRESETS['neutral']
+    @theme = EmailPresetHelper::PRESETS["neutral"]
     @sender_name = sender_name || @user.name
 
     mail(

@@ -186,10 +186,12 @@
         <summary class="form-panel-title">Hero Image</summary>
         <div class="hero-mode-toggle"
              data-controller="idea-drawings"
-             data-idea-drawings-role-value="hero"
-             data-idea-drawings-create-url-value="<%= idea.persisted? ? idea_drawings_path(idea) : '#' %>"
-             data-idea-drawings-show-url-pattern-value="/ideas/<%= idea.id %>/drawings/__ID__"
-             data-idea-drawings-thumbnail-mode-value="single"
+             <%= tag.attributes(idea_drawings_loader_values.merge(
+               idea_drawings_role_value: "hero",
+               idea_drawings_create_url_value: (idea.persisted? ? idea_drawings_path(idea) : "#"),
+               idea_drawings_show_url_pattern_value: "/ideas/#{idea.id}/drawings/__ID__",
+               idea_drawings_thumbnail_mode_value: "single"
+             )) %>
              data-action="keydown@window->idea-drawings#closeOnEsc">
           <div class="hero-mode-tabs">
             <button type="button"
@@ -213,7 +215,7 @@
                 </div>
                 <div class="dropzone__preview-hero" data-dropzone-target="preview">
                   <% if idea.hero_image.attached? %>
-                    <%= image_tag idea.hero_image, style: "max-width:100%;max-height:200px;border-radius:6px;border:1px solid var(--border-default);" %>
+                    <%= image_tag idea.hero_image, alt: "Current hero image for #{idea.title}", style: "max-width:100%;max-height:200px;border-radius:6px;border:1px solid var(--border-default);" %>
                   <% end %>
                 </div>
               </div>
@@ -237,7 +239,7 @@
             </div>
             <div class="idea-drawings__empty <%= 'hidden' if hero_drawing %>"
                  data-idea-drawings-target="empty">
-              <p>No hero drawing yet.</p>
+              <p>No hero drawing yet. Choose Draw to sketch one.</p>
             </div>
             <div class="idea-drawings__modal hidden"
                  data-idea-drawings-target="modal"
@@ -265,33 +267,33 @@
           <%= form.hidden_field :description, data: { editor_target: "input", action: "idea-draft:restore-description->editor#restoreFromIdeaDraft" } %>
           <div class="tiptap-toolbar" data-editor-target="toolbar">
             <div class="tiptap-toolbar__group">
-              <button type="button" data-cmd="bold" title="Bold"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M6 4h8a4 4 0 014 4 4 4 0 01-4 4H6z"/><path d="M6 12h9a4 4 0 014 4 4 4 0 01-4 4H6z"/></svg></button>
-              <button type="button" data-cmd="italic" title="Italic"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="4" x2="10" y2="4"/><line x1="14" y1="20" x2="5" y2="20"/><line x1="15" y1="4" x2="9" y2="20"/></svg></button>
-              <button type="button" data-cmd="underline" title="Underline"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3v7a6 6 0 006 6 6 6 0 006-6V3"/><line x1="4" y1="21" x2="20" y2="21"/></svg></button>
-              <button type="button" data-cmd="strike" title="Strikethrough"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.3 4.9c-1.1-.7-2.6-1.2-4.3-1.2-3.2 0-5 1.6-5 3.8 0 1 .3 1.8 1 2.5"/><line x1="4" y1="12" x2="20" y2="12"/><path d="M17 14c.2.5.3 1.1.3 1.7 0 2.4-2 4.3-5.3 4.3-1.8 0-3.5-.6-4.7-1.5"/></svg></button>
+              <button type="button" data-cmd="bold" title="Bold" aria-label="Bold"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M6 4h8a4 4 0 014 4 4 4 0 01-4 4H6z"/><path d="M6 12h9a4 4 0 014 4 4 4 0 01-4 4H6z"/></svg></button>
+              <button type="button" data-cmd="italic" title="Italic" aria-label="Italic"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="4" x2="10" y2="4"/><line x1="14" y1="20" x2="5" y2="20"/><line x1="15" y1="4" x2="9" y2="20"/></svg></button>
+              <button type="button" data-cmd="underline" title="Underline" aria-label="Underline"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3v7a6 6 0 006 6 6 6 0 006-6V3"/><line x1="4" y1="21" x2="20" y2="21"/></svg></button>
+              <button type="button" data-cmd="strike" title="Strikethrough" aria-label="Strikethrough"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.3 4.9c-1.1-.7-2.6-1.2-4.3-1.2-3.2 0-5 1.6-5 3.8 0 1 .3 1.8 1 2.5"/><line x1="4" y1="12" x2="20" y2="12"/><path d="M17 14c.2.5.3 1.1.3 1.7 0 2.4-2 4.3-5.3 4.3-1.8 0-3.5-.6-4.7-1.5"/></svg></button>
             </div>
             <div class="tiptap-toolbar__group">
-              <button type="button" data-cmd="heading" data-level="1" title="Heading 1">H1</button>
-              <button type="button" data-cmd="heading" data-level="2" title="Heading 2">H2</button>
-              <button type="button" data-cmd="heading" data-level="3" title="Heading 3">H3</button>
+              <button type="button" data-cmd="heading" data-level="1" title="Heading 1" aria-label="Heading 1">H1</button>
+              <button type="button" data-cmd="heading" data-level="2" title="Heading 2" aria-label="Heading 2">H2</button>
+              <button type="button" data-cmd="heading" data-level="3" title="Heading 3" aria-label="Heading 3">H3</button>
             </div>
             <div class="tiptap-toolbar__group">
-              <button type="button" data-cmd="bulletList" title="Bullet List"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="4" cy="6" r="1" fill="currentColor"/><circle cx="4" cy="12" r="1" fill="currentColor"/><circle cx="4" cy="18" r="1" fill="currentColor"/></svg></button>
-              <button type="button" data-cmd="orderedList" title="Numbered List"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="10" y1="6" x2="21" y2="6"/><line x1="10" y1="12" x2="21" y2="12"/><line x1="10" y1="18" x2="21" y2="18"/><text x="3" y="7" font-size="7" fill="currentColor" stroke="none">1</text><text x="3" y="13" font-size="7" fill="currentColor" stroke="none">2</text><text x="3" y="19" font-size="7" fill="currentColor" stroke="none">3</text></svg></button>
-              <button type="button" data-cmd="blockquote" title="Blockquote"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V20c0 1 0 1 1 1z"/><path d="M15 21c3 0 7-1 7-8V5c0-1.25-.757-2.017-2-2h-4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2h.75c0 2.25.25 4-2.75 4v3c0 1 0 1 1 1z"/></svg></button>
+              <button type="button" data-cmd="bulletList" title="Bullet List" aria-label="Bullet List"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="4" cy="6" r="1" fill="currentColor"/><circle cx="4" cy="12" r="1" fill="currentColor"/><circle cx="4" cy="18" r="1" fill="currentColor"/></svg></button>
+              <button type="button" data-cmd="orderedList" title="Numbered List" aria-label="Numbered List"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="10" y1="6" x2="21" y2="6"/><line x1="10" y1="12" x2="21" y2="12"/><line x1="10" y1="18" x2="21" y2="18"/><text x="3" y="7" font-size="7" fill="currentColor" stroke="none">1</text><text x="3" y="13" font-size="7" fill="currentColor" stroke="none">2</text><text x="3" y="19" font-size="7" fill="currentColor" stroke="none">3</text></svg></button>
+              <button type="button" data-cmd="blockquote" title="Blockquote" aria-label="Blockquote"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V20c0 1 0 1 1 1z"/><path d="M15 21c3 0 7-1 7-8V5c0-1.25-.757-2.017-2-2h-4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2h.75c0 2.25.25 4-2.75 4v3c0 1 0 1 1 1z"/></svg></button>
             </div>
             <div class="tiptap-toolbar__group">
-              <button type="button" data-cmd="code" title="Inline Code"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></button>
-              <button type="button" data-cmd="codeBlock" title="Code Block"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/><line x1="12" y1="2" x2="12" y2="22" stroke-dasharray="2 2"/></svg></button>
-              <button type="button" data-cmd="horizontalRule" title="Horizontal Rule">&mdash;</button>
+              <button type="button" data-cmd="code" title="Inline Code" aria-label="Inline Code"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></button>
+              <button type="button" data-cmd="codeBlock" title="Code Block" aria-label="Code Block"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/><line x1="12" y1="2" x2="12" y2="22" stroke-dasharray="2 2"/></svg></button>
+              <button type="button" data-cmd="horizontalRule" title="Horizontal Rule" aria-label="Horizontal Rule">&mdash;</button>
             </div>
             <div class="tiptap-toolbar__group">
-              <button type="button" data-cmd="link" title="Link"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg></button>
-              <button type="button" data-cmd="image" title="Insert Image"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg></button>
+              <button type="button" data-cmd="link" title="Link" aria-label="Link"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg></button>
+              <button type="button" data-cmd="image" title="Insert Image" aria-label="Insert Image"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg></button>
             </div>
             <div class="tiptap-toolbar__group tiptap-toolbar__group--end">
-              <button type="button" data-cmd="undo" title="Undo"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg></button>
-              <button type="button" data-cmd="redo" title="Redo"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg></button>
+              <button type="button" data-cmd="undo" title="Undo" aria-label="Undo"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg></button>
+              <button type="button" data-cmd="redo" title="Redo" aria-label="Redo"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg></button>
             </div>
           </div>
           <div class="tiptap-editor" data-editor-target="editor"></div>
@@ -329,7 +331,7 @@
           <div class="current-attachments__section current-attachments__section--images">
             <div class="current-attachments__section-header">
               <h4>Images</h4>
-              <span><%= image_attachments.size %></span>
+              <span data-attachment-count="image"><%= image_attachments.size %></span>
             </div>
             <ul class="current-attachments__list"
                 data-attachment-reorder-target="list"
@@ -338,13 +340,13 @@
                 <%= render "idea_attachments/item", attachment: attachment, idea: idea %>
               <% end %>
             </ul>
-            <p class="current-attachments__empty" data-attachment-empty="image" <%= "hidden" if image_attachments.any? %>>No images attached.</p>
+            <p class="current-attachments__empty" data-attachment-empty="image" <%= "hidden" if image_attachments.any? %>>No images attached. Drop files in the area above.</p>
           </div>
 
           <div class="current-attachments__section current-attachments__section--documents">
             <div class="current-attachments__section-header">
               <h4>Documents</h4>
-              <span><%= document_attachments.size %></span>
+              <span data-attachment-count="document"><%= document_attachments.size %></span>
             </div>
             <ul class="current-attachments__list"
                 data-attachment-reorder-target="list"
@@ -353,7 +355,7 @@
                 <%= render "idea_attachments/item", attachment: attachment, idea: idea %>
               <% end %>
             </ul>
-            <p class="current-attachments__empty" data-attachment-empty="document" <%= "hidden" if document_attachments.any? %>>No documents attached.</p>
+            <p class="current-attachments__empty" data-attachment-empty="document" <%= "hidden" if document_attachments.any? %>>No documents attached. Drop files in the area above.</p>
           </div>
 
           <p class="form-hint" data-attachment-reorder-target="status" aria-live="polite"></p>
@@ -627,15 +629,6 @@
           <div class="computed-score-value" data-score-target="computedScore">
             <%= number_with_precision(idea.computed_score || 0, precision: 2) %>
           </div>
-          <% if legacy_scoring_system %>
-            <div class="score-formula" data-score-target="scoreFormula">
-              <%= scoring_user.scoring_formula_display %>
-            </div>
-          <% elsif scorecard_systems.any? %>
-            <div class="score-formula">
-              <%= scorecard_systems.map { |system| idea.scoring_breakdown_for(system)[:normalized] }.map { |score| "#{number_with_precision(score, precision: 2)}/10" }.to_sentence %>
-            </div>
-          <% end %>
         </div>
       </details>
 
@@ -671,30 +664,7 @@
     </div>
   </div>
 
-  <dialog class="attachment-viewer-modal"
-          data-action="click->attachment-viewer#backdropClose">
-    <div class="attachment-viewer-modal__inner">
-      <div class="attachment-viewer-modal__preview" data-attachment-viewer-target="preview"></div>
-
-      <div class="attachment-viewer-modal__fields">
-        <div class="form-group">
-          <label class="form-label">Filename</label>
-          <input type="text" class="form-control" data-attachment-viewer-target="filenameInput">
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">Replace file</label>
-          <input type="file" class="form-control" data-attachment-viewer-target="fileInput">
-        </div>
-      </div>
-
-      <div class="attachment-viewer-modal__actions">
-        <button type="button" class="btn btn-danger" data-attachment-viewer-target="deleteBtn" data-action="click->attachment-viewer#confirmDelete">Delete</button>
-        <button type="button" class="btn btn-primary" data-action="click->attachment-viewer#save">Save</button>
-        <button type="button" class="btn" data-action="click->attachment-viewer#close">Cancel</button>
-      </div>
-    </div>
-  </dialog>
+  <%= render "idea_attachments/viewer_modal" %>
 
 </div>
 

@@ -1,0 +1,137 @@
+<%
+  # Keys mirror MODES in app/javascript/lib/periodic_table/trends.mjs.
+  ptable_mode_groups = {
+    "Classify" => [["series", "Series"], ["block", "Blocks"], ["metallicity", "Metallicity"], ["crystal", "Crystal"],
+                   ["magnetic", "Magnetism"], ["goldschmidt", "Geochem"], ["bio", "Biology"]],
+    "Measure" => [["trends", "Trends"]],
+    "Explore" => [["state", "State"], ["discovery", "Discovery"], ["electrons", "Electrons"], ["oxidation", "Oxidation"],
+                  ["valence", "Valence"], ["isotopes", "Isotopes"]]
+  }
+  ptable_bench_tabs = [
+    ["combine", "Combine", "Build compounds from the elements in your tray"],
+    ["formula", "Formula", "Molar mass, composition, empirical formula, solution prep"],
+    ["equation", "Equation", "Balance reactions and work out stoichiometry"],
+    ["alloy", "Alloy", "wt% ↔ at%, density, VEC, mixing entropy, Hume-Rothery"],
+    ["compare", "Compare", "Side-by-side properties of tray elements"],
+    ["plot", "Plot", "Periodicity curves and property-vs-property scatter"],
+    ["nuclides", "Nuclides", "Chart of all 3,383 known nuclides"],
+    ["map", "Map", "Where each element was discovered or first used"],
+    ["guide", "Guide", "How to read the table, glossary and sources"]
+  ]
+%>
+<section class="ptable" data-controller="periodic-table" data-layout="compact" data-mode="series">
+  <header class="ptable-toolbar">
+    <div class="ptable-toolbar-row">
+      <div class="ptable-search">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="search" data-periodic-table-target="search"
+               data-action="input->periodic-table#search keydown->periodic-table#searchKeydown"
+               placeholder="Element, symbol, number or CAS…" aria-label="Search elements" aria-keyshortcuts="/">
+        <kbd class="ptable-kbd" aria-hidden="true">/</kbd>
+      </div>
+
+      <div class="ptable-layout-toggle" role="group" aria-label="Layout">
+        <button type="button" class="ptable-layout-btn" data-periodic-table-target="layoutBtn"
+                data-layout="compact" data-action="click->periodic-table#setLayout" aria-pressed="true">18-column</button>
+        <button type="button" class="ptable-layout-btn" data-periodic-table-target="layoutBtn"
+                data-layout="wide" data-action="click->periodic-table#setLayout" aria-pressed="false">32-column</button>
+      </div>
+
+      <button type="button" class="ptable-print-btn" data-action="click->periodic-table#print" aria-label="Print periodic table" title="Print">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+      </button>
+    </div>
+
+    <nav class="ptable-modes" aria-label="Display mode">
+      <% ptable_mode_groups.each do |group, modes| %>
+        <div class="ptable-mode-group" role="group" aria-label="<%= group %>">
+          <span class="ptable-mode-group-label"><%= group %></span>
+          <% modes.each do |key, label| %>
+            <button type="button" class="ptable-mode-btn" data-periodic-table-target="modeBtn"
+                    data-mode="<%= key %>" data-action="click->periodic-table#setMode"
+                    aria-pressed="<%= key == "series" %>"><%= label %></button>
+          <% end %>
+        </div>
+      <% end %>
+    </nav>
+
+    <div class="ptable-context-strip ptable-trends-strip" data-periodic-table-target="trendsStrip" hidden>
+      <span class="ptable-strip-label">Property</span>
+      <select class="ptable-property-select" data-periodic-table-target="propertySelect"
+              data-action="change->periodic-table#setProperty" aria-label="Trends property"></select>
+      <button type="button" class="ptable-ghost-btn" data-action="click->periodic-table#plotProperty">Plot against Z →</button>
+    </div>
+
+    <div class="ptable-context-strip ptable-temp-strip" data-periodic-table-target="tempStrip" hidden>
+      <span class="ptable-strip-label">Temperature</span>
+      <div class="ptable-unit-switch" role="group" aria-label="Temperature unit">
+        <button type="button" data-periodic-table-target="unitBtn" data-unit="K" data-action="click->periodic-table#setUnit" aria-pressed="true">K</button>
+        <button type="button" data-periodic-table-target="unitBtn" data-unit="C" data-action="click->periodic-table#setUnit" aria-pressed="false">°C</button>
+        <button type="button" data-periodic-table-target="unitBtn" data-unit="F" data-action="click->periodic-table#setUnit" aria-pressed="false">°F</button>
+      </div>
+      <div class="ptable-temp-track">
+        <input type="range" min="0" max="6000" step="1" value="298" class="ptable-temp-slider"
+               data-periodic-table-target="tempSlider" data-action="input->periodic-table#setTemp" aria-label="Temperature in kelvin">
+        <div class="ptable-temp-marks" aria-hidden="true">
+          <span style="--mark:77">N₂ boils</span>
+          <span style="--mark:298">Room</span>
+          <span style="--mark:1811">Fe melts</span>
+          <span style="--mark:3695">W melts</span>
+          <span style="--mark:5772">Sun's surface</span>
+        </div>
+      </div>
+      <output data-periodic-table-target="tempReadout" class="ptable-readout">298 K</output>
+    </div>
+
+    <div class="ptable-context-strip ptable-discovery-strip" data-periodic-table-target="discoveryStrip" hidden>
+      <button type="button" class="ptable-discovery-play" data-periodic-table-target="discoveryPlay"
+              data-action="click->periodic-table#toggleDiscoveryPlay" aria-label="Play discovery timeline">▶</button>
+      <input type="range" min="-9000" max="2010" step="1" value="2010" class="ptable-discovery-slider"
+             data-periodic-table-target="discoverySlider" data-action="input->periodic-table#setDiscoveryYear" aria-label="Discovery year">
+      <output data-periodic-table-target="discoveryReadout" class="ptable-readout">2010 · 118 known</output>
+      <div class="ptable-discovery-ticker" data-periodic-table-target="discoveryTicker" aria-live="polite"></div>
+    </div>
+
+    <p class="ptable-explain" data-periodic-table-target="explain" aria-live="polite"></p>
+  </header>
+
+  <div class="ptable-highlight-banner" data-periodic-table-target="highlightBanner" hidden>
+    <span data-periodic-table-target="highlightLabel"></span>
+    <button type="button" class="ptable-ghost-btn" data-action="click->periodic-table#clearHighlight">Clear</button>
+  </div>
+
+  <div class="ptable-body">
+    <div class="ptable-scroll">
+      <div class="ptable-grid" data-periodic-table-target="grid"
+           data-action="mouseover->periodic-table#gridHover mouseout->periodic-table#gridOut focusin->periodic-table#gridHover click->periodic-table#gridClick keydown->periodic-table#gridKeydown"
+           role="group" aria-label="Periodic table of elements. Arrow keys move, Enter opens details, plus adds to tray.">
+        <div class="ptable-inspector" data-periodic-table-target="inspector"></div>
+      </div>
+    </div>
+
+    <aside data-periodic-table-target="detail" class="ptable-dock" hidden></aside>
+  </div>
+
+  <footer class="ptable-legend" data-periodic-table-target="legend"
+          data-action="click->periodic-table#legendInteract mouseover->periodic-table#legendInteract mouseout->periodic-table#legendInteract focusin->periodic-table#legendInteract"></footer>
+
+  <section class="ptable-bench" data-controller="periodic-bench" aria-label="Chemistry bench">
+    <div class="ptable-tray" data-periodic-bench-target="tray" aria-live="polite"></div>
+
+    <nav class="ptable-bench-tabs" role="tablist" aria-label="Bench instruments" data-action="keydown->periodic-bench#tabKeydown">
+      <% ptable_bench_tabs.each_with_index do |(key, label, hint), i| %>
+        <button type="button" role="tab" id="pb-tab-<%= key %>" aria-controls="pb-panel-<%= key %>"
+                data-periodic-bench-target="tab" data-tab="<%= key %>" data-action="click->periodic-bench#selectTab"
+                aria-selected="<%= i.zero? %>" tabindex="<%= i.zero? ? 0 : -1 %>" title="<%= hint %>">
+          <span class="ptable-bench-tab-label"><%= label %></span>
+          <span class="ptable-bench-tab-hint"><%= hint %></span>
+        </button>
+      <% end %>
+    </nav>
+
+    <% ptable_bench_tabs.each_with_index do |(key, _label, _hint), i| %>
+      <div class="ptable-bench-panel" role="tabpanel" id="pb-panel-<%= key %>" aria-labelledby="pb-tab-<%= key %>"
+           data-periodic-bench-target="panel" data-panel="<%= key %>" <%= "hidden" unless i.zero? %>></div>
+    <% end %>
+  </section>
+</section>

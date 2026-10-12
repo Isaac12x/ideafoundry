@@ -9,7 +9,7 @@ class EnforceOneListPerIdea < ActiveRecord::Migration[8.0]
     SQL
 
     # Remove old compound unique index
-    remove_index :idea_lists, [:idea_id, :list_id], if_exists: true
+    remove_index :idea_lists, [ :idea_id, :list_id ], if_exists: true
 
     # Replace non-unique idea_id index with unique one
     remove_index :idea_lists, :idea_id, if_exists: true
@@ -19,6 +19,6 @@ class EnforceOneListPerIdea < ActiveRecord::Migration[8.0]
   def down
     remove_index :idea_lists, :idea_id, if_exists: true
     add_index :idea_lists, :idea_id
-    add_index :idea_lists, [:idea_id, :list_id], unique: true
+    add_index :idea_lists, [ :idea_id, :list_id ], unique: true
   end
 end

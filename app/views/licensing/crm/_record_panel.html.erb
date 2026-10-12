@@ -1,44 +1,44 @@
 <%= turbo_frame_tag "licensor-panel" do %>
-  <div class="crm-panel" data-controller="crm-panel">
-    <div class="crm-panel__scrim" data-action="click->crm-panel#close"></div>
-    <aside class="crm-panel__drawer" style="--stage-hue: <%= licensor.stage_hue %>">
+  <div class="crm-panel" data-controller="crm-panel" data-action="keydown.esc@window->crm-panel#close">
+    <div class="crm-panel__scrim" data-action="click->crm-panel#close" aria-hidden="true"></div>
+    <aside class="crm-panel__drawer" role="dialog" aria-label="<%= licensor.company %> record" style="--stage-hue: <%= licensor.stage_hue %>">
       <header class="crm-panel__head">
         <div class="crm-panel__ident">
           <h2 class="crm-panel__company"><%= licensor.company %></h2>
           <%= link_to licensor.idea.title, idea_path(licensor.idea), class: "crm-panel__idea" %>
         </div>
-        <button type="button" class="crm-panel__close" data-action="click->crm-panel#close" aria-label="Close">&times;</button>
+        <button type="button" class="crm-panel__close" data-action="click->crm-panel#close" aria-label="Close panel">&times;</button>
       </header>
 
       <%= form_with url: licensor_path(licensor), method: :patch, class: "crm-panel__form" do %>
         <input type="hidden" name="context" value="panel">
         <div class="crm-field">
-          <label>Stage</label>
+          <label for="crm_licensor_stage">Stage</label>
           <%= select_tag "licensor[stage]",
                 options_for_select(Licensor::STAGE_ORDER.map { |s| [Licensor.stage_label(s), s] }, licensor.stage),
-                class: "crm-input" %>
+                id: "crm_licensor_stage", class: "crm-input" %>
         </div>
         <div class="crm-field-row">
           <div class="crm-field">
-            <label>Contact name</label>
-            <%= text_field_tag "licensor[contact_name]", licensor.contact_name, class: "crm-input", autocomplete: "off" %>
+            <label for="crm_licensor_contact_name">Contact name</label>
+            <%= text_field_tag "licensor[contact_name]", licensor.contact_name, id: "crm_licensor_contact_name", class: "crm-input", autocomplete: "off" %>
           </div>
           <div class="crm-field">
-            <label>Email</label>
-            <%= email_field_tag "licensor[contact_email]", licensor.contact_email, class: "crm-input", autocomplete: "off" %>
+            <label for="crm_licensor_contact_email">Email</label>
+            <%= email_field_tag "licensor[contact_email]", licensor.contact_email, id: "crm_licensor_contact_email", class: "crm-input", autocomplete: "off" %>
           </div>
         </div>
         <div class="crm-field">
-          <label>Link</label>
-          <%= url_field_tag "licensor[contact_url]", licensor.contact_url, class: "crm-input", placeholder: "https://…", autocomplete: "off" %>
+          <label for="crm_licensor_contact_url">Link</label>
+          <%= url_field_tag "licensor[contact_url]", licensor.contact_url, id: "crm_licensor_contact_url", class: "crm-input", placeholder: "https://…", autocomplete: "off" %>
         </div>
         <div class="crm-field">
-          <label>Next action</label>
-          <%= text_field_tag "licensor[next_action]", licensor.next_action, class: "crm-input", autocomplete: "off" %>
+          <label for="crm_licensor_next_action">Next action</label>
+          <%= text_field_tag "licensor[next_action]", licensor.next_action, id: "crm_licensor_next_action", class: "crm-input", autocomplete: "off" %>
         </div>
         <div class="crm-field">
-          <label>Notes</label>
-          <%= text_area_tag "licensor[notes]", licensor.notes, class: "crm-input", rows: 3 %>
+          <label for="crm_licensor_notes">Notes</label>
+          <%= text_area_tag "licensor[notes]", licensor.notes, id: "crm_licensor_notes", class: "crm-input", rows: 3 %>
         </div>
         <%= submit_tag "Save", class: "btn btn-sm btn-primary" %>
       <% end %>
@@ -49,8 +49,8 @@
           <input type="hidden" name="context" value="panel">
           <%= select_tag "licensor_contact[channel]",
                 options_for_select(LicensorContact.channels.keys.map { |c| [LicensorContact::CHANNEL_LABELS[c], c] }),
-                class: "crm-input crm-input--channel" %>
-          <%= text_field_tag "licensor_contact[summary]", nil, placeholder: "What happened?", class: "crm-input", autocomplete: "off" %>
+                class: "crm-input crm-input--channel", aria: { label: "Channel" } %>
+          <%= text_field_tag "licensor_contact[summary]", nil, placeholder: "What happened?", aria: { label: "Summary" }, class: "crm-input", autocomplete: "off" %>
           <%= submit_tag "Log", class: "btn btn-sm" %>
         <% end %>
 
@@ -67,7 +67,7 @@
                 </div>
                 <%= button_to "&times;".html_safe, licensor_contact_path(licensor, c), method: :delete,
                       params: { context: "panel" }, class: "crm-log__del",
-                      form: { data: { turbo_confirm: "Delete this log entry?" } }, aria: { label: "Delete" } %>
+                      form: { data: { turbo_confirm: "Delete this log entry?" } }, aria: { label: "Delete log entry" } %>
               </li>
             <% end %>
           <% else %>

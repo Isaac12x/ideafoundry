@@ -1,4 +1,6 @@
 class KbController < ApplicationController
+  include KbProjects
+
   NATIVE_KB_PATH = KbSource::NATIVE_PATH
   NATIVE_KB_LABEL = KbSource::NATIVE_LABEL
   LAST_DOCUMENT_COOKIE = :kb_last_document
@@ -19,6 +21,10 @@ class KbController < ApplicationController
 
   EMBED_CSP = "default-src 'none'; img-src data:; style-src 'unsafe-inline'; font-src data:".freeze
 
+  # Placeholders for nodes created straight from the tree, before naming.
+  UNNAMED_FILE = "Untitled.md".freeze
+  UNNAMED_FOLDER = "Untitled folder".freeze
+
   MIME_TYPES = Kb::MediaTypes::MIME_TYPES
 
   KbContent = Struct.new(
@@ -31,7 +37,7 @@ class KbController < ApplicationController
   before_action :set_user
   # Only the KB section page is feature-gated; file/tree/serve endpoints also
   # back the notes bar and stay available.
-  before_action -> { require_feature(:kb) }, only: [:index]
+  before_action -> { require_feature(:kb) }, only: [ :index ]
 
   def index
     @folders = build_folder_tree
@@ -90,10 +96,11 @@ class KbController < ApplicationController
     folder_index = params[:src].to_i
     abs = resolve_kb_path(folder_index, params[:file], extensions: EXTRACTABLE_EXTENSIONS)
     return head(:not_found) if abs.nil?
+    # Extraction sends file bytes to the OCR service; never for private projects.
+    return head(:forbidden) if Kb::Privacy.private?(File.expand_path(kb_sources[folder_index][:path]), params[:file])
 
     KnowledgeExtraction.enqueue_for_kb(folder_index: folder_index, kb_path: abs)
-    redirect_to kb_path(src: folder_index, file: params[:file]),
-                notice: "Knowledge extraction queued for #{File.basename(abs)}."
+    redirect_to kb_path(src: folder_index, file: params[:file])
   end
 
   # ── Tree file operations ──────────────────────────────────────────────
@@ -126,6 +133,7 @@ class KbController < ApplicationController
     return head(:not_found) if abs.nil?
 
     File.write(abs, params[:content].to_s)
+    Kb::TreeBuilder.bust_cache!(@user)
     redirect_to kb_file_path(src: folder_index, file: params[:file])
   end
 
@@ -137,29 +145,40 @@ class KbController < ApplicationController
     return fs_error("Target folder not found.") if parent.nil?
 
     name = params[:name].to_s.strip
+    return project_create(parent, name) if params[:kind] == "project"
+
+    folder = params[:kind] == "folder"
 
     # A URL instead of a name means "download this into the folder in the
     # background" (yt-dlp for media, HTTP otherwise). URLs contain "/" so this
     # must run before valid_node_name?, which rejects them.
-    if params[:kind] != "folder" && url?(name)
+    if !folder && url?(name)
       KbDownload.enqueue(user: @user, source_index: params[:src].to_i,
                          dir: params[:dir].to_s, url: name, format: params[:format].to_s)
-      return respond_fs(notice: "Downloading… it will appear in the tree when ready.")
+      return respond_fs
+    end
+
+    # No name: create the node under a placeholder and hand it straight back
+    # for inline naming in the tree, so nobody types into a dialog first.
+    if name.blank?
+      abs = unique_fs_path(File.join(parent, folder ? UNNAMED_FOLDER : UNNAMED_FILE))
+      folder ? Dir.mkdir(abs) : File.write(abs, "")
+      return respond_fs(editing: abs.delete_prefix("#{base}/"))
     end
 
     return fs_error("Invalid name.") unless valid_node_name?(name)
 
-    if params[:kind] == "folder"
+    if folder
       abs = File.join(parent, name)
       return fs_error("\"#{name}\" already exists.") if File.exist?(abs)
       Dir.mkdir(abs)
-      respond_fs(notice: "Folder \"#{name}\" created.")
+      respond_fs
     else
       name = "#{name}.md" unless ALL_EXTENSIONS.include?(File.extname(name).downcase)
       abs = File.join(parent, name)
       return fs_error("\"#{name}\" already exists.") if File.exist?(abs)
       File.write(abs, "")
-      respond_fs(file: abs.delete_prefix("#{base}/"), notice: "File \"#{name}\" created.")
+      respond_fs(file: abs.delete_prefix("#{base}/"))
     end
   end
 
@@ -185,7 +204,7 @@ class KbController < ApplicationController
     end.compact
     return fs_error("The dropped files did not have usable names.") if copied.empty?
 
-    respond_fs(notice: "Copied #{copied.size} #{'file'.pluralize(copied.size)} into the knowledge base.")
+    respond_fs
   end
 
   def fs_rename
@@ -207,17 +226,37 @@ class KbController < ApplicationController
     return fs_error("\"#{name}\" already exists.") if File.exist?(dest) && dest != abs
 
     File.rename(abs, dest)
+    rel = dest.delete_prefix("#{base}/")
     KbEntryPreference.move_subtree!(
       user: @user,
       source_path: base,
       old_relative_path: params[:path],
       new_source_path: base,
-      new_relative_path: dest.delete_prefix("#{base}/")
+      new_relative_path: rel
     )
+    IdeaKbLink.move_subtree!(
+      user: @user,
+      source_path: base,
+      old_relative_path: params[:path],
+      new_source_path: base,
+      new_relative_path: rel
+    )
+    KbAnnotation.move_subtree!(
+      user: @user,
+      source_path: base,
+      old_relative_path: params[:path],
+      new_source_path: base,
+      new_relative_path: rel
+    )
+
+    # Inline naming patches the one row it changed, so it wants the new path
+    # back rather than a fresh tree.
+    return render(json: { rel: rel, name: name }) if request.format.json?
+
     if File.file?(dest)
-      respond_fs(file: dest.delete_prefix("#{base}/"), notice: "Renamed to \"#{name}\".")
+      respond_fs(file: rel)
     else
-      respond_fs(notice: "Renamed to \"#{name}\".")
+      respond_fs
     end
   end
 
@@ -249,10 +288,24 @@ class KbController < ApplicationController
       new_source_path: dest_base,
       new_relative_path: target.delete_prefix("#{dest_base}/")
     )
+    IdeaKbLink.move_subtree!(
+      user: @user,
+      source_path: base,
+      old_relative_path: params[:path],
+      new_source_path: dest_base,
+      new_relative_path: target.delete_prefix("#{dest_base}/")
+    )
+    KbAnnotation.move_subtree!(
+      user: @user,
+      source_path: base,
+      old_relative_path: params[:path],
+      new_source_path: dest_base,
+      new_relative_path: target.delete_prefix("#{dest_base}/")
+    )
     if File.file?(target)
-      respond_fs(src: dest_index, file: target.delete_prefix("#{dest_base}/"), notice: "Moved \"#{File.basename(abs)}\".")
+      respond_fs(src: dest_index, file: target.delete_prefix("#{dest_base}/"))
     else
-      respond_fs(src: dest_index, notice: "Moved \"#{File.basename(abs)}\".")
+      respond_fs(src: dest_index)
     end
   end
 
@@ -265,7 +318,9 @@ class KbController < ApplicationController
 
     File.directory?(abs) ? FileUtils.rm_r(abs) : File.delete(abs)
     KbEntryPreference.delete_subtree!(user: @user, source_path: base, relative_path: params[:path])
-    respond_fs(notice: "Deleted \"#{File.basename(abs)}\".")
+    IdeaKbLink.delete_subtree!(user: @user, source_path: base, relative_path: params[:path])
+    KbAnnotation.delete_subtree!(user: @user, source_path: base, relative_path: params[:path])
+    respond_fs
   end
 
   def fs_preference
@@ -295,7 +350,11 @@ class KbController < ApplicationController
     end
     preference.destroy! if !preference.favorite? && preference.icon_kind == "default" && !preference.icon_image.attached?
 
-    respond_fs(notice: params.key?(:favorite) ? "Favourite updated." : "Folder icon updated.")
+    # Favouriting is toggled optimistically in the tree; acknowledging is
+    # enough, and a banner for a starred file is noise.
+    return head(:no_content) if request.format.json?
+
+    respond_fs
   rescue ActiveRecord::RecordInvalid, ArgumentError => error
     fs_error(error.message)
   end
@@ -310,7 +369,7 @@ class KbController < ApplicationController
     absolute = relative_path.blank? ? base : safe_abs(base, relative_path)
     return render(json: { error: "Knowledge-base entry was not found." }, status: :not_found) unless absolute && File.exist?(absolute)
 
-    command = File.file?(absolute) ? ["open", "-R", absolute] : ["open", absolute]
+    command = File.file?(absolute) ? [ "open", "-R", absolute ] : [ "open", absolute ]
     if system(*command)
       head :no_content
     else
@@ -334,20 +393,23 @@ class KbController < ApplicationController
   private
 
   def fs_error(message)
+    return render(json: { error: message }, status: :unprocessable_content) if request.format.json?
+
     respond_fs(alert: message)
   end
 
   # Renders the tree (and, when the selection changed, the content pane) as a
   # turbo stream so file ops update in place instead of reloading the page.
   # Falls back to a full redirect for non-turbo clients.
-  def respond_fs(file: nil, src: params[:src].to_i, notice: nil, alert: nil)
+  def respond_fs(file: nil, src: params[:src].to_i, alert: nil, editing: nil)
     unless request.format.turbo_stream?
-      return redirect_to kb_path(src: src, file: file), notice: notice, alert: alert
+      return redirect_to kb_path(src: src, file: file || editing), alert: alert
     end
-
-    flash.now[:notice] = notice if notice
     flash.now[:alert]  = alert if alert
+    Kb::TreeBuilder.bust_cache!(@user)
     @folders = build_folder_tree
+    @editing_src = src if editing
+    @editing_rel = editing
     if file
       @selected_file = file
       @selected_folder_index = src
@@ -412,7 +474,7 @@ class KbController < ApplicationController
   end
 
   def build_folder_tree
-    Kb::TreeBuilder.new(@user).call
+    Kb::TreeBuilder.build(@user)
   end
 
   def kb_sources
@@ -420,7 +482,7 @@ class KbController < ApplicationController
   end
 
   def initial_document_selection
-    return [params[:src].to_i, params[:file]] if params[:file].present?
+    return [ params[:src].to_i, params[:file] ] if params[:file].present?
 
     remembered = remembered_document
     if remembered && resolve_kb_path(remembered.first, remembered.last, extensions: :any)
@@ -428,9 +490,9 @@ class KbController < ApplicationController
     end
 
     folder = @folders.find { |candidate| candidate[:files].any? }
-    return [0, nil] unless folder
+    return [ 0, nil ] unless folder
 
-    [folder[:index], folder[:files].first[:rel]]
+    [ folder[:index], folder[:files].first[:rel] ]
   end
 
   def remembered_document
@@ -438,7 +500,7 @@ class KbController < ApplicationController
     return if value.blank?
 
     parsed = JSON.parse(value)
-    [Integer(parsed.fetch("src")), parsed.fetch("file").to_s]
+    [ Integer(parsed.fetch("src")), parsed.fetch("file").to_s ]
   rescue JSON::ParserError, KeyError, TypeError, ArgumentError
     nil
   end

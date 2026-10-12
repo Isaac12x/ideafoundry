@@ -29,8 +29,10 @@ threads_count = ENV.fetch("RAILS_MAX_THREADS", 3)
 threads threads_count, threads_count
 
 if ENV["RAILS_ENV"] == "production"
-  require "concurrent-ruby"
-  worker_count = Integer(ENV.fetch("WEB_CONCURRENCY") { Concurrent.physical_processor_count })
+  # Single-user local app: default to single mode. Cluster mode's master compares
+  # wall-clock Time.now vs worker check-ins, so a macOS sleep/wake makes it kill
+  # every worker ("failed to check in within 60 seconds"). Opt in via WEB_CONCURRENCY.
+  worker_count = Integer(ENV.fetch("WEB_CONCURRENCY", 1))
   workers worker_count if worker_count > 1
 end
 

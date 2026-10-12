@@ -37,7 +37,7 @@ class BuildItemsControllerTest < ActionDispatch::IntegrationTest
   test "POST create attaches uploaded images" do
     assert_difference("BuildItem.count", 1) do
       post build_items_path,
-           params: { build_item: { title: "New item", images: [uploaded_image("mockup.png")] } },
+           params: { build_item: { title: "New item", images: [ uploaded_image("mockup.png") ] } },
            as: :turbo_stream
     end
 
@@ -67,12 +67,12 @@ class BuildItemsControllerTest < ActionDispatch::IntegrationTest
     item.images.attach(io: StringIO.new("\x89PNG\r\n\x1a\n"), filename: "existing.png", content_type: "image/png")
 
     patch build_item_path(item),
-          params: { build_item: { images: [uploaded_image("wireframe.png")] } },
+          params: { build_item: { images: [ uploaded_image("wireframe.png") ] } },
           as: :turbo_stream
 
     assert_response :success
     assert_equal 2, item.reload.images.count
-    assert_equal ["existing.png", "wireframe.png"], item.images.map { |image| image.filename.to_s }
+    assert_equal [ "existing.png", "wireframe.png" ], item.images.map { |image| image.filename.to_s }
     assert_includes @response.body, "backlog-image-thumb"
   end
 
@@ -153,7 +153,7 @@ class BuildItemsControllerTest < ActionDispatch::IntegrationTest
     i1 = BuildItem.create!(user: @user, title: "A", position: 1)
     i2 = BuildItem.create!(user: @user, title: "B", position: 2)
     i3 = BuildItem.create!(user: @user, title: "C", position: 3)
-    patch reorder_build_items_path, params: { order: [i3.id, i1.id, i2.id] }, as: :turbo_stream
+    patch reorder_build_items_path, params: { order: [ i3.id, i1.id, i2.id ] }, as: :turbo_stream
     assert_response :success
     assert_equal 1, i3.reload.position
     assert_equal 2, i1.reload.position
@@ -169,7 +169,7 @@ class BuildItemsControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert b.reload.pinned?
     # Pinned item now sorts ahead of the unpinned one.
-    assert_equal [b.id, a.id], @user.build_items.pending.pluck(:id)
+    assert_equal [ b.id, a.id ], @user.build_items.pending.pluck(:id)
   end
 
   test "PATCH pin again unpins" do
@@ -232,7 +232,7 @@ class BuildItemsControllerTest < ActionDispatch::IntegrationTest
   private
 
   def uploaded_image(filename)
-    file = Tempfile.new([File.basename(filename, ".*"), File.extname(filename)])
+    file = Tempfile.new([ File.basename(filename, ".*"), File.extname(filename) ])
     file.binmode
     file.write("\x89PNG\r\n\x1a\n")
     file.rewind

@@ -20,12 +20,12 @@ class VersionControlWorkflowTest < ActionDispatch::IntegrationTest
     v1 = @idea.create_version("Initial version")
     assert_equal 1, @idea.versions.count
     assert v1.root?
-    assert_equal "My Product Idea", v1.snapshot_data['title']
+    assert_equal "My Product Idea", v1.snapshot_data["title"]
 
     # Step 2: Make changes and create second version
     @idea.update!(title: "Improved Product Idea", trl: 5)
     v2 = @idea.create_version("Improved title and increased TRL")
-    
+
     assert_equal 2, @idea.versions.count
     assert_equal v1, v2.parent_version
     assert_not_nil v2.diff_summary
@@ -35,26 +35,26 @@ class VersionControlWorkflowTest < ActionDispatch::IntegrationTest
     # Step 3: Make more changes
     @idea.update!(opportunity: 9, timing: 8, category: "B2B SaaS")
     v3 = @idea.create_version("Updated scoring and category")
-    
+
     assert_equal 3, @idea.versions.count
     assert_equal v2, v3.parent_version
 
     # Step 4: Compare versions
     diff = v3.diff_with(v1)
-    assert_includes diff.keys, 'title'
-    assert_includes diff.keys, 'opportunity'
-    assert_includes diff.keys, 'category'
-    assert_equal "My Product Idea", diff['title'][:from]
-    assert_equal "Improved Product Idea", diff['title'][:to]
+    assert_includes diff.keys, "title"
+    assert_includes diff.keys, "opportunity"
+    assert_includes diff.keys, "category"
+    assert_equal "My Product Idea", diff["title"][:from]
+    assert_equal "Improved Product Idea", diff["title"][:to]
 
     # Step 5: Restore to v1 (creates a branch)
     v1.restore_to_idea!
     @idea.reload
-    
+
     assert_equal "My Product Idea", @idea.title
     assert_equal 3, @idea.trl
     assert_equal "SaaS", @idea.category
-    
+
     # Should have created a new version for the restoration
     assert_equal 4, @idea.versions.count
     restoration_version = @idea.latest_version
@@ -64,11 +64,11 @@ class VersionControlWorkflowTest < ActionDispatch::IntegrationTest
     # Step 6: Verify version tree structure
     service = VersionService.new(@idea)
     tree = service.version_tree
-    
+
     assert_equal 1, tree.size # One root
     root_node = tree.first
     assert_equal v1, root_node[:version]
-    
+
     # v1 should have two children: v2 and the restoration
     assert_equal 2, root_node[:children].size
 
@@ -83,7 +83,7 @@ class VersionControlWorkflowTest < ActionDispatch::IntegrationTest
       { title: "Final Product Name", state: :validated },
       "Finalized product name and validated"
     )
-    
+
     @idea.reload
     assert_equal "Final Product Name", @idea.title
     assert_equal "validated", @idea.state
@@ -93,23 +93,23 @@ class VersionControlWorkflowTest < ActionDispatch::IntegrationTest
   test "branching workflow" do
     # Create initial version
     v1 = @idea.create_version("Initial")
-    
+
     # Create first branch
     @idea.update!(title: "Branch A")
     v2a = @idea.create_version("Branch A changes")
-    
+
     # Go back to v1 and create second branch
     v1.restore_to_idea!
     @idea.reload
     restoration = @idea.latest_version
-    
+
     @idea.update!(title: "Branch B")
     v2b = @idea.create_version("Branch B changes")
-    
+
     # Verify tree structure
     assert v1.has_branches?
     assert_equal 2, v1.child_versions.count
-    
+
     # Verify both branches exist
     descendants = v1.descendants
     assert_includes descendants.map(&:id), v2a.id
@@ -125,12 +125,12 @@ class VersionControlWorkflowTest < ActionDispatch::IntegrationTest
       versions << @idea.create_version("Version #{i + 1}")
       sleep 0.01 # Ensure different timestamps
     end
-    
+
     # Verify history is preserved
     history = @idea.version_history.to_a
     assert_equal 5, history.size
     assert_equal versions, history
-    
+
     # Verify ancestry path
     last_version = versions.last
     path = last_version.ancestry_path

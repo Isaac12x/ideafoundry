@@ -99,7 +99,7 @@ export default class extends Controller {
     return !event.defaultPrevented &&
       !event.repeat &&
       event.code === "KeyL" &&
-      event.shiftKey &&
+      !event.shiftKey &&
       !event.altKey &&
       (event.ctrlKey || event.metaKey);
   }

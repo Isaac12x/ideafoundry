@@ -1,5 +1,5 @@
 <% content_for :body_class, "kb-page" %>
-<% kb_default_tab = %w[kb facts maxims images].include?(params[:tab].to_s) ? params[:tab] : "kb" %>
+<% kb_default_tab = %w[kb facts maxims images basics].include?(params[:tab].to_s) ? params[:tab] : "kb" %>
 <% kb_mood_images = @user.mood_images.global.includes(file_attachment: :blob).ordered.to_a %>
 <div class="kb-shell"
      data-controller="tabs kb-tree"
@@ -12,7 +12,9 @@
      data-kb-tree-preference-url-value="<%= kb_fs_preference_path %>"
      data-kb-tree-open-url-value="<%= kb_fs_open_path %>"
      data-kb-tree-delete-url-value="<%= kb_fs_delete_path %>"
-     data-kb-tree-edit-url-value="<%= kb_edit_path %>">
+     data-kb-tree-edit-url-value="<%= kb_edit_path %>"
+     data-kb-tree-project-convert-url-value="<%= kb_project_convert_path %>"
+     data-kb-tree-project-test-url-value="<%= kb_project_tests_path %>">
   <div class="kb-controller-scope"
        data-controller="kb-icon-picker kb-job"
        data-action="kb-job:open->kb-job#open"
@@ -20,6 +22,11 @@
        data-kb-job-create-url-value="<%= kb_fs_jobs_path %>">
 
   <%= turbo_stream_from @user, "kb_tree" %>
+  <div id="kb-references-prompts">
+    <% @user.kb_downloads.references_pending.each do |download| %>
+      <%= render "kb_references/picker", download: download %>
+    <% end %>
+  </div>
 
   <div class="tabs-nav">
     <button data-tabs-target="tab" data-tab-name="kb" data-action="click->tabs#switch" class="tab-button active">
@@ -38,15 +45,28 @@
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
       Think in Images
     </button>
+    <button data-tabs-target="tab" data-tab-name="basics" data-action="click->tabs#switch" class="tab-button">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><circle cx="17.5" cy="17.5" r="3.5"/></svg>
+      Basics
+    </button>
   </div>
 
   <%# ── KB panel ──────────────────────────────────────────────── %>
   <div data-tabs-target="panel" data-tab-panel="kb" class="kb-panel-full">
     <div class="kb-layout">
-      <aside class="kb-sidebar">
+      <aside class="kb-sidebar" data-controller="kb-sidebar">
         <div class="kb-sidebar-inner">
           <%= render "kb/tree" %>
         </div>
+        <div class="kb-sidebar-resizer"
+             role="separator"
+             tabindex="0"
+             aria-orientation="vertical"
+             aria-label="Resize sidebar"
+             aria-valuemin="180"
+             aria-valuemax="560"
+             data-kb-sidebar-target="handle"
+             data-action="pointerdown->kb-sidebar#start keydown->kb-sidebar#nudge"></div>
         <div class="kb-tree-footer">
           <%= link_to settings_kb_path, class: "kb-add-folder-link" do %>
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -56,7 +76,8 @@
       </aside>
 
       <main class="kb-content-area">
-        <turbo-frame id="kb-content">
+        <%# Deep links (e.g. from an idea) open a project page in the pane. %>
+        <turbo-frame id="kb-content" <%= tag.attributes(src: kb_project_path(src: params[:src], path: params[:project])) if params[:project].present? %>>
           <%= render "kb/content", content: @content, selected_file: @selected_file %>
         </turbo-frame>
       </main>
@@ -121,47 +142,72 @@
     </div>
   </div>
 
+  <%# ── Basics panel (reference instruments) ─────────────────────── %>
+  <div data-tabs-target="panel" data-tab-panel="basics" class="kb-panel-full kb-basics-panel-full hidden">
+    <%= render "kb/basics" %>
+  </div>
+
   <%# ── Context menu (shared, position:fixed) ───────────────────── %>
-  <div class="kb-context-menu" data-kb-tree-target="menu">
+  <div class="kb-context-menu" role="menu" aria-label="File actions" data-kb-tree-target="menu">
     <div data-kb-tree-target="items">
-      <button class="kb-context-menu-item" data-kb-tree-target="item" data-menu-item="newFile"
+      <button type="button" role="menuitem" class="kb-context-menu-item" data-kb-tree-target="item" data-menu-item="newFile"
               data-action="click->kb-tree#newFile">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="12" x2="12" y2="18"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
-        New file…
+        New file
       </button>
-      <button class="kb-context-menu-item" data-kb-tree-target="item" data-menu-item="newFolder"
+      <button type="button" role="menuitem" class="kb-context-menu-item" data-kb-tree-target="item" data-menu-item="newFolder"
               data-action="click->kb-tree#newFolder">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/><line x1="12" y1="10" x2="12" y2="16"/><line x1="9" y1="13" x2="15" y2="13"/></svg>
-        New folder…
+        New folder
       </button>
-      <button class="kb-context-menu-item" data-kb-tree-target="item" data-menu-item="edit"
+      <button type="button" role="menuitem" class="kb-context-menu-item" data-kb-tree-target="item" data-menu-item="newProject"
+              data-action="click->kb-tree#newProject">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3h6"/><path d="M10 3v6L4.5 19a1.5 1.5 0 001.3 2.2h12.4a1.5 1.5 0 001.3-2.2L14 9V3"/><line x1="7.5" y1="14" x2="16.5" y2="14"/></svg>
+        New project
+      </button>
+      <button type="button" role="menuitem" class="kb-context-menu-item" data-kb-tree-target="item" data-menu-item="convertProject"
+              data-action="click->kb-tree#convertProject">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3h6"/><path d="M10 3v6L4.5 19a1.5 1.5 0 001.3 2.2h12.4a1.5 1.5 0 001.3-2.2L14 9V3"/><line x1="7.5" y1="14" x2="16.5" y2="14"/></svg>
+        Convert to project
+      </button>
+      <button type="button" role="menuitem" class="kb-context-menu-item" data-kb-tree-target="item" data-menu-item="newTest"
+              data-action="click->kb-tree#newTest">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3h6"/><path d="M10 3v6L5 18a2 2 0 001.8 3h10.4a2 2 0 001.8-3l-5-9V3"/><line x1="12" y1="13" x2="12" y2="17"/><line x1="10" y1="15" x2="14" y2="15"/></svg>
+        New test
+      </button>
+      <button type="button" role="menuitem" class="kb-context-menu-item" data-kb-tree-target="item" data-menu-item="download"
+              data-action="click->kb-tree#download">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+        Download from URL…
+      </button>
+      <button type="button" role="menuitem" class="kb-context-menu-item" data-kb-tree-target="item" data-menu-item="edit"
               data-action="click->kb-tree#edit">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
         Edit
       </button>
-      <button class="kb-context-menu-item" data-kb-tree-target="item" data-menu-item="rename"
+      <button type="button" role="menuitem" class="kb-context-menu-item" data-kb-tree-target="item" data-menu-item="rename"
               data-action="click->kb-tree#rename">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>
-        Rename…
+        Rename
       </button>
-      <button class="kb-context-menu-item" data-kb-tree-target="item" data-menu-item="extract"
+      <button type="button" role="menuitem" class="kb-context-menu-item" data-kb-tree-target="item" data-menu-item="extract"
               data-action="click->kb-tree#extract">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
         Extract knowledge
       </button>
-      <button class="kb-context-menu-item" data-kb-tree-target="item" data-menu-item="job"
+      <button type="button" role="menuitem" class="kb-context-menu-item" data-kb-tree-target="item" data-menu-item="job"
               data-action="click->kb-tree#job">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3a4 4 0 00-4 4v1a4 4 0 00-3 3.87V16a3 3 0 003 3h8a3 3 0 003-3v-4.13A4 4 0 0016 8V7a4 4 0 00-4-4z"/><path d="M9 13h.01M15 13h.01M9 16h6"/></svg>
         Ask AI about this…
       </button>
-      <div class="kb-context-menu-divider" data-kb-tree-target="item" data-menu-item="divider"></div>
-      <button class="kb-context-menu-item kb-context-menu-item--danger" data-kb-tree-target="item" data-menu-item="delete"
+      <div class="kb-context-menu-divider" role="separator" data-kb-tree-target="item" data-menu-item="divider"></div>
+      <button type="button" role="menuitem" class="kb-context-menu-item kb-context-menu-item--danger" data-kb-tree-target="item" data-menu-item="delete"
               data-action="click->kb-tree#destroy">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
         Delete
       </button>
-      <div class="kb-context-menu-divider" data-kb-tree-target="item" data-menu-item="finderDivider"></div>
-      <button class="kb-context-menu-item" data-kb-tree-target="item" data-menu-item="openFinder"
+      <div class="kb-context-menu-divider" role="separator" data-kb-tree-target="item" data-menu-item="finderDivider"></div>
+      <button type="button" role="menuitem" class="kb-context-menu-item" data-kb-tree-target="item" data-menu-item="openFinder"
               data-action="click->kb-tree#openFinder">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 5h6l2 2h10v12H3z"/><path d="M8 12h8M12 9v6"/></svg>
         Open in Finder
@@ -175,6 +221,7 @@
              data-action="input->kb-tree#promptInputChanged" />
       <select class="kb-context-menu-format" data-kb-tree-target="format" hidden>
         <option value="auto">Auto (download link)</option>
+        <option value="page">Web page (reader PDF)</option>
         <option value="video">Video (mp4)</option>
         <option value="audio">Audio (mp3)</option>
       </select>

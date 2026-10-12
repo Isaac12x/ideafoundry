@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_19_000100) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_12_130000) do
   create_table "action_mailbox_inbound_emails", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "message_checksum", null: false
@@ -241,6 +241,19 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_19_000100) do
     t.index ["idea_id"], name: "index_idea_entries_on_idea_id"
   end
 
+  create_table "idea_kb_links", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "entry_type", default: "file", null: false
+    t.integer "idea_id", null: false
+    t.integer "position", default: 0, null: false
+    t.string "relative_path", default: "", null: false
+    t.string "source_path", null: false
+    t.datetime "updated_at", null: false
+    t.index ["idea_id", "source_path", "relative_path"], name: "index_idea_kb_links_uniqueness", unique: true
+    t.index ["idea_id"], name: "index_idea_kb_links_on_idea_id"
+    t.index ["source_path", "relative_path"], name: "index_idea_kb_links_on_source_path_and_relative_path"
+  end
+
   create_table "idea_lists", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.integer "idea_id", null: false
@@ -313,18 +326,47 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_19_000100) do
     t.index ["user_id"], name: "index_kanban_boards_on_user_id"
   end
 
+  create_table "kb_annotations", force: :cascade do |t|
+    t.string "color", default: "yellow", null: false
+    t.datetime "created_at", null: false
+    t.integer "end_offset", null: false
+    t.integer "page"
+    t.string "prefix", default: "", null: false
+    t.text "quote", null: false
+    t.string "relative_path", null: false
+    t.string "source_path", null: false
+    t.integer "start_offset", null: false
+    t.string "style", default: "highlight", null: false
+    t.string "suffix", default: "", null: false
+    t.datetime "updated_at", null: false
+    t.integer "user_id", null: false
+    t.index ["user_id", "source_path", "relative_path"], name: "index_kb_annotations_on_user_and_path"
+    t.index ["user_id"], name: "index_kb_annotations_on_user_id"
+  end
+
   create_table "kb_downloads", force: :cascade do |t|
+    t.string "archive_url"
+    t.integer "attempts", default: 0, null: false
     t.datetime "created_at", null: false
     t.string "dir", default: "", null: false
     t.text "error"
     t.string "filename"
     t.string "format", default: "auto", null: false
+    t.text "reference_list"
+    t.string "references_state"
     t.integer "source_index", null: false
     t.text "source_path"
     t.string "status", default: "pending", null: false
+    t.string "title"
+    t.text "transcript"
+    t.integer "transcript_attempts", default: 0, null: false
+    t.string "transcript_error"
+    t.string "transcript_status"
     t.datetime "updated_at", null: false
     t.string "url", null: false
     t.integer "user_id", null: false
+    t.string "video_id"
+    t.index ["transcript_status"], name: "index_kb_downloads_on_transcript_status"
     t.index ["user_id", "status"], name: "index_kb_downloads_on_user_id_and_status"
     t.index ["user_id"], name: "index_kb_downloads_on_user_id"
   end
@@ -420,6 +462,19 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_19_000100) do
     t.index ["licensor_id"], name: "index_licensor_contacts_on_licensor_id"
   end
 
+  create_table "licensor_imports", force: :cascade do |t|
+    t.text "column_mapping"
+    t.datetime "created_at", null: false
+    t.string "filename", null: false
+    t.boolean "headers_in_first_row", default: true, null: false
+    t.integer "idea_id", null: false
+    t.integer "imported_count", default: 0, null: false
+    t.integer "row_count", default: 0, null: false
+    t.string "status", default: "pending", null: false
+    t.datetime "updated_at", null: false
+    t.index ["idea_id"], name: "index_licensor_imports_on_idea_id"
+  end
+
   create_table "licensors", force: :cascade do |t|
     t.string "company", null: false
     t.string "contact_email"
@@ -457,6 +512,21 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_19_000100) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.integer "user_id"
+  end
+
+  create_table "media_digests", force: :cascade do |t|
+    t.text "body", null: false
+    t.datetime "created_at", null: false
+    t.integer "kb_download_id", null: false
+    t.string "pipeline", null: false
+    t.datetime "superseded_at"
+    t.integer "superseded_by_id"
+    t.datetime "updated_at", null: false
+    t.integer "user_id", null: false
+    t.index ["kb_download_id", "pipeline"], name: "index_media_digests_on_kb_download_id_and_pipeline"
+    t.index ["kb_download_id"], name: "index_media_digests_on_kb_download_id"
+    t.index ["superseded_at"], name: "index_media_digests_on_superseded_at"
+    t.index ["user_id"], name: "index_media_digests_on_user_id"
   end
 
   create_table "mood_images", force: :cascade do |t|
@@ -591,6 +661,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_19_000100) do
   add_foreign_key "github_repositories", "ideas"
   add_foreign_key "idea_agent_tokens", "ideas"
   add_foreign_key "idea_entries", "ideas"
+  add_foreign_key "idea_kb_links", "ideas"
   add_foreign_key "idea_lists", "ideas"
   add_foreign_key "idea_lists", "lists"
   add_foreign_key "idea_topologies", "ideas"
@@ -598,15 +669,19 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_19_000100) do
   add_foreign_key "ideas", "templates"
   add_foreign_key "ideas", "users"
   add_foreign_key "kanban_boards", "users"
+  add_foreign_key "kb_annotations", "users"
   add_foreign_key "kb_downloads", "users"
   add_foreign_key "kb_entry_preferences", "users"
   add_foreign_key "kb_fs_jobs", "users"
   add_foreign_key "kb_media_edits", "users"
   add_foreign_key "knowledge_extractions", "ideas"
   add_foreign_key "licensor_contacts", "licensors"
+  add_foreign_key "licensor_imports", "ideas"
   add_foreign_key "licensors", "ideas"
   add_foreign_key "lists", "kanban_boards"
   add_foreign_key "lists", "users"
+  add_foreign_key "media_digests", "kb_downloads"
+  add_foreign_key "media_digests", "users"
   add_foreign_key "mood_images", "ideas"
   add_foreign_key "mood_images", "users"
   add_foreign_key "notes", "ideas"

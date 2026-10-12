@@ -21,6 +21,11 @@ Rails.application.configure do
   # Do not fall back to assets pipeline if a precompiled asset is missed.
   config.assets.compile = false
 
+  # Don't emit Link: rel=preload headers. Behind the Caddy proxy + Turbo they
+  # trip "preloaded but not used" console warnings; the <link>/importmap tags
+  # in the layout already load these assets. ponytail: cosmetic, drop if unneeded.
+  config.action_view.preload_links_header = false
+
   # Enable serving of images, stylesheets, and JavaScripts from an asset server.
   # config.asset_host = "http://assets.example.com"
 
@@ -49,8 +54,8 @@ Rails.application.configure do
   # Don't log any deprecations.
   config.active_support.report_deprecations = false
 
-  # Replace the default in-process memory cache store with a durable alternative.
-  # config.cache_store = :mem_cache_store
+  config.cache_store = :solid_cache_store
+  config.solid_cache.connects_to = { database: { writing: :cache } }
 
   config.active_job.queue_adapter = :solid_queue
   config.solid_queue.connects_to = { database: { writing: :queue } }

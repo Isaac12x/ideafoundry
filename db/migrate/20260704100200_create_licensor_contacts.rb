@@ -9,6 +9,6 @@ class CreateLicensorContacts < ActiveRecord::Migration[8.1]
       t.timestamps
     end
 
-    add_index :licensor_contacts, [:licensor_id, :occurred_at]
+    add_index :licensor_contacts, [ :licensor_id, :occurred_at ]
   end
 end
