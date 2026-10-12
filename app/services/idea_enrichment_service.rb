@@ -32,11 +32,11 @@ class IdeaEnrichmentService
     results = {}
     sources.each do |source|
       results[source] = case source
-                        when "competitors" then search_competitors(search_query)
-                        when "market"      then search_market(search_query)
-                        when "resources"   then search_resources(search_query)
-                        else []
-                        end
+      when "competitors" then search_competitors(search_query)
+      when "market"      then search_market(search_query)
+      when "resources"   then search_resources(search_query)
+      else []
+      end
     end
 
     store_enrichment(results, search_query)
@@ -49,7 +49,7 @@ class IdeaEnrichmentService
     tools = results["resources"] || []
 
     if overwrite
-      idea.idea_entries.where(kind: [:competitor, :potential_competitor, :tool]).destroy_all
+      idea.idea_entries.where(kind: [ :competitor, :potential_competitor, :tool ]).destroy_all
     end
 
     created = []
@@ -96,7 +96,7 @@ class IdeaEnrichmentService
 
   # Builds a search query from the idea title and description.
   def build_search_query
-    parts = [idea.title]
+    parts = [ idea.title ]
     plain_description = idea.description.to_plain_text.to_s.strip
     if plain_description.present?
       # Take the first ~100 chars of description as context

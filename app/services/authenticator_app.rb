@@ -62,7 +62,7 @@ class AuthenticatorApp
 
     def hotp(secret, counter)
       key = base32_decode(secret)
-      hmac = OpenSSL::HMAC.digest("SHA1", key, [counter].pack("Q>"))
+      hmac = OpenSSL::HMAC.digest("SHA1", key, [ counter ].pack("Q>"))
       offset = hmac.bytes.last & 0x0f
       truncated_hash = hmac.byteslice(offset, 4).unpack1("N") & 0x7fffffff
 

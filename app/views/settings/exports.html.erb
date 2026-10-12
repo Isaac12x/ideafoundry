@@ -29,10 +29,12 @@
           <%= form_with url: settings_exports_path, method: :post, local: true do |f| %>
             <div class="weight-grid">
               <div class="weight-item" style="grid-column: 1 / -1;">
-                <label class="weight-label">Password Protection (optional)</label>
-                <span class="weight-description">If set, the export will be a password-protected ZIP. Minimum 8 characters.</span>
+                <label class="weight-label" for="export_password">Password Protection (optional)</label>
+                <span class="weight-description" id="export_password_hint">If set, the export will be a password-protected ZIP. Minimum 8 characters.</span>
                 <div class="weight-input-group">
                   <input type="password"
+                         id="export_password"
+                         aria-describedby="export_password_hint"
                          name="password"
                          class="weight-input"
                          style="text-align: left;"
@@ -101,9 +103,9 @@
         <%= form_with url: settings_backup_path, method: :patch, local: true, data: { controller: "settings-autosave", action: "change->settings-autosave#toggleChanged" } do |f| %>
           <div class="weight-grid">
             <div class="weight-item">
-              <label class="weight-label">Frequency</label>
-              <span class="weight-description">How often to create automatic backups</span>
-              <select name="backup_settings[frequency]" class="weight-input" style="text-align: left;">
+              <label class="weight-label" for="backup_frequency">Frequency</label>
+              <span class="weight-description" id="backup_frequency_hint">How often to create automatic backups</span>
+              <select id="backup_frequency" aria-describedby="backup_frequency_hint" name="backup_settings[frequency]" class="weight-input" style="text-align: left;">
                 <% %w[never daily weekly monthly].each do |freq| %>
                   <option value="<%= freq %>" <%= 'selected' if @backup_settings['frequency'] == freq %>><%= freq.capitalize %></option>
                 <% end %>
@@ -111,16 +113,16 @@
             </div>
 
             <div class="weight-item">
-              <label class="weight-label">Retention (days)</label>
-              <span class="weight-description">Delete backups older than this</span>
-              <input type="number" name="backup_settings[retention_days]" class="weight-input"
+              <label class="weight-label" for="backup_retention">Retention (days)</label>
+              <span class="weight-description" id="backup_retention_hint">Delete backups older than this</span>
+              <input type="number" id="backup_retention" aria-describedby="backup_retention_hint" name="backup_settings[retention_days]" class="weight-input"
                      value="<%= @backup_settings['retention_days'] %>" min="1" max="365">
             </div>
 
             <div class="weight-item">
-              <label class="weight-label">Max Backups</label>
-              <span class="weight-description">Keep at most this many backups</span>
-              <input type="number" name="backup_settings[max_backups]" class="weight-input"
+              <label class="weight-label" for="backup_max">Max Backups</label>
+              <span class="weight-description" id="backup_max_hint">Keep at most this many backups</span>
+              <input type="number" id="backup_max" aria-describedby="backup_max_hint" name="backup_settings[max_backups]" class="weight-input"
                      value="<%= @backup_settings['max_backups'] %>" min="1" max="100">
             </div>
 

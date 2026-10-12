@@ -4,7 +4,7 @@
   <div class="topology-node__row">
     <% if kids.any? %>
       <button type="button" class="topology-node__toggle" aria-expanded="true"
-              data-action="topology-picker#toggleNode" title="Expand / collapse">
+              data-action="topology-picker#toggleNode" title="Expand / collapse" aria-label="Expand or collapse children">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m9 18 6-6-6-6"/></svg>
       </button>
     <% else %>
@@ -21,7 +21,7 @@
             action: "change->template-switch#topologiesChanged"
           } %>
       <% if topology.color.present? %>
-        <span class="topology-color-dot" style="background-color: <%= topology.color %>;"></span>
+        <span class="topology-color-dot" aria-hidden="true" style="background-color: <%= topology.color %>;"></span>
       <% end %>
       <span class="topology-node__name"><%= topology.name %></span>
     </label>

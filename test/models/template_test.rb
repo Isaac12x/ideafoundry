@@ -15,7 +15,7 @@ class TemplateTest < ActiveSupport::TestCase
         }
       ],
       section_order: [],
-      tab_definitions: [{ "name" => "general", "label" => "General", "position" => 0 }]
+      tab_definitions: [ { "name" => "general", "label" => "General", "position" => 0 } ]
     )
 
     assert template.valid?, template.errors.full_messages.to_sentence
@@ -27,11 +27,11 @@ class TemplateTest < ActiveSupport::TestCase
       name: "Scoreable Template #{SecureRandom.hex(4)}",
       field_definitions: [],
       section_order: [],
-      tab_definitions: [{ "name" => "general", "label" => "General", "position" => 0 }],
-      scoring_system_ids: [User::LEGACY_SCORING_SYSTEM_ID, User::FOUNDER_SCORECARD_SYSTEM_ID]
+      tab_definitions: [ { "name" => "general", "label" => "General", "position" => 0 } ],
+      scoring_system_ids: [ User::LEGACY_SCORING_SYSTEM_ID, User::FOUNDER_SCORECARD_SYSTEM_ID ]
     )
 
-    assert_equal [User::LEGACY_SCORING_SYSTEM_ID, User::FOUNDER_SCORECARD_SYSTEM_ID], template.enabled_scoring_system_ids
-    assert_equal ["Weighted readiness", "Founder scorecard"], template.scoring_systems.map { |system| system["name"] }
+    assert_equal [ User::LEGACY_SCORING_SYSTEM_ID, User::FOUNDER_SCORECARD_SYSTEM_ID ], template.enabled_scoring_system_ids
+    assert_equal [ "Weighted readiness", "Founder scorecard" ], template.scoring_systems.map { |system| system["name"] }
   end
 end

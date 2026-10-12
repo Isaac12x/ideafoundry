@@ -1,0 +1,67 @@
+<% refs = download.reference_list %>
+<% page_host = (URI.parse(download.url).host.to_s.delete_prefix("www.") rescue "") %>
+<% page_folder = KbDownload.safe_name(download.title.presence || File.basename(download.filename.to_s, ".*")) %>
+<%# Opens itself as a modal the moment it lands (page load or broadcast). %>
+<dialog id="<%= dom_id(download, :references) %>" class="kb-refs-dialog" data-controller="kb-references"
+        data-action="cancel->kb-references#dismiss" aria-labelledby="kb-refs-title-<%= download.id %>">
+  <section class="kb-refs">
+    <header class="kb-refs__head">
+      <p class="kb-refs__kicker">References<% if page_host.present? %> · <%= page_host %><% end %></p>
+      <h1 class="kb-refs__title" id="kb-refs-title-<%= download.id %>"><%= download.title.presence || download.label %></h1>
+      <p class="kb-refs__lede">
+        <%= pluralize(refs.size, "linked source") %>. Tick the ones worth keeping — each is saved as a reader-mode PDF.
+      </p>
+      <pre class="kb-refs__plan" aria-label="Where files go"><span><%= page_folder %>/</span>
+├─ <%= download.filename %>
+└─ <span><%= download.references_folder %>/</span></pre>
+    </header>
+
+    <%= form_with url: kb_download_references_path(download), method: :post, class: "kb-refs__form",
+          data: { turbo_stream: true, action: "change->kb-references#count" } do %>
+      <div class="kb-refs__tools">
+        <label class="kb-refs__filter">
+          <span class="sr-only">Filter references</span>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+          <input type="search" placeholder="Filter by title or site" autocomplete="off"
+                 data-kb-references-target="filter" data-action="input->kb-references#filter">
+        </label>
+        <button type="button" class="kb-refs__link" data-action="kb-references#selectVisible">Select shown</button>
+        <button type="button" class="kb-refs__link" data-action="kb-references#clear">Clear</button>
+      </div>
+
+      <ol class="kb-refs__list">
+        <% refs.each_with_index do |ref, i| %>
+          <% host = (URI.parse(ref["url"]).host.to_s.delete_prefix("www.") rescue ref["url"]) %>
+          <% pdf = ref["url"].to_s.split("?").first.to_s.downcase.end_with?(".pdf") %>
+          <li class="kb-refs__item" data-kb-references-target="row"
+              data-search="<%= "#{ref['label']} #{host}".downcase %>">
+            <label class="kb-refs__entry">
+              <input type="checkbox" name="urls[]" value="<%= ref["url"] %>" class="kb-refs__check"
+                     data-kb-references-target="check">
+              <span class="kb-refs__num"><%= format("%03d", i + 1) %></span>
+              <span class="kb-refs__body">
+                <span class="kb-refs__label"><%= ref["label"] %></span>
+                <span class="kb-refs__meta">
+                  <span class="kb-refs__host"><%= host %></span>
+                  <% if pdf %><span class="kb-refs__tag">PDF</span><% end %>
+                  <% if ref["archive"].present? %><span class="kb-refs__tag" title="The citation includes an archived copy">Archived</span><% end %>
+                </span>
+              </span>
+            </label>
+          </li>
+        <% end %>
+      </ol>
+      <p class="kb-refs__none" data-kb-references-target="none" hidden>Nothing matches that filter.</p>
+
+      <footer class="kb-refs__bar">
+        <span class="kb-refs__count" data-kb-references-target="count" aria-live="polite">None selected</span>
+        <button type="submit" form="kb-refs-dismiss-<%= download.id %>" class="kb-refs__ghost"
+                data-kb-references-target="dismiss">Just the page</button>
+        <button type="submit" class="kb-refs__pull" data-kb-references-target="submit" disabled>Pull selected</button>
+      </footer>
+    <% end %>
+    <%= form_with url: kb_download_references_path(download), method: :delete,
+          id: "kb-refs-dismiss-#{download.id}", data: { turbo_stream: true } do %>
+    <% end %>
+  </section>
+</dialog>

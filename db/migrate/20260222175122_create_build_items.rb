@@ -10,7 +10,7 @@ class CreateBuildItems < ActiveRecord::Migration[8.0]
 
       t.timestamps
     end
-    add_index :build_items, [:user_id, :position]
-    add_index :build_items, [:user_id, :completed]
+    add_index :build_items, [ :user_id, :position ]
+    add_index :build_items, [ :user_id, :completed ]
   end
 end

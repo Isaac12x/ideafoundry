@@ -15,8 +15,8 @@ class Topology < ApplicationRecord
   }.freeze
 
   belongs_to :user
-  belongs_to :parent, class_name: 'Topology', optional: true
-  has_many :children, class_name: 'Topology', foreign_key: :parent_id, dependent: :destroy
+  belongs_to :parent, class_name: "Topology", optional: true
+  has_many :children, class_name: "Topology", foreign_key: :parent_id, dependent: :destroy
   has_many :idea_topologies, dependent: :destroy
   has_many :ideas, through: :idea_topologies
 
@@ -24,7 +24,7 @@ class Topology < ApplicationRecord
 
   enum :topology_type, { predefined: 0, custom: 1 }
 
-  validates :name, presence: true, uniqueness: { scope: [:user_id, :parent_id] }
+  validates :name, presence: true, uniqueness: { scope: [ :user_id, :parent_id ] }
   validates :topology_type, presence: true
   validate :valid_default_field_definitions_format
 
@@ -53,7 +53,7 @@ class Topology < ApplicationRecord
   end
 
   def full_path
-    (ancestors + [self]).map(&:name).join(' > ')
+    (ancestors + [ self ]).map(&:name).join(" > ")
   end
 
   def depth
@@ -135,7 +135,7 @@ class Topology < ApplicationRecord
   end
 
   def built_in_default_field_definitions
-    software? ? [SOFTWARE_GITHUB_FIELD.deep_dup] : []
+    software? ? [ SOFTWARE_GITHUB_FIELD.deep_dup ] : []
   end
 
   def merge_field_definitions(*definition_sets)
@@ -147,31 +147,31 @@ class Topology < ApplicationRecord
 
   def broadcast_graph_added
     root = find_root
-    root_color = root.color.presence || '#d4953a'
+    root_color = root.color.presence || "#d4953a"
     node = {
-      id: "t_#{id}", name: name, color: color.presence || '#d4953a',
-      type: 'topology', url: "/topologies/#{id}", val: 3,
+      id: "t_#{id}", name: name, color: color.presence || "#d4953a",
+      type: "topology", url: "/topologies/#{id}", val: 3,
       root_id: "t_#{root.id}", root_color: root_color
     }
     links = []
-    links << { source: "t_#{parent_id}", target: "t_#{id}", type: 'parent' } if parent_id.present?
+    links << { source: "t_#{parent_id}", target: "t_#{id}", type: "parent" } if parent_id.present?
 
-    ActionCable.server.broadcast("topology_graph:#{user_id}", { action: 'node_added', node: node, links: links })
+    ActionCable.server.broadcast("topology_graph:#{user_id}", { action: "node_added", node: node, links: links })
   end
 
   def broadcast_graph_updated
     root = find_root
-    root_color = root.color.presence || '#d4953a'
+    root_color = root.color.presence || "#d4953a"
     node = {
-      id: "t_#{id}", name: name, color: color.presence || '#d4953a',
-      type: 'topology', url: "/topologies/#{id}", val: 3 + ideas.size,
+      id: "t_#{id}", name: name, color: color.presence || "#d4953a",
+      type: "topology", url: "/topologies/#{id}", val: 3 + ideas.size,
       root_id: "t_#{root.id}", root_color: root_color
     }
-    ActionCable.server.broadcast("topology_graph:#{user_id}", { action: 'node_updated', node: node })
+    ActionCable.server.broadcast("topology_graph:#{user_id}", { action: "node_updated", node: node })
   end
 
   def broadcast_graph_removed
-    ActionCable.server.broadcast("topology_graph:#{user_id}", { action: 'node_removed', node_id: "t_#{id}" })
+    ActionCable.server.broadcast("topology_graph:#{user_id}", { action: "node_removed", node_id: "t_#{id}" })
   end
 
   def set_position

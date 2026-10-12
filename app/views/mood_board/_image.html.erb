@@ -9,7 +9,7 @@
   <img src="<%= src %>" alt="<%= image.caption %>" loading="lazy" draggable="false">
   <button type="button" class="mood-tile__del"
           data-action="pointerdown->mood-board#stopEvent click->mood-board#remove"
-          title="Remove">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          title="Remove image" aria-label="Remove image">
+    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
   </button>
 </figure>

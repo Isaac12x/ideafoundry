@@ -32,7 +32,7 @@ module LongOcr
 
     # OCR a single page image, returning cleaned markdown.
     def ocr_page(png_bytes)
-      ocr_pages([png_bytes])
+      ocr_pages([ png_bytes ])
     end
 
     # OCR one or more page images in a single request. With >=2 images the
@@ -64,7 +64,7 @@ module LongOcr
     private
 
     def payload(images)
-      content = [{ type: "text", text: prompt_for(images.length) }]
+      content = [ { type: "text", text: prompt_for(images.length) } ]
       images.each do |png_bytes|
         data_url = "data:image/png;base64,#{Base64.strict_encode64(png_bytes)}"
         content << { type: "image_url", image_url: { url: data_url } }
@@ -72,7 +72,7 @@ module LongOcr
 
       base = {
         model: @backend.model,
-        messages: [{ role: "user", content: content }],
+        messages: [ { role: "user", content: content } ],
         max_tokens: @backend.max_tokens,
         temperature: 0.0
       }

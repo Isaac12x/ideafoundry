@@ -5,10 +5,10 @@
         <%= link_to idea.title, idea_path(idea), class: "crm-tgroup__idea" %>
         <span class="crm-tgroup__count"><%= rows.size %></span>
       </div>
-      <table class="crm-table">
+      <div class="crm-tgroup__scroll"><table class="crm-table">
         <thead>
           <tr>
-            <th>Company</th><th>Stage</th><th>Contact</th><th>Last contacted</th><th>Next action</th>
+            <th scope="col">Company</th><th scope="col">Stage</th><th scope="col">Contact</th><th scope="col">Last contacted</th><th scope="col">Next action</th>
           </tr>
         </thead>
         <tbody>
@@ -26,7 +26,7 @@
             </tr>
           <% end %>
         </tbody>
-      </table>
+      </table></div>
     </div>
   <% end %>
 </div>

@@ -15,6 +15,7 @@
   id="excalidraw-root-<%= @drawing.id %>"
   class="excalidraw-mount"
   data-controller="excalidraw"
+  <%= tag.attributes(excalidraw_stimulus_values) %>
   data-standalone="true"
   data-drawing-id="<%= @drawing.id %>"
   data-drawing-title="<%= @drawing.title %>"
@@ -25,5 +26,3 @@
   data-show-url-pattern="/ideas/<%= @idea.id %>/drawings/__ID__"
 ></div>
 
-<%= stylesheet_link_tag "excalidraw_app/index" %>
-<%= javascript_include_tag "excalidraw_app/index", defer: true, type: "module" %>

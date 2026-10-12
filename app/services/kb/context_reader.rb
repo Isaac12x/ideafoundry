@@ -4,22 +4,24 @@ module Kb
     MAX_FILES = 120
     TEXT_EXTENSIONS = %w[.md .txt .text .csv .json .yml .yaml .xml .html .htm .rb .js .ts .tsx .jsx .css .scss .py .sh].freeze
 
-    def initialize(base:, relative_path:, kind:)
+    def initialize(base:, relative_path:, kind:, user: nil)
       @base = File.expand_path(base)
       @relative_path = relative_path.to_s
       @kind = kind.to_s
+      @user = user
     end
 
     def call
       path = safe_path
       raise ArgumentError, "Selected KB context is no longer available" unless path
+      raise ArgumentError, "This path is in a private project" if Kb::Privacy.private?(base, relative_path)
 
       kind == "folder" ? read_folder(path) : read_file(path)
     end
 
     private
 
-    attr_reader :base, :relative_path, :kind
+    attr_reader :base, :relative_path, :kind, :user
 
     def safe_path
       absolute = File.expand_path(File.join(base, relative_path))
@@ -31,13 +33,15 @@ module Kb
     end
 
     def read_folder(folder)
+      memo = {}
       paths = Dir.glob(File.join(folder, "**", "*"), File::FNM_DOTMATCH)
                  .reject { |path| File.symlink?(path) || hidden_path?(path.delete_prefix("#{folder}/")) }
+                 .reject { |path| Kb::Privacy.private?(base, path.delete_prefix("#{base}/"), memo) }
                  .select { |path| File.file?(path) }
                  .sort
                  .first(MAX_FILES)
 
-      sections = ["Folder: #{relative_path}", "Files:"]
+      sections = [ "Folder: #{relative_path}", "Files:" ]
       sections.concat(paths.map { |path| "- #{path.delete_prefix("#{folder}/")}" })
       remaining = MAX_BYTES
 
@@ -55,6 +59,8 @@ module Kb
     def read_file(path)
       stat = File.stat(path)
       header = "File: #{relative_path}\nSize: #{stat.size} bytes\nModified: #{stat.mtime.iso8601}"
+      highlights = user ? KbAnnotation.digest(user: user, source_path: base, relative_path: relative_path) : ""
+      header = "#{header}\n\n#{highlights}" if highlights.present?
       return header unless text_file?(path)
 
       "#{header}\n\nContents:\n#{read_limited(path, MAX_BYTES)}"

@@ -61,7 +61,7 @@ module Kb
       stdout, stderr, status = runner.call(*command)
       raise stderr unless status.success?
 
-      [stdout, stderr]
+      [ stdout, stderr ]
     end
   end
 end

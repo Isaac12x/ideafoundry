@@ -7,7 +7,7 @@ class RescopeDrawingsToIdeas < ActiveRecord::Migration[8.0]
       t.text :content, null: false
       t.timestamps
     end
-    add_index :drawings, [:idea_id, :updated_at]
+    add_index :drawings, [ :idea_id, :updated_at ]
   end
 
   def down
@@ -18,6 +18,6 @@ class RescopeDrawingsToIdeas < ActiveRecord::Migration[8.0]
       t.text :content, null: false
       t.timestamps
     end
-    add_index :drawings, [:user_id, :updated_at]
+    add_index :drawings, [ :user_id, :updated_at ]
   end
 end

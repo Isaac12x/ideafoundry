@@ -9,7 +9,7 @@ class TemplatesControllerTest < ActionDispatch::IntegrationTest
       name: "Test Template",
       field_definitions: [],
       section_order: [],
-      scoring_system_ids: [User::LEGACY_SCORING_SYSTEM_ID]
+      scoring_system_ids: [ User::LEGACY_SCORING_SYSTEM_ID ]
     )
   end
 

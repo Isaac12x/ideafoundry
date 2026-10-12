@@ -30,7 +30,7 @@ class IdeaVersioningTest < ActiveSupport::TestCase
     assert_equal @idea.id, @idea.version_group_id
     assert_equal 1, @idea.version_number
     assert_equal 2, copy.version_number
-    assert_equal [@idea.id, copy.id].sort, @idea.idea_versions.pluck(:id).sort
+    assert_equal [ @idea.id, copy.id ].sort, @idea.idea_versions.pluck(:id).sort
 
     # new copy is primary, original is not
     assert copy.version_primary?
@@ -41,8 +41,8 @@ class IdeaVersioningTest < ActiveSupport::TestCase
     assert_equal 8, copy.opportunity
     assert_equal "keep me", copy.metadata["custom_field"]
     assert_equal "Original description", copy.description.to_plain_text.strip
-    assert_equal ["do a thing"], copy.todo_items.pluck(:title)
-    assert_equal ["a note"], copy.notes.pluck(:body)
+    assert_equal [ "do a thing" ], copy.todo_items.pluck(:title)
+    assert_equal [ "a note" ], copy.notes.pluck(:body)
 
     # independent records, not shared
     assert_not_equal @idea.id, copy.id

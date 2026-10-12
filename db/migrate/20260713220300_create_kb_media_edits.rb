@@ -17,7 +17,7 @@ class CreateKbMediaEdits < ActiveRecord::Migration[8.1]
       t.timestamps
     end
 
-    add_index :kb_media_edits, [:user_id, :status]
-    add_index :kb_media_edits, [:source_path, :relative_path]
+    add_index :kb_media_edits, [ :user_id, :status ]
+    add_index :kb_media_edits, [ :source_path, :relative_path ]
   end
 end

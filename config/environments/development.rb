@@ -18,12 +18,13 @@ Rails.application.configure do
   # Caddy terminates HTTPS for the local installed app at https://ideas.local:8443.
   config.hosts << "ideas.local"
 
-  # Enable/disable Action Controller caching. By default Action Controller caching is disabled.
-  # Run rails dev:cache to toggle Action Controller caching.
+  # Fragment + Rails.cache (`bin/rails dev:cache` toggles tmp/caching-dev.txt).
+  # bin/setup creates that file so caching is on for new checkouts.
   if Rails.root.join("tmp/caching-dev.txt").exist?
     config.action_controller.perform_caching = true
     config.action_controller.enable_fragment_cache_logging = true
-    config.cache_store = :memory_store
+    config.cache_store = :solid_cache_store
+    config.solid_cache.connects_to = { database: { writing: :cache } }
     config.public_file_server.headers = { "cache-control" => "public, max-age=#{2.days.to_i}" }
   else
     config.action_controller.perform_caching = false

@@ -15,6 +15,9 @@
   - macOS: `brew install ffmpeg imagemagick ghostscript pdftk-java poppler`
   - Debian/Ubuntu: `apt-get install ffmpeg imagemagick ghostscript pdftk-java poppler-utils`
   - `bin/install` installs missing tools automatically on macOS; the production Docker image includes them.
+- **yt-dlp** with `curl_cffi` (KB video links: Vimeo, TED, etc.; needs a recent build, TED broke on stable 2026.08.19)
+  - `pipx install yt-dlp && pipx inject yt-dlp curl_cffi`; if a site errors, `pipx runpip yt-dlp install -U --pre yt-dlp` (nightly). Keep it current.
+  - Found via `YT_DLP_BIN`, `~/.local/bin/yt-dlp`, or `$PATH`. DRM-only Vimeo videos can't be fetched.
 
 ## Local Development Setup
 

@@ -8,7 +8,7 @@ class KbFsJobRunnerJobTest < ActiveJob::TestCase
     FileUtils.mkdir_p(File.join(@kb_dir, "research"))
     File.write(File.join(@kb_dir, "research", "brief.md"), "# Brief\n\nKnown evidence")
     @user.update!(settings: (@user.settings || {}).merge(
-      "kb" => { "folders" => [@kb_dir], "hide_native" => true }
+      "kb" => { "folders" => [ @kb_dir ], "hide_native" => true }
     ))
   end
 
@@ -79,6 +79,18 @@ class KbFsJobRunnerJobTest < ActiveJob::TestCase
   end
 
   private
+
+  test "re-checks privacy at run time and never calls the model" do
+    task = build_task(prompt: "Find gaps")
+    File.write(File.join(@kb_dir, "research", ".kb-project.yml"), "private: true\n")
+
+    LocalAgent::PromptClient.stub(:new, ->(*) { raise "model must not be called" }) do
+      KbFsJobRunnerJob.perform_now(task.id)
+    end
+
+    assert task.reload.failed?
+    assert_match(/private project/, task.error)
+  end
 
   def build_task(prompt:)
     @user.kb_fs_jobs.create!(

@@ -107,7 +107,7 @@ class NoteOauthImportService
       NoteImportService.build_import_note(
         title: title,
         body: body,
-        folders: ["Notion"],
+        folders: [ "Notion" ],
         source_path: "Notion/#{page["id"]}",
         metadata: {
           "notion_id" => page["id"],

@@ -59,4 +59,9 @@ Rails.application.configure do
 
   # Raise error when a before_action's only/except options reference missing actions.
   config.action_controller.raise_on_missing_callback_actions = true
+
+  # The local production server precompiles into public/assets; without a
+  # separate prefix, system tests would run that stale build instead of the
+  # current source.
+  config.assets.prefix = "/test-assets"
 end

@@ -1,9 +1,18 @@
 import { Controller } from "@hotwired/stimulus";
+import { loadExcalidrawAssets } from "lib/excalidraw_loader";
 
 // Mounts the Excalidraw React app on connect and unmounts on disconnect so
 // Turbo navigations always render a fresh canvas.
 export default class extends Controller {
-  connect() {
+  static values = {
+    bundleUrl: String,
+    stylesheetUrl: String,
+  };
+
+  async connect() {
+    this._gone = false;
+    await this._ensureAssets();
+    if (this._gone) return;
     this.boundMount = this._tryMount.bind(this);
     if (this._tryMount()) return;
 
@@ -17,6 +26,7 @@ export default class extends Controller {
   }
 
   disconnect() {
+    this._gone = true;
     if (this._poll) {
       clearInterval(this._poll);
       this._poll = null;
@@ -27,6 +37,11 @@ export default class extends Controller {
     if (window.IdeaApp?.unmountExcalidraw) {
       window.IdeaApp.unmountExcalidraw(this.element);
     }
+  }
+
+  async _ensureAssets() {
+    if (!this.bundleUrlValue) return;
+    await loadExcalidrawAssets(this.bundleUrlValue, this.stylesheetUrlValue);
   }
 
   _tryMount() {

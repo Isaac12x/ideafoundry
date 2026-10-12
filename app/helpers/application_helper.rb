@@ -1,4 +1,22 @@
 module ApplicationHelper
+  def excalidraw_stimulus_values
+    {
+      excalidraw_bundle_url_value: asset_path("excalidraw_app/index.js"),
+      excalidraw_stylesheet_url_value: asset_path("excalidraw_app/index.css")
+    }
+  end
+
+  def idea_drawings_loader_values
+    {
+      idea_drawings_bundle_url_value: asset_path("excalidraw_app/index.js"),
+      idea_drawings_stylesheet_url_value: asset_path("excalidraw_app/index.css")
+    }
+  end
+
+  def topology_graph_stimulus_values
+    { topology_graph_bundle_url_value: asset_path("graph/index.js") }
+  end
+
   def format_description(text, length: 140)
     return "" if text.blank?
 
@@ -104,7 +122,7 @@ module ApplicationHelper
   def backlog_description_list_item(build_item, item)
     return tag.li(item[:text]) unless item[:checklist]
 
-    classes = ["backlog-checklist-item"]
+    classes = [ "backlog-checklist-item" ]
     classes << "backlog-checklist-item--done" if item[:completed]
 
     tag.li(class: classes.join(" ")) do

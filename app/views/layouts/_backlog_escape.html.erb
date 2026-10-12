@@ -1,0 +1,11 @@
+<%# Side-door to the backlog while the workspace is locked. Opt in with BACKLOG_ENABLED. %>
+<%= link_to build_items_path, class: "lock-sidedoor", data: { turbo: false } do %>
+  <span class="lock-sidedoor__meta">locked · capture only</span>
+  <span class="lock-sidedoor__label">
+    Backlog
+    <svg class="lock-sidedoor__arrow" width="18" height="10" viewBox="0 0 18 10" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true">
+      <path d="M0 5h16M12 1l4 4-4 4"/>
+    </svg>
+  </span>
+  <span class="lock-sidedoor__hint">park the thought, unlock later</span>
+<% end %>

@@ -29,7 +29,7 @@
     /* Text */
     --text-primary: #ece8e1;
     --text-secondary: #9a9498;
-    --text-muted: #5c5860;
+    --text-muted: #868088; /* ~5:1 on --bg-base (AA) */
     --text-on-accent: #0c0c0f;
 
     /* Semantic */
@@ -110,6 +110,28 @@ a:hover {
     color: var(--accent-hover);
 }
 
+/* ---- Skip link ---- */
+.skip-link {
+    position: fixed;
+    top: 8px;
+    left: 8px;
+    z-index: 2300;
+    padding: 8px 14px;
+    border-radius: var(--radius-sm);
+    background: var(--accent);
+    color: var(--text-on-accent);
+    font-weight: 600;
+    transform: translateY(-200%);
+}
+.skip-link:focus {
+    transform: none;
+    color: var(--text-on-accent);
+}
+
+.app-main:focus {
+    outline: none;
+}
+
 /* ---- Header / Navigation ---- */
 .app-header {
     position: sticky;
@@ -185,6 +207,10 @@ a:hover {
     background: var(--bg-elevated);
 }
 
+.nav-pill:active {
+    background: var(--bg-overlay);
+}
+
 .nav-pill:hover svg {
     opacity: 0.8;
 }
@@ -200,7 +226,13 @@ a:hover {
 }
 
 .nav-text-hidden .nav-label {
-    display: none;
+    /* visually hidden, still announced to screen readers */
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
 }
 .nav-text-hidden .nav-pill {
     padding: 6px 10px;
@@ -395,7 +427,7 @@ a:hover {
         conic-gradient(
             from 156deg,
             rgba(116, 196, 156, 0.28),
-            rgba(212, 149, 58, 0.2),
+            var(--accent-emphasis),
             rgba(65, 94, 101, 0.28),
             rgba(116, 196, 156, 0.28)
         );
@@ -747,6 +779,8 @@ body.typing-lock-page .app-quote-banner {
     font-size: 2rem;
     font-weight: 400;
     color: var(--text-primary);
+    min-width: 0;
+    overflow-wrap: anywhere;
 }
 
 .header-actions {
@@ -835,7 +869,7 @@ body.typing-lock-page .app-quote-banner {
 .btn-email:hover {
     background: rgba(96, 165, 250, 0.08);
     border-color: rgba(96, 165, 250, 0.6);
-    color: #60a5fa;
+    color: var(--info);
 }
 
 .btn-reminder {
@@ -883,7 +917,12 @@ body.typing-lock-page .app-quote-banner {
   font-size: 0.75rem;
 }
 
-.btn.disabled {
+.btn:active:not(:disabled):not(.disabled) {
+    transform: translateY(1px);
+}
+
+.btn.disabled,
+.btn:disabled {
     opacity: 0.4;
     cursor: not-allowed;
     pointer-events: none;
@@ -2730,7 +2769,7 @@ details.form-panel:not([open]) > summary.form-panel-title {
     letter-spacing: 0.04em;
     background: var(--accent-muted);
     color: var(--accent);
-    border: 1px solid rgba(212, 149, 58, 0.2);
+    border: 1px solid var(--accent-emphasis);
     align-self: flex-start;
 }
 
@@ -2844,6 +2883,12 @@ details.form-panel:not([open]) > summary.form-panel-title {
     .header-nav {
         flex-wrap: wrap;
         justify-content: center;
+        max-width: 100%;
+    }
+
+    .header-right {
+        max-width: 100%;
+        min-width: 0;
     }
 
     .app-quote-banner {
@@ -3191,6 +3236,130 @@ details.form-panel:not([open]) > summary.form-panel-title {
     height: 320px;
 }
 
+/* PDFs render inline via pdf.js, so the dialog grows to reading width
+   instead of shipping the reader off to a browser plugin or new tab. */
+.attachment-viewer-modal--wide {
+    max-width: 940px;
+}
+
+.attachment-viewer-modal--wide .attachment-viewer-modal__preview {
+    display: block;
+    max-height: min(74vh, 900px);
+    overflow-y: auto;
+    padding: 12px;
+    background: var(--bg-base);
+}
+
+.attachment-viewer-modal__pdf {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.attachment-viewer-modal__pdf .kb-pdf-page {
+    width: 100%;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+}
+
+.attachment-viewer-modal__pdf .kb-pdf-page canvas {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+.attachment-viewer-modal__pdf.is-loading::before {
+    content: 'Loading document…';
+    display: block;
+    padding: 3rem 0;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    text-align: center;
+}
+
+.attachment-viewer-modal__head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.attachment-viewer-modal__title {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: 1.15rem;
+    font-weight: 400;
+    color: var(--text-primary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.attachment-viewer-modal__close {
+    flex: none;
+    padding: 0 4px;
+    border: 0;
+    background: none;
+    color: var(--text-muted);
+    font-size: 1.4rem;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.attachment-viewer-modal__close:hover {
+    color: var(--text-primary);
+}
+
+.attachment-viewer-modal__fields > summary {
+    color: var(--text-secondary);
+    font-size: 0.78rem;
+    cursor: pointer;
+    list-style: none;
+}
+
+.attachment-viewer-modal__fields > summary::before {
+    content: '+ ';
+    color: var(--accent);
+}
+
+.attachment-viewer-modal__fields[open] > summary::before {
+    content: '− ';
+}
+
+.attachment-viewer-modal__fields[open] > summary {
+    margin-bottom: 0.75rem;
+}
+
+.attachment-viewer-modal__save {
+    margin-top: 0.25rem;
+}
+
+.attachment-viewer-modal__danger,
+.attachment-viewer-modal__download {
+    padding: 0;
+    border: 0;
+    background: none;
+    font-family: inherit;
+    font-size: 0.78rem;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.attachment-viewer-modal__danger {
+    color: var(--danger);
+}
+
+.attachment-viewer-modal__download {
+    color: var(--text-secondary);
+}
+
+.attachment-viewer-modal__danger:hover,
+.attachment-viewer-modal__download:hover {
+    text-decoration: underline;
+}
+
 .attachment-viewer-modal__icon {
     padding: 1.5rem;
     color: var(--text-muted);
@@ -3204,8 +3373,11 @@ details.form-panel:not([open]) > summary.form-panel-title {
 
 .attachment-viewer-modal__actions {
     display: flex;
-    gap: 0.5rem;
-    justify-content: flex-end;
+    gap: 1.25rem;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: 0.25rem;
+    border-top: 1px solid var(--border-subtle);
 }
 
 .idea-form-ocr-sidebar {
@@ -3804,7 +3976,7 @@ body.shortcuts-hints-active {
   color: var(--text-primary);
 }
 
-.idea-actions-menu__item--email:hover { color: #60a5fa; }
+.idea-actions-menu__item--email:hover { color: var(--info); }
 .idea-actions-menu__item--reminder:hover { color: var(--accent); }
 
 .idea-actions-menu__item--danger { color: var(--danger); }
@@ -3962,9 +4134,9 @@ body.shortcuts-hints-active {
   border: 1px solid;
 }
 
-.isrb--title       { background: rgba(96, 165, 250, 0.1);  color: var(--info);    border-color: rgba(96, 165, 250, 0.2); }
+.isrb--title       { background: var(--info-bg);  color: var(--info);    border-color: rgba(96, 165, 250, 0.2); }
 .isrb--tldr        { background: rgba(167,139,250,0.1);     color: #a78bfa;        border-color: rgba(167,139,250,0.2); }
-.isrb--description { background: rgba(212,149,58,0.1);      color: var(--accent);  border-color: rgba(212,149,58,0.2); }
+.isrb--description { background: var(--accent-muted);      color: var(--accent);  border-color: var(--accent-emphasis); }
 
 /* Snippets — the actual matched text lines */
 .isr-snippets {
@@ -4021,3 +4193,21 @@ body.shortcuts-hints-active {
 
 .kanban-search-panel .isr-header { flex-wrap: wrap; gap: 4px; }
 .kanban-search-panel .isr-title  { font-size: 0.82rem; }
+
+
+/* ---- Global a11y ---- */
+:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}

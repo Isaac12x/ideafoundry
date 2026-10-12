@@ -17,9 +17,11 @@ class User < ApplicationRecord
   has_many :agent_recommendations, dependent: :destroy
   has_many :activity_logs, dependent: :destroy
   has_many :kb_downloads, dependent: :destroy
+has_many :media_digests, dependent: :destroy
   has_many :kb_entry_preferences, dependent: :destroy
   has_many :kb_fs_jobs, dependent: :destroy
   has_many :kb_media_edits, dependent: :destroy
+  has_many :kb_annotations, dependent: :destroy
   has_many :mood_images, dependent: :destroy
 
   # Single-user application - one user per instance
@@ -33,89 +35,89 @@ class User < ApplicationRecord
 
   # Default scoring weights
   DEFAULT_SCORING_WEIGHTS = {
-    'trl' => 0.3,
-    'difficulty' => -0.1,
-    'opportunity' => 0.4,
-    'timing' => 0.2
+    "trl" => 0.3,
+    "difficulty" => -0.1,
+    "opportunity" => 0.4,
+    "timing" => 0.2
   }.freeze
 
-  LEGACY_SCORING_SYSTEM_ID = 'weighted_readiness'.freeze
-  FOUNDER_SCORECARD_SYSTEM_ID = 'founder_scorecard'.freeze
+  LEGACY_SCORING_SYSTEM_ID = "weighted_readiness".freeze
+  FOUNDER_SCORECARD_SYSTEM_ID = "founder_scorecard".freeze
 
   DEFAULT_SCORING_SYSTEMS = {
     LEGACY_SCORING_SYSTEM_ID => {
-      'id' => LEGACY_SCORING_SYSTEM_ID,
-      'name' => 'Weighted readiness',
-      'description' => 'Weighted TRL, difficulty, opportunity, and timing score normalized to 10.',
-      'kind' => 'legacy_weighted',
-      'criteria' => [
-        { 'key' => 'trl', 'label' => 'Technology readiness', 'scale_min' => 0, 'scale_max' => 10 },
-        { 'key' => 'difficulty', 'label' => 'Difficulty', 'scale_min' => 0, 'scale_max' => 10 },
-        { 'key' => 'opportunity', 'label' => 'Opportunity', 'scale_min' => 0, 'scale_max' => 10 },
-        { 'key' => 'timing', 'label' => 'Timing', 'scale_min' => 0, 'scale_max' => 10 }
+      "id" => LEGACY_SCORING_SYSTEM_ID,
+      "name" => "Weighted readiness",
+      "description" => "Weighted TRL, difficulty, opportunity, and timing score normalized to 10.",
+      "kind" => "legacy_weighted",
+      "criteria" => [
+        { "key" => "trl", "label" => "Technology readiness", "scale_min" => 0, "scale_max" => 10 },
+        { "key" => "difficulty", "label" => "Difficulty", "scale_min" => 0, "scale_max" => 10 },
+        { "key" => "opportunity", "label" => "Opportunity", "scale_min" => 0, "scale_max" => 10 },
+        { "key" => "timing", "label" => "Timing", "scale_min" => 0, "scale_max" => 10 }
       ]
     },
     FOUNDER_SCORECARD_SYSTEM_ID => {
-      'id' => FOUNDER_SCORECARD_SYSTEM_ID,
-      'name' => 'Founder scorecard',
-      'description' => 'Seven 1-5 criteria for deciding whether an idea is ready for active work.',
-      'kind' => 'criterion_scorecard',
-      'scale_min' => 1,
-      'scale_max' => 5,
-      'work_threshold_total' => 24,
-      'blocks_work' => true,
-      'criteria' => [
-        { 'key' => 'pain_intensity', 'label' => 'Pain intensity' },
-        { 'key' => 'buyer_clarity', 'label' => 'Buyer clarity' },
-        { 'key' => 'distribution_access', 'label' => 'Distribution access' },
-        { 'key' => 'speed_to_mvp', 'label' => 'Speed to MVP' },
-        { 'key' => 'revenue_potential', 'label' => 'Revenue potential' },
-        { 'key' => 'strategic_fit', 'label' => 'Strategic fit with main company' },
-        { 'key' => 'operator_independence', 'label' => 'Can operate without me' }
+      "id" => FOUNDER_SCORECARD_SYSTEM_ID,
+      "name" => "Founder scorecard",
+      "description" => "Seven 1-5 criteria for deciding whether an idea is ready for active work.",
+      "kind" => "criterion_scorecard",
+      "scale_min" => 1,
+      "scale_max" => 5,
+      "work_threshold_total" => 24,
+      "blocks_work" => true,
+      "criteria" => [
+        { "key" => "pain_intensity", "label" => "Pain intensity" },
+        { "key" => "buyer_clarity", "label" => "Buyer clarity" },
+        { "key" => "distribution_access", "label" => "Distribution access" },
+        { "key" => "speed_to_mvp", "label" => "Speed to MVP" },
+        { "key" => "revenue_potential", "label" => "Revenue potential" },
+        { "key" => "strategic_fit", "label" => "Strategic fit with main company" },
+        { "key" => "operator_independence", "label" => "Can operate without me" }
       ]
     }
   }.freeze
 
   DEFAULT_EMAIL_SETTINGS = {
-    'recipients' => ''
+    "recipients" => ""
   }.freeze
 
   ALLOWED_PRESETS = %w[alert info success neutral digest].freeze
 
   DEFAULT_BACKUP_SETTINGS = {
-    'frequency' => 'never',
-    'retention_days' => 30,
-    'max_backups' => 5,
-    'auto_cleanup' => true,
-    'email_notification' => false
+    "frequency" => "never",
+    "retention_days" => 30,
+    "max_backups" => 5,
+    "auto_cleanup" => true,
+    "email_notification" => false
   }.freeze
 
   DEFAULT_TYPING_LOCK_SETTINGS = {
-    'enabled' => false,
-    'lock_after_seconds' => 5.minutes.to_i,
-    'failed_unlock_cooldown_seconds' => 5.minutes.to_i
+    "enabled" => false,
+    "lock_after_seconds" => 5.minutes.to_i,
+    "failed_unlock_cooldown_seconds" => 5.minutes.to_i
   }.freeze
   DEFAULT_AUTHENTICATOR_APP_SETTINGS = {
-    'enabled' => false
+    "enabled" => false
   }.freeze
   DEFAULT_VOICE_ID_SETTINGS = {
-    'enabled' => false
+    "enabled" => false
   }.freeze
   DEFAULT_MOBILE_UPLINK_SETTINGS = {
-    'enabled' => false
+    "enabled" => false
   }.freeze
   DEFAULT_IDEA_WORK_TOKEN_SETTINGS = {
-    'enabled' => false
+    "enabled" => false
   }.freeze
   DEFAULT_LOCAL_AGENT_SETTINGS = {
-    'enabled' => false,
-    'destructive_actions_enabled' => false,
-    'sleep_seconds' => 30,
-    'max_actions_per_cycle' => 20
+    "enabled" => false,
+    "destructive_actions_enabled" => false,
+    "sleep_seconds" => 30,
+    "max_actions_per_cycle" => 20
   }.freeze
   ALLOWED_LOCAL_AGENT_SETTING_KEYS = DEFAULT_LOCAL_AGENT_SETTINGS.keys.freeze
   DEFAULT_GITHUB_SETTINGS = {
-    'api_base_url' => 'https://api.github.com'
+    "api_base_url" => "https://api.github.com"
   }.freeze
   MIN_TYPING_LOCK_SECONDS = 1.minute.to_i
   MAX_TYPING_LOCK_SECONDS = 24.hours.to_i
@@ -129,45 +131,45 @@ class User < ApplicationRecord
   ].freeze
 
   ALLOWED_NOTIFICATION_MAILERS = {
-    'state_changed'      => %w[event_notification share_idea],
-    'score_changed'      => %w[event_notification share_idea],
-    'added_to_list'      => %w[event_notification share_idea],
-    'created'            => %w[event_notification share_idea],
-    'webhook_triggered'  => %w[event_notification share_idea],
-    'digest_daily'       => %w[digest],
-    'digest_weekly'      => %w[digest]
+    "state_changed"      => %w[event_notification share_idea],
+    "score_changed"      => %w[event_notification share_idea],
+    "added_to_list"      => %w[event_notification share_idea],
+    "created"            => %w[event_notification share_idea],
+    "webhook_triggered"  => %w[event_notification share_idea],
+    "digest_daily"       => %w[digest],
+    "digest_weekly"      => %w[digest]
   }.freeze
 
   DEFAULT_NOTIFICATION_TEMPLATES = {
-    'state_changed'      => 'event_notification',
-    'score_changed'      => 'event_notification',
-    'added_to_list'      => 'event_notification',
-    'created'            => 'event_notification',
-    'webhook_triggered'  => 'event_notification',
-    'digest_daily'       => 'digest',
-    'digest_weekly'      => 'digest'
+    "state_changed"      => "event_notification",
+    "score_changed"      => "event_notification",
+    "added_to_list"      => "event_notification",
+    "created"            => "event_notification",
+    "webhook_triggered"  => "event_notification",
+    "digest_daily"       => "digest",
+    "digest_weekly"      => "digest"
   }.freeze
 
   DEFAULT_NOTIFICATION_CONTENT = {
-    'include_scores' => true,
-    'include_description' => true,
-    'include_external_content' => true
+    "include_scores" => true,
+    "include_description" => true,
+    "include_external_content" => true
   }.freeze
 
   DEFAULT_TOPOLOGY_SETTINGS = {
-    'default_dag_mode' => 'td',
-    'show_ideas' => true,
-    'node_size_topology' => 6,
-    'node_size_idea' => 3,
-    'bloom_strength' => 0.8,
-    'fog_density' => 0.015,
-    'auto_fit_on_load' => true,
-    'click_behavior' => 'navigate',
-    'default_color' => '#DAA520',
-    'default_type' => 'custom',
-    'max_depth' => 5,
-    'default_view' => 'tree',
-    'sort_order' => 'position'
+    "default_dag_mode" => "td",
+    "show_ideas" => true,
+    "node_size_topology" => 6,
+    "node_size_idea" => 3,
+    "bloom_strength" => 0.8,
+    "fog_density" => 0.015,
+    "auto_fit_on_load" => true,
+    "click_behavior" => "navigate",
+    "default_color" => "#DAA520",
+    "default_type" => "custom",
+    "max_depth" => 5,
+    "default_view" => "tree",
+    "sort_order" => "position"
   }.freeze
 
   def self.normalize_settings_value(value)
@@ -189,14 +191,14 @@ class User < ApplicationRecord
   ALLOWED_TOPOLOGY_SETTING_KEYS = DEFAULT_TOPOLOGY_SETTINGS.keys.freeze
 
   DEFAULT_LIST_SETTINGS = {
-    'default_view' => 'kanban'
+    "default_view" => "kanban"
   }.freeze
 
   ALLOWED_LIST_DEFAULT_VIEWS = %w[kanban named].freeze
   ALLOWED_LIST_SETTING_KEYS = DEFAULT_LIST_SETTINGS.keys.freeze
 
   DEFAULT_DISPLAY_QUOTE_SETTINGS = {
-    'text' => ''
+    "text" => ""
   }.freeze
 
   DEFAULT_DISPLAY_QUOTES = [
@@ -208,42 +210,42 @@ class User < ApplicationRecord
   # Pages that carry the quote banner and can be toggled in the nav bar.
   # Keys are stable identifiers, values the controller_path they map to.
   NAV_PAGES = {
-    'plan'       => 'lists',
-    'ideas'      => 'ideas',
-    'licensing'  => 'licensing/crm',
-    'topologies' => 'topologies',
-    'kb'         => 'kb',
-    'backlog'    => 'build_items'
+    "plan"       => "lists",
+    "ideas"      => "ideas",
+    "licensing"  => "licensing/crm",
+    "topologies" => "topologies",
+    "kb"         => "kb",
+    "backlog"    => "build_items"
   }.freeze
   NAV_PAGE_KEYS = NAV_PAGES.keys.freeze
 
   NAV_PAGE_LABELS = {
-    'plan' => 'Plan', 'ideas' => 'Ideas', 'licensing' => 'Licensing',
-    'topologies' => 'Topologies', 'kb' => 'KB', 'backlog' => 'Backlog'
+    "plan" => "Plan", "ideas" => "Ideas", "licensing" => "Licensing",
+    "topologies" => "Topologies", "kb" => "KB", "backlog" => "Backlog"
   }.freeze
 
   # Quote assignment defaults preserve prior behaviour: banner everywhere except KB.
-  DEFAULT_QUOTE_ASSIGNMENTS = NAV_PAGE_KEYS.index_with { |k| k == 'kb' ? 'none' : 'default' }.freeze
+  DEFAULT_QUOTE_ASSIGNMENTS = NAV_PAGE_KEYS.index_with { |k| k == "kb" ? "none" : "default" }.freeze
 
   # Optional app areas that can be switched off entirely from Settings.
   # All default to enabled; settings['features'][key] == false disables.
   FEATURE_KEYS = %w[licensing idea_states kb].freeze
   FEATURE_LABELS = {
-    'licensing'   => 'Licensing',
-    'idea_states' => 'Idea state tracking',
-    'kb'          => 'Knowledge Base'
+    "licensing"   => "Licensing",
+    "idea_states" => "Idea state tracking",
+    "kb"          => "Knowledge Base"
   }.freeze
   FEATURE_DESCRIPTIONS = {
-    'licensing'   => 'Licensing CRM, licensor pipelines, and per-idea licensing tracking.',
-    'idea_states' => 'Track ideas through workflow states (new, in progress, done…).',
-    'kb'          => 'The Knowledge Base section and its folders.'
+    "licensing"   => "Licensing CRM, licensor pipelines, and per-idea licensing tracking.",
+    "idea_states" => "Track ideas through workflow states (new, in progress, done…).",
+    "kb"          => "The Knowledge Base section and its folders."
   }.freeze
 
   # Nav sections that only exist when their feature is enabled.
-  NAV_FEATURE_REQUIREMENTS = { 'licensing' => 'licensing', 'kb' => 'kb' }.freeze
+  NAV_FEATURE_REQUIREMENTS = { "licensing" => "licensing", "kb" => "kb" }.freeze
 
   def feature_enabled?(key)
-    settings&.dig('features', key.to_s) != false
+    settings&.dig("features", key.to_s) != false
   end
 
   def update_features(h)
@@ -251,9 +253,9 @@ class User < ApplicationRecord
     flags = FEATURE_KEYS.index_with { |k| ActiveModel::Type::Boolean.new.cast(h[k]) }
     self.settings ||= {}
     if flags.values.all?
-      self.settings.delete('features')
+      self.settings.delete("features")
     else
-      self.settings['features'] = flags
+      self.settings["features"] = flags
     end
     save
   end
@@ -273,39 +275,39 @@ class User < ApplicationRecord
   ].freeze
 
   DEFAULT_IDEA_TAB_SETTINGS = {
-    'scores' => true,
-    'media' => true,
-    'metadata' => true,
-    'notes' => true,
-    'todo' => true,
-    'history' => true,
-    'drawing' => true,
-    'tool' => false,
-    'competitor' => false,
-    'potential_competitor' => false
+    "scores" => true,
+    "media" => true,
+    "metadata" => true,
+    "notes" => true,
+    "todo" => true,
+    "history" => true,
+    "drawing" => true,
+    "tool" => false,
+    "competitor" => false,
+    "potential_competitor" => false
   }.freeze
 
   IDEA_TAB_LABELS = {
-    'scores' => 'Scores',
-    'media' => 'Media',
-    'metadata' => 'Metadata',
-    'notes' => 'Notes',
-    'todo' => 'To-Do',
-    'history' => 'History',
-    'drawing' => 'Drawings',
-    'tool' => 'Tools',
-    'competitor' => 'Competitors',
-    'potential_competitor' => 'Potential Competitors'
+    "scores" => "Scores",
+    "media" => "Media",
+    "metadata" => "Metadata",
+    "notes" => "Notes",
+    "todo" => "To-Do",
+    "history" => "History",
+    "drawing" => "Drawings",
+    "tool" => "Tools",
+    "competitor" => "Competitors",
+    "potential_competitor" => "Potential Competitors"
   }.freeze
 
   IDEA_ENTRY_TABS = %w[tool competitor potential_competitor].freeze
 
   def scoring_weights
-    settings&.dig('scoring_weights') || DEFAULT_SCORING_WEIGHTS
+    settings&.dig("scoring_weights") || DEFAULT_SCORING_WEIGHTS
   end
 
   def scoring_systems
-    stored = settings&.dig('scoring_systems') || {}
+    stored = settings&.dig("scoring_systems") || {}
 
     DEFAULT_SCORING_SYSTEMS.each_with_object({}) do |(id, defaults), systems|
       overrides = stored[id].is_a?(Hash) ? stored[id] : {}
@@ -329,15 +331,15 @@ class User < ApplicationRecord
     self.settings ||= {}
     submitted = raw_systems.to_h
 
-    self.settings['scoring_systems'] = DEFAULT_SCORING_SYSTEMS.each_with_object({}) do |(id, defaults), cleaned|
-      next unless defaults['kind'] == 'criterion_scorecard'
+    self.settings["scoring_systems"] = DEFAULT_SCORING_SYSTEMS.each_with_object({}) do |(id, defaults), cleaned|
+      next unless defaults["kind"] == "criterion_scorecard"
 
       raw = submitted[id].is_a?(Hash) ? submitted[id] : {}
       max_total = scorecard_max_total(defaults)
-      threshold = raw['work_threshold_total'].presence || defaults['work_threshold_total']
+      threshold = raw["work_threshold_total"].presence || defaults["work_threshold_total"]
 
       cleaned[id] = {
-        'work_threshold_total' => threshold.to_f.clamp(0, max_total)
+        "work_threshold_total" => threshold.to_f.clamp(0, max_total)
       }
     end
 
@@ -345,24 +347,24 @@ class User < ApplicationRecord
   end
 
   def email_settings
-    settings&.dig('email') || DEFAULT_EMAIL_SETTINGS
+    settings&.dig("email") || DEFAULT_EMAIL_SETTINGS
   end
 
   def update_email_settings(email_params)
     self.settings ||= {}
-    self.settings['email'] = email_params.to_h.slice('recipients')
+    self.settings["email"] = email_params.to_h.slice("recipients")
     save
   end
 
   def event_presets
-    settings&.dig('event_presets') || {}
+    settings&.dig("event_presets") || {}
   end
 
   def event_preset_for(event_type)
     key = event_type.to_s
     chosen = event_presets[key]
     return chosen if ALLOWED_PRESETS.include?(chosen)
-    EmailPresetHelper::DEFAULT_EVENT_PRESETS[key] || 'neutral'
+    EmailPresetHelper::DEFAULT_EVENT_PRESETS[key] || "neutral"
   end
 
   def update_event_presets(hash)
@@ -373,12 +375,12 @@ class User < ApplicationRecord
       next unless ALLOWED_PRESETS.include?(preset)
       acc[event] = preset
     end
-    self.settings['event_presets'] = cleaned
+    self.settings["event_presets"] = cleaned
     save
   end
 
   def email_recipients
-    email_settings['recipients'].to_s.split(',').map(&:strip).reject(&:blank?)
+    email_settings["recipients"].to_s.split(",").map(&:strip).reject(&:blank?)
   end
 
   def email_configured?
@@ -387,7 +389,7 @@ class User < ApplicationRecord
 
   def update_scoring_weights(weights)
     self.settings ||= {}
-    self.settings['scoring_weights'] = weights.slice('trl', 'difficulty', 'opportunity', 'timing')
+    self.settings["scoring_weights"] = weights.slice("trl", "difficulty", "opportunity", "timing")
                                               .transform_values(&:to_f)
     save!
   end
@@ -402,41 +404,41 @@ class User < ApplicationRecord
   end
 
   def scorecard_max_total(system)
-    system['criteria'].size * system.fetch('scale_max', 5).to_i
+    system["criteria"].size * system.fetch("scale_max", 5).to_i
   end
 
   def normalized_scoring_system(defaults, overrides)
     system = defaults.deep_dup
-    return system unless system['kind'] == 'criterion_scorecard'
+    return system unless system["kind"] == "criterion_scorecard"
 
     max_total = scorecard_max_total(system)
-    threshold = overrides['work_threshold_total'].presence || system['work_threshold_total']
-    system['work_threshold_total'] = threshold.to_f.clamp(0, max_total)
-    system['work_threshold_normalized'] = (system['work_threshold_total'].to_f / max_total * 10).round(2)
+    threshold = overrides["work_threshold_total"].presence || system["work_threshold_total"]
+    system["work_threshold_total"] = threshold.to_f.clamp(0, max_total)
+    system["work_threshold_normalized"] = (system["work_threshold_total"].to_f / max_total * 10).round(2)
     system
   end
 
   def backup_settings
-    settings&.dig('backup') || DEFAULT_BACKUP_SETTINGS
+    settings&.dig("backup") || DEFAULT_BACKUP_SETTINGS
   end
 
   def update_backup_settings(params)
     self.settings ||= {}
-    self.settings['backup'] = params.to_h
+    self.settings["backup"] = params.to_h
     save
   end
 
   def typing_lock_settings
-    DEFAULT_TYPING_LOCK_SETTINGS.merge(settings&.dig('typing_lock') || {})
+    DEFAULT_TYPING_LOCK_SETTINGS.merge(settings&.dig("typing_lock") || {})
   end
 
   def typing_lock_enabled?
-    ActiveModel::Type::Boolean.new.cast(typing_lock_settings['enabled']) == true
+    ActiveModel::Type::Boolean.new.cast(typing_lock_settings["enabled"]) == true
   end
 
   def typing_lock_timeout_seconds
-    raw_seconds = typing_lock_settings['lock_after_seconds']
-    raw_seconds = typing_lock_settings['lock_after_minutes'].to_f.minutes.to_i if raw_seconds.blank?
+    raw_seconds = typing_lock_settings["lock_after_seconds"]
+    raw_seconds = typing_lock_settings["lock_after_minutes"].to_f.minutes.to_i if raw_seconds.blank?
     raw_seconds.to_i.clamp(MIN_TYPING_LOCK_SECONDS, MAX_TYPING_LOCK_SECONDS)
   end
 
@@ -445,8 +447,8 @@ class User < ApplicationRecord
   end
 
   def typing_lock_failed_unlock_cooldown_seconds
-    raw_seconds = typing_lock_settings['failed_unlock_cooldown_seconds']
-    raw_seconds = typing_lock_settings['failed_unlock_cooldown_minutes'].to_f.minutes.to_i if raw_seconds.blank?
+    raw_seconds = typing_lock_settings["failed_unlock_cooldown_seconds"]
+    raw_seconds = typing_lock_settings["failed_unlock_cooldown_minutes"].to_f.minutes.to_i if raw_seconds.blank?
     raw_seconds.to_i.clamp(MIN_TYPING_LOCK_FAILED_UNLOCK_COOLDOWN_SECONDS, MAX_TYPING_LOCK_FAILED_UNLOCK_COOLDOWN_SECONDS)
   end
 
@@ -455,7 +457,7 @@ class User < ApplicationRecord
   end
 
   def typing_fingerprint
-    secure_settings_value(typing_lock_settings, 'fingerprint')
+    secure_settings_value(typing_lock_settings, "fingerprint")
   end
 
   def typing_fingerprint_configured?
@@ -473,11 +475,11 @@ class User < ApplicationRecord
   end
 
   def typing_lock_failed_unlock
-    typing_lock_settings['last_failed_unlock']
+    typing_lock_settings["last_failed_unlock"]
   end
 
   def typing_lock_failed_unlock_cooldown_until(failed_unlock = typing_lock_failed_unlock)
-    Time.zone.parse(failed_unlock&.dig('cooldown_until').to_s)
+    Time.zone.parse(failed_unlock&.dig("cooldown_until").to_s)
   rescue ArgumentError, TypeError
     nil
   end
@@ -493,66 +495,66 @@ class User < ApplicationRecord
     }
 
     self.settings ||= {}
-    self.settings['typing_lock'] ||= {}
-    self.settings['typing_lock']['last_failed_unlock'] = failed_unlock
+    self.settings["typing_lock"] ||= {}
+    self.settings["typing_lock"]["last_failed_unlock"] = failed_unlock
     save!
 
     failed_unlock
   end
 
   def clear_typing_lock_failed_unlock!
-    return true unless settings&.dig('typing_lock', 'last_failed_unlock')
+    return true unless settings&.dig("typing_lock", "last_failed_unlock")
 
     self.settings ||= {}
-    self.settings['typing_lock'] ||= {}
-    self.settings['typing_lock'].delete('last_failed_unlock')
+    self.settings["typing_lock"] ||= {}
+    self.settings["typing_lock"].delete("last_failed_unlock")
     save!
   end
 
   def update_typing_lock_settings(params)
     self.settings ||= {}
-    self.settings['typing_lock'] ||= {}
-    lock_after_minutes = params['lock_after_minutes'].presence || typing_lock_timeout_minutes
+    self.settings["typing_lock"] ||= {}
+    lock_after_minutes = params["lock_after_minutes"].presence || typing_lock_timeout_minutes
     lock_after_seconds = (lock_after_minutes.to_f * 60).round.clamp(MIN_TYPING_LOCK_SECONDS, MAX_TYPING_LOCK_SECONDS)
-    failed_unlock_cooldown_minutes = params['failed_unlock_cooldown_minutes'].presence || typing_lock_failed_unlock_cooldown_minutes
+    failed_unlock_cooldown_minutes = params["failed_unlock_cooldown_minutes"].presence || typing_lock_failed_unlock_cooldown_minutes
     failed_unlock_cooldown_seconds = (failed_unlock_cooldown_minutes.to_f * 60).round.clamp(
       MIN_TYPING_LOCK_FAILED_UNLOCK_COOLDOWN_SECONDS,
       MAX_TYPING_LOCK_FAILED_UNLOCK_COOLDOWN_SECONDS
     )
 
-    enabled = ActiveModel::Type::Boolean.new.cast(params.fetch('enabled', false)) == true
-    self.settings['typing_lock']['enabled'] = enabled
-    self.settings['typing_lock']['lock_after_seconds'] = lock_after_seconds
-    self.settings['typing_lock']['failed_unlock_cooldown_seconds'] = failed_unlock_cooldown_seconds
-    self.settings['typing_lock'].delete('last_failed_unlock') unless enabled
+    enabled = ActiveModel::Type::Boolean.new.cast(params.fetch("enabled", false)) == true
+    self.settings["typing_lock"]["enabled"] = enabled
+    self.settings["typing_lock"]["lock_after_seconds"] = lock_after_seconds
+    self.settings["typing_lock"]["failed_unlock_cooldown_seconds"] = failed_unlock_cooldown_seconds
+    self.settings["typing_lock"].delete("last_failed_unlock") unless enabled
     save
   end
 
   def store_typing_fingerprint!(fingerprint)
     self.settings ||= {}
-    self.settings['typing_lock'] ||= {}
-    self.settings['typing_lock']['enabled'] = true
-    self.settings['typing_lock']['fingerprint_ciphertext'] = SecureSettingsPayload.encrypt(fingerprint)
-    self.settings['typing_lock'].delete('fingerprint')
-    self.settings['typing_lock'].delete('last_failed_unlock')
+    self.settings["typing_lock"] ||= {}
+    self.settings["typing_lock"]["enabled"] = true
+    self.settings["typing_lock"]["fingerprint_ciphertext"] = SecureSettingsPayload.encrypt(fingerprint)
+    self.settings["typing_lock"].delete("fingerprint")
+    self.settings["typing_lock"].delete("last_failed_unlock")
     save
   end
 
   def clear_typing_fingerprint!
     self.settings ||= {}
-    self.settings['typing_lock'] ||= {}
-    self.settings['typing_lock'].delete('fingerprint')
-    self.settings['typing_lock'].delete('fingerprint_ciphertext')
-    self.settings['typing_lock'].delete('last_failed_unlock')
+    self.settings["typing_lock"] ||= {}
+    self.settings["typing_lock"].delete("fingerprint")
+    self.settings["typing_lock"].delete("fingerprint_ciphertext")
+    self.settings["typing_lock"].delete("last_failed_unlock")
     save
   end
 
   def authenticator_app_settings
-    DEFAULT_AUTHENTICATOR_APP_SETTINGS.merge(settings&.dig('authenticator_app') || {})
+    DEFAULT_AUTHENTICATOR_APP_SETTINGS.merge(settings&.dig("authenticator_app") || {})
   end
 
   def authenticator_app_enabled?
-    ActiveModel::Type::Boolean.new.cast(authenticator_app_settings['enabled']) == true && authenticator_app_configured?
+    ActiveModel::Type::Boolean.new.cast(authenticator_app_settings["enabled"]) == true && authenticator_app_configured?
   end
 
   def authenticator_app_configured?
@@ -560,7 +562,7 @@ class User < ApplicationRecord
   end
 
   def authenticator_app_secret
-    secure_settings_value(authenticator_app_settings, 'secret').presence
+    secure_settings_value(authenticator_app_settings, "secret").presence
   end
 
   def authenticator_app_provisioning_uri
@@ -570,50 +572,50 @@ class User < ApplicationRecord
   end
 
   def update_authenticator_app_settings(params)
-    enabled = ActiveModel::Type::Boolean.new.cast(params.fetch('enabled', false)) == true
+    enabled = ActiveModel::Type::Boolean.new.cast(params.fetch("enabled", false)) == true
     self.settings ||= {}
-    self.settings['authenticator_app'] ||= {}
+    self.settings["authenticator_app"] ||= {}
 
     if enabled
-      self.settings['authenticator_app']['enabled'] = true
-      self.settings['authenticator_app']['secret_ciphertext'] = SecureSettingsPayload.encrypt(authenticator_app_secret || AuthenticatorApp.generate_secret)
-      self.settings['authenticator_app'].delete('secret')
+      self.settings["authenticator_app"]["enabled"] = true
+      self.settings["authenticator_app"]["secret_ciphertext"] = SecureSettingsPayload.encrypt(authenticator_app_secret || AuthenticatorApp.generate_secret)
+      self.settings["authenticator_app"].delete("secret")
     else
-      self.settings['authenticator_app'] = { 'enabled' => false }
+      self.settings["authenticator_app"] = { "enabled" => false }
     end
 
     save
   end
 
   def voice_id_settings
-    DEFAULT_VOICE_ID_SETTINGS.merge(settings&.dig('voice_id') || {})
+    DEFAULT_VOICE_ID_SETTINGS.merge(settings&.dig("voice_id") || {})
   end
 
   def voice_id_enabled?
-    ActiveModel::Type::Boolean.new.cast(voice_id_settings['enabled']) == true && voice_id_configured?
+    ActiveModel::Type::Boolean.new.cast(voice_id_settings["enabled"]) == true && voice_id_configured?
   end
 
   def voice_id_requested?
-    ActiveModel::Type::Boolean.new.cast(voice_id_settings['enabled']) == true
+    ActiveModel::Type::Boolean.new.cast(voice_id_settings["enabled"]) == true
   end
 
   def voice_id_fingerprint
-    secure_settings_value(voice_id_settings, 'fingerprint')
+    secure_settings_value(voice_id_settings, "fingerprint")
   end
 
   def voice_id_configured?
-    voice_id_fingerprint.present? && voice_id_fingerprint['sample_count'].to_i >= VoiceFingerprint::MIN_ENROLLMENT_SAMPLE_COUNT
+    voice_id_fingerprint.present? && voice_id_fingerprint["sample_count"].to_i >= VoiceFingerprint::MIN_ENROLLMENT_SAMPLE_COUNT
   end
 
   def update_voice_id_settings(params)
-    enabled = ActiveModel::Type::Boolean.new.cast(params.fetch('enabled', false)) == true
+    enabled = ActiveModel::Type::Boolean.new.cast(params.fetch("enabled", false)) == true
     self.settings ||= {}
-    self.settings['voice_id'] ||= {}
+    self.settings["voice_id"] ||= {}
 
     if enabled
-      self.settings['voice_id']['enabled'] = true
+      self.settings["voice_id"]["enabled"] = true
     else
-      self.settings['voice_id'] = { 'enabled' => false }
+      self.settings["voice_id"] = { "enabled" => false }
     end
 
     save
@@ -621,27 +623,27 @@ class User < ApplicationRecord
 
   def store_voice_id_fingerprint!(fingerprint)
     self.settings ||= {}
-    self.settings['voice_id'] ||= {}
-    self.settings['voice_id']['enabled'] = true
-    self.settings['voice_id']['fingerprint_ciphertext'] = SecureSettingsPayload.encrypt(fingerprint.except('raw_audio', 'audio', 'blob', 'recording'))
-    self.settings['voice_id'].delete('fingerprint')
+    self.settings["voice_id"] ||= {}
+    self.settings["voice_id"]["enabled"] = true
+    self.settings["voice_id"]["fingerprint_ciphertext"] = SecureSettingsPayload.encrypt(fingerprint.except("raw_audio", "audio", "blob", "recording"))
+    self.settings["voice_id"].delete("fingerprint")
     save
   end
 
   def clear_voice_id_fingerprint!
     self.settings ||= {}
-    self.settings['voice_id'] ||= {}
-    self.settings['voice_id'].delete('fingerprint')
-    self.settings['voice_id'].delete('fingerprint_ciphertext')
+    self.settings["voice_id"] ||= {}
+    self.settings["voice_id"].delete("fingerprint")
+    self.settings["voice_id"].delete("fingerprint_ciphertext")
     save
   end
 
   def mobile_uplink_settings
-    DEFAULT_MOBILE_UPLINK_SETTINGS.merge(settings&.dig('mobile_uplink') || {})
+    DEFAULT_MOBILE_UPLINK_SETTINGS.merge(settings&.dig("mobile_uplink") || {})
   end
 
   def mobile_uplink_enabled?
-    ActiveModel::Type::Boolean.new.cast(mobile_uplink_settings['enabled']) == true && mobile_uplink_configured?
+    ActiveModel::Type::Boolean.new.cast(mobile_uplink_settings["enabled"]) == true && mobile_uplink_configured?
   end
 
   def mobile_uplink_configured?
@@ -649,7 +651,7 @@ class User < ApplicationRecord
   end
 
   def mobile_uplink_id
-    mobile_uplink_settings['connect_id'].presence
+    mobile_uplink_settings["connect_id"].presence
   end
 
   def mobile_uplink_pairing_payload(workspace_url:)
@@ -659,15 +661,15 @@ class User < ApplicationRecord
   end
 
   def update_mobile_uplink_settings(params)
-    enabled = ActiveModel::Type::Boolean.new.cast(params.fetch('enabled', false)) == true
+    enabled = ActiveModel::Type::Boolean.new.cast(params.fetch("enabled", false)) == true
     self.settings ||= {}
-    self.settings['mobile_uplink'] ||= {}
+    self.settings["mobile_uplink"] ||= {}
 
     if enabled
-      self.settings['mobile_uplink']['enabled'] = true
-      self.settings['mobile_uplink']['connect_id'] ||= SecureRandom.urlsafe_base64(MOBILE_UPLINK_ID_BYTES)
+      self.settings["mobile_uplink"]["enabled"] = true
+      self.settings["mobile_uplink"]["connect_id"] ||= SecureRandom.urlsafe_base64(MOBILE_UPLINK_ID_BYTES)
     else
-      self.settings['mobile_uplink'] = { 'enabled' => false }
+      self.settings["mobile_uplink"] = { "enabled" => false }
     end
 
     save
@@ -686,38 +688,38 @@ class User < ApplicationRecord
   end
 
   def idea_work_token_settings
-    DEFAULT_IDEA_WORK_TOKEN_SETTINGS.merge(settings&.dig('idea_work_tokens') || {})
+    DEFAULT_IDEA_WORK_TOKEN_SETTINGS.merge(settings&.dig("idea_work_tokens") || {})
   end
 
   def idea_work_tokens_enabled?
-    ActiveModel::Type::Boolean.new.cast(idea_work_token_settings['enabled']) == true
+    ActiveModel::Type::Boolean.new.cast(idea_work_token_settings["enabled"]) == true
   end
 
   def update_idea_work_token_settings(params)
-    enabled = ActiveModel::Type::Boolean.new.cast(params.fetch('enabled', false)) == true
+    enabled = ActiveModel::Type::Boolean.new.cast(params.fetch("enabled", false)) == true
     self.settings ||= {}
-    self.settings['idea_work_tokens'] = { 'enabled' => enabled }
+    self.settings["idea_work_tokens"] = { "enabled" => enabled }
     save
   end
 
   def local_agent_settings
-    stored = (settings&.dig('local_agent') || {}).slice(*ALLOWED_LOCAL_AGENT_SETTING_KEYS)
+    stored = (settings&.dig("local_agent") || {}).slice(*ALLOWED_LOCAL_AGENT_SETTING_KEYS)
     resolved = DEFAULT_LOCAL_AGENT_SETTINGS.merge(stored.slice(*DEFAULT_LOCAL_AGENT_SETTINGS.keys))
 
     boolean = ActiveModel::Type::Boolean.new
-    resolved['enabled'] = boolean.cast(resolved['enabled']) == true
-    resolved['destructive_actions_enabled'] = boolean.cast(resolved['destructive_actions_enabled']) == true
-    resolved['sleep_seconds'] = positive_integer_or_default(resolved['sleep_seconds'], DEFAULT_LOCAL_AGENT_SETTINGS['sleep_seconds'])
-    resolved['max_actions_per_cycle'] = positive_integer_or_default(
-      resolved['max_actions_per_cycle'],
-      DEFAULT_LOCAL_AGENT_SETTINGS['max_actions_per_cycle']
+    resolved["enabled"] = boolean.cast(resolved["enabled"]) == true
+    resolved["destructive_actions_enabled"] = boolean.cast(resolved["destructive_actions_enabled"]) == true
+    resolved["sleep_seconds"] = positive_integer_or_default(resolved["sleep_seconds"], DEFAULT_LOCAL_AGENT_SETTINGS["sleep_seconds"])
+    resolved["max_actions_per_cycle"] = positive_integer_or_default(
+      resolved["max_actions_per_cycle"],
+      DEFAULT_LOCAL_AGENT_SETTINGS["max_actions_per_cycle"]
     )
 
     resolved
   end
 
   def local_agent_enabled?
-    local_agent_settings['enabled'] == true
+    local_agent_settings["enabled"] == true
   end
 
   def local_agent_live?
@@ -725,29 +727,29 @@ class User < ApplicationRecord
   end
 
   def local_agent_destructive_actions_enabled?
-    local_agent_settings['destructive_actions_enabled'] == true
+    local_agent_settings["destructive_actions_enabled"] == true
   end
 
   def update_local_agent_settings(params)
     values = params.to_h.stringify_keys
     cleaned = {
-      'enabled' => ActiveModel::Type::Boolean.new.cast(values.fetch('enabled', false)) == true,
-      'destructive_actions_enabled' => ActiveModel::Type::Boolean.new.cast(values.fetch('destructive_actions_enabled', false)) == true,
-      'sleep_seconds' => positive_integer_or_default(values['sleep_seconds'], DEFAULT_LOCAL_AGENT_SETTINGS['sleep_seconds']),
-      'max_actions_per_cycle' => positive_integer_or_default(values['max_actions_per_cycle'], DEFAULT_LOCAL_AGENT_SETTINGS['max_actions_per_cycle'])
+      "enabled" => ActiveModel::Type::Boolean.new.cast(values.fetch("enabled", false)) == true,
+      "destructive_actions_enabled" => ActiveModel::Type::Boolean.new.cast(values.fetch("destructive_actions_enabled", false)) == true,
+      "sleep_seconds" => positive_integer_or_default(values["sleep_seconds"], DEFAULT_LOCAL_AGENT_SETTINGS["sleep_seconds"]),
+      "max_actions_per_cycle" => positive_integer_or_default(values["max_actions_per_cycle"], DEFAULT_LOCAL_AGENT_SETTINGS["max_actions_per_cycle"])
     }
 
     self.settings ||= {}
-    self.settings['local_agent'] = cleaned
+    self.settings["local_agent"] = cleaned
     save
   end
 
   def local_agent_status
-    return 'disabled' unless local_agent_enabled?
+    return "disabled" unless local_agent_enabled?
 
     latest = agent_runs.recent.first
-    return 'stopped' unless latest
-    return 'stale' if latest.heartbeat_stale?
+    return "stopped" unless latest
+    return "stale" if latest.heartbeat_stale?
 
     latest.status
   end
@@ -769,14 +771,14 @@ class User < ApplicationRecord
   end
 
   def github_settings
-    stored = settings&.dig('github') || {}
-    DEFAULT_GITHUB_SETTINGS.merge(stored.slice('api_base_url')).merge(
-      'token_configured' => github_configured?
+    stored = settings&.dig("github") || {}
+    DEFAULT_GITHUB_SETTINGS.merge(stored.slice("api_base_url")).merge(
+      "token_configured" => github_configured?
     )
   end
 
   def github_token
-    secure_settings_value(settings&.dig('github') || {}, 'token').presence
+    secure_settings_value(settings&.dig("github") || {}, "token").presence
   end
 
   def github_configured?
@@ -786,28 +788,28 @@ class User < ApplicationRecord
   def update_github_settings(params)
     values = params.to_h.stringify_keys
     self.settings ||= {}
-    self.settings['github'] ||= {}
+    self.settings["github"] ||= {}
 
-    if ActiveModel::Type::Boolean.new.cast(values['clear_token']) == true
-      self.settings['github'].delete('token')
-      self.settings['github'].delete('token_ciphertext')
-    elsif values['token'].present?
-      self.settings['github']['token_ciphertext'] = SecureSettingsPayload.encrypt(values['token'].to_s.strip)
-      self.settings['github'].delete('token')
+    if ActiveModel::Type::Boolean.new.cast(values["clear_token"]) == true
+      self.settings["github"].delete("token")
+      self.settings["github"].delete("token_ciphertext")
+    elsif values["token"].present?
+      self.settings["github"]["token_ciphertext"] = SecureSettingsPayload.encrypt(values["token"].to_s.strip)
+      self.settings["github"].delete("token")
     end
 
-    api_base_url = values['api_base_url'].presence || settings['github']['api_base_url'].presence || DEFAULT_GITHUB_SETTINGS['api_base_url']
-    self.settings['github']['api_base_url'] = api_base_url
+    api_base_url = values["api_base_url"].presence || settings["github"]["api_base_url"].presence || DEFAULT_GITHUB_SETTINGS["api_base_url"]
+    self.settings["github"]["api_base_url"] = api_base_url
     save
   end
 
   def notification_triggers
-    settings&.dig('notification_triggers') || []
+    settings&.dig("notification_triggers") || []
   end
 
   def update_notification_triggers(triggers)
     self.settings ||= {}
-    self.settings['notification_triggers'] = Array(triggers).select { |t| ALLOWED_NOTIFICATION_TRIGGERS.include?(t) }
+    self.settings["notification_triggers"] = Array(triggers).select { |t| ALLOWED_NOTIFICATION_TRIGGERS.include?(t) }
     save
   end
 
@@ -816,7 +818,7 @@ class User < ApplicationRecord
   end
 
   def notification_content(event_type = nil)
-    base = settings&.dig('notification_content') || {}
+    base = settings&.dig("notification_content") || {}
     if event_type
       base[event_type.to_s] || DEFAULT_NOTIFICATION_CONTENT
     else
@@ -826,19 +828,19 @@ class User < ApplicationRecord
 
   def update_notification_content(content_settings)
     self.settings ||= {}
-    self.settings['notification_content'] = content_settings.to_h
+    self.settings["notification_content"] = content_settings.to_h
     save
   end
 
   def notification_templates
-    settings&.dig('notification_templates') || {}
+    settings&.dig("notification_templates") || {}
   end
 
   def notification_template_for(event_type)
     key = event_type.to_s
     chosen = notification_templates[key]
     allowed = ALLOWED_NOTIFICATION_MAILERS[key] || %w[event_notification]
-    allowed.include?(chosen) ? chosen : DEFAULT_NOTIFICATION_TEMPLATES[key] || 'event_notification'
+    allowed.include?(chosen) ? chosen : DEFAULT_NOTIFICATION_TEMPLATES[key] || "event_notification"
   end
 
   def update_notification_templates(hash)
@@ -850,41 +852,41 @@ class User < ApplicationRecord
       next unless allowed&.include?(template)
       acc[trigger] = template
     end
-    self.settings['notification_templates'] = cleaned
+    self.settings["notification_templates"] = cleaned
     save
   end
 
   def topology_settings
-    DEFAULT_TOPOLOGY_SETTINGS.merge(settings&.dig('topology_settings') || {})
+    DEFAULT_TOPOLOGY_SETTINGS.merge(settings&.dig("topology_settings") || {})
   end
 
   def update_topology_settings(params)
     self.settings ||= {}
-    self.settings['topology_settings'] = params.to_h.slice(*ALLOWED_TOPOLOGY_SETTING_KEYS)
+    self.settings["topology_settings"] = params.to_h.slice(*ALLOWED_TOPOLOGY_SETTING_KEYS)
     save
   end
 
   def list_settings
-    stored = settings&.dig('list_settings') || {}
+    stored = settings&.dig("list_settings") || {}
     DEFAULT_LIST_SETTINGS.merge(stored).tap do |resolved|
-      resolved['default_view'] = DEFAULT_LIST_SETTINGS['default_view'] unless ALLOWED_LIST_DEFAULT_VIEWS.include?(resolved['default_view'])
+      resolved["default_view"] = DEFAULT_LIST_SETTINGS["default_view"] unless ALLOWED_LIST_DEFAULT_VIEWS.include?(resolved["default_view"])
     end
   end
 
   def update_list_settings(params)
     cleaned = params.to_h.slice(*ALLOWED_LIST_SETTING_KEYS)
-    cleaned['default_view'] = DEFAULT_LIST_SETTINGS['default_view'] unless ALLOWED_LIST_DEFAULT_VIEWS.include?(cleaned['default_view'])
+    cleaned["default_view"] = DEFAULT_LIST_SETTINGS["default_view"] unless ALLOWED_LIST_DEFAULT_VIEWS.include?(cleaned["default_view"])
     self.settings ||= {}
-    self.settings['list_settings'] = cleaned
+    self.settings["list_settings"] = cleaned
     save
   end
 
   def display_quote_settings
-    DEFAULT_DISPLAY_QUOTE_SETTINGS.merge(settings&.dig('display_quote') || {})
+    DEFAULT_DISPLAY_QUOTE_SETTINGS.merge(settings&.dig("display_quote") || {})
   end
 
   def custom_display_quote
-    settings&.dig('display_quote', 'text').to_s
+    settings&.dig("display_quote", "text").to_s
   end
 
   def default_display_quote
@@ -897,13 +899,13 @@ class User < ApplicationRecord
 
   # The editable pool of quotes; falls back to the built-in defaults when unset.
   def quote_library
-    stored = Array(settings&.dig('quotes', 'library')).map(&:to_s).map(&:strip).reject(&:blank?)
+    stored = Array(settings&.dig("quotes", "library")).map(&:to_s).map(&:strip).reject(&:blank?)
     stored.presence || DEFAULT_DISPLAY_QUOTES
   end
 
   # page_key => 'default' | 'none' | library index (as string)
   def quote_page_assignments
-    (settings&.dig('quotes', 'pages') || {}).slice(*NAV_PAGE_KEYS)
+    (settings&.dig("quotes", "pages") || {}).slice(*NAV_PAGE_KEYS)
   end
 
   # Resolves the quote text to show on a given page, or nil for no banner.
@@ -911,10 +913,10 @@ class User < ApplicationRecord
   def quote_for_page(page_key)
     return display_quote if page_key.blank?
 
-    assignment = quote_page_assignments[page_key].presence || DEFAULT_QUOTE_ASSIGNMENTS[page_key] || 'default'
+    assignment = quote_page_assignments[page_key].presence || DEFAULT_QUOTE_ASSIGNMENTS[page_key] || "default"
     case assignment
-    when 'none'    then nil
-    when 'default' then display_quote
+    when "none"    then nil
+    when "default" then display_quote
     else quote_library[assignment.to_i] || display_quote
     end
   end
@@ -925,20 +927,20 @@ class User < ApplicationRecord
   end
 
   def display_contrast
-    val = settings&.dig('display_contrast').to_s
-    return 130 if val == 'high'
-    return 100 if val == 'normal' || val.empty?
+    val = settings&.dig("display_contrast").to_s
+    return 130 if val == "high"
+    return 100 if val == "normal" || val.empty?
     int = val.to_i
     int.between?(70, 150) ? int : 100
   end
 
   def nav_text_hidden?
-    settings&.dig('nav_text_hidden') == true
+    settings&.dig("nav_text_hidden") == true
   end
 
   # Nav sections the user has chosen to hide (Settings is never hideable).
   def nav_hidden_items
-    Array(settings&.dig('nav', 'hidden')).map(&:to_s) & NAV_PAGE_KEYS
+    Array(settings&.dig("nav", "hidden")).map(&:to_s) & NAV_PAGE_KEYS
   end
 
   def nav_item_visible?(key)
@@ -949,7 +951,7 @@ class User < ApplicationRecord
 
   # User-chosen nav order; unknown keys dropped, missing keys appended in default order.
   def nav_order
-    order = Array(settings&.dig('nav', 'order')).map(&:to_s) & NAV_PAGE_KEYS
+    order = Array(settings&.dig("nav", "order")).map(&:to_s) & NAV_PAGE_KEYS
     order + (NAV_PAGE_KEYS - order)
   end
 
@@ -964,37 +966,37 @@ class User < ApplicationRecord
 
   def update_display_quote(params)
     h = params.to_h
-    quote = h.fetch('quote', '').to_s.strip
-    contrast = h.fetch('contrast', '100').to_s.strip
+    quote = h.fetch("quote", "").to_s.strip
+    contrast = h.fetch("contrast", "100").to_s.strip
     self.settings ||= {}
 
     if quote.present?
-      self.settings['display_quote'] = { 'text' => quote }
+      self.settings["display_quote"] = { "text" => quote }
     else
-      self.settings.delete('display_quote')
+      self.settings.delete("display_quote")
     end
 
     contrast_int = contrast.to_i.clamp(70, 150)
     if contrast_int == 100
-      self.settings.delete('display_contrast')
+      self.settings.delete("display_contrast")
     else
-      self.settings['display_contrast'] = contrast_int.to_s
+      self.settings["display_contrast"] = contrast_int.to_s
     end
 
-    if h['nav_text_hidden'] == '1'
-      self.settings['nav_text_hidden'] = true
+    if h["nav_text_hidden"] == "1"
+      self.settings["nav_text_hidden"] = true
     else
-      self.settings.delete('nav_text_hidden')
+      self.settings.delete("nav_text_hidden")
     end
 
-    apply_quote_settings(h) if h.key?('quote_library') || h.key?('quote_pages')
-    apply_nav_visibility(h) if h.key?('nav_visible') || h.key?('nav_order')
+    apply_quote_settings(h) if h.key?("quote_library") || h.key?("quote_pages")
+    apply_nav_visibility(h) if h.key?("nav_visible") || h.key?("nav_order")
 
     save
   end
 
   def idea_tab_settings
-    stored = (settings&.dig('idea_tabs') || {}).slice(*AVAILABLE_IDEA_TABS)
+    stored = (settings&.dig("idea_tabs") || {}).slice(*AVAILABLE_IDEA_TABS)
     # Drop nil values so DEFAULTS apply for keys that were never explicitly set
     # (pre-fix checkbox submissions stored unchecked tabs as nil).
     stored.reject! { |_, v| v.nil? }
@@ -1012,32 +1014,32 @@ class User < ApplicationRecord
   end
 
   def kb_folders
-    Array(settings&.dig('kb', 'folders'))
+    Array(settings&.dig("kb", "folders"))
   end
 
   def kb_hide_native?
-    settings&.dig('kb', 'hide_native') == true
+    settings&.dig("kb", "hide_native") == true
   end
 
   # Mounted volumes / network shares added as KB sources, kept separate from
   # plain folders so the UI can present and badge them as drives.
   def kb_drives
-    Array(settings&.dig('kb', 'drives'))
+    Array(settings&.dig("kb", "drives"))
   end
 
   def update_kb_folders(paths, hide_native: nil, drives: nil)
     self.settings ||= {}
-    self.settings['kb'] ||= {}
-    self.settings['kb']['folders'] = Array(paths).map(&:strip).reject(&:blank?)
-    self.settings['kb']['drives'] = Array(drives).map(&:strip).reject(&:blank?).uniq unless drives.nil?
-    self.settings['kb']['hide_native'] = hide_native unless hide_native.nil?
+    self.settings["kb"] ||= {}
+    self.settings["kb"]["folders"] = Array(paths).map(&:strip).reject(&:blank?)
+    self.settings["kb"]["drives"] = Array(drives).map(&:strip).reject(&:blank?).uniq unless drives.nil?
+    self.settings["kb"]["hide_native"] = hide_native unless hide_native.nil?
     save
   end
 
   def update_kb_drives(paths)
     self.settings ||= {}
-    self.settings['kb'] ||= {}
-    self.settings['kb']['drives'] = Array(paths).map(&:strip).reject(&:blank?).uniq
+    self.settings["kb"] ||= {}
+    self.settings["kb"]["drives"] = Array(paths).map(&:strip).reject(&:blank?).uniq
     save
   end
 
@@ -1048,23 +1050,23 @@ class User < ApplicationRecord
       acc[key] = ActiveModel::Type::Boolean.new.cast(params[key]) == true
     end
     self.settings ||= {}
-    self.settings['idea_tabs'] = cleaned
+    self.settings["idea_tabs"] = cleaned
     save
   end
 
   def topology_overrides_for(topology_id)
-    overrides = settings&.dig('topology_overrides', topology_id.to_s) || {}
+    overrides = settings&.dig("topology_overrides", topology_id.to_s) || {}
     topology_settings.merge(overrides)
   end
 
   def update_topology_overrides(topology_id, params)
     self.settings ||= {}
-    self.settings['topology_overrides'] ||= {}
+    self.settings["topology_overrides"] ||= {}
     filtered = params.to_h.slice(*ALLOWED_TOPOLOGY_OVERRIDE_KEYS)
     if filtered.empty?
-      self.settings['topology_overrides'].delete(topology_id.to_s)
+      self.settings["topology_overrides"].delete(topology_id.to_s)
     else
-      self.settings['topology_overrides'][topology_id.to_s] = filtered
+      self.settings["topology_overrides"][topology_id.to_s] = filtered
     end
     save
   end
@@ -1077,19 +1079,19 @@ class User < ApplicationRecord
   end
 
   def apply_quote_settings(h)
-    library = Array(h['quote_library']).map(&:to_s).map(&:strip).reject(&:blank?)
-    pages = (h['quote_pages'] || {}).to_h.each_with_object({}) do |(page, value), acc|
+    library = Array(h["quote_library"]).map(&:to_s).map(&:strip).reject(&:blank?)
+    pages = (h["quote_pages"] || {}).to_h.each_with_object({}) do |(page, value), acc|
       next unless NAV_PAGE_KEYS.include?(page.to_s)
       acc[page.to_s] = value.to_s
     end
 
     quotes = {}
-    quotes['library'] = library if library.present?
-    quotes['pages'] = pages if pages.present?
+    quotes["library"] = library if library.present?
+    quotes["pages"] = pages if pages.present?
     if quotes.present?
-      self.settings['quotes'] = quotes
+      self.settings["quotes"] = quotes
     else
-      self.settings.delete('quotes')
+      self.settings.delete("quotes")
     end
   end
 
@@ -1097,18 +1099,18 @@ class User < ApplicationRecord
   # any page absent from the hash is treated as hidden. nav_order arrives as an
   # array of keys in the user's chosen order (DOM order of the settings rows).
   def apply_nav_visibility(h)
-    visible = (h['nav_visible'] || {}).to_h
+    visible = (h["nav_visible"] || {}).to_h
     hidden = NAV_PAGE_KEYS.reject { |key| ActiveModel::Type::Boolean.new.cast(visible[key]) }
-    order = Array(h['nav_order']).map(&:to_s) & NAV_PAGE_KEYS
+    order = Array(h["nav_order"]).map(&:to_s) & NAV_PAGE_KEYS
 
     nav = {}
-    nav['hidden'] = hidden if hidden.present?
-    nav['order'] = order if order.present? && order != NAV_PAGE_KEYS.first(order.size)
+    nav["hidden"] = hidden if hidden.present?
+    nav["order"] = order if order.present? && order != NAV_PAGE_KEYS.first(order.size)
 
     if nav.present?
-      self.settings['nav'] = nav
+      self.settings["nav"] = nav
     else
-      self.settings.delete('nav')
+      self.settings.delete("nav")
     end
   end
 

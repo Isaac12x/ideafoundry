@@ -55,7 +55,7 @@ class IdeaList < ApplicationRecord
 
   def set_position
     return if position.present? || list.nil?
-    
+
     max_position = list.idea_lists.maximum(:position) || 0
     self.position = max_position + 1
   end

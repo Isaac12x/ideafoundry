@@ -19,17 +19,17 @@ class CreateKanbanBoards < ActiveRecord::Migration[8.0]
       t.timestamps
     end
 
-    add_index :kanban_boards, [:user_id, :position], unique: true
+    add_index :kanban_boards, [ :user_id, :position ], unique: true
     add_reference :lists, :kanban_board, foreign_key: true
 
     backfill_default_boards
 
-    remove_index :lists, [:user_id, :kind, :position], if_exists: true
-    add_index :lists, [:kanban_board_id, :position],
+    remove_index :lists, [ :user_id, :kind, :position ], if_exists: true
+    add_index :lists, [ :kanban_board_id, :position ],
       unique: true,
       where: "kind = 'kanban'",
       name: "index_lists_on_kanban_board_id_and_position"
-    add_index :lists, [:user_id, :kind, :position],
+    add_index :lists, [ :user_id, :kind, :position ],
       unique: true,
       where: "kind = 'named'",
       name: "index_lists_on_user_kind_position_named"
@@ -41,7 +41,7 @@ class CreateKanbanBoards < ActiveRecord::Migration[8.0]
     remove_reference :lists, :kanban_board, foreign_key: true
     drop_table :kanban_boards
 
-    add_index :lists, [:user_id, :kind, :position], unique: true, if_not_exists: true
+    add_index :lists, [ :user_id, :kind, :position ], unique: true, if_not_exists: true
   end
 
   private

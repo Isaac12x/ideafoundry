@@ -2,6 +2,14 @@
    Typing fingerprint lock
    ============================================ */
 
+/* The lock is a single held breath: one screenful, no scroll, nothing to wander to.
+   Voice ID opts out — its panel is taller than the challenge and must stay reachable. */
+html:has(body.typing-lock-page--fixed),
+body.typing-lock-page--fixed {
+  height: 100dvh;
+  overflow: hidden;
+}
+
 body.typing-lock-page {
   background:
     linear-gradient(180deg, #f4f0eb 0%, #ece7df 100%);
@@ -21,11 +29,17 @@ body.typing-lock-page .app-header {
 
 body.typing-lock-page .app-main {
   max-width: none;
-  min-height: 100vh;
-  padding: clamp(24px, 5vw, 72px);
+  min-height: 100dvh;
+  padding: clamp(18px, 3.4vh, 64px) clamp(20px, 5vw, 72px);
   display: grid;
   place-items: center;
   overflow-x: hidden;
+}
+
+body.typing-lock-page--fixed .app-main {
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
 }
 
 body.typing-lock-page .alert {
@@ -43,6 +57,7 @@ body.typing-lock-page .alert {
 .typing-lock-shell {
   width: min(1080px, 100%);
   min-width: 0;
+  max-height: 100%;
   color: #262334;
 }
 
@@ -148,10 +163,11 @@ body.typing-lock-page .alert {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: clamp(24px, 5vw, 56px);
+  margin-bottom: clamp(10px, 2.2vh, 44px);
   color: rgba(38, 35, 52, 0.62);
   font-size: 0.82rem;
   font-weight: 600;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
 }
 
@@ -169,7 +185,7 @@ body.typing-lock-page .alert {
   grid-template-columns: minmax(0, 0.8fr) minmax(280px, 0.7fr);
   gap: clamp(20px, 5vw, 64px);
   align-items: end;
-  margin-bottom: clamp(28px, 5vw, 56px);
+  margin-bottom: clamp(12px, 2.6vh, 48px);
   min-width: 0;
 }
 
@@ -177,7 +193,7 @@ body.typing-lock-page .alert {
   margin: 0;
   color: #262334;
   font-family: var(--font-display);
-  font-size: clamp(2.2rem, 6vw, 5.7rem);
+  font-size: clamp(1.9rem, 5.6vh, 5.7rem);
   font-style: italic;
   font-weight: 400;
   line-height: 0.94;
@@ -187,13 +203,13 @@ body.typing-lock-page .alert {
   max-width: 36rem;
   margin: 0;
   color: rgba(38, 35, 52, 0.68);
-  font-size: clamp(0.98rem, 2vw, 1.15rem);
-  line-height: 1.6;
+  font-size: clamp(0.9rem, 1.8vh, 1.15rem);
+  line-height: 1.45;
 }
 
 .typing-lock-form {
   display: grid;
-  gap: 20px;
+  gap: clamp(8px, 1.5vh, 20px);
   min-width: 0;
 }
 
@@ -263,12 +279,11 @@ body.typing-lock-page .alert {
 }
 
 .typing-lock-prompt {
-  min-height: 4rem;
   min-width: 0;
   color: rgba(38, 35, 52, 0.34);
   font-family: var(--font-mono);
-  font-size: clamp(1.08rem, 2vw, 1.72rem);
-  line-height: 1.55;
+  font-size: clamp(0.92rem, 2vh, 1.72rem);
+  line-height: 1.45;
   overflow-wrap: normal;
   word-break: normal;
 }
@@ -317,9 +332,10 @@ body.typing-lock-page .alert {
 
 .typing-lock-input {
   width: 100%;
-  min-height: 76px;
-  resize: vertical;
-  padding: 16px 18px;
+  min-height: clamp(52px, 8vh, 76px);
+  height: clamp(52px, 8vh, 76px);
+  resize: none;
+  padding: clamp(10px, 1.6vh, 16px) 18px;
   border: 1px solid rgba(38, 35, 52, 0.2);
   border-radius: 8px;
   background: rgba(255, 252, 247, 0.84);
@@ -412,8 +428,8 @@ body.typing-lock-page .alert {
 
 .typing-keyboard {
   width: min(760px, 100%);
-  margin: 8px auto 0;
-  padding: 12px;
+  margin: 0 auto;
+  padding: clamp(6px, 1.1vh, 12px);
   border: 1px solid rgba(38, 35, 52, 0.16);
   border-radius: 8px;
   background: rgba(255, 252, 247, 0.64);
@@ -434,14 +450,14 @@ body.typing-lock-page .alert {
 
 .typing-key {
   display: inline-flex;
-  min-height: 42px;
+  min-height: clamp(24px, 4.4vh, 42px);
   align-items: center;
   justify-content: center;
   border: 1px solid rgba(38, 35, 52, 0.12);
   border-radius: 6px;
   background: #f6edcf;
   color: rgba(38, 35, 52, 0.72);
-  font-size: 0.82rem;
+  font-size: clamp(0.66rem, 1.4vh, 0.82rem);
   font-weight: 600;
   transition: transform 0.08s ease, background 0.08s ease, color 0.08s ease, box-shadow 0.08s ease;
 }
@@ -473,8 +489,8 @@ body.typing-lock-page .alert {
 }
 
 .typing-key__backspace-icon {
-  width: 24px;
-  height: 24px;
+  width: clamp(14px, 2.4vh, 24px);
+  height: clamp(14px, 2.4vh, 24px);
 }
 
 .typing-lock-metrics {
@@ -482,12 +498,12 @@ body.typing-lock-page .alert {
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
   max-width: 720px;
-  margin: 4px auto 0;
+  margin: 0 auto;
 }
 
 .typing-lock-metrics div {
   border-top: 1px solid rgba(38, 35, 52, 0.14);
-  padding-top: 10px;
+  padding-top: clamp(5px, 1.1vh, 10px);
   text-align: center;
 }
 
@@ -495,13 +511,20 @@ body.typing-lock-page .alert {
   display: block;
   color: #262334;
   font-family: var(--font-mono);
-  font-size: clamp(1rem, 2vw, 1.35rem);
+  font-size: clamp(0.92rem, 2vh, 1.35rem);
+  font-variant-numeric: tabular-nums;
   line-height: 1.2;
+  transition: color 0.18s ease;
+}
+
+/* Accuracy is the one number that can go against you — let it say so. */
+.typing-lock-metrics strong.is-degraded {
+  color: #813445;
 }
 
 .typing-lock-metrics span {
   color: rgba(38, 35, 52, 0.52);
-  font-size: 0.78rem;
+  font-size: clamp(0.66rem, 1.3vh, 0.78rem);
 }
 
 .typing-lock-actions {
@@ -972,10 +995,20 @@ body.typing-lock-page .alert {
   color: var(--text-muted);
 }
 
+/* Last thing to go when the viewport runs out of room — the passage still fits. */
+@media (max-height: 640px) {
+  .typing-keyboard {
+    display: none;
+  }
+
+  .lock-sidedoor__hint {
+    display: none;
+  }
+}
+
 @media (max-width: 860px) {
   body.typing-lock-page .app-main {
-    align-items: start;
-    padding: 24px 16px;
+    padding: clamp(16px, 3vh, 24px) 16px;
   }
 
   .typing-lock-heading {
@@ -1023,5 +1056,119 @@ body.typing-lock-page .alert {
 @media (prefers-reduced-motion: reduce) {
   .typing-lock-shell--transitioning {
     transition-duration: 0.01ms;
+  }
+}
+
+/* ---- Backlog side-door (dev escape hatch on the lock screen) ---- */
+/* Drop the panel clear of the stub so the heading never runs under it. */
+body.typing-lock-page:has(.lock-sidedoor) .app-main {
+  padding-top: max(clamp(18px, 3.4vh, 64px), clamp(56px, 9vh, 112px));
+}
+
+.lock-sidedoor {
+  position: fixed;
+  top: 0;
+  right: clamp(16px, 5vw, 56px);
+  z-index: 20;
+  display: grid;
+  gap: clamp(2px, 0.6vh, 5px);
+  justify-items: end;
+  padding: clamp(8px, 1.6vh, 13px) 18px clamp(9px, 1.8vh, 15px);
+  border: 1px solid rgba(38, 35, 52, 0.14);
+  border-top: none;
+  border-radius: 0 0 3px 3px;
+  background: #fbf7f1;
+  box-shadow: 0 14px 34px -22px rgba(38, 35, 52, 0.4);
+  text-decoration: none;
+  animation: lockSidedoorDrop 520ms cubic-bezier(0.16, 1, 0.3, 1) 480ms both;
+  transition:
+    transform 320ms cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 320ms ease,
+    box-shadow 320ms ease;
+}
+
+.lock-sidedoor:hover,
+.lock-sidedoor:focus-visible {
+  transform: translateY(3px);
+  border-color: rgba(154, 97, 43, 0.5);
+  box-shadow: 0 20px 44px -24px rgba(38, 35, 52, 0.5);
+}
+
+.lock-sidedoor:focus-visible {
+  outline: 2px solid #9a612b;
+  outline-offset: 3px;
+}
+
+.lock-sidedoor__meta {
+  color: rgba(154, 97, 43, 0.9);
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.lock-sidedoor__label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #262334;
+  font-family: var(--font-display);
+  font-size: clamp(1.1rem, 2.6vh, 1.55rem);
+  font-style: italic;
+  line-height: 1;
+}
+
+.lock-sidedoor__arrow {
+  color: #9a612b;
+  transition: transform 320ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.lock-sidedoor:hover .lock-sidedoor__arrow,
+.lock-sidedoor:focus-visible .lock-sidedoor__arrow {
+  transform: translateX(5px);
+}
+
+.lock-sidedoor__hint {
+  color: rgba(38, 35, 52, 0.52);
+  font-size: 0.72rem;
+  letter-spacing: 0.01em;
+}
+
+@keyframes lockSidedoorDrop {
+  from {
+    opacity: 0;
+    transform: translateY(-100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 560px) {
+  .lock-sidedoor {
+    right: 12px;
+    padding: 10px 13px 12px;
+  }
+
+  .lock-sidedoor__hint {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lock-sidedoor {
+    animation: none;
+  }
+
+  .lock-sidedoor:hover,
+  .lock-sidedoor:focus-visible {
+    transform: none;
+  }
+
+  .lock-sidedoor:hover .lock-sidedoor__arrow,
+  .lock-sidedoor:focus-visible .lock-sidedoor__arrow {
+    transform: none;
   }
 }

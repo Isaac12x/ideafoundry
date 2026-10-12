@@ -9,12 +9,14 @@ module Kb
     end
 
     def call
+      TreeBuilder.bust_cache!(user)
+
       Turbo::StreamsChannel.broadcast_replace_to(
-        [user, "kb_tree"],
+        [ user, "kb_tree" ],
         target: "kb-sidebar-tree",
         partial: "kb/tree",
         locals: {
-          folders: TreeBuilder.new(user).call,
+          folders: TreeBuilder.build(user),
           selected_file: nil,
           selected_folder_index: nil
         }

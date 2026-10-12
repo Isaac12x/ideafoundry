@@ -1,0 +1,27 @@
+<%
+  method = run ? :patch : :post
+  measurements = run&.measurements.presence || [{}]
+  row = ->(m) { render("kb/projects/measure_row", m: m) }
+%>
+<%= form_with url: kb_project_runs_path, method: method, multipart: true, class: "kbp-form" do %>
+  <%= hidden_field_tag :src, @src, id: nil %>
+  <%= hidden_field_tag :path, (run || test).rel, id: nil %>
+  <%= hidden_field_tag :project, project.rel, id: nil %>
+  <div class="kbp-row">
+    <label class="kbp-field"><span class="kbp-label">Date</span>
+      <input type="date" name="date" required class="kbp-input" value="<%= (run&.date || Date.current).iso8601 %>"></label>
+    <label class="kbp-field kbp-field--grow"><span class="kbp-label">Conditions</span>
+      <input type="text" name="conditions" class="kbp-input" value="<%= run&.conditions %>" placeholder="Temperature, batch, setup…" autocomplete="off"></label>
+  </div>
+  <label class="kbp-field"><span class="kbp-label">Result</span>
+    <textarea name="result" rows="3" class="kbp-input" placeholder="What happened"><%= run&.result %></textarea></label>
+  <fieldset class="kbp-measure-set">
+    <legend class="kbp-label">Measurements</legend>
+    <div class="kbp-measure-rows"><% measurements.each do |m| %><%= row.call(m) %><% end %></div>
+    <template><%= row.call({}) %></template>
+    <button type="button" class="kbp-link" data-action="kb-project#addMeasure">+ measurement</button>
+  </fieldset>
+  <label class="kbp-field"><span class="kbp-label"><%= run ? "Add files" : "Files" %></span>
+    <input type="file" name="files[]" multiple class="kbp-file-input"></label>
+  <div class="kbp-actions"><button class="kbp-btn kbp-btn--primary"><%= run ? "Save run" : "Log run" %></button></div>
+<% end %>

@@ -17,8 +17,8 @@ class KbMultiFormatTest < ActionDispatch::IntegrationTest
     @xlsx_name = "sheet.xlsx"
     pkg = Axlsx::Package.new
     pkg.workbook.add_worksheet(name: "Sheet1") do |sheet|
-      sheet.add_row ["HelloCell", "Second"]
-      sheet.add_row ["Row2A", "Row2B"]
+      sheet.add_row [ "HelloCell", "Second" ]
+      sheet.add_row [ "Row2A", "Row2B" ]
     end
     pkg.serialize(File.join(@kb_dir, @xlsx_name))
 
@@ -31,7 +31,7 @@ class KbMultiFormatTest < ActionDispatch::IntegrationTest
       File.delete(md)
     end
 
-    @user.update!(settings: (@user.settings || {}).merge("kb" => { "folders" => [@kb_dir] }))
+    @user.update!(settings: (@user.settings || {}).merge("kb" => { "folders" => [ @kb_dir ] }))
   end
 
   teardown do
@@ -81,8 +81,24 @@ class KbMultiFormatTest < ActionDispatch::IntegrationTest
     assert_select "iframe.kb-embed[src=?]", raw
     sandbox = css_select("iframe.kb-embed").first["sandbox"]
     assert_not_nil sandbox, "iframe must be sandboxed"
-    assert_not_includes sandbox, "allow-scripts"
-    assert_not_includes sandbox, "allow-same-origin"
+    # Same-origin only so the viewer can paint highlights into the document;
+    # the document itself must never run script.
+    assert_equal "allow-same-origin", sandbox
+  end
+
+  test "raw endpoint converts pptx slides into html via pandoc" do
+    skip "pandoc not installed" unless @pandoc
+    md = File.join(@kb_dir, "deck.md")
+    File.write(md, "# First Slide\n\nOpening point\n\n# Second Slide\n\nClosing point\n")
+    system("pandoc", md, "-o", File.join(@kb_dir, "deck.pptx"))
+
+    get kb_file_path(src: src_index, file: "deck.pptx")
+    assert_select "iframe.kb-embed[src=?]", kb_raw_path(src: src_index, file: "deck.pptx")
+
+    get kb_raw_path(src: src_index, file: "deck.pptx")
+    assert_response :success
+    assert_includes response.body, "Second Slide"
+    assert_includes response.body, "Closing point"
   end
 
   test "serve endpoint answers range requests with 206 partial content" do

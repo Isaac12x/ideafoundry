@@ -58,9 +58,9 @@ module Api
         Array(params[:files]).filter_map do |file_data|
           payload = if file_data.respond_to?(:to_unsafe_h)
                       file_data.to_unsafe_h.with_indifferent_access
-                    else
+          else
                       file_data.to_h.with_indifferent_access
-                    end
+          end
 
           next if payload[:filename].blank? || payload[:data].blank?
 

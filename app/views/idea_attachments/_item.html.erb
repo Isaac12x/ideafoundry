@@ -26,8 +26,8 @@
   <span class="current-attachments__filename"><%= attachment.filename %> (<%= number_to_human_size(attachment.byte_size) %>)</span>
   <span class="current-attachments__ocr-status"><%= attachment.ocr_status.to_s.humanize %></span>
   <span class="current-attachments__actions">
-    <button type="button" class="btn btn-sm" data-action="attachment-reorder#moveUp">↑</button>
-    <button type="button" class="btn btn-sm" data-action="attachment-reorder#moveDown">↓</button>
+    <button type="button" class="btn btn-sm" data-action="attachment-reorder#moveUp" aria-label="Move up">↑</button>
+    <button type="button" class="btn btn-sm" data-action="attachment-reorder#moveDown" aria-label="Move down">↓</button>
     <% if AttachmentOcrJob.ocr_supported?(attachment) %>
       <%= button_to "Run OCR", ocr_idea_attachment_path(idea, attachment), method: :post, class: "btn btn-sm", form: { style: "display:inline" } %>
     <% end %>
