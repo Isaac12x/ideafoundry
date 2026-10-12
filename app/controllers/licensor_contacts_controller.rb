@@ -42,7 +42,7 @@ class LicensorContactsController < ApplicationController
     @licensor.reload
     if params[:context] == "tab"
       idea = @licensor.idea
-      [turbo_stream.replace("licensors_tab_#{idea.id}", partial: "licensors/tab", locals: { idea: idea, licensor: Licensor.new })]
+      [ turbo_stream.replace("licensors_tab_#{idea.id}", partial: "licensors/tab", locals: { idea: idea, licensor: Licensor.new }) ]
     else
       ideas = @user.ideas.for_licensing.where(discarded_at: nil)
       licensors = Licensor.where(idea_id: ideas.select(:id)).includes(:idea).ordered

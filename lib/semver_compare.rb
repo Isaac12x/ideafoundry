@@ -2,7 +2,7 @@ module SemverCompare
   SECURITY_KEYWORDS = %w[CVE vuln vulnerability exploit security].freeze
 
   def self.parse(tag)
-    tag.gsub(/^v/, '').split('.').map(&:to_i)
+    tag.gsub(/^v/, "").split(".").map(&:to_i)
   end
 
   def self.distance(current, latest)

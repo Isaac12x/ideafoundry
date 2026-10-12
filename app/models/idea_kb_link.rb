@@ -9,7 +9,7 @@ class IdeaKbLink < ApplicationRecord
 
   validates :source_path, presence: true
   validates :entry_type, inclusion: { in: ENTRY_TYPES }
-  validates :relative_path, uniqueness: { scope: [:idea_id, :source_path] }
+  validates :relative_path, uniqueness: { scope: [ :idea_id, :source_path ] }
 
   class << self
     # Backlinks: links (across the user's ideas) pointing at this exact path.

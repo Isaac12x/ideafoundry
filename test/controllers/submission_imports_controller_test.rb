@@ -43,7 +43,7 @@ class SubmissionImportsControllerTest < ActionDispatch::IntegrationTest
   test "create imports selected preview folder" do
     preview = NoteImportService.new(
       source: "evernote",
-      files: [MemoryUpload.new("Notebook/Clamp idea.txt", "Adjustable clamp")]
+      files: [ MemoryUpload.new("Notebook/Clamp idea.txt", "Adjustable clamp") ]
     ).preview
 
     folder = preview.folders.first
@@ -52,7 +52,7 @@ class SubmissionImportsControllerTest < ActionDispatch::IntegrationTest
       post submission_import_path,
            params: {
              import_payload: preview.encoded_payload,
-             folder_keys: [folder.key]
+             folder_keys: [ folder.key ]
            }
     end
 

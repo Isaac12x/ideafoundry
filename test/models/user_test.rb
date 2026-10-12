@@ -310,7 +310,7 @@ class UserTest < ActiveSupport::TestCase
     @user.settings = {}
     assert_equal User::DEFAULT_DISPLAY_QUOTES, @user.quote_library
 
-    @user.settings = { "quotes" => { "library" => ["A", "  ", "B"] } }
+    @user.settings = { "quotes" => { "library" => [ "A", "  ", "B" ] } }
     assert_equal %w[A B], @user.quote_library
   end
 
@@ -348,7 +348,7 @@ class UserTest < ActiveSupport::TestCase
     @user.save!
     @user.update_display_quote(
       "quote" => "Base",
-      "quote_library" => ["First", "", "Second"],
+      "quote_library" => [ "First", "", "Second" ],
       "quote_pages" => { "ideas" => "1", "kb" => "default" },
       "nav_visible" => { "ideas" => "1", "plan" => "1", "licensing" => "1",
                          "intake" => "1", "topologies" => "1", "kb" => "1" }
@@ -407,25 +407,25 @@ class UserTest < ActiveSupport::TestCase
   end
 
   test "topology_settings merges stored with defaults" do
-    @user.settings = { 'topology_settings' => { 'show_ideas' => false } }
+    @user.settings = { "topology_settings" => { "show_ideas" => false } }
     @user.save!
-    assert_equal false, @user.topology_settings['show_ideas']
-    assert_equal 'td', @user.topology_settings['default_dag_mode']
+    assert_equal false, @user.topology_settings["show_ideas"]
+    assert_equal "td", @user.topology_settings["default_dag_mode"]
   end
 
   test "update_topology_settings persists allowed keys" do
     @user.save!
-    @user.update_topology_settings({ 'show_ideas' => false, 'bloom_strength' => 0.5 })
+    @user.update_topology_settings({ "show_ideas" => false, "bloom_strength" => 0.5 })
     @user.reload
-    assert_equal false, @user.topology_settings['show_ideas']
-    assert_equal 0.5, @user.topology_settings['bloom_strength']
+    assert_equal false, @user.topology_settings["show_ideas"]
+    assert_equal 0.5, @user.topology_settings["bloom_strength"]
   end
 
   test "update_topology_settings rejects unknown keys" do
     @user.save!
-    @user.update_topology_settings({ 'show_ideas' => false, 'hacker' => 'bad' })
+    @user.update_topology_settings({ "show_ideas" => false, "hacker" => "bad" })
     @user.reload
-    assert_nil @user.settings.dig('topology_settings', 'hacker')
+    assert_nil @user.settings.dig("topology_settings", "hacker")
   end
 
   test "list_settings returns defaults when none stored" do
@@ -436,70 +436,70 @@ class UserTest < ActiveSupport::TestCase
 
   test "update_list_settings persists allowed default view" do
     @user.save!
-    @user.update_list_settings({ 'default_view' => 'named', 'hacker' => 'bad' })
+    @user.update_list_settings({ "default_view" => "named", "hacker" => "bad" })
 
     @user.reload
-    assert_equal 'named', @user.list_settings['default_view']
-    assert_nil @user.settings.dig('list_settings', 'hacker')
+    assert_equal "named", @user.list_settings["default_view"]
+    assert_nil @user.settings.dig("list_settings", "hacker")
   end
 
   test "topology_overrides_for returns global when no overrides" do
     @user.save!
     resolved = @user.topology_overrides_for(999)
-    assert_equal 'td', resolved['default_dag_mode']
+    assert_equal "td", resolved["default_dag_mode"]
   end
 
   test "topology_overrides_for merges per-topology overrides" do
     @user.settings = {
-      'topology_settings' => { 'show_ideas' => true },
-      'topology_overrides' => { '42' => { 'show_ideas' => false } }
+      "topology_settings" => { "show_ideas" => true },
+      "topology_overrides" => { "42" => { "show_ideas" => false } }
     }
     @user.save!
-    assert_equal false, @user.topology_overrides_for(42)['show_ideas']
-    assert_equal true, @user.topology_overrides_for(99)['show_ideas']
+    assert_equal false, @user.topology_overrides_for(42)["show_ideas"]
+    assert_equal true, @user.topology_overrides_for(99)["show_ideas"]
   end
 
   test "update_topology_overrides stores per-topology settings" do
     @user.save!
-    @user.update_topology_overrides(42, { 'show_ideas' => false, 'dag_mode' => '' })
+    @user.update_topology_overrides(42, { "show_ideas" => false, "dag_mode" => "" })
     @user.reload
-    overrides = @user.settings.dig('topology_overrides', '42')
-    assert_equal false, overrides['show_ideas']
-    assert_equal '', overrides['dag_mode']
+    overrides = @user.settings.dig("topology_overrides", "42")
+    assert_equal false, overrides["show_ideas"]
+    assert_equal "", overrides["dag_mode"]
   end
 
   test "email_settings returns recipients only" do
     @user.save!
-    assert_equal '', @user.email_settings['recipients']
+    assert_equal "", @user.email_settings["recipients"]
   end
 
   test "update_email_settings only persists recipients" do
     @user.save!
-    @user.update_email_settings({ 'recipients' => 'a@b.com', 'hacker' => 'bad' })
+    @user.update_email_settings({ "recipients" => "a@b.com", "hacker" => "bad" })
     @user.reload
-    assert_equal 'a@b.com', @user.email_settings['recipients']
-    assert_nil @user.email_settings['hacker']
+    assert_equal "a@b.com", @user.email_settings["recipients"]
+    assert_nil @user.email_settings["hacker"]
   end
 
   test "event_preset_for returns default for event" do
     @user.save!
-    assert_equal 'alert', @user.event_preset_for('state_changed')
-    assert_equal 'info', @user.event_preset_for('score_changed')
-    assert_equal 'neutral', @user.event_preset_for('unknown')
+    assert_equal "alert", @user.event_preset_for("state_changed")
+    assert_equal "info", @user.event_preset_for("score_changed")
+    assert_equal "neutral", @user.event_preset_for("unknown")
   end
 
   test "update_event_presets stores valid presets" do
     @user.save!
-    @user.update_event_presets({ 'state_changed' => 'info', 'score_changed' => 'digest' })
+    @user.update_event_presets({ "state_changed" => "info", "score_changed" => "digest" })
     @user.reload
-    assert_equal 'info', @user.event_preset_for('state_changed')
-    assert_equal 'digest', @user.event_preset_for('score_changed')
+    assert_equal "info", @user.event_preset_for("state_changed")
+    assert_equal "digest", @user.event_preset_for("score_changed")
   end
 
   test "update_event_presets rejects invalid preset values" do
     @user.save!
-    @user.update_event_presets({ 'state_changed' => 'hacker' })
+    @user.update_event_presets({ "state_changed" => "hacker" })
     @user.reload
-    assert_equal 'alert', @user.event_preset_for('state_changed')
+    assert_equal "alert", @user.event_preset_for("state_changed")
   end
 end

@@ -46,7 +46,7 @@ class AppleNotesImportService
       NoteImportService.build_import_note(
         title: title,
         body: body,
-        folders: [folder],
+        folders: [ folder ],
         source_path: "Apple Notes/#{folder}/#{identifier}",
         metadata: {
           "apple_notes_identifier" => identifier,
@@ -67,9 +67,9 @@ class AppleNotesImportService
 
     note_marker = if columns.include?("ZFOLDER")
                     "ZFOLDER IS NOT NULL"
-                  elsif columns.include?("ZBODY") || columns.include?("ZSNIPPET")
+    elsif columns.include?("ZBODY") || columns.include?("ZSNIPPET")
                     "(#{%w[ZBODY ZSNIPPET ZTEXT ZHTMLSTRING].select { |column| columns.include?(column) }.map { |column| "#{column} IS NOT NULL" }.join(" OR ")})"
-                  end
+    end
 
     predicates << note_marker if note_marker.present?
     where = predicates.compact_blank.map { |predicate| "(#{predicate})" }.join(" AND ")

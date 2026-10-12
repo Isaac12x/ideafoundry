@@ -4,7 +4,7 @@ require "sqlite3"
 
 class SqlcipherDatabaseMigrator
   SQLITE_HEADER = "SQLite format 3\0".b.freeze
-  SIDECAR_SUFFIXES = ["-wal", "-shm"].freeze
+  SIDECAR_SUFFIXES = [ "-wal", "-shm" ].freeze
 
   Result = Struct.new(:path, :status, :backup_path, :error, keyword_init: true)
 

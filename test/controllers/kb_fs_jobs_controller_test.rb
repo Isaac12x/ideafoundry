@@ -8,7 +8,7 @@ class KbFsJobsControllerTest < ActionDispatch::IntegrationTest
     FileUtils.mkdir_p(File.join(@kb_dir, "research"))
     File.write(File.join(@kb_dir, "research", "brief.md"), "# Brief")
     @user.update!(settings: (@user.settings || {}).merge(
-      "kb" => { "folders" => [@kb_dir], "hide_native" => true }
+      "kb" => { "folders" => [ @kb_dir ], "hide_native" => true }
     ))
   end
 

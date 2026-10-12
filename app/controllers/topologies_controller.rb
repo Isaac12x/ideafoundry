@@ -1,10 +1,10 @@
 class TopologiesController < ApplicationController
   before_action :set_user
-  before_action :set_topology, only: [:show, :edit, :update, :destroy, :reorder, :neighborhood]
+  before_action :set_topology, only: [ :show, :edit, :update, :destroy, :reorder, :neighborhood ]
 
   def index
     @topologies = @user.topologies.roots.ordered.includes(children: { children: { children: :children } })
-    @default_view = @user.topology_settings['default_view'] || 'tree'
+    @default_view = @user.topology_settings["default_view"] || "tree"
   end
 
   def show
@@ -22,7 +22,7 @@ class TopologiesController < ApplicationController
 
     if @topology.save
       respond_to do |format|
-        format.html { redirect_to topologies_path, notice: 'Topology created.' }
+        format.html { redirect_to topologies_path, notice: "Topology created." }
         format.json { render json: @topology, status: :created }
       end
     else
@@ -35,7 +35,7 @@ class TopologiesController < ApplicationController
   end
 
   def edit
-    @parent_options = @user.topologies.where.not(id: [@topology.id] + @topology.descendants.map(&:id)).ordered
+    @parent_options = @user.topologies.where.not(id: [ @topology.id ] + @topology.descendants.map(&:id)).ordered
   end
 
   def update
@@ -46,8 +46,8 @@ class TopologiesController < ApplicationController
         overrides.reject! { |_, v| v.blank? }
         overrides.transform_values! do |v|
           case v
-          when 'true' then true
-          when 'false' then false
+          when "true" then true
+          when "false" then false
           else v.match?(/\A-?\d+\.?\d*\z/) ? v.to_f : v
           end
         end
@@ -55,11 +55,11 @@ class TopologiesController < ApplicationController
       end
 
       respond_to do |format|
-        format.html { redirect_to topologies_path, notice: 'Topology updated.' }
+        format.html { redirect_to topologies_path, notice: "Topology updated." }
         format.json { render json: @topology }
       end
     else
-      @parent_options = @user.topologies.where.not(id: [@topology.id] + @topology.descendants.map(&:id)).ordered
+      @parent_options = @user.topologies.where.not(id: [ @topology.id ] + @topology.descendants.map(&:id)).ordered
       respond_to do |format|
         format.html { render :edit, status: :unprocessable_content }
         format.json { render json: { errors: @topology.errors }, status: :unprocessable_content }
@@ -70,7 +70,7 @@ class TopologiesController < ApplicationController
   def destroy
     @topology.destroy
     respond_to do |format|
-      format.html { redirect_to topologies_path, notice: 'Topology deleted.' }
+      format.html { redirect_to topologies_path, notice: "Topology deleted." }
       format.json { head :no_content }
     end
   end
@@ -83,13 +83,13 @@ class TopologiesController < ApplicationController
 
     topologies.each do |t|
       root = root_cache[t.id] ||= t.find_root
-      root_color = root.color.presence || '#d4953a'
+      root_color = root.color.presence || "#d4953a"
 
       nodes << {
         id: "t_#{t.id}",
         name: t.name,
-        color: t.color.presence || '#d4953a',
-        type: 'topology',
+        color: t.color.presence || "#d4953a",
+        type: "topology",
         url: topology_path(t),
         val: 3 + t.ideas.size,
         root_id: "t_#{root.id}",
@@ -97,7 +97,7 @@ class TopologiesController < ApplicationController
       }
 
       if t.parent_id.present?
-        links << { source: "t_#{t.parent_id}", target: "t_#{t.id}", type: 'parent' }
+        links << { source: "t_#{t.parent_id}", target: "t_#{t.id}", type: "parent" }
       end
 
       t.ideas.each do |idea|
@@ -106,14 +106,14 @@ class TopologiesController < ApplicationController
             id: "i_#{idea.id}",
             name: idea.title,
             color: root_color,
-            type: 'idea',
+            type: "idea",
             url: idea_path(idea),
             val: 2,
             root_id: "t_#{root.id}",
             root_color: root_color
           }
         end
-        links << { source: "t_#{t.id}", target: "i_#{idea.id}", type: 'idea' }
+        links << { source: "t_#{t.id}", target: "i_#{idea.id}", type: "idea" }
       end
     end
 
@@ -121,7 +121,7 @@ class TopologiesController < ApplicationController
   end
 
   def neighborhood
-    scope = [@topology] + @topology.ancestors + @topology.children.to_a
+    scope = [ @topology ] + @topology.ancestors + @topology.children.to_a
     siblings = @topology.parent ? @topology.parent.children.where.not(id: @topology.id).to_a : []
     scope += siblings
 
@@ -139,13 +139,13 @@ class TopologiesController < ApplicationController
     scope.uniq.each do |t|
       t = preloaded[t.id] || t
       root = root_cache[t.id] ||= t.find_root
-      root_color = root.color.presence || '#d4953a'
+      root_color = root.color.presence || "#d4953a"
 
       nodes << {
         id: "t_#{t.id}",
         name: t.name,
-        color: t.color.presence || '#d4953a',
-        type: 'topology',
+        color: t.color.presence || "#d4953a",
+        type: "topology",
         url: topology_path(t),
         val: t.id == @topology.id ? 8 : 3 + t.ideas.size,
         root_id: "t_#{root.id}",
@@ -153,7 +153,7 @@ class TopologiesController < ApplicationController
       }
 
       if t.parent_id.present? && scope_ids.include?(t.parent_id)
-        links << { source: "t_#{t.parent_id}", target: "t_#{t.id}", type: 'parent' }
+        links << { source: "t_#{t.parent_id}", target: "t_#{t.id}", type: "parent" }
       end
 
       t.ideas.each do |idea|
@@ -162,14 +162,14 @@ class TopologiesController < ApplicationController
             id: "i_#{idea.id}",
             name: idea.title,
             color: root_color,
-            type: 'idea',
+            type: "idea",
             url: idea_path(idea),
             val: 2,
             root_id: "t_#{root.id}",
             root_color: root_color
           }
         end
-        links << { source: "t_#{t.id}", target: "i_#{idea.id}", type: 'idea' }
+        links << { source: "t_#{t.id}", target: "i_#{idea.id}", type: "idea" }
       end
     end
 
@@ -182,7 +182,7 @@ class TopologiesController < ApplicationController
     end
 
     respond_to do |format|
-      format.json { render json: { status: 'success' } }
+      format.json { render json: { status: "success" } }
       format.html { redirect_to topologies_path }
     end
   end

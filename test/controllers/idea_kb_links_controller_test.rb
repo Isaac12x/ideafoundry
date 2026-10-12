@@ -9,7 +9,7 @@ class IdeaKbLinksControllerTest < ActionDispatch::IntegrationTest
     File.write(File.join(@kb_dir, "Lab", ".kb-project.yml"), "id: x\ngoal: find out\nstatus: active\nprivate: true\n")
     File.write(File.join(@kb_dir, "Lab", "notes.md"), "hi")
     File.write(File.join(@kb_dir, ".hidden.md"), "no")
-    @user.update_kb_folders([@kb_dir])
+    @user.update_kb_folders([ @kb_dir ])
     @src = 1
     @idea = @user.ideas.create!(title: "Linker")
   end
@@ -41,7 +41,7 @@ class IdeaKbLinksControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "create rejects traversal, hidden and missing paths" do
-    ["../etc", ".hidden.md", "nope.md", ""].each do |path|
+    [ "../etc", ".hidden.md", "nope.md", "" ].each do |path|
       assert_no_difference -> { IdeaKbLink.count } do
         post idea_kb_links_path(@idea), params: { src: @src, path: path }
       end

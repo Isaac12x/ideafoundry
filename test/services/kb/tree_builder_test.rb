@@ -11,7 +11,7 @@ class Kb::TreeBuilderTest < ActiveSupport::TestCase
     File.write(@root.join("note.md"), "# Hello")
 
     @source = { path: @root.to_s, label: "Test", native: false, drive: false }
-    KbSource.stub(:list, [@source]) do
+    KbSource.stub(:list, [ @source ]) do
       @builder = Kb::TreeBuilder.new(@user)
     end
     Rails.cache.clear
@@ -27,10 +27,10 @@ class Kb::TreeBuilderTest < ActiveSupport::TestCase
     scans = 0
     scan = ->(base) {
       scans += 1
-      { files: [{ rel: "note.md", abs: File.join(base, "note.md") }], dirs: [] }
+      { files: [ { rel: "note.md", abs: File.join(base, "note.md") } ], dirs: [] }
     }
 
-    KbSource.stub(:list, [@source]) do
+    KbSource.stub(:list, [ @source ]) do
       @builder.stub(:scan_filesystem_entries, scan) do
         2.times { @builder.call }
         assert_equal 1, scans, "expected one filesystem scan for repeated builds"

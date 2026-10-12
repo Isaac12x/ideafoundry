@@ -6,7 +6,7 @@ class KbProjectSystemTest < ApplicationSystemTestCase
     @original_settings = @user.settings.deep_dup
     @kb_dir = Rails.root.join("tmp", "kb-project-system-#{SecureRandom.hex(6)}").to_s
     FileUtils.mkdir_p(@kb_dir)
-    @user.update!(settings: (@user.settings || {}).merge("kb" => { "folders" => [@kb_dir], "hide_native" => true }))
+    @user.update!(settings: (@user.settings || {}).merge("kb" => { "folders" => [ @kb_dir ], "hide_native" => true }))
   end
 
   teardown do
@@ -19,7 +19,7 @@ class KbProjectSystemTest < ApplicationSystemTestCase
     find(".kb-folder-header", match: :first).right_click
     find("[data-menu-item=newProject]").click
 
-    find(".kb-node.is-naming .kb-node-name-input").send_keys([:command, "a"], "Cold chain", :enter)
+    find(".kb-node.is-naming .kb-node-name-input").send_keys([ :command, "a" ], "Cold chain", :enter)
     assert_selector ".kb-project-link", text: "Cold chain"
     assert Kb::Project.at(@kb_dir, "Cold chain")
 
@@ -31,7 +31,7 @@ class KbProjectSystemTest < ApplicationSystemTestCase
     click_button "Add test"
     assert_selector ".kbp-test-name", text: "Fridge"
 
-    [["2026-10-06", "4.0"], ["2026-10-20", "4.5"]].each do |date, value|
+    [ [ "2026-10-06", "4.0" ], [ "2026-10-20", "4.5" ] ].each do |date, value|
       find(".kbp-log summary").click
       within ".kbp-log" do
         find("input[name=date]").set(Date.parse(date)) # Capybara formats for the browser locale

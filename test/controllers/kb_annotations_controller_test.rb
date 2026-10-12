@@ -7,7 +7,7 @@ class KbAnnotationsControllerTest < ActionDispatch::IntegrationTest
     @kb_dir = Rails.root.join("tmp", "kb-annotations-#{SecureRandom.hex(6)}").to_s
     FileUtils.mkdir_p(File.join(@kb_dir, "papers"))
     File.write(File.join(@kb_dir, "papers", "study.pdf"), "%PDF")
-    @user.update!(settings: (@user.settings || {}).merge("kb" => { "folders" => [@kb_dir], "hide_native" => true }))
+    @user.update!(settings: (@user.settings || {}).merge("kb" => { "folders" => [ @kb_dir ], "hide_native" => true }))
   end
 
   teardown do
@@ -31,7 +31,7 @@ class KbAnnotationsControllerTest < ActionDispatch::IntegrationTest
 
     patch kb_annotation_path(id), params: { annotation: { color: "pink", quote: "hijack" } }, as: :json
     assert_response :success
-    assert_equal ["pink", "earlier"], KbAnnotation.find(id).values_at(:color, :quote)
+    assert_equal [ "pink", "earlier" ], KbAnnotation.find(id).values_at(:color, :quote)
 
     delete kb_annotation_path(id), as: :json
     assert_response :no_content
@@ -53,7 +53,7 @@ class KbAnnotationsControllerTest < ActionDispatch::IntegrationTest
     post kb_annotations_path(src: 0, file: "papers/study.pdf"), params: { annotation: mark }, as: :json
 
     patch kb_fs_rename_path, params: { src: 0, path: "papers", name: "research" }, as: :json
-    assert_equal ["research/study.pdf"], @user.kb_annotations.pluck(:relative_path)
+    assert_equal [ "research/study.pdf" ], @user.kb_annotations.pluck(:relative_path)
 
     delete kb_fs_delete_path, params: { src: 0, path: "research/study.pdf" }
     assert_equal 0, @user.kb_annotations.count
@@ -67,7 +67,7 @@ class KbAnnotationsControllerTest < ActionDispatch::IntegrationTest
     assert_includes context, "- [p.3] the key finding"
 
     result = LocalAgent::Toolbox.new(user: @user).call("list_kb_highlights", { "src" => 0, "file" => "papers/study.pdf" })
-    assert_equal [["papers/study.pdf", 3, "the key finding"]],
+    assert_equal [ [ "papers/study.pdf", 3, "the key finding" ] ],
                  result.fetch(:kb_highlights).map { |h| h.values_at(:file, :page, :quote) }
   end
 

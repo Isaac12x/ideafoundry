@@ -24,7 +24,7 @@ class LocalAgentSupervisorJob < ApplicationJob
   private
 
   def stop_active_runs(user)
-    user.agent_runs.where(status: [:starting, :running]).find_each do |run|
+    user.agent_runs.where(status: [ :starting, :running ]).find_each do |run|
       run.stop!
       user.agent_events.create!(
         agent_run: run,
@@ -36,7 +36,7 @@ class LocalAgentSupervisorJob < ApplicationJob
   end
 
   def mark_stale_runs(user)
-    user.agent_runs.where(status: [:starting, :running]).find_each do |run|
+    user.agent_runs.where(status: [ :starting, :running ]).find_each do |run|
       next unless run.heartbeat_stale?
 
       run.update!(status: :stale, stopped_at: Time.current)

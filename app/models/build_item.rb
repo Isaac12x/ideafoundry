@@ -85,13 +85,13 @@ class BuildItem < ApplicationRecord
   def absorb!(other)
     raise ArgumentError, "cannot absorb self" if other.id == id
 
-    appended = ["- [ ] #{other.title}"]
+    appended = [ "- [ ] #{other.title}" ]
     other.description.to_s.lines(chomp: true).each do |line|
       appended << (line.empty? ? "" : "  #{line}")
     end
 
     base = description.to_s.sub(/\n+\z/, "")
-    new_description = [base.presence, *appended].compact.join("\n")
+    new_description = [ base.presence, *appended ].compact.join("\n")
     merged_links = (links + other.links).uniq { |link| link["url"] }
 
     transaction do

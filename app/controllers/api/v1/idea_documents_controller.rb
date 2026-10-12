@@ -112,12 +112,12 @@ module Api
         return if value.nil?
         return if key == "append" && value.to_s.blank?
 
-        [key, value.to_s]
+        [ key, value.to_s ]
       end
 
       def next_document_text(operation)
         key, value = operation
-        return [current_document_text.presence, value.strip].compact.join("\n\n") if key == "append"
+        return [ current_document_text.presence, value.strip ].compact.join("\n\n") if key == "append"
 
         value
       end

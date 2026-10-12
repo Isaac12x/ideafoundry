@@ -6,7 +6,7 @@ class KbMediaEditsControllerTest < ActionDispatch::IntegrationTest
     @original_settings = @user.settings.deep_dup
     @kb_dir = Rails.root.join("tmp", "kb-media-controller-#{SecureRandom.hex(6)}").to_s
     FileUtils.mkdir_p(@kb_dir)
-    @user.update!(settings: (@user.settings || {}).merge("kb" => { "folders" => [@kb_dir], "hide_native" => true }))
+    @user.update!(settings: (@user.settings || {}).merge("kb" => { "folders" => [ @kb_dir ], "hide_native" => true }))
   end
 
   teardown do

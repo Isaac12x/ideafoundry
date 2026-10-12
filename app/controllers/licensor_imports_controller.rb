@@ -3,8 +3,8 @@
 class LicensorImportsController < ApplicationController
   before_action :set_user
   before_action -> { require_feature(:licensing) }
-  before_action :set_idea, only: [:new, :create]
-  before_action :set_import, only: [:show, :update, :destroy]
+  before_action :set_idea, only: [ :new, :create ]
+  before_action :set_import, only: [ :show, :update, :destroy ]
 
   def new
     @import = @idea.licensor_imports.new

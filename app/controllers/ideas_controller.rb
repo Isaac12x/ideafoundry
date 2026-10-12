@@ -1,7 +1,7 @@
 class IdeasController < ApplicationController
   before_action :set_user
-  before_action :set_idea, only: [:show, :edit, :update, :destroy, :send_email, :approve_pending_email, :discard_pending_email, :enrich, :enrichment_status, :archive, :restore, :add_to_list, :create_version, :make_primary, :toggle_licensing]
-  before_action :check_cool_off_period, only: [:edit, :update]
+  before_action :set_idea, only: [ :show, :edit, :update, :destroy, :send_email, :approve_pending_email, :discard_pending_email, :enrich, :enrichment_status, :archive, :restore, :add_to_list, :create_version, :make_primary, :toggle_licensing ]
+  before_action :check_cool_off_period, only: [ :edit, :update ]
 
   def index
     @ideas = @user.ideas.non_draft.primary_or_standalone.includes(:lists, :idea_lists, :topologies, :idea_entries)
@@ -44,7 +44,7 @@ class IdeasController < ApplicationController
       @idea.create_version("Initial version")
       @idea.enqueue_attachment_ocr!
 
-      redirect_to uncompleted_ideas_path(idea_draft_saved: 1), notice: 'Idea was successfully created.'
+      redirect_to uncompleted_ideas_path(idea_draft_saved: 1), notice: "Idea was successfully created."
     else
       load_form_options
       render :new, status: :unprocessable_content
@@ -77,18 +77,18 @@ class IdeasController < ApplicationController
           update_kanban_list_memberships if params.key?(:kanban_list_ids) || params.key?(:list_id)
           update_named_list_memberships if params.key?(:named_list_ids)
         end
-        
+
         format.html do
           redirect_to(
             was_draft ? uncompleted_ideas_path(idea_draft_saved: 1) : idea_path(@idea, idea_edit_saved: 1),
-            notice: 'Idea was successfully updated.'
+            notice: "Idea was successfully updated."
           )
         end
-        format.json { 
-          render json: { 
-            success: true, 
+        format.json {
+          render json: {
+            success: true,
             computed_score: @idea.computed_score,
-            message: 'Score updated successfully'
+            message: "Score updated successfully"
           }
         }
       else
@@ -96,22 +96,22 @@ class IdeasController < ApplicationController
           load_form_options
           render :edit, status: :unprocessable_content
         }
-        format.json { 
-          render json: { 
-            success: false, 
-            errors: @idea.errors.full_messages 
-          }, status: :unprocessable_content 
+        format.json {
+          render json: {
+            success: false,
+            errors: @idea.errors.full_messages
+          }, status: :unprocessable_content
         }
       end
     end
   end
 
   def send_email
-    recipients = params[:recipients].to_s.split(',').map(&:strip).reject(&:blank?)
+    recipients = params[:recipients].to_s.split(",").map(&:strip).reject(&:blank?)
     recipients = @user.email_recipients if recipients.empty?
 
     if recipients.empty?
-      redirect_to @idea, alert: 'No recipients configured. Add recipients in Settings > Email or enter an address.'
+      redirect_to @idea, alert: "No recipients configured. Add recipients in Settings > Email or enter an address."
       return
     end
 
@@ -158,7 +158,7 @@ class IdeasController < ApplicationController
 
   def destroy
     @idea.destroy
-    redirect_to ideas_path, notice: 'Idea was successfully deleted.'
+    redirect_to ideas_path, notice: "Idea was successfully deleted."
   end
 
   # POST /ideas/:id/enrich
@@ -170,8 +170,8 @@ class IdeasController < ApplicationController
     IdeaEnrichmentJob.perform_later(@idea.id, query: query, sources: sources)
 
     respond_to do |format|
-      format.html { redirect_to @idea, notice: 'Enrichment started. Results will appear in the Enrichment tab when ready.' }
-      format.json { render json: { status: 'enqueued', idea_id: @idea.id } }
+      format.html { redirect_to @idea, notice: "Enrichment started. Results will appear in the Enrichment tab when ready." }
+      format.json { render json: { status: "enqueued", idea_id: @idea.id } }
     end
   end
 
@@ -215,7 +215,7 @@ class IdeasController < ApplicationController
     @idea.update!(discarded_at: Time.current)
 
     respond_to do |format|
-      format.html { redirect_to ideas_path, notice: 'Idea archived.' }
+      format.html { redirect_to ideas_path, notice: "Idea archived." }
       format.json { render json: { success: true, discarded_at: @idea.discarded_at } }
     end
   end
@@ -226,7 +226,7 @@ class IdeasController < ApplicationController
     @idea.update!(discarded_at: nil)
 
     respond_to do |format|
-      format.html { redirect_to @idea, notice: 'Idea restored.' }
+      format.html { redirect_to @idea, notice: "Idea restored." }
       format.json { render json: { success: true, discarded_at: nil } }
     end
   end
@@ -329,8 +329,8 @@ class IdeasController < ApplicationController
     return "" if text.blank?
     idx = text.downcase.index(query.downcase)
     return text.truncate(radius * 2) unless idx
-    start_pos = [0, idx - radius].max
-    end_pos   = [text.length, idx + query.length + radius].min
+    start_pos = [ 0, idx - radius ].max
+    end_pos   = [ text.length, idx + query.length + radius ].min
     snippet   = text[start_pos...end_pos].gsub(/\s+/, " ").strip
     snippet   = "…#{snippet}" if start_pos > 0
     snippet   = "#{snippet}…" if end_pos < text.length
@@ -528,10 +528,10 @@ class IdeasController < ApplicationController
 
   def apply_filters(ideas)
     # Filter by state
-    if params[:state].present? && params[:state] != 'all'
+    if params[:state].present? && params[:state] != "all"
       ideas = ideas.by_state(params[:state])
     end
-    
+
     # Filter by TRL range
     if params[:trl_min].present? || params[:trl_max].present?
       trl_min = (params[:trl_min].presence || 0).to_i
@@ -545,30 +545,30 @@ class IdeasController < ApplicationController
       score_max = (params[:score_max].presence || 10).to_f
       ideas = ideas.by_score_range(score_min, score_max)
     end
-    
+
     # Filter by topology
-    if params[:topology_id].present? && params[:topology_id] != 'all'
+    if params[:topology_id].present? && params[:topology_id] != "all"
       ideas = ideas.joins(:idea_topologies).where(idea_topologies: { topology_id: params[:topology_id] })
     end
-    
+
     # Filter by list
-    if params[:list_id].present? && params[:list_id] != 'all'
+    if params[:list_id].present? && params[:list_id] != "all"
       ideas = ideas.joins(:idea_lists).where(idea_lists: { list_id: params[:list_id] }).distinct
     end
-    
+
     # Filter by date range
     if params[:created_after].present?
-      ideas = ideas.where('created_at >= ?', params[:created_after])
+      ideas = ideas.where("created_at >= ?", params[:created_after])
     end
-    
+
     if params[:created_before].present?
-      ideas = ideas.where('created_at <= ?', params[:created_before])
+      ideas = ideas.where("created_at <= ?", params[:created_before])
     end
-    
+
     # Filter by attachments
-    if params[:has_attachments] == 'true'
+    if params[:has_attachments] == "true"
       ideas = ideas.joins(:attachments_attachments)
-    elsif params[:has_attachments] == 'false'
+    elsif params[:has_attachments] == "false"
       ideas = ideas.left_joins(:attachments_attachments).where(active_storage_attachments: { id: nil })
     end
 
@@ -583,7 +583,7 @@ class IdeasController < ApplicationController
     end
 
     # Exclude archived ideas by default
-    unless params[:include_archived] == 'true' || params[:state] == 'archived'
+    unless params[:include_archived] == "true" || params[:state] == "archived"
       ideas = ideas.where(discarded_at: nil)
     end
 
@@ -591,21 +591,21 @@ class IdeasController < ApplicationController
   end
 
   def apply_sorting(ideas)
-    sort_by = params[:sort_by] || 'score'
-    sort_order = params[:sort_order] || 'desc'
-    
+    sort_by = params[:sort_by] || "score"
+    sort_order = params[:sort_order] || "desc"
+
     case sort_by
-    when 'title'
+    when "title"
       ideas.order(title: sort_order)
-    when 'state'
+    when "state"
       ideas.order(state: sort_order)
-    when 'score'
+    when "score"
       ideas.order(computed_score: sort_order)
-    when 'trl'
+    when "trl"
       ideas.order(trl: sort_order)
-    when 'created_at'
+    when "created_at"
       ideas.order(created_at: sort_order)
-    when 'updated_at'
+    when "updated_at"
       ideas.order(updated_at: sort_order)
     else
       ideas.order(created_at: sort_order)

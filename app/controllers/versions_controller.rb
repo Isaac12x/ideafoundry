@@ -1,7 +1,7 @@
 class VersionsController < ApplicationController
   before_action :set_idea
-  before_action :set_version, only: [:show, :restore]
-  before_action :set_comparison_versions, only: [:compare]
+  before_action :set_version, only: [ :show, :restore ]
+  before_action :set_comparison_versions, only: [ :compare ]
 
   # GET /ideas/:idea_id/versions
   def index
@@ -26,7 +26,7 @@ class VersionsController < ApplicationController
   # POST /ideas/:idea_id/versions/:id/restore
   def restore
     @version_service = VersionService.new(@idea)
-    
+
     if @version_service.restore_version(@version)
       redirect_to idea_path(@idea), notice: "Version restored successfully. A new version has been created."
     else

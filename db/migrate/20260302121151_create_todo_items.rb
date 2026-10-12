@@ -10,7 +10,7 @@ class CreateTodoItems < ActiveRecord::Migration[8.0]
       t.timestamps
     end
 
-    add_index :todo_items, [:idea_id, :completed]
-    add_index :todo_items, [:idea_id, :position]
+    add_index :todo_items, [ :idea_id, :completed ]
+    add_index :todo_items, [ :idea_id, :position ]
   end
 end

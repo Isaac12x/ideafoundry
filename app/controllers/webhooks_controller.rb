@@ -61,9 +61,9 @@ class WebhooksController < ActionController::API
     payload = params[:payload]
     hash = if payload.respond_to?(:to_unsafe_h)
              payload.to_unsafe_h
-           else
+    else
              payload.to_h
-           end
+    end
     hash.with_indifferent_access
   rescue NoMethodError
     {}.with_indifferent_access

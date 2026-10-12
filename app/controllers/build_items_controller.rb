@@ -1,8 +1,8 @@
 class BuildItemsController < ApplicationController
   before_action :require_backlog_enabled
   before_action :set_user
-  before_action :set_build_item, only: [:edit, :cancel_edit, :update, :destroy, :toggle, :toggle_checklist_item, :pin]
-  after_action :export_backlog_file, only: [:create, :update, :destroy, :toggle, :toggle_checklist_item, :reorder, :pin, :join], if: -> { @backlog_changed }
+  before_action :set_build_item, only: [ :edit, :cancel_edit, :update, :destroy, :toggle, :toggle_checklist_item, :pin ]
+  after_action :export_backlog_file, only: [ :create, :update, :destroy, :toggle, :toggle_checklist_item, :reorder, :pin, :join ], if: -> { @backlog_changed }
 
   def index
     BacklogFileSync.sync_from_file(@user)

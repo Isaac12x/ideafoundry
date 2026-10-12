@@ -37,7 +37,7 @@ class KbController < ApplicationController
   before_action :set_user
   # Only the KB section page is feature-gated; file/tree/serve endpoints also
   # back the notes bar and stay available.
-  before_action -> { require_feature(:kb) }, only: [:index]
+  before_action -> { require_feature(:kb) }, only: [ :index ]
 
   def index
     @folders = build_folder_tree
@@ -369,7 +369,7 @@ class KbController < ApplicationController
     absolute = relative_path.blank? ? base : safe_abs(base, relative_path)
     return render(json: { error: "Knowledge-base entry was not found." }, status: :not_found) unless absolute && File.exist?(absolute)
 
-    command = File.file?(absolute) ? ["open", "-R", absolute] : ["open", absolute]
+    command = File.file?(absolute) ? [ "open", "-R", absolute ] : [ "open", absolute ]
     if system(*command)
       head :no_content
     else
@@ -482,7 +482,7 @@ class KbController < ApplicationController
   end
 
   def initial_document_selection
-    return [params[:src].to_i, params[:file]] if params[:file].present?
+    return [ params[:src].to_i, params[:file] ] if params[:file].present?
 
     remembered = remembered_document
     if remembered && resolve_kb_path(remembered.first, remembered.last, extensions: :any)
@@ -490,9 +490,9 @@ class KbController < ApplicationController
     end
 
     folder = @folders.find { |candidate| candidate[:files].any? }
-    return [0, nil] unless folder
+    return [ 0, nil ] unless folder
 
-    [folder[:index], folder[:files].first[:rel]]
+    [ folder[:index], folder[:files].first[:rel] ]
   end
 
   def remembered_document
@@ -500,7 +500,7 @@ class KbController < ApplicationController
     return if value.blank?
 
     parsed = JSON.parse(value)
-    [Integer(parsed.fetch("src")), parsed.fetch("file").to_s]
+    [ Integer(parsed.fetch("src")), parsed.fetch("file").to_s ]
   rescue JSON::ParserError, KeyError, TypeError, ArgumentError
     nil
   end

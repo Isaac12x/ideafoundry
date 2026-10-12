@@ -61,9 +61,9 @@ class LocalVoiceIdClient
     uri = URI.join(base_url, TRANSCRIBE_PATH)
     request = Net::HTTP::Post.new(uri)
     request.set_form([
-      ["audio", audio, { filename: filename.presence || "voice-id.webm", content_type: content_type.presence || "audio/webm" }],
-      ["duration_ms", duration_ms.to_s],
-      ["rms", rms.to_s]
+      [ "audio", audio, { filename: filename.presence || "voice-id.webm", content_type: content_type.presence || "audio/webm" } ],
+      [ "duration_ms", duration_ms.to_s ],
+      [ "rms", rms.to_s ]
     ], "multipart/form-data")
 
     Net::HTTP.start(uri.hostname, uri.port, use_ssl: uri.scheme == "https", open_timeout: REQUEST_TIMEOUT, read_timeout: REQUEST_TIMEOUT) do |http|

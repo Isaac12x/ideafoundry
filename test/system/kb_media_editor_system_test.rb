@@ -7,7 +7,7 @@ class KbMediaEditorSystemTest < ApplicationSystemTestCase
     @kb_dir = Rails.root.join("tmp", "kb-media-system-#{SecureRandom.hex(6)}").to_s
     FileUtils.mkdir_p(@kb_dir)
     FileUtils.cp(Rails.root.join("public", "icon.png"), File.join(@kb_dir, "evidence.png"))
-    @user.update!(settings: (@user.settings || {}).merge("kb" => { "folders" => [@kb_dir], "hide_native" => true }))
+    @user.update!(settings: (@user.settings || {}).merge("kb" => { "folders" => [ @kb_dir ], "hide_native" => true }))
   end
 
   teardown do

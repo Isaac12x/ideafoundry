@@ -12,7 +12,7 @@ class CreateMediaDigests < ActiveRecord::Migration[8.1]
       t.integer :superseded_by_id
       t.timestamps
     end
-    add_index :media_digests, [:kb_download_id, :pipeline]
+    add_index :media_digests, [ :kb_download_id, :pipeline ]
     add_index :media_digests, :superseded_at
   end
 end

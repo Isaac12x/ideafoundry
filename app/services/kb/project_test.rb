@@ -19,7 +19,7 @@ module Kb
     def runs
       child_dirs(abs).select { |n| n.match?(DATE_NAME) || File.file?(File.join(abs, n, TestRun::META_FILE)) }
                      .map { |n| TestRun.new(base, File.join(rel, n), self) }
-                     .sort_by { |r| [r.date.to_s, r.name] }
+                     .sort_by { |r| [ r.date.to_s, r.name ] }
     end
 
     def create_run!(date: Date.current, conditions: "", result: "", measurements: [])

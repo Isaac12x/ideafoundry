@@ -1,7 +1,7 @@
 # JSON endpoints behind the KB viewer's highlight/underline toolbar.
 class KbAnnotationsController < ApplicationController
   before_action :set_user
-  before_action :set_file, only: [:index, :create]
+  before_action :set_file, only: [ :index, :create ]
 
   def index
     render json: @user.kb_annotations.for_file(@source_path, @relative_path).in_reading_order

@@ -9,9 +9,9 @@ class ScheduledBackupNotificationJob < ApplicationJob
     return unless user
 
     backup_settings = user.backup_settings
-    return unless backup_settings['email_notification'].to_s == 'true'
+    return unless backup_settings["email_notification"].to_s == "true"
 
-    recipient = backup_settings['notification_email'].presence || user.email_recipients.first
+    recipient = backup_settings["notification_email"].presence || user.email_recipients.first
     return unless recipient.present?
 
     BackupMailer.backup_completed(user, export_job, recipient).deliver_later

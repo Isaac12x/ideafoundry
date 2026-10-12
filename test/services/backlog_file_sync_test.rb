@@ -16,7 +16,7 @@ class BacklogFileSyncTest < ActiveSupport::TestCase
   test "export renders heading, id comment, checklist and links" do
     item = BuildItem.create!(user: @user, title: "Ship it", pinned: true,
                              description: "- [ ] step one",
-                             links: [{ "url" => "https://x.test", "label" => "Docs" }])
+                             links: [ { "url" => "https://x.test", "label" => "Docs" } ])
 
     BacklogFileSync.export(@user)
     content = File.read(@file)

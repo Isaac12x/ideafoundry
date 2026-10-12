@@ -82,19 +82,19 @@ module AgentRecommendationsHelper
     payload = agent_recommendation_preview_payload(recommendation)
 
     additions = case recommendation.action.to_s
-                when "create_note"
-                  [{ label: "Note", title: "New note", body: payload["body"] }]
-                when "create_todo"
-                  [{ label: "Todo", title: payload["title"].presence || "New todo", body: payload["body"] || payload["title"] }]
-                when "create_fact"
-                  [{ label: "Fact", title: "Knowledge base fact", body: payload["body"] }]
-                when "create_maxim"
-                  [{ label: "Maxim", title: "Knowledge base maxim", body: payload["body"] }]
-                when "run_enrichment"
-                  [{ label: "Enrichment", title: payload["query"].presence || "Use current idea context", body: payload.except("idea_id").to_json }]
-                else
+    when "create_note"
+                  [ { label: "Note", title: "New note", body: payload["body"] } ]
+    when "create_todo"
+                  [ { label: "Todo", title: payload["title"].presence || "New todo", body: payload["body"] || payload["title"] } ]
+    when "create_fact"
+                  [ { label: "Fact", title: "Knowledge base fact", body: payload["body"] } ]
+    when "create_maxim"
+                  [ { label: "Maxim", title: "Knowledge base maxim", body: payload["body"] } ]
+    when "run_enrichment"
+                  [ { label: "Enrichment", title: payload["query"].presence || "Use current idea context", body: payload.except("idea_id").to_json } ]
+    else
                   []
-                end
+    end
 
     generic = payload.except(*(IDEA_RECOMMENDATION_FIELDS.keys + INTERNAL_RECOMMENDATION_KEYS))
     if additions.empty? && generic.present?
@@ -136,7 +136,7 @@ module AgentRecommendationsHelper
   def agent_recommendation_line_diff(from_value, to_value)
     old_lines = agent_recommendation_diff_lines(from_value)
     new_lines = agent_recommendation_diff_lines(to_value)
-    return [{ kind: "same", old_number: nil, new_number: nil, text: "" }] if old_lines.empty? && new_lines.empty?
+    return [ { kind: "same", old_number: nil, new_number: nil, text: "" } ] if old_lines.empty? && new_lines.empty?
 
     lcs = Array.new(old_lines.length + 1) { Array.new(new_lines.length + 1, 0) }
     (old_lines.length - 1).downto(0) do |old_index|
@@ -145,7 +145,7 @@ module AgentRecommendationsHelper
           if old_lines[old_index] == new_lines[new_index]
             lcs[old_index + 1][new_index + 1] + 1
           else
-            [lcs[old_index + 1][new_index], lcs[old_index][new_index + 1]].max
+            [ lcs[old_index + 1][new_index], lcs[old_index][new_index + 1] ].max
           end
       end
     end
@@ -204,7 +204,7 @@ module AgentRecommendationsHelper
 
   def agent_recommendation_proposed_value(current, payload, field)
     if field == "description" && payload.key?("append") && !payload.key?("description")
-      [current, payload["append"]].map(&:to_s).reject(&:blank?).join("\n\n")
+      [ current, payload["append"] ].map(&:to_s).reject(&:blank?).join("\n\n")
     else
       payload[field]
     end

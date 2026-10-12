@@ -111,7 +111,7 @@ class IdeaAttachmentsController < ApplicationController
   # "card" for the idea detail grid, list row everywhere else.
   def render_attachment(attachment)
     partial = params[:variant] == "card" ? "idea_attachments/card" : "idea_attachments/item"
-    render_to_string(partial: partial, formats: [:html], locals: { attachment: attachment, idea: @idea })
+    render_to_string(partial: partial, formats: [ :html ], locals: { attachment: attachment, idea: @idea })
   end
 
   def search_attachments(query)
@@ -133,8 +133,8 @@ class IdeaAttachmentsController < ApplicationController
   end
 
   def snippet_for(text, index, length, window: 60)
-    start = [index - window, 0].max
-    finish = [index + length + window, text.length].min
+    start = [ index - window, 0 ].max
+    finish = [ index + length + window, text.length ].min
     snippet = text[start...finish].to_s.gsub(/\s+/, " ").strip
     snippet = "…#{snippet}" if start.positive?
     snippet = "#{snippet}…" if finish < text.length

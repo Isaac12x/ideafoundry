@@ -111,8 +111,8 @@ module NapkinHelper
     cyclic = Set.new
     deps.each_key do |root|
       next if state[root]
-      stack = [[root, deps[root].dup]]
-      path = [root]
+      stack = [ [ root, deps[root].dup ] ]
+      path = [ root ]
       state[root] = :visiting
       until stack.empty?
         ref, children = stack.last
@@ -130,7 +130,7 @@ module NapkinHelper
         elsif state[child].nil?
           state[child] = :visiting
           path.push(child)
-          stack.push([child, deps[child].dup])
+          stack.push([ child, deps[child].dup ])
         end
       end
     end

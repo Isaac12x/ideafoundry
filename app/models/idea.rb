@@ -28,14 +28,14 @@ has_many :kb_links, class_name: "IdeaKbLink", dependent: :destroy
 
   # Lifecycle management
   enum :state, {
-    idea_new: 0, 
-    triage: 1, 
-    first_try: 2, 
+    idea_new: 0,
+    triage: 1,
+    first_try: 2,
     second_try: 3,
-    incubating: 4, 
-    validated: 5, 
-    parked: 6, 
-    rejected: 7, 
+    incubating: 4,
+    validated: 5,
+    parked: 6,
+    rejected: 7,
     shipped: 8
   }
 
@@ -64,18 +64,18 @@ has_many :kb_links, class_name: "IdeaKbLink", dependent: :destroy
   around_destroy :suppress_history_tracking_during_destroy
   after_update_commit :record_automatic_history_version, if: :automatic_history_version_needed?
   after_commit :broadcast_graph_updated, on: :update, if: :title_previously_changed?
-  after_commit :track_github_repository_later, on: [:create, :update], unless: :draft?
+  after_commit :track_github_repository_later, on: [ :create, :update ], unless: :draft?
 
   # Scopes
-  scope :active, -> { where.not(state: [:rejected, :shipped]).where(discarded_at: nil, draft: false) }
+  scope :active, -> { where.not(state: [ :rejected, :shipped ]).where(discarded_at: nil, draft: false) }
   scope :non_draft, -> { where(draft: false) }
   scope :for_licensing, -> { where(for_licensing: true) }
   scope :drafts, -> { where(draft: true) }
   scope :stale_drafts, ->(older_than = 24.hours.ago) { drafts.where("ideas.updated_at < ?", older_than) }
   scope :by_state, ->(state) { where(state: state) }
   scope :by_score_range, ->(min, max) { where(computed_score: min..max) }
-  scope :in_cool_off, -> { where('cool_off_until > ?', Time.current) }
-  scope :cool_off_expired, -> { where('cool_off_until IS NOT NULL AND cool_off_until <= ?', Time.current) }
+  scope :in_cool_off, -> { where("cool_off_until > ?", Time.current) }
+  scope :cool_off_expired, -> { where("cool_off_until IS NOT NULL AND cool_off_until <= ?", Time.current) }
   scope :kept, -> { where(discarded_at: nil) }
   scope :discarded, -> { where.not(discarded_at: nil) }
   scope :with_discarded, -> { unscope(:where).where.not(discarded_at: nil) }
@@ -119,7 +119,7 @@ has_many :kb_links, class_name: "IdeaKbLink", dependent: :destroy
   def enqueue_attachment_ocr!
     ordered_attachments.each do |attachment|
       next unless AttachmentOcrJob.ocr_supported?(attachment)
-      next if attachment.ocr_status.in?(["queued", "processing", "complete"])
+      next if attachment.ocr_status.in?([ "queued", "processing", "complete" ])
 
       attachment.update!(ocr_status: "queued", ocr_error: nil)
       AttachmentOcrJob.perform_later(attachment.id)
@@ -358,15 +358,15 @@ has_many :kb_links, class_name: "IdeaKbLink", dependent: :destroy
   def scoring_history(limit: 10)
     versions.order(created_at: :desc)
            .limit(limit)
-           .select { |v| v.snapshot_data && v.snapshot_data['computed_score'] }
+           .select { |v| v.snapshot_data && v.snapshot_data["computed_score"] }
            .map do |version|
       {
         version: version,
-        score: version.snapshot_data['computed_score'],
-        trl: version.snapshot_data['trl'],
-        difficulty: version.snapshot_data['difficulty'],
-        opportunity: version.snapshot_data['opportunity'],
-        timing: version.snapshot_data['timing'],
+        score: version.snapshot_data["computed_score"],
+        trl: version.snapshot_data["trl"],
+        difficulty: version.snapshot_data["difficulty"],
+        opportunity: version.snapshot_data["opportunity"],
+        timing: version.snapshot_data["timing"],
         created_at: version.created_at,
         commit_message: version.commit_message
       }
@@ -375,29 +375,29 @@ has_many :kb_links, class_name: "IdeaKbLink", dependent: :destroy
 
   def score_trend
     history = scoring_history(limit: 5).reverse
-    return 'stable' if history.length < 2
-    
+    return "stable" if history.length < 2
+
     recent_scores = history.last(3).map { |h| h[:score].to_f }
-    return 'stable' if recent_scores.uniq.length == 1
-    
+    return "stable" if recent_scores.uniq.length == 1
+
     if recent_scores.last > recent_scores.first
-      'improving'
+      "improving"
     else
-      'declining'
+      "declining"
     end
   end
 
   def score_change_since_last_version
     history = scoring_history(limit: 2)
     return 0 if history.length < 2
-    
+
     current_score = history.first[:score].to_f
     previous_score = history.second[:score].to_f
     current_score - previous_score
   end
 
   def active_scoring_system_ids
-    template&.enabled_scoring_system_ids.presence || [User::LEGACY_SCORING_SYSTEM_ID]
+    template&.enabled_scoring_system_ids.presence || [ User::LEGACY_SCORING_SYSTEM_ID ]
   end
 
   def active_scoring_systems
@@ -420,7 +420,7 @@ has_many :kb_links, class_name: "IdeaKbLink", dependent: :destroy
   end
 
   def scoring_breakdown_for(system)
-    if system['kind'] == 'criterion_scorecard'
+    if system["kind"] == "criterion_scorecard"
       scorecard_breakdown_for(system)
     else
       legacy_weighted_breakdown_for(system)
@@ -464,7 +464,7 @@ has_many :kb_links, class_name: "IdeaKbLink", dependent: :destroy
   # Template methods
   def apply_template(template)
     return false unless template.user == user
-    
+
     self.template = template
     template.apply_to_idea(self)
   end
@@ -488,8 +488,8 @@ has_many :kb_links, class_name: "IdeaKbLink", dependent: :destroy
   end
 
   def validate_against_template
-    effective_field_definitions.select { |field| field['required'] == true }.filter_map do |field|
-      key = field['instance_id'] || field['name']
+    effective_field_definitions.select { |field| field["required"] == true }.filter_map do |field|
+      key = field["instance_id"] || field["name"]
       value = respond_to?(key) ? public_send(key) : metadata&.dig(key)
       "#{field['label'] || field['name'].humanize} is required" if value.blank?
     end
@@ -503,42 +503,42 @@ has_many :kb_links, class_name: "IdeaKbLink", dependent: :destroy
   end
 
   def effective_tab_definitions
-    tabs = template&.effective_tab_definitions || [{ 'name' => 'general', 'label' => 'General', 'position' => 0 }]
-    existing = tabs.index_by { |tab| tab['name'] }
+    tabs = template&.effective_tab_definitions || [ { "name" => "general", "label" => "General", "position" => 0 } ]
+    existing = tabs.index_by { |tab| tab["name"] }
 
     effective_field_definitions.each do |field|
-      tab_name = field['tab'].presence || tabs.first['name']
+      tab_name = field["tab"].presence || tabs.first["name"]
       next if existing.key?(tab_name)
 
       existing[tab_name] = {
-        'name' => tab_name,
-        'label' => tab_name.humanize,
-        'position' => existing.length
+        "name" => tab_name,
+        "label" => tab_name.humanize,
+        "position" => existing.length
       }
     end
 
-    existing.values.sort_by { |tab| tab['position'].to_i }
+    existing.values.sort_by { |tab| tab["position"].to_i }
   end
 
   def effective_fields_by_tab
     tabs = effective_tab_definitions
-    default_tab = tabs.first&.dig('name') || 'general'
+    default_tab = tabs.first&.dig("name") || "general"
 
     grouped = {}
-    tabs.each { |tab| grouped[tab['name']] = [] }
+    tabs.each { |tab| grouped[tab["name"]] = [] }
 
     effective_field_definitions.each do |field|
-      tab = field['tab'].presence || default_tab
+      tab = field["tab"].presence || default_tab
       grouped[tab] ||= []
       grouped[tab] << field
     end
 
-    grouped.each { |_, fields| fields.sort_by! { |field| field['position'].to_i } }
+    grouped.each { |_, fields| fields.sort_by! { |field| field["position"].to_i } }
     grouped
   end
 
   def effective_field_by_instance_id(instance_id)
-    effective_field_definitions.find { |field| field['instance_id'] == instance_id }
+    effective_field_definitions.find { |field| field["instance_id"] == instance_id }
   end
 
   def software_topology?
@@ -633,7 +633,7 @@ has_many :kb_links, class_name: "IdeaKbLink", dependent: :destroy
       cleaned_body = body.to_s.strip
       if cleaned_body.present?
         current_body = description.to_plain_text.to_s.strip
-        self.description = [current_body.presence, cleaned_body].compact.join("\n\n---\n\n")
+        self.description = [ current_body.presence, cleaned_body ].compact.join("\n\n---\n\n")
         changed = true
       end
 
@@ -719,7 +719,7 @@ has_many :kb_links, class_name: "IdeaKbLink", dependent: :destroy
 
   def broadcast_graph_updated
     ActionCable.server.broadcast("topology_graph:#{user_id}", {
-      action: 'node_updated',
+      action: "node_updated",
       node: { id: "i_#{id}", name: title }
     })
   end
@@ -734,7 +734,7 @@ has_many :kb_links, class_name: "IdeaKbLink", dependent: :destroy
 
   def merge_field_definitions(*definition_sets)
     definition_sets.flatten.compact.each_with_object({}) do |field, merged|
-      key = field['instance_id'].presence || field['name']
+      key = field["instance_id"].presence || field["name"]
       next if key.blank?
 
       merged[key] = field
@@ -755,25 +755,25 @@ has_many :kb_links, class_name: "IdeaKbLink", dependent: :destroy
   end
 
   def legacy_weighted_breakdown_for(system)
-    return { id: system['id'], name: system['name'], normalized: nil, blocks_work: false } unless trl && difficulty && opportunity && timing
+    return { id: system["id"], name: system["name"], normalized: nil, blocks_work: false } unless trl && difficulty && opportunity && timing
 
     weights = user.scoring_weights
-    w = [weights['trl'].to_f, weights['difficulty'].to_f, weights['opportunity'].to_f, weights['timing'].to_f]
+    w = [ weights["trl"].to_f, weights["difficulty"].to_f, weights["opportunity"].to_f, weights["timing"].to_f ]
     raw = trl * w[0] + difficulty * w[1] + opportunity * w[2] + timing * w[3]
     raw_min = 10.0 * w.select(&:negative?).sum
     raw_max = 10.0 * w.select(&:positive?).sum
     normalized = raw_max == raw_min ? 0.0 : ((raw - raw_min) / (raw_max - raw_min) * 10.0).round(2)
 
     {
-      id: system['id'],
-      name: system['name'],
-      kind: system['kind'],
+      id: system["id"],
+      name: system["name"],
+      kind: system["kind"],
       normalized: normalized,
       values: {
-        'trl' => trl,
-        'difficulty' => difficulty,
-        'opportunity' => opportunity,
-        'timing' => timing
+        "trl" => trl,
+        "difficulty" => difficulty,
+        "opportunity" => opportunity,
+        "timing" => timing
       },
       blocks_work: false,
       eligible_for_work: true
@@ -781,25 +781,25 @@ has_many :kb_links, class_name: "IdeaKbLink", dependent: :destroy
   end
 
   def scorecard_breakdown_for(system)
-    scale_min = system.fetch('scale_min', 1).to_i
-    scale_max = system.fetch('scale_max', 5).to_i
-    values = scoring_values_for(system['id'])
-    criteria = system['criteria']
+    scale_min = system.fetch("scale_min", 1).to_i
+    scale_max = system.fetch("scale_max", 5).to_i
+    values = scoring_values_for(system["id"])
+    criteria = system["criteria"]
 
     criterion_scores = criteria.each_with_object({}) do |criterion, scores|
-      raw_value = values[criterion['key']]
-      scores[criterion['key']] = normalized_scorecard_value(raw_value, scale_min, scale_max)
+      raw_value = values[criterion["key"]]
+      scores[criterion["key"]] = normalized_scorecard_value(raw_value, scale_min, scale_max)
     end
 
     total = criterion_scores.values.sum
     max_total = criteria.size * scale_max
     normalized = max_total.zero? ? 0.0 : (total.to_f / max_total * 10).round(2)
-    threshold = system.fetch('work_threshold_total', 0).to_f
+    threshold = system.fetch("work_threshold_total", 0).to_f
 
     {
-      id: system['id'],
-      name: system['name'],
-      kind: system['kind'],
+      id: system["id"],
+      name: system["name"],
+      kind: system["kind"],
       criteria: criteria,
       values: criterion_scores,
       total: total,
@@ -807,7 +807,7 @@ has_many :kb_links, class_name: "IdeaKbLink", dependent: :destroy
       normalized: normalized,
       scale_min: scale_min,
       scale_max: scale_max,
-      blocks_work: system['blocks_work'] == true,
+      blocks_work: system["blocks_work"] == true,
       work_threshold_total: threshold,
       work_threshold_normalized: max_total.zero? ? 0.0 : (threshold / max_total * 10).round(2),
       eligible_for_work: threshold.zero? || total >= threshold
@@ -835,14 +835,14 @@ has_many :kb_links, class_name: "IdeaKbLink", dependent: :destroy
 
   def scorecard_values_within_limits
     active_scoring_systems.each do |system|
-      next unless system['kind'] == 'criterion_scorecard'
+      next unless system["kind"] == "criterion_scorecard"
 
-      values = scoring_values_for(system['id'])
+      values = scoring_values_for(system["id"])
       next if values.blank?
 
-      scale_min = system.fetch('scale_min', 1).to_i
-      scale_max = system.fetch('scale_max', 5).to_i
-      allowed_keys = system['criteria'].map { |criterion| criterion['key'] }
+      scale_min = system.fetch("scale_min", 1).to_i
+      scale_max = system.fetch("scale_max", 5).to_i
+      allowed_keys = system["criteria"].map { |criterion| criterion["key"] }
 
       values.slice(*allowed_keys).each do |key, raw_value|
         next if raw_value.blank?
@@ -850,7 +850,7 @@ has_many :kb_links, class_name: "IdeaKbLink", dependent: :destroy
         value = raw_value.to_i
         next if value.between?(scale_min, scale_max)
 
-        label = system['criteria'].find { |criterion| criterion['key'] == key }&.dig('label') || key.humanize
+        label = system["criteria"].find { |criterion| criterion["key"] == key }&.dig("label") || key.humanize
         errors.add(:base, "#{label} must be between #{scale_min} and #{scale_max}")
       end
     end

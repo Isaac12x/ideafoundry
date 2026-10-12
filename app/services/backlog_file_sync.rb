@@ -57,7 +57,7 @@ class BacklogFileSync
 
   def render
     blocks = ordered_items.map { |item| render_item(item) }
-    (["# Backlog", ""] + blocks).join("\n").rstrip + "\n"
+    ([ "# Backlog", "" ] + blocks).join("\n").rstrip + "\n"
   end
 
   def export
@@ -99,7 +99,7 @@ class BacklogFileSync
 
   def render_item(item)
     lines = []
-    attrs = ["id:#{item.id}"]
+    attrs = [ "id:#{item.id}" ]
     attrs << "pin:1" if item.pinned?
     lines << "## [#{item.completed? ? 'x' : ' '}] #{item.title}   <!-- #{attrs.join(' ')} -->"
     body = item.description.to_s.rstrip

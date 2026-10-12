@@ -41,7 +41,7 @@ module Kb
                  .sort
                  .first(MAX_FILES)
 
-      sections = ["Folder: #{relative_path}", "Files:"]
+      sections = [ "Folder: #{relative_path}", "Files:" ]
       sections.concat(paths.map { |path| "- #{path.delete_prefix("#{folder}/")}" })
       remaining = MAX_BYTES
 

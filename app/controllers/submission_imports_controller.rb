@@ -8,12 +8,12 @@ class SubmissionImportsController < ApplicationController
     @source_options = NoteImportService.source_options
     @preview = if params[:source] == "apple_notes" && Array(params[:files]).compact_blank.empty?
                  AppleNotesImportService.new.preview
-               else
+    else
                  NoteImportService.new(
                    source: params[:source],
                    files: params[:files]
                  ).preview
-               end
+    end
   rescue NoteImportService::ImportError => e
     redirect_to new_submission_import_path, alert: e.message
   end

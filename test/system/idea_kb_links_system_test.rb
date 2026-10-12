@@ -10,7 +10,7 @@ class IdeaKbLinksSystemTest < ApplicationSystemTestCase
     File.write(File.join(@kb_dir, "protocol.md"), "# Protocol\n")
     FileUtils.mkdir_p(File.join(@kb_dir, "papers", "strains"))
     File.write(File.join(@kb_dir, "papers", "strains", "plantarum.md"), "# L. plantarum\n")
-    @user.update!(settings: (@user.settings || {}).merge("kb" => { "folders" => [@kb_dir], "hide_native" => true }))
+    @user.update!(settings: (@user.settings || {}).merge("kb" => { "folders" => [ @kb_dir ], "hide_native" => true }))
     @idea = @user.ideas.create!(title: "Probiotic jar")
   end
 

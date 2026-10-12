@@ -10,7 +10,7 @@ class CreateIdeaEntries < ActiveRecord::Migration[8.0]
       t.timestamps
     end
 
-    add_index :idea_entries, [:idea_id, :kind]
-    add_index :idea_entries, [:idea_id, :kind, :position]
+    add_index :idea_entries, [ :idea_id, :kind ]
+    add_index :idea_entries, [ :idea_id, :kind, :position ]
   end
 end

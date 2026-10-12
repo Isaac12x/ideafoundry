@@ -37,25 +37,25 @@ class Template < ApplicationRecord
 
   def apply_to_idea(idea)
     return false unless idea.user == user
-    
+
     # Set template reference
     idea.template = self
-    
+
     # Initialize any missing custom fields with default values
     initialize_custom_fields(idea)
-    
+
     true
   end
 
   def required_fields
-    field_definitions.select { |field| field['required'] == true }
+    field_definitions.select { |field| field["required"] == true }
   end
 
   def validate_idea_against_template(idea)
     errors = []
 
     required_fields.each do |field|
-      key = field['instance_id'] || field['name']
+      key = field["instance_id"] || field["name"]
       field_value = get_field_value_from_idea(idea, key)
 
       if field_value.blank?
@@ -71,38 +71,38 @@ class Template < ApplicationRecord
   end
 
   def section_field_instances
-    (section_order || []).select { |s| s.start_with?('field:') }.map { |s| s.delete_prefix('field:') }
+    (section_order || []).select { |s| s.start_with?("field:") }.map { |s| s.delete_prefix("field:") }
   end
 
   def field_by_instance_id(instance_id)
-    (field_definitions || []).find { |fd| fd['instance_id'] == instance_id }
+    (field_definitions || []).find { |fd| fd["instance_id"] == instance_id }
   end
 
   def effective_tab_definitions
-    tab_definitions.presence || [{ 'name' => 'general', 'label' => 'General', 'position' => 0 }]
+    tab_definitions.presence || [ { "name" => "general", "label" => "General", "position" => 0 } ]
   end
 
   def fields_by_tab
-    tabs = effective_tab_definitions.sort_by { |t| t['position'].to_i }
-    default_tab = tabs.first&.dig('name') || 'general'
+    tabs = effective_tab_definitions.sort_by { |t| t["position"].to_i }
+    default_tab = tabs.first&.dig("name") || "general"
 
     grouped = {}
-    tabs.each { |t| grouped[t['name']] = [] }
+    tabs.each { |t| grouped[t["name"]] = [] }
 
     (field_definitions || []).each do |field|
-      tab = field['tab'].presence || default_tab
+      tab = field["tab"].presence || default_tab
       grouped[tab] ||= []
       grouped[tab] << field
     end
 
     # Sort fields within each tab by position
-    grouped.each { |_, fields| fields.sort_by! { |f| f['position'].to_i } }
+    grouped.each { |_, fields| fields.sort_by! { |f| f["position"].to_i } }
     grouped
   end
 
   def enabled_scoring_system_ids
     ids = Array(scoring_system_ids).map(&:to_s).reject(&:blank?)
-    ids.presence || [User::LEGACY_SCORING_SYSTEM_ID]
+    ids.presence || [ User::LEGACY_SCORING_SYSTEM_ID ]
   end
 
   def scoring_systems
@@ -120,7 +120,7 @@ class Template < ApplicationRecord
 
   def only_one_default_per_user
     return unless is_default?
-    
+
     existing_default = user.templates.where(is_default: true).where.not(id: id)
     if existing_default.exists?
       errors.add(:is_default, "can only have one default template per user")
@@ -129,34 +129,34 @@ class Template < ApplicationRecord
 
   def ensure_single_default
     return unless is_default_changed? && is_default?
-    
+
     # Set all other templates for this user to non-default
     user.templates.where.not(id: id).update_all(is_default: false)
   end
 
   def valid_field_definitions_format
     return if field_definitions.blank?
-    
+
     unless field_definitions.is_a?(Array)
       errors.add(:field_definitions, "must be an array")
       return
     end
-    
+
     field_definitions.each_with_index do |field, index|
       unless field.is_a?(Hash)
         errors.add(:field_definitions, "field at index #{index} must be a hash")
         next
       end
-      
-      unless field['name'].present?
+
+      unless field["name"].present?
         errors.add(:field_definitions, "field at index #{index} must have a name")
       end
-      
-      unless field['type'].present?
+
+      unless field["type"].present?
         errors.add(:field_definitions, "field at index #{index} must have a type")
       end
-      
-      unless FIELD_TYPES.include?(field['type'])
+
+      unless FIELD_TYPES.include?(field["type"])
         errors.add(:field_definitions, "field at index #{index} has invalid type")
       end
     end
@@ -172,7 +172,7 @@ class Template < ApplicationRecord
 
     valid_builtin = %w[header stats description media metadata timeline]
     section_order.each do |section|
-      next if section.start_with?('field:')
+      next if section.start_with?("field:")
       unless valid_builtin.include?(section)
         errors.add(:section_order, "contains invalid section: #{section}")
       end
@@ -192,7 +192,7 @@ class Template < ApplicationRecord
         errors.add(:tab_definitions, "tab at index #{index} must be a hash")
         next
       end
-      unless tab['name'].present?
+      unless tab["name"].present?
         errors.add(:tab_definitions, "tab at index #{index} must have a name")
       end
     end
@@ -207,19 +207,19 @@ class Template < ApplicationRecord
 
   def normalize_scoring_system_ids
     self.scoring_system_ids = enabled_scoring_system_ids & (user&.scoring_system_ids || User::DEFAULT_SCORING_SYSTEMS.keys)
-    self.scoring_system_ids = [User::LEGACY_SCORING_SYSTEM_ID] if scoring_system_ids.blank?
+    self.scoring_system_ids = [ User::LEGACY_SCORING_SYSTEM_ID ] if scoring_system_ids.blank?
   end
 
   def valid_field_instance_ids
     return if field_definitions.blank?
     return unless field_definitions.is_a?(Array)
 
-    ids = field_definitions.map { |fd| fd['instance_id'] }.compact
+    ids = field_definitions.map { |fd| fd["instance_id"] }.compact
     if ids.length != ids.uniq.length
       errors.add(:field_definitions, "contain duplicate instance_ids")
     end
     field_definitions.each_with_index do |fd, idx|
-      if fd.is_a?(Hash) && fd['name'].present? && fd['instance_id'].blank?
+      if fd.is_a?(Hash) && fd["name"].present? && fd["instance_id"].blank?
         errors.add(:field_definitions, "field at index #{idx} must have an instance_id")
       end
     end
@@ -227,12 +227,12 @@ class Template < ApplicationRecord
 
   def initialize_custom_fields(idea)
     field_definitions.each do |field|
-      key = field['instance_id'] || field['name']
+      key = field["instance_id"] || field["name"]
 
       next if get_field_value_from_idea(idea, key).present?
 
-      if field['default_value'].present?
-        set_field_value_on_idea(idea, key, field['default_value'])
+      if field["default_value"].present?
+        set_field_value_on_idea(idea, key, field["default_value"])
       end
     end
   end

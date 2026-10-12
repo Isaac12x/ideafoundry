@@ -28,7 +28,7 @@ class VersionService
   # Compare two versions and return detailed diff
   def compare_versions(version_a, version_b)
     raise ArgumentError, "Versions must belong to this idea" unless versions_belong_to_idea?(version_a, version_b)
-    
+
     version_b.diff_with(version_a)
   end
 

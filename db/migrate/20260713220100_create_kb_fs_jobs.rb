@@ -18,6 +18,6 @@ class CreateKbFsJobs < ActiveRecord::Migration[8.1]
       t.timestamps
     end
 
-    add_index :kb_fs_jobs, [:user_id, :status]
+    add_index :kb_fs_jobs, [ :user_id, :status ]
   end
 end

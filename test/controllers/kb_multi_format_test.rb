@@ -17,8 +17,8 @@ class KbMultiFormatTest < ActionDispatch::IntegrationTest
     @xlsx_name = "sheet.xlsx"
     pkg = Axlsx::Package.new
     pkg.workbook.add_worksheet(name: "Sheet1") do |sheet|
-      sheet.add_row ["HelloCell", "Second"]
-      sheet.add_row ["Row2A", "Row2B"]
+      sheet.add_row [ "HelloCell", "Second" ]
+      sheet.add_row [ "Row2A", "Row2B" ]
     end
     pkg.serialize(File.join(@kb_dir, @xlsx_name))
 
@@ -31,7 +31,7 @@ class KbMultiFormatTest < ActionDispatch::IntegrationTest
       File.delete(md)
     end
 
-    @user.update!(settings: (@user.settings || {}).merge("kb" => { "folders" => [@kb_dir] }))
+    @user.update!(settings: (@user.settings || {}).merge("kb" => { "folders" => [ @kb_dir ] }))
   end
 
   teardown do

@@ -13,17 +13,17 @@ class Kb::ProjectFoundationTest < ActiveSupport::TestCase
     assert_equal "Ferment", Kb::Project.containing(@base, "Ferment/Tests/x/y.md").name
 
     test = project.create_test!(name: "Cold", objective: "4C", protocol: "steps")
-    assert_equal ["Cold"], project.tests.map(&:name)
-    r1 = test.create_run!(date: "2026-10-06", result: "ok", measurements: [{ name: "pH", value: 4.2 }, { name: "" }])
+    assert_equal [ "Cold" ], project.tests.map(&:name)
+    r1 = test.create_run!(date: "2026-10-06", result: "ok", measurements: [ { name: "pH", value: 4.2 }, { name: "" } ])
     r2 = test.create_run!(date: Date.new(2026, 10, 6))
     assert_equal "2026-10-06", r1.name
     assert_equal "2026-10-06 (2)", r2.name
     assert_equal Date.new(2026, 10, 6), r1.date
-    assert_equal [{ "name" => "pH", "value" => "4.2", "unit" => "" }], r1.measurements
+    assert_equal [ { "name" => "pH", "value" => "4.2", "unit" => "" } ], r1.measurements
     assert_equal 2, test.runs.size
 
     File.write(File.join(@base, r1.rel, "photo.jpg"), "x")
-    assert_equal ["photo.jpg"], r1.files
+    assert_equal [ "photo.jpg" ], r1.files
     r1.update!(result: "changed")
     assert_equal "changed", Kb::TestRun.new(@base, r1.rel).result
     project.update!(status: "concluded", conclusion: "yes", private: false)

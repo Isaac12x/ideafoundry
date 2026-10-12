@@ -20,7 +20,7 @@ class Licensor < ApplicationRecord
   before_create :set_position
 
   scope :ordered, -> { order(Arel.sql("COALESCE(position, 999999)"), :created_at) }
-  scope :open, -> { where.not(stage: [:closed_won, :closed_lost]) }
+  scope :open, -> { where.not(stage: [ :closed_won, :closed_lost ]) }
 
   # Stage order matches the enum; drives kanban column order and progress.
   STAGE_ORDER = %w[identified contacted meeting negotiating closed_won closed_lost].freeze

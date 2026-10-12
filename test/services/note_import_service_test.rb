@@ -34,7 +34,7 @@ class NoteImportServiceTest < ActiveSupport::TestCase
 
     assert_equal "notion", preview.source
     assert_equal 2, preview.total_notes
-    assert_equal ["Archive", "Research"], preview.folders.map(&:name)
+    assert_equal [ "Archive", "Research" ], preview.folders.map(&:name)
   end
 
   test "imports only notes from selected folders into intake" do
@@ -52,7 +52,7 @@ class NoteImportServiceTest < ActiveSupport::TestCase
       result = NoteImportService.import!(
         user: @user,
         payload: preview.encoded_payload,
-        selected_folder_keys: [inventions.key]
+        selected_folder_keys: [ inventions.key ]
       )
 
       assert_equal 1, result.imported_count
@@ -82,7 +82,7 @@ class NoteImportServiceTest < ActiveSupport::TestCase
         user: @user,
         payload: preview.encoded_payload,
         selected_folder_keys: [],
-        selected_note_keys: [selected["note_key"]]
+        selected_note_keys: [ selected["note_key"] ]
       )
     end
 
@@ -106,8 +106,8 @@ class NoteImportServiceTest < ActiveSupport::TestCase
       result = NoteImportService.import!(
         user: @user,
         payload: preview.encoded_payload,
-        selected_folder_keys: [inventions.key],
-        selected_note_keys: [shade["note_key"]]
+        selected_folder_keys: [ inventions.key ],
+        selected_note_keys: [ shade["note_key"] ]
       )
 
       assert_equal 2, result.imported_count
@@ -123,15 +123,15 @@ class NoteImportServiceTest < ActiveSupport::TestCase
     keep_note = {
       title: "Foldable shade",
       textContent: "Clip-on shade concept",
-      labels: [{ name: "Garden" }, { name: "Prototype" }]
+      labels: [ { name: "Garden" }, { name: "Prototype" } ]
     }.to_json
 
     preview = NoteImportService.new(
       source: "google_keep",
-      files: [MemoryUpload.new("Takeout/Keep/foldable-shade.json", keep_note, "application/json")]
+      files: [ MemoryUpload.new("Takeout/Keep/foldable-shade.json", keep_note, "application/json") ]
     ).preview
 
-    assert_equal ["Garden", "Prototype"], preview.folders.map(&:name)
+    assert_equal [ "Garden", "Prototype" ], preview.folders.map(&:name)
   end
 
   test "previews Apple Notes from a local sqlite database" do
@@ -157,7 +157,7 @@ class NoteImportServiceTest < ActiveSupport::TestCase
     preview = AppleNotesImportService.new(database_path: path.to_s).preview
 
     assert_equal "apple_notes", preview.source
-    assert_equal ["Ideas"], preview.folders.map(&:name)
+    assert_equal [ "Ideas" ], preview.folders.map(&:name)
     assert_equal "Solar shelf", preview.notes.first["title"]
     assert_equal "Window-mounted collector", preview.notes.first["body"]
   ensure

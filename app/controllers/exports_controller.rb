@@ -1,10 +1,10 @@
 class ExportsController < ApplicationController
   before_action :set_user
-  before_action :set_export_job, only: [:show, :download, :destroy]
+  before_action :set_export_job, only: [ :show, :download, :destroy ]
 
   def index
     @export_jobs = @user.export_jobs.recent.limit(20)
-    @active_export = @user.export_jobs.where(status: [:pending, :processing]).first
+    @active_export = @user.export_jobs.where(status: [ :pending, :processing ]).first
   end
 
   def show
@@ -26,14 +26,14 @@ class ExportsController < ApplicationController
 
   def create
     # Check if there's already an active export
-    active_export = @user.export_jobs.where(status: [:pending, :processing]).first
+    active_export = @user.export_jobs.where(status: [ :pending, :processing ]).first
     if active_export
       redirect_to exports_path, alert: "An export is already in progress. Please wait for it to complete."
       return
     end
 
     password = params[:password].presence
-    
+
     # Validate password if provided
     if password.present? && password.length < 8
       redirect_to exports_path, alert: "Password must be at least 8 characters long."
@@ -63,17 +63,17 @@ class ExportsController < ApplicationController
 
     send_file @export_job.file_path,
               filename: @export_job.download_filename,
-              type: @export_job.password_protected? ? 'application/zip' : 'application/gzip',
-              disposition: 'attachment'
+              type: @export_job.password_protected? ? "application/zip" : "application/gzip",
+              disposition: "attachment"
   end
 
   def destroy
     if @export_job.file_exists?
       @export_job.cleanup_file!
     end
-    
+
     @export_job.destroy!
-    
+
     respond_to do |format|
       format.html { redirect_to exports_path, notice: "Export deleted successfully." }
       format.json { head :no_content }
@@ -82,8 +82,8 @@ class ExportsController < ApplicationController
 
   def cleanup_old
     # Clean up exports older than 7 days
-    old_exports = @user.export_jobs.where('created_at < ?', 7.days.ago)
-    
+    old_exports = @user.export_jobs.where("created_at < ?", 7.days.ago)
+
     cleanup_count = 0
     old_exports.each do |export_job|
       export_job.cleanup_file! if export_job.file_exists?

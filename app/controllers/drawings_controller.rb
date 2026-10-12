@@ -1,10 +1,10 @@
 class DrawingsController < ApplicationController
   before_action :set_user
   before_action :set_idea
-  before_action :set_drawing, only: [:show, :update, :destroy]
+  before_action :set_drawing, only: [ :show, :update, :destroy ]
 
   # JSON / multipart saves come from the React app via fetch(); skip CSRF for those.
-  skip_before_action :verify_authenticity_token, only: [:create, :update]
+  skip_before_action :verify_authenticity_token, only: [ :create, :update ]
 
   def new
     @drawing = @idea.drawings.build(role: parse_role(params[:role]) || :general)
@@ -72,10 +72,10 @@ class DrawingsController < ApplicationController
     if raw.key?(:content)
       content = raw[:content]
       permitted[:content] = case content
-                            when String then JSON.parse(content)
-                            when ActionController::Parameters then content.permit!.to_h
-                            else content
-                            end
+      when String then JSON.parse(content)
+      when ActionController::Parameters then content.permit!.to_h
+      else content
+      end
     end
 
     permitted[:role] = parse_role(permitted[:role]) if permitted[:role].present?

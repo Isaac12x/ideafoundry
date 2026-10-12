@@ -36,7 +36,7 @@ class LicensorTest < ActiveSupport::TestCase
     open = @idea.licensors.create!(company: "Open")
     @idea.licensors.create!(company: "Won", stage: :closed_won)
     @idea.licensors.create!(company: "Lost", stage: :closed_lost)
-    assert_equal [open], @idea.licensors.open.to_a
+    assert_equal [ open ], @idea.licensors.open.to_a
   end
 
   test "stage metadata helpers" do

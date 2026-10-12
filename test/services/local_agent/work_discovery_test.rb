@@ -10,7 +10,7 @@ class LocalAgent::WorkDiscoveryTest < ActiveSupport::TestCase
   def digest_work = LocalAgent::WorkDiscovery.new(@user).list(limit: 100).select { |c| c[:target_type] == "KbDownload" }
 
   test "transcript without digest is work until digested" do
-    assert_equal [@dl.id], digest_work.map { |c| c[:target_id] }
+    assert_equal [ @dl.id ], digest_work.map { |c| c[:target_id] }
     MediaDigest.record!(user: @user, kb_download: @dl, body: "- fact")
     assert_empty digest_work
   end

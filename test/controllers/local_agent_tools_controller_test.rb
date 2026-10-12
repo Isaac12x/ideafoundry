@@ -57,7 +57,7 @@ class LocalAgentToolsControllerTest < ActionDispatch::IntegrationTest
     original = user.settings.deep_dup
     dir = Rails.root.join("tmp", "kb-agent-#{SecureRandom.hex(6)}").to_s
     FileUtils.mkdir_p(dir)
-    user.update_kb_folders([dir])
+    user.update_kb_folders([ dir ])
     user.update_local_agent_settings("enabled" => true)
     src = 1 # 0 is the native App KB source
 
@@ -81,7 +81,7 @@ class LocalAgentToolsControllerTest < ActionDispatch::IntegrationTest
     original = user.settings.deep_dup
     dir = Rails.root.join("tmp", "kb-agent-#{SecureRandom.hex(6)}").to_s
     FileUtils.mkdir_p(dir)
-    user.update_kb_folders([dir])
+    user.update_kb_folders([ dir ])
     user.update_local_agent_settings("enabled" => true)
 
     post "/local-agent/tools", params: { tool_name: "write_kb", arguments: { src: 1, file: "../escape", content: "nope" } }, as: :json

@@ -31,7 +31,7 @@ class IdeasMailbox < ApplicationMailbox
   end
 
   def extract_intake_reference
-    searchable_content = [mail.subject, extract_body_content].join("\n")
+    searchable_content = [ mail.subject, extract_body_content ].join("\n")
     match = searchable_content.match(INTAKE_REFERENCE_PATTERN)
     match ? match[0].upcase : nil
   end

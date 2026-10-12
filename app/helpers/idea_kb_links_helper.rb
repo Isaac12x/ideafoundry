@@ -4,7 +4,7 @@ module IdeaKbLinksHelper
   def idea_kb_link_entries(idea, user)
     sources = KbSource.list(user).map { |s| File.expand_path(s[:path]) }
     order = { "project" => 0, "dir" => 1, "file" => 2 }
-    idea.kb_links.sort_by { |l| [order[l.entry_type] || 3, l.position.to_i, l.id] }.map do |link|
+    idea.kb_links.sort_by { |l| [ order[l.entry_type] || 3, l.position.to_i, l.id ] }.map do |link|
       index = sources.index(link.source_path)
       base = index && sources[index]
       abs = base && File.join(base, link.relative_path)

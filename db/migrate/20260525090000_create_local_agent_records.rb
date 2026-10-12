@@ -11,8 +11,8 @@ class CreateLocalAgentRecords < ActiveRecord::Migration[8.0]
       t.timestamps
     end
 
-    add_index :agent_runs, [:user_id, :status]
-    add_index :agent_runs, [:user_id, :last_heartbeat_at]
+    add_index :agent_runs, [ :user_id, :status ]
+    add_index :agent_runs, [ :user_id, :last_heartbeat_at ]
 
     create_table :agent_events do |t|
       t.references :user, null: false, foreign_key: true
@@ -25,8 +25,8 @@ class CreateLocalAgentRecords < ActiveRecord::Migration[8.0]
       t.timestamps
     end
 
-    add_index :agent_events, [:user_id, :event_type]
-    add_index :agent_events, [:target_type, :target_id]
+    add_index :agent_events, [ :user_id, :event_type ]
+    add_index :agent_events, [ :target_type, :target_id ]
 
     create_table :agent_recommendations do |t|
       t.references :user, null: false, foreign_key: true
@@ -42,8 +42,8 @@ class CreateLocalAgentRecords < ActiveRecord::Migration[8.0]
       t.timestamps
     end
 
-    add_index :agent_recommendations, [:user_id, :status]
-    add_index :agent_recommendations, [:target_type, :target_id]
+    add_index :agent_recommendations, [ :user_id, :status ]
+    add_index :agent_recommendations, [ :target_type, :target_id ]
     add_index :agent_recommendations, :action
   end
 end

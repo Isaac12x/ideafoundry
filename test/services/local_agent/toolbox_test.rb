@@ -169,11 +169,11 @@ class LocalAgent::ToolboxTest < ActiveSupport::TestCase
     File.write(File.join(dir, "proj", ".kb-project.yml"), "private: true\n")
     File.write(File.join(dir, "proj", "secret.md"), "secret")
     File.write(File.join(dir, "open.md"), "open")
-    @user.update!(settings: { "kb" => { "folders" => [dir], "hide_native" => true } })
+    @user.update!(settings: { "kb" => { "folders" => [ dir ], "hide_native" => true } })
     @user.update_local_agent_settings("enabled" => "1")
 
     files = toolbox.call("list_kb").fetch(:kb_files).map { |e| e[:file] }
-    assert_equal ["open.md"], files
+    assert_equal [ "open.md" ], files
 
     read = toolbox.call("read_kb", { "file" => "proj/secret.md" })
     assert_equal "invalid_arguments", read.fetch(:error)
@@ -191,12 +191,12 @@ class LocalAgent::ToolboxTest < ActiveSupport::TestCase
     dl = @user.kb_downloads.create!(source_index: 0, url: "https://youtu.be/abc", title: "Talk", status: "done",
                                     transcript: "00:01 - hello", transcript_status: "done")
 
-    assert_difference ["MediaDigest.count", "AgentEvent.count"], 1 do
+    assert_difference [ "MediaDigest.count", "AgentEvent.count" ], 1 do
       result = toolbox.call("write_media_digest", "kb_download_id" => dl.id, "body" => "- hello fact")
       assert result.fetch(:ok)
     end
     found = toolbox.call("search_media_digests", "query" => "hello").fetch(:media_digests)
-    assert_equal [dl.id], found.map { |d| d[:kb_download_id] }
+    assert_equal [ dl.id ], found.map { |d| d[:kb_download_id] }
     assert_equal "00:01 - hello", toolbox.call("read_record", "target_type" => "KbDownload", "target_id" => dl.id).dig(:record, :transcript)
   end
 

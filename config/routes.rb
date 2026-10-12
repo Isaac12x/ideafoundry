@@ -20,14 +20,14 @@ Rails.application.routes.draw do
   namespace :api do
     namespace :v1 do
       resources :ideas, only: [] do
-        resource :document, only: [:show, :update], controller: :idea_documents
+        resource :document, only: [ :show, :update ], controller: :idea_documents
       end
-      resources :submissions, only: [:create, :show]
+      resources :submissions, only: [ :create, :show ]
     end
   end
 
   namespace :local_agent, path: "local-agent" do
-    match "tools", to: "tools#index", via: [:get, :post], as: :tools
+    match "tools", to: "tools#index", via: [ :get, :post ], as: :tools
     post "tools/:tool_name", to: "tools#create", as: :tool
   end
 
@@ -42,7 +42,7 @@ Rails.application.routes.draw do
   get "ideas/intake", to: "submissions#index", as: :ideas_intake
   get "submissions", to: redirect("/ideas/intake")
 
-  resources :submissions, only: [:show, :destroy] do
+  resources :submissions, only: [ :show, :destroy ] do
     member do
       post :approve
       post :reject
@@ -82,7 +82,7 @@ Rails.application.routes.draw do
       get :uncompleted
       get :search
     end
-    resources :attachments, only: [:create, :destroy, :update], controller: :idea_attachments do
+    resources :attachments, only: [ :create, :destroy, :update ], controller: :idea_attachments do
       collection do
         patch :reorder
         get :search
@@ -94,10 +94,10 @@ Rails.application.routes.draw do
         patch :update
       end
     end
-    resources :kb_links, only: [:create, :destroy], controller: :idea_kb_links do
+    resources :kb_links, only: [ :create, :destroy ], controller: :idea_kb_links do
       collection { get :search }
     end
-    resources :versions, only: [:index, :show] do
+    resources :versions, only: [ :index, :show ] do
       member do
         post :restore
       end
@@ -105,7 +105,7 @@ Rails.application.routes.draw do
         get :compare
       end
     end
-    resources :todo_items, only: [:create, :destroy] do
+    resources :todo_items, only: [ :create, :destroy ] do
       member do
         patch :toggle
       end
@@ -113,25 +113,25 @@ Rails.application.routes.draw do
         patch :reorder
       end
     end
-    resources :notes, only: [:create, :destroy]
-    resources :idea_entries, only: [:create, :update, :destroy]
-    resources :licensors, only: [:create]
-    resources :licensor_imports, only: [:new, :create]
-    resources :drawings, only: [:new, :show, :create, :update, :destroy]
-    resources :agent_tokens, only: [:create, :destroy], controller: :idea_agent_tokens
+    resources :notes, only: [ :create, :destroy ]
+    resources :idea_entries, only: [ :create, :update, :destroy ]
+    resources :licensors, only: [ :create ]
+    resources :licensor_imports, only: [ :new, :create ]
+    resources :drawings, only: [ :new, :show, :create, :update, :destroy ]
+    resources :agent_tokens, only: [ :create, :destroy ], controller: :idea_agent_tokens
   end
 
   # Licensing CRM
-  resources :licensors, only: [:show, :update, :destroy] do
-    resources :contacts, only: [:create, :destroy], controller: :licensor_contacts
+  resources :licensors, only: [ :show, :update, :destroy ] do
+    resources :contacts, only: [ :create, :destroy ], controller: :licensor_contacts
   end
-  resources :licensor_imports, only: [:show, :update, :destroy]
+  resources :licensor_imports, only: [ :show, :update, :destroy ]
   namespace :licensing do
     get "crm", to: "crm#index"
   end
 
   # Planning (kanban boards + named lists) and drag-and-drop functionality
-  resources :kanban_boards, only: [:create, :destroy] do
+  resources :kanban_boards, only: [ :create, :destroy ] do
     member do
       patch :move
     end
@@ -150,10 +150,10 @@ Rails.application.routes.draw do
   end
 
   # Uploads for TipTap editor images
-  resources :uploads, only: [:create]
+  resources :uploads, only: [ :create ]
 
   # Think in Images — visual thinking board (idea-scoped or global/KB board)
-  resources :mood_images, only: [:create, :update, :destroy]
+  resources :mood_images, only: [ :create, :update, :destroy ]
 
   # Topology management
   resources :topologies do
@@ -167,118 +167,118 @@ Rails.application.routes.draw do
   end
 
   # Webhook endpoint (API-only, token auth)
-  post 'webhooks/external', to: 'webhooks#external'
+  post "webhooks/external", to: "webhooks#external"
 
   # Settings management
-  get 'settings', to: 'settings#index'
-  patch 'settings', to: 'settings#update_display'
-  get 'settings/features', to: 'settings#features', as: :settings_features
-  patch 'settings/features', to: 'settings#update_features'
-  get 'settings/display', to: 'settings#display', as: :settings_display
-  patch 'settings/display', to: 'settings#update_display'
-  get 'settings/scoring', to: 'settings#scoring'
-  patch 'settings/scoring', to: 'settings#update_scoring'
-  get 'settings/scoring/weights', to: 'settings#get_scoring_weights'
-  get 'settings/email', to: 'settings#email'
-  patch 'settings/notifications', to: 'settings#update_notifications'
-  get 'settings/security', to: 'settings#security'
-  patch 'settings/security', to: 'settings#update_security'
-  post 'settings/security/encrypt-database', to: 'settings#encrypt_database', as: :settings_security_encrypt_database
-  get 'settings/idea-work-tokens', to: 'settings#idea_work_tokens', as: :settings_idea_work_tokens
-  patch 'settings/idea-work-tokens', to: 'settings#update_idea_work_tokens'
-  get 'settings/ai-agents', to: 'settings#local_agent', as: :settings_local_agent
-  patch 'settings/ai-agents', to: 'settings#update_local_agent'
-  post 'settings/ai-agents/run-now', to: 'settings#run_local_agent_now', as: :settings_local_agent_run_now
-  post 'settings/ai-agents/questions', to: 'settings#create_local_agent_question', as: :settings_local_agent_questions
-  post 'settings/ai-agents/recommendations/:id/approve',
-       to: 'settings#approve_local_agent_recommendation',
+  get "settings", to: "settings#index"
+  patch "settings", to: "settings#update_display"
+  get "settings/features", to: "settings#features", as: :settings_features
+  patch "settings/features", to: "settings#update_features"
+  get "settings/display", to: "settings#display", as: :settings_display
+  patch "settings/display", to: "settings#update_display"
+  get "settings/scoring", to: "settings#scoring"
+  patch "settings/scoring", to: "settings#update_scoring"
+  get "settings/scoring/weights", to: "settings#get_scoring_weights"
+  get "settings/email", to: "settings#email"
+  patch "settings/notifications", to: "settings#update_notifications"
+  get "settings/security", to: "settings#security"
+  patch "settings/security", to: "settings#update_security"
+  post "settings/security/encrypt-database", to: "settings#encrypt_database", as: :settings_security_encrypt_database
+  get "settings/idea-work-tokens", to: "settings#idea_work_tokens", as: :settings_idea_work_tokens
+  patch "settings/idea-work-tokens", to: "settings#update_idea_work_tokens"
+  get "settings/ai-agents", to: "settings#local_agent", as: :settings_local_agent
+  patch "settings/ai-agents", to: "settings#update_local_agent"
+  post "settings/ai-agents/run-now", to: "settings#run_local_agent_now", as: :settings_local_agent_run_now
+  post "settings/ai-agents/questions", to: "settings#create_local_agent_question", as: :settings_local_agent_questions
+  post "settings/ai-agents/recommendations/:id/approve",
+       to: "settings#approve_local_agent_recommendation",
        as: :settings_local_agent_recommendation_approve
-  post 'settings/ai-agents/recommendations/:id/dismiss',
-       to: 'settings#dismiss_local_agent_recommendation',
+  post "settings/ai-agents/recommendations/:id/dismiss",
+       to: "settings#dismiss_local_agent_recommendation",
        as: :settings_local_agent_recommendation_dismiss
-  get 'settings/local-agent', to: redirect('/settings/ai-agents')
-  get 'settings/github', to: 'settings#github', as: :settings_github
-  patch 'settings/github', to: 'settings#update_github'
-  get 'settings/topologies', to: 'settings#topologies'
-  patch 'settings/topologies', to: 'settings#update_topologies'
-  get 'settings/lists', to: 'settings#lists'
-  patch 'settings/lists', to: 'settings#update_lists'
-  get 'settings/idea-tabs', to: 'settings#idea_tabs'
-  patch 'settings/idea-tabs', to: 'settings#update_idea_tabs'
-  get 'settings/idea_tabs', to: redirect('/settings/idea-tabs')
-  get 'settings/templates', to: 'settings#templates'
-  get 'settings/templates/new', to: 'templates#new', as: :new_settings_template
-  get 'settings/exports', to: 'settings#exports'
-  post 'settings/exports', to: 'settings#create_export'
-  get 'settings/exports/:id/download', to: 'settings#download_export', as: :settings_export_download
-  delete 'settings/exports/:id', to: 'settings#destroy_export', as: :settings_export_destroy
-  post 'settings/exports/cleanup', to: 'settings#cleanup_exports'
-  patch 'settings/backup', to: 'settings#update_backup'
-  post 'settings/backup/now', to: 'settings#create_backup', as: :settings_backup_now
-  get 'settings/api_keys', to: 'settings#api_keys'
-  post 'settings/api_keys', to: 'settings#create_api_key'
-  delete 'settings/api_keys/:id', to: 'settings#destroy_api_key', as: :settings_api_key_destroy
+  get "settings/local-agent", to: redirect("/settings/ai-agents")
+  get "settings/github", to: "settings#github", as: :settings_github
+  patch "settings/github", to: "settings#update_github"
+  get "settings/topologies", to: "settings#topologies"
+  patch "settings/topologies", to: "settings#update_topologies"
+  get "settings/lists", to: "settings#lists"
+  patch "settings/lists", to: "settings#update_lists"
+  get "settings/idea-tabs", to: "settings#idea_tabs"
+  patch "settings/idea-tabs", to: "settings#update_idea_tabs"
+  get "settings/idea_tabs", to: redirect("/settings/idea-tabs")
+  get "settings/templates", to: "settings#templates"
+  get "settings/templates/new", to: "templates#new", as: :new_settings_template
+  get "settings/exports", to: "settings#exports"
+  post "settings/exports", to: "settings#create_export"
+  get "settings/exports/:id/download", to: "settings#download_export", as: :settings_export_download
+  delete "settings/exports/:id", to: "settings#destroy_export", as: :settings_export_destroy
+  post "settings/exports/cleanup", to: "settings#cleanup_exports"
+  patch "settings/backup", to: "settings#update_backup"
+  post "settings/backup/now", to: "settings#create_backup", as: :settings_backup_now
+  get "settings/api_keys", to: "settings#api_keys"
+  post "settings/api_keys", to: "settings#create_api_key"
+  delete "settings/api_keys/:id", to: "settings#destroy_api_key", as: :settings_api_key_destroy
 
-  get 'ideas/:idea_id/agent-skill.md', to: 'idea_agent_tokens#skill', as: :idea_agent_skill
+  get "ideas/:idea_id/agent-skill.md", to: "idea_agent_tokens#skill", as: :idea_agent_skill
 
   # Typing fingerprint lock
-  get 'typing-lock', to: 'typing_locks#new', as: :typing_lock
-  post 'typing-lock/lock', to: 'typing_locks#lock', as: :lock_typing_lock
-  post 'typing-lock/verify', to: 'typing_locks#verify', as: :verify_typing_lock
-  post 'typing-lock/authenticator', to: 'typing_locks#verify_authenticator', as: :verify_authenticator_typing_lock
-  post 'typing-lock/voice-id', to: 'typing_locks#verify_voice', as: :verify_voice_id_typing_lock
-  post 'typing-lock/voice-id/transcribe', to: 'typing_locks#transcribe_voice', as: :transcribe_voice_id_typing_lock
-  patch 'typing-lock/activity', to: 'typing_locks#activity', as: :typing_lock_activity
-  get 'typing-lock/enroll', to: 'typing_locks#enroll', as: :enroll_typing_lock
-  post 'typing-lock/enroll', to: 'typing_locks#create', as: :typing_lock_enrollment
-  get 'typing-lock/voice-id/enroll', to: 'typing_locks#enroll_voice', as: :enroll_voice_id
-  post 'typing-lock/voice-id/enroll', to: 'typing_locks#create_voice', as: :voice_id_enrollment
+  get "typing-lock", to: "typing_locks#new", as: :typing_lock
+  post "typing-lock/lock", to: "typing_locks#lock", as: :lock_typing_lock
+  post "typing-lock/verify", to: "typing_locks#verify", as: :verify_typing_lock
+  post "typing-lock/authenticator", to: "typing_locks#verify_authenticator", as: :verify_authenticator_typing_lock
+  post "typing-lock/voice-id", to: "typing_locks#verify_voice", as: :verify_voice_id_typing_lock
+  post "typing-lock/voice-id/transcribe", to: "typing_locks#transcribe_voice", as: :transcribe_voice_id_typing_lock
+  patch "typing-lock/activity", to: "typing_locks#activity", as: :typing_lock_activity
+  get "typing-lock/enroll", to: "typing_locks#enroll", as: :enroll_typing_lock
+  post "typing-lock/enroll", to: "typing_locks#create", as: :typing_lock_enrollment
+  get "typing-lock/voice-id/enroll", to: "typing_locks#enroll_voice", as: :enroll_voice_id
+  post "typing-lock/voice-id/enroll", to: "typing_locks#create_voice", as: :voice_id_enrollment
 
   # KB section
-  get 'knowledge-base', to: 'kb#index', as: :kb
-  get 'kb', to: redirect('/knowledge-base')
-  get 'knowledge-base/file', to: 'kb#file', as: :kb_file
-  get 'kb/file', to: redirect('/knowledge-base/file')
-  get 'knowledge-base/raw', to: 'kb#raw', as: :kb_raw
-  get 'knowledge-base/serve', to: 'kb#serve', as: :kb_serve
-  post 'knowledge-base/extract', to: 'kb#extract', as: :kb_extract
-  get 'knowledge-base/edit', to: 'kb#edit', as: :kb_edit
-  patch 'knowledge-base/save', to: 'kb#fs_save', as: :kb_fs_save
-  post 'knowledge-base/media-edits', to: 'kb_media_edits#create', as: :kb_media_edits
-  get 'knowledge-base/media-edits/:id', to: 'kb_media_edits#show', as: :kb_media_edit
-  post 'knowledge-base/fs/create', to: 'kb#fs_create', as: :kb_fs_create
-  post 'knowledge-base/fs/upload', to: 'kb#fs_upload', as: :kb_fs_upload
-  patch 'knowledge-base/fs/rename', to: 'kb#fs_rename', as: :kb_fs_rename
-  patch 'knowledge-base/fs/move', to: 'kb#fs_move', as: :kb_fs_move
-  patch 'knowledge-base/fs/preference', to: 'kb#fs_preference', as: :kb_fs_preference
-  post 'knowledge-base/fs/open', to: 'kb#fs_open', as: :kb_fs_open
-  delete 'knowledge-base/fs', to: 'kb#fs_delete', as: :kb_fs_delete
-  get 'knowledge-base/tree', to: 'kb#tree', as: :kb_tree
-  resources :kb_annotations, path: 'knowledge-base/annotations', only: [:index, :create, :update, :destroy]
-  get   'knowledge-base/projects', to: 'kb#project_show', as: :kb_project
-  patch 'knowledge-base/projects', to: 'kb#project_update'
-  post  'knowledge-base/projects/convert', to: 'kb#project_convert', as: :kb_project_convert
-  post  'knowledge-base/projects/tests', to: 'kb#project_test_create', as: :kb_project_tests
-  patch 'knowledge-base/projects/tests', to: 'kb#project_test_update'
-  delete 'knowledge-base/projects/tests', to: 'kb#project_test_destroy'
-  post  'knowledge-base/projects/runs', to: 'kb#project_run_create', as: :kb_project_runs
-  patch 'knowledge-base/projects/runs', to: 'kb#project_run_update'
-  post 'knowledge-base/jobs', to: 'kb_fs_jobs#create', as: :kb_fs_jobs
-  post   'knowledge-base/downloads/:id/references', to: 'kb_references#create', as: :kb_download_references
-  delete 'knowledge-base/downloads/:id/references', to: 'kb_references#destroy'
-  resources :facts, only: [:create, :destroy]
-  resources :maxims, only: [:create, :destroy]
+  get "knowledge-base", to: "kb#index", as: :kb
+  get "kb", to: redirect("/knowledge-base")
+  get "knowledge-base/file", to: "kb#file", as: :kb_file
+  get "kb/file", to: redirect("/knowledge-base/file")
+  get "knowledge-base/raw", to: "kb#raw", as: :kb_raw
+  get "knowledge-base/serve", to: "kb#serve", as: :kb_serve
+  post "knowledge-base/extract", to: "kb#extract", as: :kb_extract
+  get "knowledge-base/edit", to: "kb#edit", as: :kb_edit
+  patch "knowledge-base/save", to: "kb#fs_save", as: :kb_fs_save
+  post "knowledge-base/media-edits", to: "kb_media_edits#create", as: :kb_media_edits
+  get "knowledge-base/media-edits/:id", to: "kb_media_edits#show", as: :kb_media_edit
+  post "knowledge-base/fs/create", to: "kb#fs_create", as: :kb_fs_create
+  post "knowledge-base/fs/upload", to: "kb#fs_upload", as: :kb_fs_upload
+  patch "knowledge-base/fs/rename", to: "kb#fs_rename", as: :kb_fs_rename
+  patch "knowledge-base/fs/move", to: "kb#fs_move", as: :kb_fs_move
+  patch "knowledge-base/fs/preference", to: "kb#fs_preference", as: :kb_fs_preference
+  post "knowledge-base/fs/open", to: "kb#fs_open", as: :kb_fs_open
+  delete "knowledge-base/fs", to: "kb#fs_delete", as: :kb_fs_delete
+  get "knowledge-base/tree", to: "kb#tree", as: :kb_tree
+  resources :kb_annotations, path: "knowledge-base/annotations", only: [ :index, :create, :update, :destroy ]
+  get   "knowledge-base/projects", to: "kb#project_show", as: :kb_project
+  patch "knowledge-base/projects", to: "kb#project_update"
+  post  "knowledge-base/projects/convert", to: "kb#project_convert", as: :kb_project_convert
+  post  "knowledge-base/projects/tests", to: "kb#project_test_create", as: :kb_project_tests
+  patch "knowledge-base/projects/tests", to: "kb#project_test_update"
+  delete "knowledge-base/projects/tests", to: "kb#project_test_destroy"
+  post  "knowledge-base/projects/runs", to: "kb#project_run_create", as: :kb_project_runs
+  patch "knowledge-base/projects/runs", to: "kb#project_run_update"
+  post "knowledge-base/jobs", to: "kb_fs_jobs#create", as: :kb_fs_jobs
+  post   "knowledge-base/downloads/:id/references", to: "kb_references#create", as: :kb_download_references
+  delete "knowledge-base/downloads/:id/references", to: "kb_references#destroy"
+  resources :facts, only: [ :create, :destroy ]
+  resources :maxims, only: [ :create, :destroy ]
 
   # Settings - KB folders
-  get  'settings/kb/pick-folder', to: 'settings#pick_folder_dialog', as: :settings_kb_pick_folder
-  post 'settings/kb/open-folder', to: 'settings#open_kb_folder',    as: :settings_kb_open_folder
-  post 'settings/kb/mount-drive', to: 'settings#mount_kb_drive',    as: :settings_kb_mount_drive
-  get 'settings/kb', to: 'settings#kb', as: :settings_kb
-  patch 'settings/kb', to: 'settings#update_kb'
-  get 'settings/activity', to: 'settings#activity', as: :settings_activity
+  get  "settings/kb/pick-folder", to: "settings#pick_folder_dialog", as: :settings_kb_pick_folder
+  post "settings/kb/open-folder", to: "settings#open_kb_folder",    as: :settings_kb_open_folder
+  post "settings/kb/mount-drive", to: "settings#mount_kb_drive",    as: :settings_kb_mount_drive
+  get "settings/kb", to: "settings#kb", as: :settings_kb
+  patch "settings/kb", to: "settings#update_kb"
+  get "settings/activity", to: "settings#activity", as: :settings_activity
 
   # Backlog
-  resources :build_items, path: "backlog", except: [:show] do
+  resources :build_items, path: "backlog", except: [ :show ] do
     member do
       patch :toggle
       patch :toggle_checklist_item

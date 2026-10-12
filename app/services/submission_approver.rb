@@ -42,7 +42,7 @@ class SubmissionApprover
         "submission_source" => submission.source,
         "submission_id" => submission.id,
         "submission_reference" => submission.temporary_idea_id,
-        "submission_references" => [submission.temporary_idea_id]
+        "submission_references" => [ submission.temporary_idea_id ]
       }
     )
   end

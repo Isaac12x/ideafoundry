@@ -87,7 +87,7 @@ class KbDownload < ApplicationRecord
 
   def references_folder = "#{self.class.safe_name(title.presence || File.basename(filename.to_s, '.*'))}-references"
 
-  def references_dir = [dir.presence, references_folder].compact.join("/")
+  def references_dir = [ dir.presence, references_folder ].compact.join("/")
 
   # Moves the page into its own "{title}/" folder and queues the chosen
   # references (by URL) into "{title}/{title}-references/". Returns the number queued.
@@ -116,7 +116,7 @@ class KbDownload < ApplicationRecord
   end
 
   def broadcast_references_prompt
-    broadcast_append_later_to [user, "kb_tree"], target: "kb-references-prompts", partial: "kb_references/picker",
+    broadcast_append_later_to [ user, "kb_tree" ], target: "kb-references-prompts", partial: "kb_references/picker",
                               locals: { download: self }
   end
 
