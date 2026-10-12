@@ -18,3 +18,10 @@ Any LLM session making a change in this repo: if "Last updated" above is >30 day
 2. Fix API breaks in `app/javascript/excalidraw_app/index.tsx`; keep the sanitized-env plugin in `esbuild.config.mjs` matching new chunk names.
 3. `yarn build` + `npm run verify:excalidraw-local-only` (no remote connectors may leak) + `bin/ci`.
 4. Bump "Last updated" line (date + version). If `next` is broken, stay on current pin, note why here, still bump date.
+
+## Audio service (not built yet)
+
+- When building it, also make videos dropped straight into the KB trackable: they have no `kb_downloads` row (`url` NOT NULL + http(s) validation; `media_digests.kb_download_id` NOT NULL).
+- Relax `url` or add a local-path column, create rows on discovery, run them through the same `transcript_status` flow.
+- Pick up rows with `transcript_status "awaiting_audio"` (no captions / direct video files).
+- Files: `app/models/kb_download.rb`, `app/models/media_digest.rb` (see comment), `app/jobs/kb_transcript_job.rb`, `app/services/kb/video_transcript.rb`.
