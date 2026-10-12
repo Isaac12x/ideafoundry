@@ -1445,3 +1445,20 @@
 }
 
 /* Activity log styles → activity_panel.css */
+
+/* Keyboard focus for settings controls without their own focus style */
+.kb-folder-input:focus-visible,
+.email-event-select:focus-visible,
+.email-checkbox:focus-visible,
+.email-copy-btn:focus-visible,
+.kb-emoji-choice:focus-visible,
+.kb-icon-tab:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .legend-marker:last-child { animation: none; }
+  .tab-toggle__track,
+  .tab-toggle__thumb { transition: none; }
+}

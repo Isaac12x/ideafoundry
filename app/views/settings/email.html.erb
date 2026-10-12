@@ -21,10 +21,11 @@
 
           <div class="weight-grid">
             <div class="weight-item" style="grid-column: 1 / -1;">
-              <label class="weight-label">Default Recipients</label>
+              <label class="weight-label" for="email_recipients">Default Recipients</label>
               <span class="weight-description">Comma-separated email addresses. Used when sending ideas or lists.</span>
               <div class="weight-input-group">
                 <input type="text"
+                       id="email_recipients"
                        name="email_settings[recipients]"
                        value="<%= @email_settings['recipients'] %>"
                        class="weight-input"
@@ -71,7 +72,7 @@
                     <div class="email-event-header">
                       <strong class="email-event-name"><%= evt.humanize %></strong>
                       <% if allowed.size > 1 %>
-                        <select name="notification_templates[<%= evt %>]" class="email-event-select">
+                        <select name="notification_templates[<%= evt %>]" class="email-event-select" aria-label="Template for <%= evt.humanize %>">
                           <% allowed.each do |tpl| %>
                             <option value="<%= tpl %>" <%= 'selected' if current_template == tpl %>><%= tpl.humanize %></option>
                           <% end %>
@@ -157,7 +158,7 @@
             <p id="sha3-key" class="email-mono-block">
               <%= @sha3_key %>
             </p>
-            <button type="button" onclick="navigator.clipboard.writeText(document.getElementById('sha3-key').textContent.trim()).then(() => { this.textContent = 'Copied!'; setTimeout(() => { this.textContent = 'Copy'; }, 2000); })" class="btn btn-sm email-copy-btn">
+            <button type="button" onclick="navigator.clipboard.writeText(document.getElementById('sha3-key').textContent.trim()).then(() => { this.textContent = 'Copied!'; setTimeout(() => { this.textContent = 'Copy'; }, 2000); })" class="btn btn-sm email-copy-btn" aria-label="Copy SHA3 key">
               Copy
             </button>
           </div>

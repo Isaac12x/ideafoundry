@@ -1,6 +1,6 @@
 class IdeasController < ApplicationController
   before_action :set_user
-  before_action :set_idea, only: [:show, :edit, :update, :destroy, :send_email, :approve_pending_email, :discard_pending_email, :enrich, :enrichment_status, :archive, :restore, :add_to_list, :create_version, :make_primary]
+  before_action :set_idea, only: [:show, :edit, :update, :destroy, :send_email, :approve_pending_email, :discard_pending_email, :enrich, :enrichment_status, :archive, :restore, :add_to_list, :create_version, :make_primary, :toggle_licensing]
   before_action :check_cool_off_period, only: [:edit, :update]
 
   def index
@@ -231,6 +231,19 @@ class IdeasController < ApplicationController
     end
   end
 
+  # POST /ideas/:id/toggle_licensing
+  # Flips the licensing flag straight from the idea page, so tracking an idea
+  # for licensing does not mean a trip through the edit form.
+  def toggle_licensing
+    @idea.update!(for_licensing: !@idea.for_licensing?)
+    notice = @idea.for_licensing? ? "Tracking this idea for licensing." : "No longer tracking this idea for licensing."
+
+    respond_to do |format|
+      format.html { redirect_back fallback_location: idea_path(@idea), notice: notice }
+      format.json { render json: { success: true, for_licensing: @idea.for_licensing? } }
+    end
+  end
+
   def add_to_list
     list = @user.lists.find(params[:list_id])
     result = add_idea_to_list(@idea, list)
@@ -325,8 +338,11 @@ class IdeasController < ApplicationController
   end
 
   def set_idea
-    # Use with_discarded to find ideas even if they're archived
-    @idea = @user.ideas.find_by(id: params[:id])
+    scope = @user.ideas
+    if action_name.in?(%w[show edit update])
+      scope = scope.includes(attachments_attachments: :blob)
+    end
+    @idea = scope.find_by(id: params[:id])
     unless @idea
       redirect_to ideas_path, alert: "Idea not found."
     end

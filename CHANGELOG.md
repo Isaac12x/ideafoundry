@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Local agent distills YouTube transcripts into hidden, searchable fact digests (`MediaDigest`, tools `write_media_digest` / `search_media_digests`; work derived from DB state so it survives agent downtime). First iteration uses captions only (YouTube and other sites; videos without English captions or direct video files wait as `awaiting_audio`); audio STT + frame vision (`av_v1`) will supersede it.
+- Knowledge-base web page downloads (Wikipedia, Grokipedia, …) with citations pop a reference picker dialog as soon as the page is saved; picking any moves the page into its own `{title}/` folder with the sources in `{title}/{title}-references/`.
+- Knowledge-base **Basics** tab with an interactive periodic table: series/trend heatmaps, live temperature state-of-matter, discovery timeline with discoverers, electron shells/orbitals/valence, isotopes, oxidation states, nuclear-relevance notes, wide/compact layouts, keyboard navigation, and a print-ready reference sheet.
+- Periodic table expanded into a reference and design bench: 40 measurable properties (radii, electronegativity scales, full ionisation series, thermal, mechanical, electrical, abundance, supply risk, price) with plain-language trend notes; classification lenses for orbital blocks, metallicity, crystal structure, magnetism, Goldschmidt class, biological role and discovery method; a tile-anatomy legend; an 8-tab element dossier (term symbols, Shannon ionic radii, isotopes with exact masses and decay modes, predicted and catalogued compounds, geolocated discovery story, producers/reserves/recycling); and a selection tray feeding nine instruments — compound builder with charge balancing and IUPAC names, formula/molar-mass/solution calculator, exact equation balancer with limiting-reagent stoichiometry, alloy designer (wt%↔at%, VEC, δ, ΔSmix, Hume-Rothery), side-by-side comparison, periodicity and property scatter plots, a 3,383-nuclide Segrè chart with binding-energy curve, a world discovery map, and a guide/glossary.
+
 - Project-site and README development timelines that distinguish the working product from the longer-term platform direction, plus a macOS LaunchControl companion recommendation for easier LaunchAgent monitoring and recovery.
 - Edit-button-gated knowledge-base studios for images, video, audio, PDFs, HTML, and opaque media, with canvas/timeline/waveform/page tools, asynchronous local rendering, atomic saves, and checksum-addressed revision history.
 - Knowledge-base drag-and-drop copies external files into the selected local folder, with collision-safe filenames and immediate Turbo tree updates.
@@ -71,6 +76,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Periodic table data: standard atomic weights (Li 6.94, not 7), corrected discovery history (e.g. fluorine — Moissan 1886; aluminium — Ørsted 1825; promethium — Marinsky, Glendenin & Coryell; radon — Halle), unbound-resonance widths no longer shown as half-lives, and full-precision isotope abundances.
+- The backlog side-door on the lock screen now works in the packaged app: it was gated on `!Rails.env.production?` while `bin/start` defaults to production, so it never appeared. `BACKLOG_ENABLED` is the only gate now.
+- The lock, fingerprint-setup, authenticator, and score screens fit one screenful with scrolling disabled, and no longer repeat the wordmark above the heading.
+- Typing-challenge metrics update in real time: the clock ticks between keystrokes, and accuracy counts every character committed, so a corrected typo still costs.
+
+- Solid Queue pollers no longer crash-loop with "database is locked": SQLite databases now wait for write locks with Rails' GVL-releasing busy handler (`timeout`) instead of the `busy_timeout` pragma, which blocked every other thread in the process while it waited.
 - Concurrent `bin/dev` instances now scan from the preferred Rails port and use the next free TCP port instead of failing on port 3000 conflicts.
 - Fresh installations now start with no Kanban boards, lists, or ideas, and empty Ideas/Planning page visits no longer create a board.
 - Removed the globally mounted Activity drawer that exposed unstyled Activity, close, and reload controls above the notes bar.

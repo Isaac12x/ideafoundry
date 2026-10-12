@@ -107,7 +107,7 @@
 .idea-version-chip.is-current {
   background: var(--accent);
   border-color: var(--accent);
-  color: #fff;
+  color: var(--text-on-accent);
 }
 
 .idea-version-chip.is-primary {
@@ -186,7 +186,7 @@
 /* Score card — primary metric */
 .metric-card-score {
   background: linear-gradient(135deg, var(--bg-surface) 0%, rgba(212, 149, 58, 0.05) 100%);
-  border-color: rgba(212, 149, 58, 0.2);
+  border-color: var(--accent-emphasis);
   text-align: center;
   justify-content: center;
   align-items: center;
@@ -1184,3 +1184,288 @@
     flex-direction: column;
   }
 }
+
+/* ============================================
+   Media manager — attachment cards on the idea
+   detail page. Each card is a specimen plate:
+   the document's own first page, not an icon
+   standing in for it.
+   ============================================ */
+
+.media-manager {
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+}
+
+.media-manager__section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.media-manager__empty {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-style: italic;
+}
+
+.media-manager__status {
+  margin: 0.5rem 0 0;
+  min-height: 1em;
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+}
+
+.attachment-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  cursor: pointer;
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.2s ease, box-shadow 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Hairline of accent along the top edge instead of a generic lift. */
+.attachment-card::after {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: 2px;
+  background: var(--accent);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.attachment-card:hover {
+  border-color: var(--border-emphasis);
+  box-shadow: var(--shadow-md);
+}
+
+.attachment-card:has(.attachment-card__open:focus-visible) {
+  border-color: var(--border-emphasis);
+  box-shadow: var(--shadow-md);
+}
+
+.attachment-card__open {
+  display: block;
+  cursor: pointer;
+  color: inherit;
+}
+
+.attachment-card__open:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.attachment-card:hover::after,
+.attachment-card:has(.attachment-card__open:focus-visible)::after {
+  transform: scaleX(1);
+}
+
+/* Class comes from the shared attachment-reorder controller. */
+.attachment-card.current-attachments__item--dragging {
+  opacity: 0.4;
+}
+
+.attachment-card__figure {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  background: var(--bg-overlay);
+  overflow: hidden;
+}
+
+.attachment-card__thumb {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+  /* Documents read from the top down — show their masthead, not their middle. */
+  object-position: center top;
+  transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.attachment-card:hover .attachment-card__thumb {
+  transform: scale(1.03);
+}
+
+/* Documents nothing can rasterise get their opening lines set as a tiny page. */
+.attachment-card__peek {
+  position: relative;
+  height: 100%;
+  padding: 12px 13px 0;
+  background: #f4f1ea;
+  color: #2c2a27;
+  font-family: var(--font-display);
+  font-size: 0.52rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow: hidden;
+}
+
+/* Text runs off the bottom of the page rather than being cut mid-line. */
+.attachment-card__peek::after {
+  content: '';
+  position: absolute;
+  inset: 45% 0 0;
+  background: linear-gradient(to bottom, rgba(244, 241, 234, 0) 0%, #f4f1ea 92%);
+}
+
+/* Nothing to show: the extension itself becomes the plate. */
+.attachment-card__blank {
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+  padding: 0 12px 10px;
+  background:
+    linear-gradient(160deg, var(--bg-overlay) 0%, var(--bg-elevated) 100%);
+  color: var(--text-muted);
+}
+
+.attachment-card__blank-ext {
+  font-family: var(--font-display);
+  font-size: 2.4rem;
+  font-style: italic;
+  line-height: 0.85;
+  letter-spacing: -0.02em;
+  text-transform: lowercase;
+}
+
+.attachment-card__ext {
+  position: absolute;
+  left: 8px;
+  bottom: 8px;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  background: rgba(12, 12, 15, 0.78);
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+/* Destructive action stays out of the way until the card is engaged. */
+.attachment-card__remove {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid var(--border-emphasis);
+  border-radius: 50%;
+  background: rgba(12, 12, 15, 0.82);
+  color: var(--text-secondary);
+  cursor: pointer;
+  opacity: 0;
+  transform: scale(0.85);
+  transition: opacity 0.18s ease, transform 0.18s cubic-bezier(0.22, 1, 0.36, 1),
+              background-color 0.18s ease, color 0.18s ease;
+}
+
+.attachment-card:hover .attachment-card__remove,
+.attachment-card:focus-within .attachment-card__remove,
+.attachment-card__remove:focus-visible {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.attachment-card__remove:hover,
+.attachment-card__remove:focus-visible {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: #1a0d0d;
+}
+
+.attachment-card__meta {
+  padding: 10px 12px 12px;
+}
+
+.attachment-card__name {
+  margin: 0 0 2px;
+  color: var(--text-primary);
+  font-size: 0.78rem;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.attachment-card__sub {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.68rem;
+}
+
+.attachment-card__ocr {
+  color: var(--accent);
+  font-style: italic;
+}
+
+/* Inline dropzone: quiet when the grid is full, obvious when it is empty. */
+.dropzone--inline {
+  padding: 1rem;
+  min-height: 0;
+}
+
+.dropzone--inline .dropzone__label {
+  flex-direction: row;
+  gap: 10px;
+  font-size: 0.8rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .attachment-card,
+  .attachment-card::after,
+  .attachment-card__thumb,
+  .attachment-card__remove {
+    transition: none;
+  }
+  .attachment-card:hover .attachment-card__thumb { transform: none; }
+}
+
+/* Knowledge: linked KB entries + inline link combobox */
+.idea-kb-links { margin-top: 1.5rem; }
+.idea-kb-links__list { list-style: none; margin: 0 0 0.75rem; padding: 0; display: grid; gap: 0.4rem; }
+.idea-kb-links__item { display: flex; gap: 0.6rem; align-items: flex-start; padding: 0.5rem 0.65rem; border: 1px solid var(--border); border-radius: 8px; }
+.idea-kb-links__item.is-missing { opacity: 0.55; }
+.idea-kb-links__body { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.idea-kb-links__name { font-weight: 600; }
+.idea-kb-links__meta, .idea-kb-links__goal, .idea-kb-links__empty { color: var(--text-muted); font-size: 0.78rem; }
+.idea-kb-links__form { margin: 0; }
+.idea-kb-links__combo { position: relative; }
+.idea-kb-links__input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px 10px;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  background: var(--bg-input);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 13.5px;
+}
+.idea-kb-links__input:focus { outline: none; border-color: var(--accent); }
+.idea-kb-links__glyph { display: inline-flex; padding-top: 3px; color: var(--text-muted); }
+.idea-kb-links__glyph--project { color: var(--accent); }
+.idea-kb-links__private { display: inline-flex; align-items: center; gap: 3px; }
+.idea-kb-links__options { position: absolute; z-index: 20; left: 0; right: 0; margin: 2px 0 0; padding: 4px; list-style: none; max-height: 260px; overflow: auto; background: var(--bg-elevated); border: 1px solid var(--border-default); border-radius: var(--radius-sm); box-shadow: var(--shadow-md); }
+.idea-kb-links__option { padding: 6px 8px; border-radius: 6px; cursor: pointer; }
+.idea-kb-links__option small { color: var(--text-muted); }
+.idea-kb-links__option:hover,
+.idea-kb-links__option[aria-selected="true"] { background: var(--accent-muted); }
+.idea-kb-links__option.is-empty { cursor: default; color: var(--text-muted); }

@@ -38,8 +38,8 @@ class IdeasControllerTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_select "body[data-controller~=?]", "shortcuts"
-    assert_select "body[data-controller~=?]", "activity-panel", count: 0
     assert_select ".activity-panel", count: 0
+    assert_select ".activity-feed-wrap", count: 0
     assert_select "body[data-shortcuts-ideas-url-value=?]", ideas_path
     assert_select ".kb-notes-tab-strip .shortcuts-toggle[title=?]", "Keyboard shortcuts", text: "⌘"
     assert_select ".shortcuts-panel[data-shortcuts-target=?]", "panel"
@@ -378,9 +378,13 @@ class IdeasControllerTest < ActionDispatch::IntegrationTest
     get idea_url(@idea)
 
     assert_response :success
-    assert_select ".media-section__group--images img.attachment-thumbnail", 1
-    assert_select ".media-section__group--documents .attachment-file", 1
-    assert_select ".media-section__group--documents .attachment-name", text: "brief.pdf"
+    assert_select "[data-attachment-list=?] [data-attachment-kind=?]", "image", "image", 1
+    assert_select "[data-attachment-list=?] [data-attachment-kind=?]", "document", "document", 1
+    assert_select "[data-attachment-list=?] .attachment-card__name", "document", text: "brief.pdf"
+    # Media is managed in place: upload, delete and preview without leaving the page.
+    assert_select "[data-dropzone-upload-url-value*=?]", "variant=card"
+    assert_select ".attachment-card__remove", 2
+    assert_select "dialog.attachment-viewer-modal", 1
   end
 
   test "should update idea" do

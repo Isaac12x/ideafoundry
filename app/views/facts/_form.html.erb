@@ -8,8 +8,9 @@
       <%= f.text_area :body,
             placeholder: "e.g. Every year millions of untreated leather end up in landfills, making leather a commodity not a luxury item.",
             class: "kb-fact-textarea",
-            rows: 3,
+            rows: 8,
             required: true,
+            "aria-label": "New fact",
             data: { action: "keydown->fact-form#submitOnEnter" } %>
       <div class="kb-fact-actions">
         <%= f.submit "Add fact", class: "btn btn-primary btn-sm" %>

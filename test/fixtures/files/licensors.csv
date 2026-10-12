@@ -1,0 +1,6 @@
+Company Name,Contact,Email,Stage,Notes
+Acme Publishing,Dana Reed,dana@acme.test,Contacted,Warm intro from Kim
+Borealis Media,,hello@borealis.test,Negotiating,
+Cobalt Games,Sam Fox,not-an-email,,Met at expo
+,Nobody,ghost@nowhere.test,Identified,Row with no company
+Acme Publishing,Dana Reed,dana@acme.test,Contacted,Duplicate of row 1

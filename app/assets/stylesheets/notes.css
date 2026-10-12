@@ -127,6 +127,7 @@
   color: var(--text-primary);
   line-height: 1.55;
   font-weight: 400;
+  overflow-wrap: anywhere;
 }
 
 .note-body p {
@@ -169,6 +170,7 @@
   transition: opacity 0.15s;
 }
 
+.note-card:focus-within .note-actions,
 .note-card:hover .note-actions {
   opacity: 1;
 }

@@ -8,8 +8,9 @@ export default class extends Controller {
   }
 
   sync() {
+    if (!this.hasInputTarget) return
     const value = this.inputTarget.value
-    this.outputTarget.textContent = value + "%"
+    if (this.hasOutputTarget) this.outputTarget.textContent = value + "%"
     document.body.style.setProperty("--contrast", value + "%")
   }
 }

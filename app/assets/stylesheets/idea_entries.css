@@ -22,8 +22,8 @@
 .competitor-segmented {
   align-self: center;
   display: inline-flex;
-  background: var(--bg-elevated, rgba(255,255,255,0.04));
-  border: 1px solid var(--border-default, rgba(255,255,255,0.1));
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-default);
   border-radius: 999px;
   padding: 3px;
   gap: 2px;
@@ -33,7 +33,7 @@
   appearance: none;
   background: transparent;
   border: none;
-  color: var(--text-secondary, rgba(255,255,255,0.7));
+  color: var(--text-secondary);
   font-family: inherit;
   font-size: 0.82rem;
   font-weight: 500;
@@ -48,12 +48,12 @@
 }
 
 .competitor-segmented__option:hover:not(.is-active) {
-  color: var(--text-primary, #fff);
+  color: var(--text-primary);
 }
 
 .competitor-segmented__option.is-active {
-  background: var(--accent, #DAA520);
-  color: var(--bg-base, #0a0a0a);
+  background: var(--accent);
+  color: var(--bg-base);
 }
 
 .competitor-segmented__count {
@@ -78,8 +78,8 @@
 }
 
 .idea-entries-add-section {
-  background: var(--surface-muted, rgba(255,255,255,0.03));
-  border: 1px solid var(--border, rgba(255,255,255,0.08));
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
   border-radius: 8px;
   padding: 0.75rem 0.9rem;
 }
@@ -107,11 +107,11 @@
 }
 
 .idea-entry-input {
-  background: var(--input-bg, rgba(0,0,0,0.25));
-  border: 1px solid var(--border, rgba(255,255,255,0.1));
+  background: var(--bg-input);
+  border: 1px solid var(--border-default);
   border-radius: 6px;
   padding: 0.45rem 0.6rem;
-  color: var(--text, #fff);
+  color: var(--text-primary);
   font-size: 0.85rem;
   width: 100%;
   box-sizing: border-box;
@@ -120,8 +120,8 @@
 
 .idea-entry-input:focus {
   outline: none;
-  border-color: var(--accent, #DAA520);
-  box-shadow: 0 0 0 2px rgba(218, 165, 32, 0.15);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-emphasis);
 }
 
 .idea-entry-textarea {
@@ -136,10 +136,10 @@
 }
 
 .idea-entry-errors {
-  border: 1px solid var(--danger, #f87171);
+  border: 1px solid var(--danger);
   border-radius: 6px;
-  background: var(--danger-bg, rgba(248, 113, 113, 0.1));
-  color: var(--danger, #f87171);
+  background: var(--danger-bg);
+  color: var(--danger);
   font-size: 0.78rem;
   line-height: 1.35;
   padding: 0.45rem 0.55rem;
@@ -156,15 +156,15 @@
   justify-content: space-between;
   align-items: flex-start;
   gap: 0.75rem;
-  background: var(--surface, rgba(255,255,255,0.04));
-  border: 1px solid var(--border, rgba(255,255,255,0.08));
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
   border-radius: 8px;
   padding: 0.7rem 0.9rem;
   transition: border-color 0.15s;
 }
 
 .idea-entry-card:hover {
-  border-color: var(--border-strong, rgba(255,255,255,0.16));
+  border-color: var(--border-emphasis);
 }
 
 .idea-entry-main {
@@ -182,7 +182,7 @@
 .idea-entry-name {
   font-weight: 600;
   font-size: 0.92rem;
-  color: var(--text, #fff);
+  color: var(--text-primary);
 }
 
 .idea-entry-link {
@@ -190,21 +190,21 @@
   align-items: center;
   gap: 0.2rem;
   font-size: 0.72rem;
-  color: var(--accent, #DAA520);
+  color: var(--accent);
   text-decoration: none;
   padding: 0.12rem 0.45rem;
-  border: 1px solid rgba(218, 165, 32, 0.3);
+  border: 1px solid var(--accent-emphasis);
   border-radius: 999px;
 }
 
 .idea-entry-link:hover {
-  background: rgba(218, 165, 32, 0.1);
+  background: var(--accent-muted);
 }
 
 .idea-entry-description {
   margin-top: 0.35rem;
   font-size: 0.83rem;
-  color: var(--text-secondary, rgba(255,255,255,0.7));
+  color: var(--text-secondary);
   line-height: 1.4;
 }
 
@@ -219,7 +219,7 @@
 .idea-entry-delete-btn {
   background: transparent;
   border: none;
-  color: var(--text-muted, rgba(255,255,255,0.5));
+  color: var(--text-muted);
   cursor: pointer;
   padding: 0.25rem;
   border-radius: 4px;
@@ -229,14 +229,14 @@
 }
 
 .idea-entry-delete-btn:hover {
-  color: var(--danger, #e06c75);
-  background: rgba(224, 108, 117, 0.1);
+  color: var(--danger);
+  background: var(--danger-bg);
 }
 
 .idea-entries-empty {
   text-align: center;
   padding: 1.5rem 1rem;
-  color: var(--text-muted, rgba(255,255,255,0.5));
+  color: var(--text-muted);
   font-size: 0.85rem;
 }
 
@@ -245,7 +245,7 @@
 }
 
 .idea-card-entry-panel {
-  border-top: 1px solid var(--border-subtle, rgba(255,255,255,0.08));
+  border-top: 1px solid var(--border-subtle);
   padding: 0 1.25rem 1rem;
 }
 
@@ -255,7 +255,7 @@
 }
 
 .idea-entry-summary {
-  border-bottom: 1px solid var(--border-subtle, rgba(255,255,255,0.08));
+  border-bottom: 1px solid var(--border-subtle);
 }
 
 .idea-entry-summary:last-child {
@@ -268,7 +268,7 @@
 
 .idea-entry-summary__summary {
   align-items: center;
-  color: var(--text-secondary, rgba(255,255,255,0.7));
+  color: var(--text-secondary);
   cursor: pointer;
   display: flex;
   font-size: 0.76rem;
@@ -284,7 +284,7 @@
 }
 
 .idea-entry-summary__summary::after {
-  color: var(--text-muted, rgba(255,255,255,0.5));
+  color: var(--text-muted);
   content: "+";
   font-size: 0.9rem;
   line-height: 1;
@@ -296,10 +296,10 @@
 
 .idea-entry-summary__count {
   align-items: center;
-  background: var(--bg-input, rgba(0,0,0,0.25));
-  border: 1px solid var(--border-default, rgba(255,255,255,0.1));
+  background: var(--bg-input);
+  border: 1px solid var(--border-default);
   border-radius: 999px;
-  color: var(--text-primary, #fff);
+  color: var(--text-primary);
   display: inline-flex;
   font-size: 0.7rem;
   height: 1.3rem;
@@ -316,9 +316,9 @@
 }
 
 .idea-entry-summary__chip {
-  border: 1px solid var(--border-default, rgba(255,255,255,0.1));
+  border: 1px solid var(--border-default);
   border-radius: 999px;
-  color: var(--text-secondary, rgba(255,255,255,0.7));
+  color: var(--text-secondary);
   display: inline-flex;
   font-size: 0.74rem;
   line-height: 1.2;
@@ -328,12 +328,12 @@
 }
 
 a.idea-entry-summary__chip:hover {
-  border-color: var(--accent, #DAA520);
-  color: var(--accent, #DAA520);
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 .idea-entry-summary__empty {
-  color: var(--text-muted, rgba(255,255,255,0.5));
+  color: var(--text-muted);
   font-size: 0.78rem;
   margin: 0.5rem 0;
 }
@@ -352,7 +352,7 @@ a.idea-entry-summary__chip:hover {
 }
 
 .idea-entry-summary__label {
-  color: var(--text-muted, rgba(255,255,255,0.45));
+  color: var(--text-muted);
   font-size: 0.68rem;
   font-weight: 700;
   letter-spacing: 0.06em;
@@ -360,7 +360,7 @@ a.idea-entry-summary__chip:hover {
 }
 
 .idea-card-structured-entries {
-  border-top: 1px solid var(--border-subtle, rgba(255,255,255,0.08));
+  border-top: 1px solid var(--border-subtle);
   display: flex;
   flex-direction: column;
   gap: 0.55rem;

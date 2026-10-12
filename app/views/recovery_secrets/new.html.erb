@@ -22,10 +22,11 @@
             id: "recovery_passphrase",
             class: "form-control recovery-secret-input",
             autocomplete: "current-password",
-            autofocus: true %>
+            autofocus: true,
+            aria: { describedby: (@recovery_secret_error.present? ? "recovery_passphrase_error" : nil), invalid: (@recovery_secret_error.present? ? "true" : nil) } %>
 
       <% if @recovery_secret_error.present? %>
-        <p class="recovery-secret-error"><%= @recovery_secret_error %></p>
+        <p id="recovery_passphrase_error" class="recovery-secret-error" role="alert"><%= @recovery_secret_error %></p>
       <% end %>
 
       <div class="typing-lock-actions recovery-secret-actions">

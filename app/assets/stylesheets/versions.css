@@ -326,13 +326,13 @@
 }
 
 .vh-delta.up {
-  background: rgba(52, 211, 153, 0.1);
+  background: var(--success-bg);
   color: var(--success);
   border: 1px solid rgba(52, 211, 153, 0.2);
 }
 
 .vh-delta.down {
-  background: rgba(248, 113, 113, 0.1);
+  background: var(--danger-bg);
   color: var(--danger);
   border: 1px solid rgba(248, 113, 113, 0.2);
 }
@@ -729,4 +729,7 @@
   .diff-divider { height: 2px; width: 100%; }
   .version-actions, .compare-actions { flex-direction: column; }
   .scoring-delta-summary { grid-template-columns: 1fr; }
+  .vh-diff-row > * { min-width: 0; overflow-wrap: anywhere; }
+  .field-name { width: auto; }
+  .snapshot-table, .diff-table { display: block; overflow-x: auto; }
 }

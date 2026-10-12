@@ -107,7 +107,10 @@ export default class extends Controller {
     this.inputTarget.placeholder = options.placeholder || ""
     this.inputTarget.required = Boolean(options.required)
 
-    if (!this.element.open) this.element.showModal()
+    if (!this.element.open) {
+      this._trigger = globalThis.document?.activeElement
+      this.element.showModal()
+    }
     requestAnimationFrame(() => {
       const focusTarget = prompt ? this.inputTarget : this.confirmButtonTarget
       focusTarget.focus()
@@ -123,6 +126,7 @@ export default class extends Controller {
     this.inputTarget.type = "hidden"
     if (close && this.element.open) this.element.close()
     resolve(value)
+    if (this._queue.length === 0 && this._trigger?.isConnected) this._trigger.focus?.({ preventScroll: true })
     queueMicrotask(() => this._presentNext())
   }
 

@@ -1,4 +1,5 @@
-<% idea_licensing_active = feature_enabled?(:licensing) && @idea.for_licensing? %>
+<% licensing_feature = feature_enabled?(:licensing) %>
+<% idea_licensing_active = licensing_feature && @idea.for_licensing? %>
 <% if params[:idea_draft_saved].present? %>
   <div data-controller="idea-draft-persist"
        data-idea-draft-persist-clear-on-connect-value="true"
@@ -41,9 +42,19 @@
             </button>
             <div class="atl-dropdown" data-add-to-list-target="dropdown" hidden></div>
           </div>
-          <% if idea_licensing_active %>
-            <%= link_to licensing_crm_path, class: "idea-actions-menu__item" do %>
+          <% if licensing_feature %>
+            <%= button_to toggle_licensing_idea_path(@idea), method: :post, class: "idea-actions-menu__item", form: { class: "idea-actions-menu__item-wrapper" } do %>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="5"/><path d="M8.5 12.5L7 22l5-3 5 3-1.5-9.5"/></svg>
+              <%= idea_licensing_active ? "Stop tracking for licensing" : "Track for licensing" %>
+            <% end %>
+          <% end %>
+          <% if idea_licensing_active %>
+            <%= link_to new_idea_licensor_import_path(@idea), class: "idea-actions-menu__item" do %>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+              Import licensors
+            <% end %>
+            <%= link_to licensing_crm_path, class: "idea-actions-menu__item" do %>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><rect x="7" y="12" width="3" height="6"/><rect x="12" y="8" width="3" height="10"/><rect x="17" y="4" width="3" height="14"/></svg>
               Licensing CRM
             <% end %>
           <% end %>
@@ -231,27 +242,27 @@
     <% general_enabled = @user.idea_tab_enabled?('metadata') || tool_enabled || comp_enabled || pot_enabled %>
     <div data-controller="tabs" data-tabs-default-tab-value="description">
       <div class="tabs-nav" data-controller="drag-scroll">
-        <button data-tabs-target="tab" data-tab-name="description" data-action="click->tabs#switch" class="tab-button active">
+        <button type="button" data-tabs-target="tab" data-tab-name="description" data-action="click->tabs#switch" class="tab-button active">
           Description
         </button>
         <% if idea_licensing_active %>
           <% licensor_count = @idea.licensors.count %>
-          <button data-tabs-target="tab" data-tab-name="licensors" data-action="click->tabs#switch" class="tab-button">
+          <button type="button" data-tabs-target="tab" data-tab-name="licensors" data-action="click->tabs#switch" class="tab-button">
             <span id="licensors_tab_label_<%= @idea.id %>">Potential Licensors<% if licensor_count > 0 %> (<%= licensor_count %>)<% end %></span>
           </button>
         <% end %>
         <% if @user.idea_tab_enabled?('scores') %>
-          <button data-tabs-target="tab" data-tab-name="scores" data-action="click->tabs#switch" class="tab-button">
+          <button type="button" data-tabs-target="tab" data-tab-name="scores" data-action="click->tabs#switch" class="tab-button">
             Scores
           </button>
         <% end %>
         <% if media_enabled || drawing_enabled %>
-          <button data-tabs-target="tab" data-tab-name="media" data-action="click->tabs#switch" class="tab-button">
+          <button type="button" data-tabs-target="tab" data-tab-name="media" data-action="click->tabs#switch" class="tab-button">
             Media
           </button>
         <% end %>
         <% if general_enabled %>
-          <button data-tabs-target="tab" data-tab-name="general" data-action="click->tabs#switch" class="tab-button">
+          <button type="button" data-tabs-target="tab" data-tab-name="general" data-action="click->tabs#switch" class="tab-button">
             General
           </button>
         <% end %>
@@ -259,29 +270,29 @@
           <% @idea.effective_tab_definitions.sort_by { |t| t['position'].to_i }.each do |tab| %>
             <% tab_fields = @idea.effective_fields_by_tab[tab['name']] || [] %>
             <% next if tab_fields.empty? %>
-            <button data-tabs-target="tab" data-tab-name="custom-<%= tab['name'] %>" data-action="click->tabs#switch" class="tab-button">
+            <button type="button" data-tabs-target="tab" data-tab-name="custom-<%= tab['name'] %>" data-action="click->tabs#switch" class="tab-button">
               <%= tab['label'] || tab['name'].humanize %>
             </button>
           <% end %>
         <% end %>
         <% if @user.idea_tab_enabled?('notes') && !idea_licensing_active %>
           <% note_count = @idea.notes.count %>
-          <button data-tabs-target="tab" data-tab-name="notes" data-action="click->tabs#switch" class="tab-button">
+          <button type="button" data-tabs-target="tab" data-tab-name="notes" data-action="click->tabs#switch" class="tab-button">
             <span id="notes_tab_label_<%= @idea.id %>">Notes<% if note_count > 0 %> (<%= note_count %>)<% end %></span>
           </button>
         <% end %>
         <% if @user.idea_tab_enabled?('todo') %>
           <% todo_count = @idea.todo_items.count %>
-          <button data-tabs-target="tab" data-tab-name="todo" data-action="click->tabs#switch" class="tab-button">
+          <button type="button" data-tabs-target="tab" data-tab-name="todo" data-action="click->tabs#switch" class="tab-button">
             <span id="todo_tab_label_<%= @idea.id %>">To-Do<% if todo_count > 0 %> (<%= todo_count %>)<% end %></span>
           </button>
         <% end %>
         <% if @user.idea_tab_enabled?('history') %>
-          <button data-tabs-target="tab" data-tab-name="history" data-action="click->tabs#switch" class="tab-button">
+          <button type="button" data-tabs-target="tab" data-tab-name="history" data-action="click->tabs#switch" class="tab-button">
             History<% if @idea.versions.any? %> (<%= @idea.versions.count %>)<% end %>
           </button>
         <% end %>
-        <button data-tabs-target="tab" data-tab-name="enrichment" data-action="click->tabs#switch" class="tab-button">
+        <button type="button" data-tabs-target="tab" data-tab-name="enrichment" data-action="click->tabs#switch" class="tab-button">
           Enrichment<% if @idea.enriched? %> &check;<% end %>
         </button>
       </div>
@@ -295,10 +306,11 @@
             </div>
           <% else %>
             <div class="empty-state-small">
-              <p>No description yet.</p>
+              <p>No description yet. A sentence or two now saves re-deriving it later.</p>
               <%= link_to "Add Description", edit_idea_path(@idea), class: "btn btn-primary btn-sm" %>
             </div>
           <% end %>
+          <%= render "ideas/kb_links", idea: @idea %>
         </div>
 
         <!-- Potential Licensors Tab -->
@@ -406,78 +418,85 @@
               <% image_attachments = @idea.image_attachments %>
               <% document_attachments = @idea.document_attachments %>
               <%= render "ideas/knowledge_sidebar", idea: @idea %>
-              <% if image_attachments.any? || document_attachments.any? || attachment_drawings.any? %>
-                <% if image_attachments.any? || attachment_drawings.any? %>
-                  <div class="media-section__group media-section__group--images">
+
+              <div class="media-manager"
+                   data-controller="attachment-reorder attachment-viewer"
+                   data-attachment-reorder-url-value="<%= reorder_idea_attachments_path(@idea) %>"
+                   data-action="dropzone:uploaded->attachment-reorder#appendItems attachment:removed->attachment-reorder#sync attachment:updated->attachment-reorder#sync">
+
+                <section class="media-manager__section">
+                  <div class="media-section__group-header">
+                    <h4>Images</h4>
+                    <span data-attachment-count="image"><%= image_attachments.size %></span>
+                  </div>
+                  <div class="attachments-grid" data-attachment-list="image">
+                    <% image_attachments.each do |attachment| %>
+                      <%= render "idea_attachments/card", attachment: attachment, idea: @idea %>
+                    <% end %>
+                  </div>
+                  <p class="media-manager__empty" data-attachment-empty="image" <%= "hidden" if image_attachments.any? %>>No images yet. Add some from Edit idea.</p>
+                </section>
+
+                <section class="media-manager__section">
+                  <div class="media-section__group-header">
+                    <h4>Documents</h4>
+                    <span data-attachment-count="document"><%= document_attachments.size %></span>
+                  </div>
+                  <div class="attachments-grid" data-attachment-list="document">
+                    <% document_attachments.each do |attachment| %>
+                      <%= render "idea_attachments/card", attachment: attachment, idea: @idea %>
+                    <% end %>
+                  </div>
+                  <p class="media-manager__empty" data-attachment-empty="document" <%= "hidden" if document_attachments.any? %>>No documents yet. Add PDFs or files from Edit idea.</p>
+                </section>
+
+                <% if attachment_drawings.any? %>
+                  <section class="media-manager__section">
                     <div class="media-section__group-header">
-                      <h4>Images</h4>
-                      <span><%= image_attachments.size + attachment_drawings.size %></span>
+                      <h4>Drawings</h4>
+                      <span><%= attachment_drawings.size %></span>
                     </div>
                     <div class="attachments-grid">
-                      <% image_attachments.each do |attachment| %>
-                        <div class="attachment-item">
-                          <%= link_to rails_blob_path(attachment, disposition: "inline"), target: "_blank", rel: "noopener" do %>
-                            <%= image_tag rails_blob_path(attachment, disposition: "inline"), class: "attachment-thumbnail", alt: attachment.filename.to_s %>
-                          <% end %>
-                          <div class="attachment-info">
-                            <p class="attachment-name"><%= attachment.filename %></p>
-                            <p class="attachment-size"><%= number_to_human_size(attachment.byte_size) %></p>
-                            <%= link_to "Open", rails_blob_path(attachment, disposition: "inline"), target: "_blank", rel: "noopener", class: "btn btn-sm" %>
-                          </div>
-                        </div>
-                      <% end %>
                       <% attachment_drawings.each do |drawing| %>
-                        <div class="attachment-item attachment-item--drawing">
-                          <% if drawing.rendered_png.attached? %>
-                            <%= image_tag drawing.rendered_png, class: "attachment-thumbnail", alt: drawing.title %>
-                          <% else %>
-                            <div class="attachment-file">
-                              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                            </div>
-                          <% end %>
-                          <div class="attachment-info">
-                            <p class="attachment-name"><%= drawing.title %></p>
-                            <p class="attachment-size">drawing</p>
-                            <%= link_to "Open", idea_drawing_path(@idea, drawing), class: "btn btn-sm" %>
+                        <%= link_to idea_drawing_path(@idea, drawing), class: "attachment-card attachment-card--drawing" do %>
+                          <div class="attachment-card__figure">
+                            <% if drawing.rendered_png.attached? %>
+                              <%= image_tag drawing.rendered_png, class: "attachment-card__thumb", loading: "lazy", alt: "" %>
+                            <% else %>
+                              <div class="attachment-card__blank" aria-hidden="true">
+                                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                              </div>
+                            <% end %>
                           </div>
-                        </div>
+                          <div class="attachment-card__meta">
+                            <p class="attachment-card__name"><%= drawing.title %></p>
+                            <p class="attachment-card__sub">drawing</p>
+                          </div>
+                        <% end %>
                       <% end %>
                     </div>
-                  </div>
+                  </section>
                 <% end %>
 
-                <% if document_attachments.any? %>
-                  <div class="media-section__group media-section__group--documents">
-                    <div class="media-section__group-header">
-                      <h4>Documents</h4>
-                      <span><%= document_attachments.size %></span>
+                <div class="media-manager__add"
+                     data-controller="dropzone"
+                     data-dropzone-multiple-value="true"
+                     data-dropzone-accept-value="*/*"
+                     data-dropzone-upload-url-value="<%= idea_attachments_path(@idea, variant: :card) %>">
+                  <div class="dropzone dropzone--inline" data-dropzone-target="zone"
+                       data-action="click->dropzone#click dragover->dropzone#dragover dragenter->dropzone#dragenter dragleave->dropzone#dragleave drop->dropzone#drop">
+                    <div class="dropzone__label" data-dropzone-target="placeholder">
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+                      <span>Drop files here, or <strong>browse</strong></span>
                     </div>
-                    <div class="attachments-grid">
-                      <% document_attachments.each do |attachment| %>
-                        <div class="attachment-item">
-                          <%= link_to rails_blob_path(attachment, disposition: "inline"), target: "_blank", rel: "noopener" do %>
-                            <div class="attachment-file">
-                              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                              </svg>
-                            </div>
-                          <% end %>
-                          <div class="attachment-info">
-                            <p class="attachment-name"><%= attachment.filename %></p>
-                            <p class="attachment-size"><%= number_to_human_size(attachment.byte_size) %></p>
-                            <%= link_to "Open", rails_blob_path(attachment, disposition: "inline"), target: "_blank", rel: "noopener", class: "btn btn-sm" %>
-                          </div>
-                        </div>
-                      <% end %>
-                    </div>
+                    <div class="dropzone__preview-grid" data-dropzone-target="preview"></div>
                   </div>
-                <% end %>
-              <% else %>
-                <div class="empty-state-small">
-                  <p>No attachments yet.</p>
-                  <%= link_to "Add Attachments", edit_idea_path(@idea), class: "btn btn-primary btn-sm" %>
+                  <p class="media-manager__status" data-dropzone-status aria-live="polite"></p>
+                  <input type="file" multiple style="display:none" aria-label="Attach files" data-dropzone-target="input">
                 </div>
-              <% end %>
+
+                <%= render "idea_attachments/viewer_modal" %>
+              </div>
             </div>
             <% end %>
 
@@ -665,7 +684,7 @@
               <svg class="vh-empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                 <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
               </svg>
-              <p>No versions forged yet</p>
+              <p>No versions forged yet. Every saved edit creates one.</p>
               <%= link_to "Edit this idea to create the first version", edit_idea_path(@idea), class: "btn btn-primary btn-sm" %>
             </div>
           <% else %>

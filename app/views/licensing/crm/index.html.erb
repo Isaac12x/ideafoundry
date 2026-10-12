@@ -26,13 +26,16 @@
   <% if @ideas.empty? %>
     <div class="crm-empty">
       <h2>No ideas marked for licensing yet</h2>
-      <p>Open an idea, hit <strong>Edit</strong>, and tick <em>Track this idea for licensing</em>. Its licensors show up here.</p>
+      <p>Open an idea and choose <strong>Track for licensing</strong> from its actions menu. Its licensors show up here.</p>
       <%= link_to "Browse ideas →", ideas_path, class: "btn btn-primary" %>
     </div>
   <% elsif @licensors.empty? %>
     <div class="crm-empty">
       <h2>No licensors yet</h2>
-      <p><%= pluralize(@ideas.size, "idea") %> flagged for licensing, but no potential licensors added. Open an idea's <strong>Potential Licensors</strong> tab to add the first.</p>
+      <p><%= pluralize(@ideas.size, "idea") %> flagged for licensing, but no potential licensors added. Open an idea's <strong>Potential Licensors</strong> tab to add the first, or import a spreadsheet of prospects.</p>
+      <% if @ideas.one? %>
+        <%= link_to "Import licensors →", new_idea_licensor_import_path(@ideas.first), class: "btn btn-primary" %>
+      <% end %>
     </div>
   <% elsif @view == "table" %>
     <%= render "licensing/crm/table", licensors: @licensors %>
