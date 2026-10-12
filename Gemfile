@@ -10,7 +10,7 @@ gem "sprockets-rails"
 
 # Use sqlite3 as the database for Active Record. Production databases require
 # SQLCipher, so build sqlite3 from source with the Bundler flags in .bundle/config.
-gem "sqlite3", "~> 2.7", ">= 2.7.3", force_ruby_platform: true
+gem "sqlite3", "~> 2.9", force_ruby_platform: true
 
 # Use the Puma web server [https://github.com/puma/puma]
 gem "puma", "~> 8.0"
