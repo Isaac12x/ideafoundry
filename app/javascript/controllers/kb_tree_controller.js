@@ -3,15 +3,21 @@ import { Controller } from "@hotwired/stimulus"
 const MENU_VISIBILITY = {
   newFile: (node) => node.type !== "file",
   newFolder: (node) => node.type !== "file",
+  newProject: (node) => node.type !== "file",
+  convertProject: (node) => node.type === "dir" && !node.project,
+  newTest: (node) => node.type === "dir" && (node.project || node.testsDir),
+  download: (node) => node.type !== "file",
   edit: (node) => node.type === "file" && node.editable,
   rename: (node) => node.type !== "root",
-  extract: (node) => node.type === "file" && node.extractable,
-  job: (node) => node.type === "file" || node.type === "dir",
+  extract: (node) => node.type === "file" && node.extractable && !node.private,
+  job: (node) => (node.type === "file" || node.type === "dir") && !node.private,
   divider: (node) => node.type !== "root",
   delete: (node) => node.type !== "root",
   finderDivider: () => true,
   openFinder: () => true
 }
+
+const TREEITEM = '[role="treeitem"]'
 
 export default class extends Controller {
   static targets = ["menu", "items", "item", "prompt", "promptInput", "format"]
@@ -24,6 +30,8 @@ export default class extends Controller {
     preferenceUrl: String,
     openUrl: String,
     deleteUrl: String,
+    projectConvertUrl: String,
+    projectTestUrl: String,
     editUrl: String
   }
 
@@ -31,12 +39,43 @@ export default class extends Controller {
     this._onDocMousedown = (event) => {
       if (this.hasMenuTarget && !this.menuTarget.contains(event.target)) this._hide()
     }
-    this._onDocKeydown = (event) => { if (event.key === "Escape") this._hide() }
+    this._onDocKeydown = (event) => this._menuKeydown(event)
+    this._onTreeKeydown = (event) => this._treeKeydown(event)
+    this._onTreeFocusin = (event) => {
+      const row = event.target.closest?.(TREEITEM)
+      if (row) this._setRoving(row)
+    }
+    this.element.addEventListener("keydown", this._onTreeKeydown)
+    this.element.addEventListener("focusin", this._onTreeFocusin)
+    // Turbo broadcasts and folder toggles change the tree under us; keep ARIA state and the roving tab stop in step.
+    this._observer = new MutationObserver(() => this._queueSync())
+    this._observer.observe(this.element, { subtree: true, childList: true, attributes: true, attributeFilter: ["class"] })
+    this._syncTree()
     this._onBeforeStreamRender = (event) => this._preserveSelectionAcrossStream(event)
     document.addEventListener("turbo:before-stream-render", this._onBeforeStreamRender)
+    // After the folder controllers inside restore their saved collapsed state.
+    this._revealTimer = window.setTimeout(() => this._revealFromUrl())
+  }
+
+  // ?src=&folder= (e.g. a folder linked from an idea): folders have no pane
+  // view, so open the way down to the folder, expand it and bring it into view.
+  _revealFromUrl() {
+    const params = new URLSearchParams(window.location.search)
+    const rel = params.get("folder")
+    const row = rel && this._rowFor(params.get("src") ?? "0", rel)
+    if (!row) return
+
+    this._expandTo(row)
+    row.scrollIntoView({ block: "center" })
+    row.classList.add("is-revealed")
+    row.addEventListener("animationend", () => row.classList.remove("is-revealed"), { once: true })
   }
 
   disconnect() {
+    window.clearTimeout(this._revealTimer)
+    this._observer?.disconnect()
+    this.element.removeEventListener("keydown", this._onTreeKeydown)
+    this.element.removeEventListener("focusin", this._onTreeFocusin)
     this._unbindDocListeners()
     document.removeEventListener("turbo:before-stream-render", this._onBeforeStreamRender)
   }
@@ -44,15 +83,21 @@ export default class extends Controller {
   show(event) {
     event.preventDefault()
     event.stopPropagation()
+    this._open(event.params, event.clientX, event.clientY, event.currentTarget?.closest?.(TREEITEM))
+  }
 
-    const params = event.params
+  _open(params, clientX, clientY, invoker) {
+    this._invoker = invoker || null
     this._node = {
       type: params.type,
       rel: params.rel ?? "",
       src: params.src,
       extractable: !!params.extractable,
       editable: !!params.editable,
-      favorite: !!params.favorite
+      favorite: !!params.favorite,
+      private: !!params.private,
+      project: !!params.project,
+      testsDir: !!params.testsDir
     }
 
     this.itemsTarget.hidden = false
@@ -67,34 +112,322 @@ export default class extends Controller {
     menu.style.left = "0px"
     menu.style.top = "0px"
     const origin = menu.getBoundingClientRect()
-    const x = Math.min(event.clientX, window.innerWidth - menu.offsetWidth - 8)
-    const y = Math.min(event.clientY, window.innerHeight - menu.offsetHeight - 8)
+    const x = Math.min(clientX, window.innerWidth - menu.offsetWidth - 8)
+    const y = Math.min(clientY, window.innerHeight - menu.offsetHeight - 8)
     menu.style.left = `${x - origin.left}px`
     menu.style.top = `${y - origin.top}px`
 
     document.addEventListener("mousedown", this._onDocMousedown)
     document.addEventListener("keydown", this._onDocKeydown)
+    this._menuItems()[0]?.focus()
   }
 
+  _menuItems() {
+    return this.itemTargets.filter((el) => el.matches?.('[role="menuitem"]') && !el.hidden)
+  }
+
+  _menuKeydown(event) {
+    if (event.key === "Escape") {
+      const invoker = this._invoker
+      this._hide()
+      invoker?.focus?.()
+      return
+    }
+    if (event.key === "Tab") return this._hide()
+
+    const items = this._menuItems()
+    if (!items.length || !["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) return
+    event.preventDefault()
+    const at = items.indexOf(document.activeElement)
+    const next = event.key === "Home" ? 0
+      : event.key === "End" ? items.length - 1
+      : event.key === "ArrowDown" ? (at + 1) % items.length
+      : (at <= 0 ? items.length - 1 : at - 1)
+    items[next].focus()
+  }
+
+  // ── Tree keyboard / ARIA ─────────────────────────────────────────────
+  _treeKeydown(event) {
+    const row = event.target
+    if (!row?.matches?.(TREEITEM)) return // keys inside inputs/buttons stay theirs
+
+    if (event.key === "ContextMenu" || (event.key === "F10" && event.shiftKey)) {
+      event.preventDefault()
+      const box = row.getBoundingClientRect()
+      this._open(this._paramsFor(row), box.left + 16, box.bottom, row)
+      return
+    }
+    if (event.altKey || event.ctrlKey || event.metaKey) return
+
+    const items = this._items()
+    const at = items.indexOf(row)
+    let target
+    switch (event.key) {
+      case "ArrowDown": target = items[at + 1]; break
+      case "ArrowUp": target = items[at - 1]; break
+      case "Home": target = items[0]; break
+      case "End": target = items[items.length - 1]; break
+      case "ArrowRight":
+        if (this._collapsed(row)) this._toggle(row)
+        else if (this._isDir(row)) target = this._parentItem(items[at + 1]) === row ? items[at + 1] : null
+        break
+      case "ArrowLeft":
+        if (this._isDir(row) && this._collapsed(row) === false && row.matches(".kb-dir-header")) this._toggle(row)
+        else target = this._parentItem(row)
+        break
+      case "Enter": this._activate(row); break
+      default: return
+    }
+    event.preventDefault()
+    if (target) this._focusItem(target)
+  }
+
+  _items() {
+    return Array.from(this.element.querySelectorAll(TREEITEM)).filter((row) => {
+      if (row.hidden) return false
+      const start = row.matches(".kb-dir-header, .kb-folder-header") ? row.parentElement.parentElement : row.parentElement
+      return !start?.closest(".kb-dir-group.is-collapsed")
+    })
+  }
+
+  _isDir(row) { return row.matches(".kb-dir-header, .kb-folder-header") }
+
+  // true/false for collapsible folders, null otherwise.
+  _collapsed(row) {
+    return row.matches(".kb-dir-header") ? row.parentElement.classList.contains("is-collapsed") : null
+  }
+
+  _toggle(row) { row.querySelector(".kb-dir-toggle")?.click() }
+
+  _parentItem(row) {
+    if (!row) return null
+    const start = this._isDir(row) ? row.parentElement.parentElement : row.parentElement
+    return start?.closest(".kb-dir-group, .kb-folder-group")?.querySelector(":scope > .kb-node") ?? null
+  }
+
+  _activate(row) {
+    const link = row.querySelector(".kb-file-link, .kb-project-link")
+    if (link) link.click()
+    else if (row.matches(".kb-dir-header")) this._toggle(row)
+  }
+
+  _paramsFor(row) {
+    // Same typecasting Stimulus applies to data-kb-tree-*-param attributes.
+    const cast = (v) => { try { return JSON.parse(v) } catch { return v } }
+    const params = {}
+    for (const [key, value] of Object.entries(row.dataset)) {
+      const m = key.match(/^kbTree(.+)Param$/)
+      if (m) params[m[1][0].toLowerCase() + m[1].slice(1)] = cast(value)
+    }
+    return params
+  }
+
+  _focusItem(row) {
+    this._setRoving(row)
+    row.focus()
+  }
+
+  _setRoving(row) {
+    this.element.querySelectorAll(`${TREEITEM}[tabindex="0"]`).forEach((el) => { if (el !== row) el.setAttribute("tabindex", "-1") })
+    row.setAttribute("tabindex", "0")
+    this._rovingKey = this._keyOf(row)
+  }
+
+  _keyOf(row) {
+    return { src: row.dataset.kbTreeSrcParam, rel: row.dataset.kbTreeRelParam ?? "" }
+  }
+
+  _queueSync() {
+    if (this._syncQueued) return
+    this._syncQueued = true
+    queueMicrotask(() => { this._syncQueued = false; this._syncTree() })
+  }
+
+  _syncTree() {
+    this.element.querySelectorAll(".kb-dir-header").forEach((row) => {
+      row.setAttribute("aria-expanded", String(!row.parentElement.classList.contains("is-collapsed")))
+    })
+    this.element.querySelectorAll(".kb-file-row").forEach((row) => {
+      const on = row.classList.contains("is-active")
+      row.setAttribute("aria-selected", String(on))
+      if (on) row.setAttribute("aria-current", "page"); else row.removeAttribute("aria-current")
+    })
+
+    const items = this._items()
+    if (!items.length) return
+    const current = items.find((el) => el.getAttribute("tabindex") === "0" && el.matches(TREEITEM))
+    // A re-render replaces nodes (all server-rendered at tabindex -1): recover by key, then active, then first.
+    const key = this._rovingKey
+    const pick = current
+      || (key && items.find((el) => el.dataset.kbTreeSrcParam === key.src && (el.dataset.kbTreeRelParam ?? "") === key.rel))
+      || items.find((el) => el.classList.contains("is-active"))
+      || items[0]
+    items.forEach((el) => el.setAttribute("tabindex", el === pick ? "0" : "-1"))
+    this.element.querySelectorAll(`${TREEITEM}[tabindex="0"]`).forEach((el) => { if (el !== pick) el.setAttribute("tabindex", "-1") })
+  }
+
+  // New nodes are created straight away with a placeholder name; the server
+  // flags the new row and we drop into inline naming on it, so people type
+  // the name where the name is going to live.
   newFile(event) {
     event.stopPropagation()
-    this._promptFor("file")
+    this._create("file")
   }
 
   newFolder(event) {
     event.stopPropagation()
-    this._promptFor("folder")
+    this._create("folder")
+  }
+
+  newProject(event) {
+    event.stopPropagation()
+    this._create("project")
+  }
+
+  // Marks an existing folder as a project in place; nothing moves.
+  convertProject(event) {
+    event.stopPropagation()
+    this._submitForm(this.projectConvertUrlValue, "post", { src: this._node.src, path: this._node.rel })
+  }
+
+  // Server answers with a placeholder test folder, then inline naming kicks in.
+  newTest(event) {
+    event.stopPropagation()
+    this._submitForm(this.projectTestUrlValue, "post", { src: this._node.src, dir: this._node.rel })
+  }
+
+  download(event) {
+    event.stopPropagation()
+    this._promptFor("download")
   }
 
   rename(event) {
     event.stopPropagation()
-    this._promptFor("rename")
+    const row = this._rowFor(this._node.src, this._node.rel)
+    this._hide()
+    if (row) this._startNaming(row)
+  }
+
+  _create(kind) {
+    const node = this._node
+    this._submitForm(this.createUrlValue, "post", {
+      src: node.src,
+      dir: this._targetDir(node),
+      kind
+    })
+  }
+
+  // ── Inline naming ────────────────────────────────────────────────────
+  _startNaming(row) {
+    const input = row.querySelector(".kb-node-name-input")
+    if (!input) return
+
+    row.classList.add("is-naming")
+    row.draggable = false
+    input.hidden = false
+    input.dataset.original = input.value
+    row.querySelectorAll(".kb-file-link, .kb-dir-label").forEach((element) => { element.hidden = true })
+
+    input.focus()
+    // Select the stem only, so the extension survives a straight retype.
+    const stem = input.value.lastIndexOf(".")
+    input.setSelectionRange(0, stem > 0 ? stem : input.value.length)
+  }
+
+  _stopNaming(row) {
+    const input = row.querySelector(".kb-node-name-input")
+    row.classList.remove("is-naming")
+    row.draggable = true
+    if (input) {
+      input.hidden = true
+      delete input.dataset.kbAutofocus
+    }
+    row.querySelectorAll(".kb-file-link, .kb-dir-label").forEach((element) => { element.hidden = false })
+  }
+
+  nameKeydown(event) {
+    if (event.key === "Enter") {
+      event.preventDefault()
+      event.target.blur()
+      return
+    }
+    if (event.key !== "Escape") return
+
+    event.preventDefault()
+    event.stopPropagation()
+    const input = event.target
+    input.value = input.dataset.original ?? input.value
+    const row = input.closest(".kb-node")
+    if (row) this._stopNaming(row)
+  }
+
+  async nameCommit(event) {
+    const input = event.target
+    const row = input.closest(".kb-node")
+    if (this._rerendering || !row || !row.classList.contains("is-naming")) return
+
+    const name = input.value.trim()
+    const original = input.dataset.original ?? ""
+    this._stopNaming(row)
+    if (!name || name === original) {
+      input.value = original
+      return
+    }
+
+    const result = await this._postJson(this.renameUrlValue, "patch", {
+      src: row.dataset.kbTreeSrcParam,
+      path: row.dataset.kbTreeRelParam,
+      name
+    })
+
+    // Renaming touches one row, so patch that row rather than re-rendering
+    // the whole tree — the pane, scroll, and collapse state all stay put.
+    if (result?.rel) {
+      this._applyRename(row, result.rel, result.name)
+    } else {
+      input.value = original
+      if (result?.error) this._alert(result.error)
+    }
+  }
+
+  _applyRename(row, rel, name) {
+    const previous = row.dataset.kbTreeRelParam
+    row.dataset.kbTreeRelParam = rel
+    row.querySelectorAll("[data-kb-tree-rel-param], [data-kb-icon-picker-rel-param]").forEach((element) => {
+      if (element.dataset.kbTreeRelParam === previous) element.dataset.kbTreeRelParam = rel
+      if (element.dataset.kbIconPickerRelParam === previous) element.dataset.kbIconPickerRelParam = rel
+    })
+
+    const input = row.querySelector(".kb-node-name-input")
+    if (input) input.value = name
+
+    const link = row.querySelector(".kb-file-link")
+    if (link) {
+      link.textContent = name
+      const url = new URL(link.href, window.location.origin)
+      url.searchParams.set("file", rel)
+      link.href = `${url.pathname}${url.search}`
+      link.dataset.kbNotesFileParam = rel
+      // A renamed file may now render differently (or be the open one), so
+      // refresh the pane when it is the active row.
+      if (row.classList.contains("is-active")) {
+        const frame = document.getElementById("kb-content")
+        if (frame) frame.src = link.href
+      }
+      return
+    }
+
+    const label = row.querySelector(".kb-dir-label")
+    if (label) {
+      label.textContent = name
+      // Descendant rels moved with the folder; reload the tree for those.
+      this._refreshTree()
+    }
   }
 
   promptInputChanged() {
     if (!this.hasFormatTarget) return
-    const isUrl = /^https?:\/\/\S+$/i.test(this.promptInputTarget.value.trim())
-    this.formatTarget.hidden = !(this._promptMode === "file" && isUrl)
+    this.formatTarget.hidden = !/^https?:\/\/\S+$/i.test(this.promptInputTarget.value.trim())
   }
 
   promptSubmit(event) {
@@ -103,13 +436,9 @@ export default class extends Controller {
     if (!name) return
 
     const node = this._node
-    if (this._promptMode === "rename") {
-      this._submitForm(this.renameUrlValue, "patch", { src: node.src, path: node.rel, name })
-    } else {
-      const fields = { src: node.src, dir: this._targetDir(node), name, kind: this._promptMode }
-      if (this.hasFormatTarget && !this.formatTarget.hidden) fields.format = this.formatTarget.value
-      this._submitForm(this.createUrlValue, "post", fields)
-    }
+    const fields = { src: node.src, dir: this._targetDir(node), name, kind: "file" }
+    if (this.hasFormatTarget && !this.formatTarget.hidden) fields.format = this.formatTarget.value
+    this._submitForm(this.createUrlValue, "post", fields)
   }
 
   edit(event) {
@@ -158,18 +487,38 @@ export default class extends Controller {
     }
   }
 
-  toggleFavorite(event) {
+  // Favouriting is a one-bit change to one row: flip it locally and tell the
+  // server in the background. No stream, no tree re-render, no banner.
+  async toggleFavorite(event) {
     event.preventDefault()
     event.stopPropagation()
+    const button = event.currentTarget
     const params = event.params
-    const nextFavorite = !params.favorite
-    event.currentTarget.classList.toggle("is-favorite", nextFavorite)
-    this._submitForm(this.preferenceUrlValue, "patch", {
+    const next = !params.favorite
+    this._paintFavorite(button, next)
+
+    const result = await this._postJson(this.preferenceUrlValue, "patch", {
       src: params.src,
       path: params.rel ?? "",
       entry_type: params.type,
-      favorite: nextFavorite ? "1" : "0"
+      favorite: next ? "1" : "0"
     })
+    if (result?.error) {
+      this._paintFavorite(button, !next)
+      this._alert(result.error)
+    }
+  }
+
+  _paintFavorite(button, favorite) {
+    const label = favorite ? "Remove from favourites" : "Add to favourites"
+    button.classList.toggle("is-favorite", favorite)
+    button.dataset.kbTreeFavoriteParam = favorite
+    button.setAttribute("aria-pressed", favorite ? "true" : "false")
+    button.setAttribute("aria-label", label)
+    button.title = label
+
+    const row = button.closest(".kb-node")
+    if (row) row.dataset.kbTreeFavoriteParam = favorite
   }
 
   async destroy(event) {
@@ -222,7 +571,7 @@ export default class extends Controller {
 
     if (this._hasExternalFiles(event)) {
       event.preventDefault()
-      this._uploadFiles(event.dataTransfer.files, destination)
+      this._uploadFiles(event.dataTransfer.files, destination, event.currentTarget)
       return
     }
 
@@ -255,9 +604,10 @@ export default class extends Controller {
     return !this._drag && Array.from(event.dataTransfer?.types || []).includes("Files")
   }
 
-  async _uploadFiles(fileList, destination) {
+  async _uploadFiles(fileList, destination, header) {
     const files = Array.from(fileList || [])
     if (!files.length) return
+    const pending = this._pendingRows(files, header)
 
     const data = new FormData()
     data.append("src", destination.src)
@@ -265,31 +615,45 @@ export default class extends Controller {
     files.forEach((file) => data.append("files[]", file, file.name))
     this._appendSelection(data)
 
-    const response = await fetch(this.uploadUrlValue, {
-      method: "POST",
-      headers: { Accept: "text/vnd.turbo-stream.html", "X-CSRF-Token": this._csrfToken() },
-      body: data
-    })
-    const html = await response.text()
+    let html = ""
+    try {
+      const response = await fetch(this.uploadUrlValue, {
+        method: "POST",
+        headers: { Accept: "text/vnd.turbo-stream.html", "X-CSRF-Token": this._csrfToken() },
+        body: data
+      })
+      html = await response.text()
+    } finally {
+      pending.forEach((row) => row.remove())
+    }
     if (html) window.Turbo?.renderStreamMessage(html)
   }
 
-  _promptFor(mode) {
-    this._promptMode = mode
+  // Spinner rows in the drop target until the upload finishes (same look as async downloads).
+  _pendingRows(files, header) {
+    const children = header?.parentElement?.querySelector(":scope > .kb-node-children")
+    if (!children) return []
+
+    children.querySelector(":scope > .kb-no-files")?.remove()
+    return files.map((file) => {
+      const row = document.createElement("div")
+      row.className = "kb-async-row kb-download-row kb-download-row--pending"
+      row.innerHTML = '<span class="kb-download-pending"><svg class="kb-download-spinner" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg><span></span></span>'
+      row.querySelector("span span").textContent = file.name
+      children.prepend(row)
+      return row
+    })
+  }
+
+  _promptFor() {
     this.itemsTarget.hidden = true
     this.promptTarget.hidden = false
     if (this.hasFormatTarget) this.formatTarget.hidden = true
 
     const input = this.promptInputTarget
-    if (mode === "rename") {
-      input.value = this._node.rel.split("/").pop()
-      input.placeholder = "New name"
-    } else {
-      input.value = ""
-      input.placeholder = mode === "folder" ? "Folder name" : "File name or download URL"
-    }
+    input.value = ""
+    input.placeholder = "Paste a link to download"
     input.focus()
-    input.select()
   }
 
   _targetDir(node) {
@@ -341,21 +705,118 @@ export default class extends Controller {
     if (stream?.getAttribute?.("target") !== "kb-sidebar-tree") return
 
     const active = this.element.querySelector(".kb-file-row.is-active")
-    if (!active) return
-    const selected = {
+    const selected = active && {
       src: active.dataset.kbTreeSrcParam,
       rel: active.dataset.kbTreeRelParam
     }
+    const naming = this._namingSnapshot()
+    const focused = document.activeElement?.matches?.(TREEITEM) ? this._keyOf(document.activeElement) : null
+    const scroller = this.element.querySelector(".kb-sidebar-inner")
+    const scrollTop = scroller?.scrollTop ?? 0
     const originalRender = event.detail.render
     event.detail.render = async (streamElement) => {
-      await originalRender(streamElement)
-      const rows = this.element.querySelectorAll(".kb-file-row")
-      const replacement = Array.from(rows).find((row) =>
+      // Polls and broadcasts replace the tree at any moment; the old input
+      // losing focus on the way out must not commit a half-typed name.
+      this._rerendering = true
+      try {
+        await originalRender(streamElement)
+      } finally {
+        this._rerendering = false
+      }
+      const replacement = selected && Array.from(this.element.querySelectorAll(".kb-file-row")).find((row) =>
         row.dataset.kbTreeSrcParam === selected.src && row.dataset.kbTreeRelParam === selected.rel
       )
       replacement?.classList.add("is-active")
       replacement?.querySelector(".kb-file-link")?.classList.add("is-active")
+      if (scroller) scroller.scrollTop = scrollTop
+      if (focused) {
+        const again = this._rowFor(focused.src, focused.rel)
+        if (again) this._focusItem(again)
+      }
+      if (!this._resumeNaming() && naming) this._restoreNaming(naming)
     }
+  }
+
+  _namingSnapshot() {
+    const row = this.element.querySelector(".kb-node.is-naming")
+    const input = row?.querySelector(".kb-node-name-input")
+    if (!input) return null
+    return {
+      src: row.dataset.kbTreeSrcParam,
+      rel: row.dataset.kbTreeRelParam,
+      value: input.value,
+      original: input.dataset.original,
+      start: input.selectionStart,
+      end: input.selectionEnd
+    }
+  }
+
+  _restoreNaming(naming) {
+    const row = this._rowFor(naming.src, naming.rel)
+    const input = row?.querySelector(".kb-node-name-input")
+    if (!input) return
+    this._startNaming(row)
+    input.value = naming.value
+    input.dataset.original = naming.original ?? input.dataset.original
+    input.setSelectionRange(naming.start, naming.end)
+  }
+
+  // The server marks a just-created node; drop straight into naming it. It
+  // may have landed in a collapsed folder, so open the way down to it first.
+  _resumeNaming() {
+    const input = this.element.querySelector(".kb-node-name-input[data-kb-autofocus]")
+    const row = input?.closest(".kb-node")
+    if (!row) return false
+
+    this._expandTo(row)
+    this._startNaming(row)
+    return true
+  }
+
+  // Opens every collapsed folder from the row up (the row's own folder included).
+  _expandTo(row) {
+    let group = row.closest(".kb-dir-group")
+    while (group) {
+      if (group.classList.contains("is-collapsed")) group.querySelector(":scope > .kb-dir-header .kb-dir-toggle")?.click()
+      group = group.parentElement?.closest(".kb-dir-group")
+    }
+  }
+
+  // Small JSON round trip for the in-place operations (rename, favourite).
+  // Returns the parsed body, or null when the request itself failed.
+  async _postJson(url, method, fields) {
+    try {
+      const response = await fetch(url, {
+        method: method.toUpperCase(),
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          "X-CSRF-Token": this._csrfToken()
+        },
+        body: JSON.stringify(fields)
+      })
+      return await response.json().catch(() => (response.ok ? {} : null))
+    } catch {
+      return null
+    }
+  }
+
+  _rowFor(src, rel) {
+    return this.element.querySelector(
+      `.kb-node[data-kb-tree-src-param="${src}"][data-kb-tree-rel-param="${CSS.escape(rel)}"]`
+    )
+  }
+
+  async _refreshTree() {
+    const url = this.element.querySelector("#kb-sidebar-tree")?.dataset.kbTreeSyncUrlValue
+    if (!url) return
+
+    const response = await fetch(url, { headers: { Accept: "text/vnd.turbo-stream.html" } })
+    if (response.ok) window.Turbo?.renderStreamMessage(await response.text())
+  }
+
+  _alert(message) {
+    window.AppDialog?.alert(message, { title: "That didn’t work", confirmLabel: "Got it" })
   }
 
   _csrfToken() {

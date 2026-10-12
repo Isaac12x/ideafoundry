@@ -41,16 +41,18 @@
     <div data-tabs-target="panel" data-tab-panel="graph" class="hidden">
       <div class="topology-graph-wrapper"
            data-controller="topology-graph"
-           data-topology-graph-url-value="<%= graph_data_topologies_path(format: :json) %>"
-           data-topology-graph-show-ideas-value="true">
+           <%= tag.attributes(topology_graph_stimulus_values.merge(
+             topology_graph_url_value: graph_data_topologies_path(format: :json),
+             topology_graph_show_ideas_value: true
+           )) %>>
         <div class="topology-graph-controls">
-          <input type="text" class="topology-graph-search" placeholder="Search nodes..."
+          <input type="text" class="topology-graph-search" placeholder="Search nodes..." aria-label="Search graph nodes"
                  data-topology-graph-target="search"
                  data-action="input->topology-graph#search">
           <div class="topology-graph-zoom">
-            <button class="btn btn-sm" data-action="click->topology-graph#zoomIn" title="Zoom In">+</button>
-            <button class="btn btn-sm" data-action="click->topology-graph#zoomOut" title="Zoom Out">&minus;</button>
-            <button class="btn btn-sm" data-action="click->topology-graph#fitAll" title="Fit All">
+            <button class="btn btn-sm" data-action="click->topology-graph#zoomIn" title="Zoom In" aria-label="Zoom in">+</button>
+            <button class="btn btn-sm" data-action="click->topology-graph#zoomOut" title="Zoom Out" aria-label="Zoom out">&minus;</button>
+            <button class="btn btn-sm" data-action="click->topology-graph#fitAll" title="Fit All" aria-label="Fit all nodes">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
             </button>
           </div>

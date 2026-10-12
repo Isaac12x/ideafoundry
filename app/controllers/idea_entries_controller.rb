@@ -1,7 +1,7 @@
 class IdeaEntriesController < ApplicationController
   before_action :set_user
   before_action :set_idea
-  before_action :set_idea_entry, only: [:update, :destroy]
+  before_action :set_idea_entry, only: [ :update, :destroy ]
 
   def create
     attributes = idea_entry_params

@@ -4,7 +4,7 @@ require "sqlite3"
 
 class SqlcipherDatabaseMigrator
   SQLITE_HEADER = "SQLite format 3\0".b.freeze
-  SIDECAR_SUFFIXES = ["-wal", "-shm"].freeze
+  SIDECAR_SUFFIXES = [ "-wal", "-shm" ].freeze
 
   Result = Struct.new(:path, :status, :backup_path, :error, keyword_init: true)
 
@@ -33,9 +33,44 @@ class SqlcipherDatabaseMigrator
     return false if plaintext_sqlite_database?(path)
     return true unless RecoverySecret.present?
 
+    return false if accessible_via_active_record?(path)
+
     !encrypted_database_openable_with_current_key?(path)
   rescue SystemCallError
     false
+  end
+
+  def self.accessible_via_active_record?(path)
+    resolved = resolve_database_path(path)
+    return false if resolved.blank?
+
+    config = active_record_config_for_path(resolved)
+    return false unless config
+
+    with_active_record_connection(config) do |connection|
+      connection.select_value("SELECT 1") == 1
+    end
+  rescue ActiveRecord::ConnectionNotEstablished, ActiveRecord::StatementInvalid, SQLite3::Exception
+    false
+  end
+
+  def self.active_record_config_for_path(resolved_path)
+    target = Pathname.new(resolved_path.to_s).cleanpath.to_s
+    ActiveRecord::Base.configurations.configs_for(env_name: Rails.env).find do |config|
+      next unless config.configuration_hash[:sqlcipher]
+
+      Pathname.new(resolve_database_path(config.configuration_hash[:database]).to_s).cleanpath.to_s == target
+    end
+  end
+
+  def self.with_active_record_connection(config)
+    if config.name == "primary"
+      yield ActiveRecord::Base.connection
+    else
+      ActiveRecord::Base.connected_to(role: :writing, shard: config.name.to_sym) do
+        yield ActiveRecord::Base.connection
+      end
+    end
   end
 
   def self.encrypted_database_openable_with_current_key?(path)

@@ -15,11 +15,38 @@ default: &default
       processes: 1
       polling_interval: 0.5
 
+# SQLite has a single writer, so pollers contend at BEGIN IMMEDIATE. One thread
+# and a 1s poll costs a little latency and keeps the writes serialised.
+# NOTE: the "database is locked" crash loop these caps were added for was really
+# the `busy_timeout` pragma in config/database.yml holding the GVL while it
+# waited -- see the comment there. That is fixed, so these caps can be relaxed
+# if job latency ever matters more than serialised writes.
 development:
   <<: *default
+  workers:
+    - queues: [ default, mailers ]
+      threads: 1
+      processes: <%= ENV.fetch("JOB_CONCURRENCY", 1) %>
+      polling_interval: 1
+    - queues: long_ocr
+      threads: 1
+      processes: 1
+      polling_interval: 2
 
 test:
   <<: *default
 
+# Concurrency is capped at 3 (1 process x 3 threads) so the single SQLite
+# writer is never fought over by more claimers than it can serve. Polling is
+# 1s for the same reason -- see the development note above.
 production:
   <<: *default
+  workers:
+    - queues: [ default, mailers ]
+      threads: 3
+      processes: 1
+      polling_interval: 1
+    - queues: long_ocr
+      threads: 1
+      processes: 1
+      polling_interval: 2

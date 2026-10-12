@@ -10,7 +10,7 @@ export default class extends Controller {
   connect() {
     const hash = window.location.hash?.slice(1)
     const validTab = hash && this.panelTargets.some(p => p.dataset.tabPanel === hash)
-    this.showTab(validTab ? hash : this.defaultTabValue)
+    this.showTab(validTab ? hash : this.defaultTabValue, true)
   }
 
   switch(event) {
@@ -19,7 +19,7 @@ export default class extends Controller {
     this.showTab(tabName);
   }
 
-  showTab(tabName) {
+  showTab(tabName, replace = false) {
     // Hide all panels
     this.panelTargets.forEach((panel) => {
       panel.classList.add("hidden");
@@ -36,6 +36,7 @@ export default class extends Controller {
     );
     if (selectedPanel) {
       selectedPanel.classList.remove("hidden");
+      selectedPanel.dispatchEvent(new CustomEvent("tab:shown", { bubbles: true }));
     }
 
     // Activate selected tab
@@ -48,7 +49,8 @@ export default class extends Controller {
 
     // Update URL hash without scrolling
     if (history.pushState) {
-      history.pushState(null, null, `#${tabName}`);
+      // replace on initial connect so Back doesn't stack duplicate entries
+      history[replace ? "replaceState" : "pushState"](null, null, `#${tabName}`);
     }
   }
 }

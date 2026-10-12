@@ -34,13 +34,14 @@ class RecoverySecretsControllerTest < ActionDispatch::IntegrationTest
     assert_select "input[type=?][name=?][value=?]", "hidden", "return_to", settings_security_path
     assert_select "body[data-controller]", count: 0
     assert_select ".activity-panel", count: 0
+    assert_select ".nav-activity-trigger", count: 0
     assert_select ".app-dialog", count: 0
   end
 
   test "locked SQLCipher database asks for recovery before reading typing lock settings" do
     locked_path = Rails.root.join("tmp/encrypted_sqlcipher_before_typing.sqlite3").to_s
 
-    SqlcipherDatabaseMigrator.stub(:locked_database_paths_without_recovery_secret, [locked_path]) do
+    SqlcipherDatabaseMigrator.stub(:locked_database_paths_without_recovery_secret, [ locked_path ]) do
       User.stub(:first, -> { raise "typing lock should not read the database before recovery unlock" }) do
         get root_path
       end

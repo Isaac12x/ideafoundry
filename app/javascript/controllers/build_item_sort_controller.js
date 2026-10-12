@@ -9,12 +9,7 @@ export default class extends Controller {
   }
 
   setupDragAndDrop() {
-    this.itemTargets.forEach(item => {
-      if (item.draggable) {
-        item.addEventListener("dragstart", this.handleDragStart.bind(this))
-        item.addEventListener("dragend", this.handleDragEnd.bind(this))
-      }
-    })
+    // ponytail: item listeners are attached by itemTargetConnected (also fires for initial targets)
     this.element.addEventListener("dragover", this.handleDragOver.bind(this))
     this.element.addEventListener("drop", this.handleDrop.bind(this))
   }
@@ -109,27 +104,36 @@ export default class extends Controller {
 
   async saveOrder() {
     const order = this.itemTargets.map(el => el.dataset.itemId)
-    await fetch(this.urlValue, {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        "X-CSRF-Token": document.querySelector('meta[name="csrf-token"]')?.content
-      },
-      body: JSON.stringify({ order })
-    })
+    try {
+      await fetch(this.urlValue, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRF-Token": document.querySelector('meta[name="csrf-token"]')?.content
+        },
+        body: JSON.stringify({ order })
+      })
+    } catch {
+      /* offline: order stays local until next successful save */
+    }
   }
 
   async joinItems(sourceId, targetId) {
     if (!this.hasJoinUrlValue || sourceId === targetId) return
-    const response = await fetch(this.joinUrlValue, {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        "Accept": "text/vnd.turbo-stream.html",
-        "X-CSRF-Token": document.querySelector('meta[name="csrf-token"]')?.content
-      },
-      body: JSON.stringify({ source_id: sourceId, target_id: targetId })
-    })
+    let response
+    try {
+      response = await fetch(this.joinUrlValue, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "text/vnd.turbo-stream.html",
+          "X-CSRF-Token": document.querySelector('meta[name="csrf-token"]')?.content
+        },
+        body: JSON.stringify({ source_id: sourceId, target_id: targetId })
+      })
+    } catch {
+      return
+    }
     if (!response.ok) return
     const html = await response.text()
     Turbo.renderStreamMessage(html)

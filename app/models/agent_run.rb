@@ -18,7 +18,7 @@ class AgentRun < ApplicationRecord
 
   scope :recent, -> { order(created_at: :desc) }
   scope :active, -> {
-    where(status: [statuses.fetch("starting"), statuses.fetch("running")])
+    where(status: [ statuses.fetch("starting"), statuses.fetch("running") ])
       .where(
         "(last_heartbeat_at IS NULL AND created_at >= ?) OR last_heartbeat_at >= ?",
         STALE_AFTER.ago,

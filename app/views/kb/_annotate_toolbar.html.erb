@@ -1,0 +1,29 @@
+<%# Floating marker toolbar for kb-annotate: pick a pen (highlight/underline), then a colour. %>
+<div class="kb-marker" role="toolbar" aria-label="Mark text" hidden
+     data-kb-annotate-target="toolbar"
+     data-action="pointerdown->kb-annotate#keepSelection">
+  <div class="kb-marker__pens">
+    <button type="button" class="kb-marker__pen" aria-label="Highlighter" title="Highlighter"
+            data-kb-annotate-target="tool" data-kb-annotate-style-param="highlight"
+            data-action="kb-annotate#setTool">
+      <svg viewBox="0 0 20 20" aria-hidden="true"><rect x="3" y="5" width="14" height="10" rx="1.5"/></svg>
+    </button>
+    <button type="button" class="kb-marker__pen" aria-label="Underline pen" title="Underline"
+            data-kb-annotate-target="tool" data-kb-annotate-style-param="underline"
+            data-action="kb-annotate#setTool">
+      <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M6 3.5v5.5a4 4 0 008 0V3.5M4 17h12"/></svg>
+    </button>
+  </div>
+  <div class="kb-marker__inks">
+    <% KbAnnotation::COLORS.each do |color| %>
+      <button type="button" class="kb-marker__ink kb-marker__ink--<%= color %>"
+              aria-label="<%= color.capitalize %>" title="<%= color.capitalize %>"
+              data-kb-annotate-target="swatch" data-kb-annotate-color-param="<%= color %>"
+              data-action="kb-annotate#paint"></button>
+    <% end %>
+  </div>
+  <button type="button" class="kb-marker__erase" aria-label="Erase mark" title="Erase" hidden
+          data-kb-annotate-target="erase" data-action="kb-annotate#erase">
+    <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 5l10 10M15 5L5 15"/></svg>
+  </button>
+</div>

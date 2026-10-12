@@ -63,8 +63,8 @@ class IdeaTest < ActiveSupport::TestCase
       name: "Founder Scorecard #{SecureRandom.hex(4)}",
       field_definitions: [],
       section_order: [],
-      tab_definitions: [{ "name" => "general", "label" => "General", "position" => 0 }],
-      scoring_system_ids: [User::FOUNDER_SCORECARD_SYSTEM_ID]
+      tab_definitions: [ { "name" => "general", "label" => "General", "position" => 0 } ],
+      scoring_system_ids: [ User::FOUNDER_SCORECARD_SYSTEM_ID ]
     )
     low_scores = founder_scorecard_values(3)
     idea = Idea.create!(
@@ -121,7 +121,7 @@ class IdeaTest < ActiveSupport::TestCase
         }
       ],
       section_order: [],
-      tab_definitions: [{ "name" => "general", "label" => "General", "position" => 0 }]
+      tab_definitions: [ { "name" => "general", "label" => "General", "position" => 0 } ]
     )
     software = @user.topologies.create!(name: "Software", topology_type: :custom)
     idea = Idea.create!(user: @user, title: "Repository-backed project", template: template)
@@ -149,7 +149,7 @@ class IdeaTest < ActiveSupport::TestCase
   test "should have active scope" do
     active_idea = Idea.create!(user: @user, title: "Active", state: :idea_new)
     rejected_idea = Idea.create!(user: @user, title: "Rejected", state: :rejected)
-    
+
     assert_includes Idea.active, active_idea
     assert_not_includes Idea.active, rejected_idea
   end
@@ -157,7 +157,7 @@ class IdeaTest < ActiveSupport::TestCase
   test "should have by_state scope" do
     new_idea = Idea.create!(user: @user, title: "New", state: :idea_new)
     triage_idea = Idea.create!(user: @user, title: "Triage", state: :triage)
-    
+
     new_ideas = Idea.by_state(:idea_new)
     assert_includes new_ideas, new_idea
     assert_not_includes new_ideas, triage_idea
@@ -174,7 +174,7 @@ class IdeaTest < ActiveSupport::TestCase
       opportunity: 7,
       timing: 5
     )
-    
+
     assert idea.persisted?
     assert_equal "New Product Idea", idea.title
     assert_equal "SaaS", idea.category
@@ -184,7 +184,7 @@ class IdeaTest < ActiveSupport::TestCase
   test "should read idea attributes" do
     idea = Idea.create!(user: @user, title: "Test Read")
     retrieved_idea = Idea.find(idea.id)
-    
+
     assert_equal idea.title, retrieved_idea.title
     assert_equal idea.user_id, retrieved_idea.user_id
   end
@@ -192,7 +192,7 @@ class IdeaTest < ActiveSupport::TestCase
   test "should update idea attributes" do
     idea = Idea.create!(user: @user, title: "Original Title")
     idea.update!(title: "Updated Title", category: "Updated Category")
-    
+
     idea.reload
     assert_equal "Updated Title", idea.title
     assert_equal "Updated Category", idea.category
@@ -202,7 +202,7 @@ class IdeaTest < ActiveSupport::TestCase
     idea = Idea.create!(user: @user, title: "To Delete")
     idea_id = idea.id
     idea_count = Idea.count
-    
+
     idea.destroy
     assert_equal idea_count - 1, Idea.count
     assert_raises(ActiveRecord::RecordNotFound) do
@@ -213,7 +213,7 @@ class IdeaTest < ActiveSupport::TestCase
   # State transition tests (Requirements 3.1, 3.2)
   test "should transition from new to first_try" do
     idea = Idea.create!(user: @user, title: "Test Transition", state: :idea_new)
-    
+
     assert idea.transition_to_first_try!
     assert_equal "first_try", idea.state
     assert_equal 1, idea.attempt_count
@@ -221,7 +221,7 @@ class IdeaTest < ActiveSupport::TestCase
 
   test "should transition from triage to first_try" do
     idea = Idea.create!(user: @user, title: "Test Transition", state: :triage)
-    
+
     assert idea.transition_to_first_try!
     assert_equal "first_try", idea.state
     assert_equal 1, idea.attempt_count
@@ -229,14 +229,14 @@ class IdeaTest < ActiveSupport::TestCase
 
   test "should not transition to first_try from invalid state" do
     idea = Idea.create!(user: @user, title: "Test Transition", state: :validated)
-    
+
     assert_not idea.transition_to_first_try!
     assert_equal "validated", idea.state
   end
 
   test "should transition to second_try after first attempt" do
     idea = Idea.create!(user: @user, title: "Test Transition", state: :triage, attempt_count: 1)
-    
+
     assert idea.transition_to_second_try!
     assert_equal "second_try", idea.state
     assert_equal 2, idea.attempt_count
@@ -245,7 +245,7 @@ class IdeaTest < ActiveSupport::TestCase
   # Cool-off period tests (Requirements 3.3, 3.4)
   test "should enter cool-off period on failed attempt" do
     idea = Idea.create!(user: @user, title: "Test Cool-off", state: :first_try)
-    
+
     assert idea.fail_attempt!(2.days)
     assert_equal "incubating", idea.state
     assert idea.cool_off_until.present?
@@ -255,7 +255,7 @@ class IdeaTest < ActiveSupport::TestCase
   test "should not allow editing during cool-off period" do
     idea = Idea.create!(user: @user, title: "Test Cool-off", state: :first_try)
     idea.fail_attempt!(2.days)
-    
+
     assert_not idea.can_edit_content?
     assert idea.can_edit? # Can still edit notes in incubating state
   end
@@ -263,7 +263,7 @@ class IdeaTest < ActiveSupport::TestCase
   test "should detect expired cool-off period" do
     idea = Idea.create!(user: @user, title: "Test Cool-off", state: :incubating)
     idea.update!(cool_off_until: 1.day.ago)
-    
+
     assert idea.cool_off_expired?
     assert_not idea.in_cool_off?
   end
@@ -277,7 +277,7 @@ class IdeaTest < ActiveSupport::TestCase
     )
     idea.update_column(:cool_off_until, 1.day.ago)
     idea.reload
-    
+
     assert idea.reopen_from_cool_off!
     idea.reload
     assert_equal "triage", idea.state
@@ -287,7 +287,7 @@ class IdeaTest < ActiveSupport::TestCase
   # Additional state transition tests
   test "should complete attempt successfully" do
     idea = Idea.create!(user: @user, title: "Test Complete", state: :first_try)
-    
+
     assert idea.complete_attempt!
     assert_equal "validated", idea.state
     assert_nil idea.cool_off_until
@@ -295,28 +295,28 @@ class IdeaTest < ActiveSupport::TestCase
 
   test "should park idea" do
     idea = Idea.create!(user: @user, title: "Test Park", state: :triage)
-    
+
     assert idea.park!
     assert_equal "parked", idea.state
   end
 
   test "should reject idea" do
     idea = Idea.create!(user: @user, title: "Test Reject", state: :triage)
-    
+
     assert idea.reject!
     assert_equal "rejected", idea.state
   end
 
   test "should ship validated idea" do
     idea = Idea.create!(user: @user, title: "Test Ship", state: :validated)
-    
+
     assert idea.ship!
     assert_equal "shipped", idea.state
   end
 
   test "should not ship non-validated idea" do
     idea = Idea.create!(user: @user, title: "Test Ship", state: :triage)
-    
+
     assert_not idea.ship!
     assert_equal "triage", idea.state
   end
@@ -339,10 +339,10 @@ class IdeaTest < ActiveSupport::TestCase
     idea = Idea.create!(user: @user, title: "Test Cascade")
     list = List.create!(user: @user, name: "Test List")
     idea_list = IdeaList.create!(idea: idea, list: list)
-    
+
     idea_list_count = IdeaList.count
     idea.destroy
-    
+
     assert_equal idea_list_count - 1, IdeaList.count
     assert_not IdeaList.exists?(idea_id: idea.id)
   end
@@ -351,7 +351,7 @@ class IdeaTest < ActiveSupport::TestCase
   test "should create version with commit message" do
     idea = Idea.create!(user: @user, title: "Versioned Idea")
     version = idea.create_version("Initial version")
-    
+
     assert version.persisted?
     assert_equal "Initial version", version.commit_message
     assert_equal idea, version.idea
@@ -362,7 +362,7 @@ class IdeaTest < ActiveSupport::TestCase
     v1 = idea.create_version("Version 1")
     sleep 0.01
     v2 = idea.create_version("Version 2")
-    
+
     assert_equal v2, idea.latest_version
   end
 
@@ -373,21 +373,21 @@ class IdeaTest < ActiveSupport::TestCase
     v2 = idea.create_version("Version 2")
     sleep 0.01
     v3 = idea.create_version("Version 3")
-    
+
     history = idea.version_history.to_a
-    assert_equal [v1, v2, v3], history
+    assert_equal [ v1, v2, v3 ], history
   end
 
   test "should restore version through idea" do
     idea = Idea.create!(user: @user, title: "Original Title", trl: 5)
     first_version = idea.create_version("First version")
-    
+
     idea.update!(title: "Modified Title", trl: 8)
     idea.create_version("Second version")
-    
+
     idea.restore_version(first_version)
     idea.reload
-    
+
     assert_equal "Original Title", idea.title
     assert_equal 5, idea.trl
   end
@@ -395,9 +395,9 @@ class IdeaTest < ActiveSupport::TestCase
   test "should not restore version from different idea" do
     idea1 = Idea.create!(user: @user, title: "Idea 1")
     idea2 = Idea.create!(user: @user, title: "Idea 2")
-    
+
     version1 = idea1.create_version("Version 1")
-    
+
     assert_raises(ArgumentError) do
       idea2.restore_version(version1)
     end
@@ -405,13 +405,13 @@ class IdeaTest < ActiveSupport::TestCase
 
   test "should have many versions" do
     idea = Idea.create!(user: @user, title: "Versioned Idea")
-    
+
     assert_respond_to idea, :versions
     assert_equal 0, idea.versions.count
-    
+
     idea.create_version("V1")
     idea.create_version("V2")
-    
+
     assert_equal 2, idea.versions.count
   end
 
@@ -419,10 +419,10 @@ class IdeaTest < ActiveSupport::TestCase
     idea = Idea.create!(user: @user, title: "Test Cascade")
     idea.create_version("Version 1")
     idea.create_version("Version 2")
-    
+
     version_count = Version.count
     idea.destroy
-    
+
     assert_equal version_count - 2, Version.count
   end
 

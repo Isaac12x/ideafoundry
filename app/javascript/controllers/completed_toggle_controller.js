@@ -10,11 +10,11 @@ export default class extends Controller {
     if (isHidden) {
       list.classList.remove("completed-items--hidden")
       list.classList.add("completed-items--visible")
-      this.iconTarget.style.transform = "rotate(180deg)"
+      if (this.hasIconTarget) this.iconTarget.style.transform = "rotate(180deg)"
     } else {
       list.classList.remove("completed-items--visible")
       list.classList.add("completed-items--hidden")
-      this.iconTarget.style.transform = "rotate(0deg)"
+      if (this.hasIconTarget) this.iconTarget.style.transform = "rotate(0deg)"
     }
   }
 }

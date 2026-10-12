@@ -7,7 +7,7 @@ class IdeaEnrichmentJobTest < ActiveJob::TestCase
   end
 
   test "enqueues enrichment job" do
-    assert_enqueued_with(job: IdeaEnrichmentJob, args: [@idea.id]) do
+    assert_enqueued_with(job: IdeaEnrichmentJob, args: [ @idea.id ]) do
       IdeaEnrichmentJob.perform_later(@idea.id)
     end
   end
@@ -29,7 +29,7 @@ class IdeaEnrichmentJobTest < ActiveJob::TestCase
   end
 
   test "creates version when results are found" do
-    mock_results = { "competitors" => [{ name: "Test", url: "https://example.com", description: "A test" }] }
+    mock_results = { "competitors" => [ { name: "Test", url: "https://example.com", description: "A test" } ] }
     enrich_args = nil
     service = Object.new
     service.define_singleton_method(:enrich) do |query: nil, sources: nil|

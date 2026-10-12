@@ -20,8 +20,8 @@ class IdeaListTest < ActiveSupport::TestCase
       name: "Kanban Score Gate #{SecureRandom.hex(4)}",
       field_definitions: [],
       section_order: [],
-      tab_definitions: [{ "name" => "general", "label" => "General", "position" => 0 }],
-      scoring_system_ids: [User::FOUNDER_SCORECARD_SYSTEM_ID]
+      tab_definitions: [ { "name" => "general", "label" => "General", "position" => 0 } ],
+      scoring_system_ids: [ User::FOUNDER_SCORECARD_SYSTEM_ID ]
     )
     idea = Idea.create!(
       user: @user,

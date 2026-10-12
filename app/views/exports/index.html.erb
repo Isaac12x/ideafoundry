@@ -28,10 +28,11 @@
           <%= form_with url: exports_path, method: :post, local: true do |f| %>
             <div class="weight-grid">
               <div class="weight-item" style="grid-column: 1 / -1;">
-                <label class="weight-label">Password Protection (optional)</label>
+                <label class="weight-label" for="export_password">Password Protection (optional)</label>
                 <span class="weight-description">If set, the export will be a password-protected ZIP. Minimum 8 characters.</span>
                 <div class="weight-input-group">
                   <input type="password"
+                         id="export_password"
                          name="password"
                          class="weight-input"
                          style="text-align: left;"

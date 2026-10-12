@@ -1,0 +1,900 @@
+{
+ "H": {
+  "nameOrigin": "Greek 'hydro' + 'genes', water-forming",
+  "uses": "ammonia synthesis, oil refining (hydrocracking), fuel cells, rocket fuel",
+  "discoveryPlace": "London, England",
+  "abundanceCrust": 1400,
+  "thermalConductivity": 0.1805,
+  "nuclearNote": "relevant as fuel (protium/deuterium/tritium) and neutron moderator chemistry in reactors"
+ },
+ "He": {
+  "nameOrigin": "Greek 'helios', the sun (first seen in solar spectrum)",
+  "uses": "cryogenics, MRI magnet cooling, balloons/airships, inert shielding gas",
+  "discoveryPlace": "solar spectrum / Naples, Italy",
+  "abundanceCrust": 0.008,
+  "thermalConductivity": 0.1513
+ },
+ "Li": {
+  "nameOrigin": "Greek 'lithos', stone",
+  "uses": "rechargeable batteries, ceramics/glass, grease thickeners, psychiatric medication",
+  "discoveryPlace": "Stockholm, Sweden",
+  "abundanceCrust": 20,
+  "crystalStructure": "body-centred cubic",
+  "thermalConductivity": 84.7,
+  "nuclearNote": "Li-6 bred to tritium for fusion blankets; LiF-BeF2 molten-salt reactor coolant"
+ },
+ "Be": {
+  "nameOrigin": "Greek 'beryllos', beryl (the mineral)",
+  "uses": "aerospace alloys, X-ray windows, non-sparking tools, neutron reflectors",
+  "discoveryPlace": "Paris, France",
+  "abundanceCrust": 2.8,
+  "crystalStructure": "hexagonal close-packed",
+  "thermalConductivity": 200,
+  "nuclearNote": "neutron reflector/moderator and neutron source (Be9 + alpha) in reactor physics"
+ },
+ "B": {
+  "nameOrigin": "Arabic/Persian 'buraq/burah', borax",
+  "uses": "borosilicate glass, detergents, semiconductor doping, control-rod material",
+  "discoveryPlace": "Paris, France",
+  "abundanceCrust": 10,
+  "crystalStructure": "rhombohedral",
+  "thermalConductivity": 27.4,
+  "nuclearNote": "B-10 strong neutron absorber; used in control rods and shutdown/shielding systems"
+ },
+ "C": {
+  "nameOrigin": "Latin 'carbo', coal/charcoal",
+  "uses": "steelmaking, organic chemistry/plastics feedstock, graphite electrodes, diamond tooling",
+  "discoveryPlace": null,
+  "abundanceCrust": 200,
+  "ancient": true,
+  "crystalStructure": "hexagonal (graphite) / diamond cubic",
+  "thermalConductivity": 140,
+  "nuclearNote": "graphite is a neutron moderator in gas-cooled and early reactor designs"
+ },
+ "N": {
+  "nameOrigin": "Greek 'nitron' + 'genes', niter-forming",
+  "uses": "ammonia/fertilizer synthesis, inert atmosphere, cryogenics (liquid N2)",
+  "discoveryPlace": "Edinburgh, Scotland",
+  "abundanceCrust": 19,
+  "thermalConductivity": 0.02583
+ },
+ "O": {
+  "nameOrigin": "Greek 'oxys' + 'genes', acid-forming",
+  "uses": "steelmaking, medical respiration, water treatment, rocket oxidizer",
+  "discoveryPlace": "Uppsala, Sweden",
+  "abundanceCrust": 461000,
+  "thermalConductivity": 0.02658
+ },
+ "F": {
+  "nameOrigin": "Latin 'fluere', to flow (from fluorite)",
+  "uses": "UF6 for uranium enrichment, Teflon/PTFE, toothpaste (fluoride), refrigerants",
+  "discoveryPlace": "Paris, France",
+  "abundanceCrust": 585,
+  "thermalConductivity": 0.0277
+ },
+ "Ne": {
+  "nameOrigin": "Greek 'neos', new",
+  "uses": "neon signage, high-voltage indicators, cryogenic refrigerant",
+  "discoveryPlace": "London, England",
+  "abundanceCrust": 0.005,
+  "thermalConductivity": 0.0491
+ },
+ "Na": {
+  "nameOrigin": "Medieval Latin 'sodanum'; symbol from Latin 'natrium'",
+  "uses": "table salt/chlor-alkali industry, street lighting, reactor coolant (liquid Na)",
+  "discoveryPlace": "London, England",
+  "abundanceCrust": 23600,
+  "crystalStructure": "body-centred cubic",
+  "thermalConductivity": 142
+ },
+ "Mg": {
+  "nameOrigin": "Magnesia, a district in Greece",
+  "uses": "lightweight alloys, fireworks/flares, dietary supplement, die-casting",
+  "discoveryPlace": "London, England",
+  "abundanceCrust": 23300,
+  "crystalStructure": "hexagonal close-packed",
+  "thermalConductivity": 156
+ },
+ "Al": {
+  "nameOrigin": "Latin 'alumen', alum",
+  "uses": "aircraft/automotive structures, packaging (foil/cans), electrical wiring",
+  "discoveryPlace": "Copenhagen, Denmark",
+  "abundanceCrust": 82300,
+  "crystalStructure": "face-centred cubic",
+  "thermalConductivity": 237
+ },
+ "Si": {
+  "nameOrigin": "Latin 'silex/silicis', flint",
+  "uses": "semiconductors/solar cells, glass, silicones, alloying with steel/aluminum",
+  "discoveryPlace": "Stockholm, Sweden",
+  "abundanceCrust": 282000,
+  "crystalStructure": "diamond cubic",
+  "thermalConductivity": 149
+ },
+ "P": {
+  "nameOrigin": "Greek 'phosphoros', light-bearer",
+  "uses": "fertilizers, matches, detergents, steel alloying, DNA/biochemistry",
+  "discoveryPlace": "Hamburg, Germany",
+  "abundanceCrust": 1050,
+  "thermalConductivity": 0.236
+ },
+ "S": {
+  "nameOrigin": "Latin 'sulphur'",
+  "uses": "sulfuric acid production, fertilizers, vulcanizing rubber, gunpowder",
+  "discoveryPlace": null,
+  "abundanceCrust": 350,
+  "ancient": true,
+  "crystalStructure": "orthorhombic",
+  "thermalConductivity": 0.205
+ },
+ "Cl": {
+  "nameOrigin": "Greek 'chloros', pale green",
+  "uses": "water disinfection, PVC production, bleach, chlor-alkali chemicals",
+  "discoveryPlace": "Uppsala, Sweden",
+  "abundanceCrust": 145,
+  "thermalConductivity": 0.0089
+ },
+ "Ar": {
+  "nameOrigin": "Greek 'argos', inactive/lazy",
+  "uses": "inert welding/shielding gas, incandescent bulb fill, cryonic preservation",
+  "discoveryPlace": "London, England",
+  "abundanceCrust": 1.5,
+  "thermalConductivity": 0.01772
+ },
+ "K": {
+  "nameOrigin": "English 'potash'; symbol from Latin 'kalium'",
+  "uses": "fertilizers, glass, soap, dietary electrolyte",
+  "discoveryPlace": "London, England",
+  "abundanceCrust": 20900,
+  "crystalStructure": "body-centred cubic",
+  "thermalConductivity": 102.5
+ },
+ "Ca": {
+  "nameOrigin": "Latin 'calx', lime",
+  "uses": "cement/construction, steelmaking deoxidizer, dietary mineral (bone)",
+  "discoveryPlace": "London, England",
+  "abundanceCrust": 41500,
+  "crystalStructure": "face-centred cubic",
+  "thermalConductivity": 201
+ },
+ "Sc": {
+  "nameOrigin": "Latin 'Scandia', Scandinavia",
+  "uses": "aluminum-scandium aerospace alloys, high-intensity stadium lighting",
+  "discoveryPlace": "Uppsala, Sweden",
+  "abundanceCrust": 22,
+  "crystalStructure": "hexagonal close-packed",
+  "thermalConductivity": 15.8
+ },
+ "Ti": {
+  "nameOrigin": "Greek mythological Titans",
+  "uses": "aerospace/marine alloys, white pigment (TiO2), medical implants",
+  "discoveryPlace": "Cornwall, England",
+  "abundanceCrust": 5650,
+  "crystalStructure": "hexagonal close-packed",
+  "thermalConductivity": 21.9
+ },
+ "V": {
+  "nameOrigin": "Vanadis, Norse goddess (Freyja)",
+  "uses": "steel alloying (rebar, tools), vanadium redox batteries, catalysts",
+  "discoveryPlace": "Mexico City, Mexico",
+  "abundanceCrust": 120,
+  "crystalStructure": "body-centred cubic",
+  "thermalConductivity": 30.7
+ },
+ "Cr": {
+  "nameOrigin": "Greek 'chroma', color",
+  "uses": "stainless steel, chrome plating, pigments, tanning leather",
+  "discoveryPlace": "Paris, France",
+  "abundanceCrust": 102,
+  "crystalStructure": "body-centred cubic",
+  "thermalConductivity": 93.9
+ },
+ "Mn": {
+  "nameOrigin": "Latin 'magnes', magnet (magnesia ore confusion)",
+  "uses": "steel deoxidizer/alloying, dry-cell batteries, fertilizers",
+  "discoveryPlace": "Stockholm, Sweden",
+  "abundanceCrust": 950,
+  "crystalStructure": "body-centred cubic",
+  "thermalConductivity": 7.81
+ },
+ "Fe": {
+  "nameOrigin": "Anglo-Saxon 'iren'; symbol from Latin 'ferrum'",
+  "uses": "steel/construction, machinery, magnets, hemoglobin in blood",
+  "discoveryPlace": null,
+  "abundanceCrust": 56300,
+  "ancient": true,
+  "crystalStructure": "body-centred cubic",
+  "thermalConductivity": 80.4,
+  "nuclearNote": "reactor pressure vessel and cladding steels; activation product host"
+ },
+ "Co": {
+  "nameOrigin": "German 'kobold', goblin (miners' curse)",
+  "uses": "superalloys, rechargeable battery cathodes, magnets, blue pigment",
+  "discoveryPlace": "Stockholm, Sweden",
+  "abundanceCrust": 25,
+  "crystalStructure": "hexagonal close-packed",
+  "thermalConductivity": 100,
+  "nuclearNote": "Co-60 activation product of reactor steels; major gamma source in waste/shielding calcs"
+ },
+ "Ni": {
+  "nameOrigin": "German 'kupfernickel', devil's copper",
+  "uses": "stainless steel, batteries (NiMH/Li-ion cathodes), electroplating, superalloys",
+  "discoveryPlace": "Stockholm, Sweden",
+  "abundanceCrust": 84,
+  "crystalStructure": "face-centred cubic",
+  "thermalConductivity": 90.9
+ },
+ "Cu": {
+  "nameOrigin": "Latin 'cuprum', from Cyprus",
+  "uses": "electrical wiring, plumbing, alloys (brass/bronze), electronics",
+  "discoveryPlace": null,
+  "abundanceCrust": 60,
+  "ancient": true,
+  "crystalStructure": "face-centred cubic",
+  "thermalConductivity": 401
+ },
+ "Zn": {
+  "nameOrigin": "German 'zink'",
+  "uses": "galvanizing steel, brass alloying, die-casting, dietary supplement",
+  "discoveryPlace": "India",
+  "abundanceCrust": 70,
+  "ancient": true,
+  "crystalStructure": "hexagonal close-packed",
+  "thermalConductivity": 116
+ },
+ "Ga": {
+  "nameOrigin": "Latin 'Gallia', France",
+  "uses": "LEDs/semiconductors (GaAs, GaN), thermometers, low-melting alloys",
+  "discoveryPlace": "Paris, France",
+  "abundanceCrust": 19,
+  "crystalStructure": "orthorhombic",
+  "thermalConductivity": 40.6
+ },
+ "Ge": {
+  "nameOrigin": "Latin 'Germania', Germany",
+  "uses": "fiber-optic/infrared optics, semiconductors, catalysts",
+  "discoveryPlace": "Freiberg, Germany",
+  "abundanceCrust": 1.5,
+  "crystalStructure": "diamond cubic",
+  "thermalConductivity": 60.2
+ },
+ "As": {
+  "nameOrigin": "Greek 'arsenikon', yellow orpiment",
+  "uses": "semiconductors (GaAs), historically pesticides/pigments, wood preservatives",
+  "discoveryPlace": "Germany",
+  "abundanceCrust": 1.8,
+  "crystalStructure": "rhombohedral",
+  "thermalConductivity": 50.2
+ },
+ "Se": {
+  "nameOrigin": "Greek 'selene', the moon",
+  "uses": "photocopier drums, glass decolorizing, dietary supplement, photovoltaics",
+  "discoveryPlace": "Stockholm, Sweden",
+  "abundanceCrust": 0.05,
+  "crystalStructure": "hexagonal",
+  "thermalConductivity": 0.52
+ },
+ "Br": {
+  "nameOrigin": "Greek 'bromos', stench",
+  "uses": "flame retardants, water treatment, photographic film, pharmaceuticals",
+  "discoveryPlace": "Montpellier, France",
+  "abundanceCrust": 2.4,
+  "thermalConductivity": 0.122
+ },
+ "Kr": {
+  "nameOrigin": "Greek 'kryptos', hidden",
+  "uses": "high-performance lighting, window insulation gas, photography flash lamps",
+  "discoveryPlace": "London, England",
+  "abundanceCrust": null,
+  "thermalConductivity": 0.00943
+ },
+ "Rb": {
+  "nameOrigin": "Latin 'rubidus', deep red (spectral lines)",
+  "uses": "atomic clocks, research reagent, specialty glass",
+  "discoveryPlace": "Heidelberg, Germany",
+  "abundanceCrust": 90,
+  "crystalStructure": "body-centred cubic",
+  "thermalConductivity": 58.2
+ },
+ "Sr": {
+  "nameOrigin": "Strontian, a village in Scotland",
+  "uses": "fireworks (red color), ferrite magnets, formerly CRT glass",
+  "discoveryPlace": "Edinburgh, Scotland",
+  "abundanceCrust": 370,
+  "crystalStructure": "face-centred cubic",
+  "thermalConductivity": 35.4,
+  "nuclearNote": "Sr-90 major fission product; long-lived heat/radiation source in spent fuel"
+ },
+ "Y": {
+  "nameOrigin": "Ytterby, a village in Sweden",
+  "uses": "phosphors (LEDs/CRTs), YAG laser crystals, ceramic/superconductor additives",
+  "discoveryPlace": "Ytterby, Sweden",
+  "abundanceCrust": 33,
+  "crystalStructure": "hexagonal close-packed",
+  "thermalConductivity": 17.2
+ },
+ "Zr": {
+  "nameOrigin": "Arabic 'zargun', gold-colored (zircon)",
+  "uses": "nuclear fuel cladding (low neutron absorption), ceramics, chemical vessels",
+  "discoveryPlace": "Stockholm, Sweden",
+  "abundanceCrust": 165,
+  "crystalStructure": "hexagonal close-packed",
+  "thermalConductivity": 22.6
+ },
+ "Nb": {
+  "nameOrigin": "Niobe, daughter of Tantalus in Greek myth",
+  "uses": "superconducting magnets, steel microalloying (pipeline/automotive), jewelry",
+  "discoveryPlace": "London, England",
+  "abundanceCrust": 20,
+  "crystalStructure": "body-centred cubic",
+  "thermalConductivity": 53.7
+ },
+ "Mo": {
+  "nameOrigin": "Greek 'molybdos', lead (ore confusion)",
+  "uses": "steel alloying (high-strength), lubricants, electrodes, Tc-99m production",
+  "discoveryPlace": "Uppsala, Sweden",
+  "abundanceCrust": 1.2,
+  "crystalStructure": "body-centred cubic",
+  "thermalConductivity": 138,
+  "nuclearNote": "Mo-99 parent of medical Tc-99m; also fission product affecting fuel behavior"
+ },
+ "Tc": {
+  "nameOrigin": "Greek 'technetos', artificial (first synthetic element)",
+  "uses": "Tc-99m medical imaging tracer; no large-scale industrial use (radioactive)",
+  "discoveryPlace": "Palermo, Italy",
+  "abundanceCrust": null,
+  "crystalStructure": "hexagonal close-packed",
+  "nuclearNote": "Tc-99m is the workhorse medical imaging isotope, made from Mo-99 fission product"
+ },
+ "Ru": {
+  "nameOrigin": "Latin 'Ruthenia', Russia",
+  "uses": "electrical contacts, catalysts, hardening platinum/palladium alloys",
+  "discoveryPlace": "Kazan, Russia",
+  "abundanceCrust": 0.001,
+  "crystalStructure": "hexagonal close-packed",
+  "thermalConductivity": 117
+ },
+ "Rh": {
+  "nameOrigin": "Greek 'rhodon', rose (color of its salts)",
+  "uses": "catalytic converters, electroplating, glass-fiber production",
+  "discoveryPlace": "London, England",
+  "abundanceCrust": 0.001,
+  "crystalStructure": "face-centred cubic",
+  "thermalConductivity": 150
+ },
+ "Pd": {
+  "nameOrigin": "Asteroid Pallas",
+  "uses": "catalytic converters, hydrogen storage/purification, electronics, jewelry",
+  "discoveryPlace": "London, England",
+  "abundanceCrust": 0.015,
+  "crystalStructure": "face-centred cubic",
+  "thermalConductivity": 71.8
+ },
+ "Ag": {
+  "nameOrigin": "Anglo-Saxon 'seolfor'; symbol from Latin 'argentum'",
+  "uses": "jewelry/silverware, electrical contacts, photography, antimicrobial coatings",
+  "discoveryPlace": null,
+  "abundanceCrust": 0.075,
+  "ancient": true,
+  "crystalStructure": "face-centred cubic",
+  "thermalConductivity": 429
+ },
+ "Cd": {
+  "nameOrigin": "Latin 'cadmia', calamine",
+  "uses": "NiCd batteries, pigments, electroplating, reactor control-rod alloys",
+  "discoveryPlace": "Berlin, Germany",
+  "abundanceCrust": 0.15,
+  "crystalStructure": "hexagonal close-packed",
+  "thermalConductivity": 96.6,
+  "nuclearNote": "strong thermal-neutron absorber; historically used in control rods (now often replaced)"
+ },
+ "In": {
+  "nameOrigin": "Latin 'indicum', indigo (spectral line color)",
+  "uses": "ITO touchscreen/LCD coatings, low-melting solders, semiconductors",
+  "discoveryPlace": "Freiberg, Germany",
+  "abundanceCrust": 0.25,
+  "crystalStructure": "tetragonal",
+  "thermalConductivity": 81.8
+ },
+ "Sn": {
+  "nameOrigin": "Anglo-Saxon 'tin'; symbol from Latin 'stannum'",
+  "uses": "solder, tin plating (cans), bronze alloying, PVC stabilizers",
+  "discoveryPlace": null,
+  "abundanceCrust": 2300,
+  "ancient": true,
+  "crystalStructure": "tetragonal (white tin)",
+  "thermalConductivity": 66.6
+ },
+ "Sb": {
+  "nameOrigin": "Latin 'antimonium'; symbol from Greek 'stibium'",
+  "uses": "flame retardants, lead-acid battery alloys, semiconductors",
+  "discoveryPlace": null,
+  "abundanceCrust": 0.2,
+  "ancient": true,
+  "crystalStructure": "rhombohedral",
+  "thermalConductivity": 24.4
+ },
+ "Te": {
+  "nameOrigin": "Latin 'tellus', earth",
+  "uses": "alloying steel/copper, thermoelectric/solar-cell materials (CdTe), rubber vulcanizing",
+  "discoveryPlace": "Sibiu, Romania",
+  "abundanceCrust": 0.001,
+  "crystalStructure": "hexagonal",
+  "thermalConductivity": 1.97
+ },
+ "I": {
+  "nameOrigin": "Greek 'iodes', violet (vapor color)",
+  "uses": "antiseptics, dietary supplement (thyroid), X-ray contrast media, medical isotopes",
+  "discoveryPlace": "Paris, France",
+  "abundanceCrust": 0.45,
+  "crystalStructure": "orthorhombic",
+  "thermalConductivity": 0.449,
+  "nuclearNote": "I-129/I-131 volatile fission products; I-131 significant in accident source terms"
+ },
+ "Xe": {
+  "nameOrigin": "Greek 'xenos', stranger",
+  "uses": "ion-thruster propellant, high-intensity lamps, anesthesia research",
+  "discoveryPlace": "London, England",
+  "abundanceCrust": null,
+  "thermalConductivity": 0.00565,
+  "nuclearNote": "Xe-135 is a potent neutron poison causing reactor xenon transients"
+ },
+ "Cs": {
+  "nameOrigin": "Latin 'caesius', sky blue (spectral lines)",
+  "uses": "atomic clocks (SI second definition), drilling fluids, photoelectric cells",
+  "discoveryPlace": "Heidelberg, Germany",
+  "abundanceCrust": 3,
+  "crystalStructure": "body-centred cubic",
+  "thermalConductivity": 35.9,
+  "nuclearNote": "Cs-137 major fission product; dominant mid-term heat and gamma source in waste"
+ },
+ "Ba": {
+  "nameOrigin": "Greek 'barys', heavy",
+  "uses": "drilling mud (barite), fireworks (green), medical imaging (barium meal)",
+  "discoveryPlace": "London, England",
+  "abundanceCrust": 425,
+  "crystalStructure": "body-centred cubic",
+  "thermalConductivity": 18.4
+ },
+ "La": {
+  "nameOrigin": "Greek 'lanthanein', to lie hidden",
+  "uses": "camera/telescope lenses, NiMH battery alloys, catalytic cracking catalysts",
+  "discoveryPlace": "Stockholm, Sweden",
+  "abundanceCrust": 39,
+  "crystalStructure": "hexagonal close-packed",
+  "thermalConductivity": 13.4
+ },
+ "Ce": {
+  "nameOrigin": "Asteroid Ceres",
+  "uses": "catalytic converters, glass polishing, lighter flints, self-cleaning ovens",
+  "discoveryPlace": "Sweden/Germany",
+  "abundanceCrust": 66,
+  "crystalStructure": "face-centred cubic",
+  "thermalConductivity": 11.3
+ },
+ "Pr": {
+  "nameOrigin": "Greek 'prasios didymos', green twin",
+  "uses": "magnets (with Nd), glass/ceramic colorant, aircraft engine alloys",
+  "discoveryPlace": "Vienna, Austria",
+  "abundanceCrust": 9.2,
+  "crystalStructure": "hexagonal close-packed",
+  "thermalConductivity": 12.5
+ },
+ "Nd": {
+  "nameOrigin": "Greek 'neos didymos', new twin",
+  "uses": "high-strength NdFeB permanent magnets, lasers, glass coloring",
+  "discoveryPlace": "Vienna, Austria",
+  "abundanceCrust": 41.5,
+  "crystalStructure": "hexagonal close-packed",
+  "thermalConductivity": 16.5
+ },
+ "Pm": {
+  "nameOrigin": "Prometheus, Greek Titan who brought fire",
+  "uses": "luminous paint/betalights, nuclear-powered pacemaker research (historic)",
+  "discoveryPlace": "Oak Ridge, Tennessee, USA",
+  "abundanceCrust": null,
+  "nuclearNote": "no long-lived isotopes; essentially absent in nature"
+ },
+ "Sm": {
+  "nameOrigin": "Samarskite, the mineral (named for V. Samarsky)",
+  "uses": "SmCo permanent magnets (high-temp), neutron-absorbing control rods",
+  "discoveryPlace": "Paris, France",
+  "abundanceCrust": 7.05,
+  "crystalStructure": "rhombohedral",
+  "thermalConductivity": 13.3
+ },
+ "Eu": {
+  "nameOrigin": "Europe",
+  "uses": "red/blue phosphors (TV/LED displays), anti-counterfeiting markers (euro banknotes)",
+  "discoveryPlace": "Paris, France",
+  "abundanceCrust": 2,
+  "crystalStructure": "body-centred cubic",
+  "thermalConductivity": 13.9
+ },
+ "Gd": {
+  "nameOrigin": "Gadolinite, the mineral (named for J. Gadolin)",
+  "uses": "MRI contrast agents, burnable neutron poison in reactor fuel, phosphors",
+  "discoveryPlace": "Geneva, Switzerland",
+  "abundanceCrust": 6.2,
+  "crystalStructure": "hexagonal close-packed",
+  "thermalConductivity": 10.6,
+  "nuclearNote": "burnable neutron absorber (Gd2O3) blended into fresh LWR fuel pellets"
+ },
+ "Tb": {
+  "nameOrigin": "Ytterby, a village in Sweden",
+  "uses": "green phosphors, solid-state devices, magnetostrictive alloys (Terfenol-D)",
+  "discoveryPlace": "Stockholm, Sweden",
+  "abundanceCrust": 1.2,
+  "crystalStructure": "hexagonal close-packed",
+  "thermalConductivity": 11.1
+ },
+ "Dy": {
+  "nameOrigin": "Greek 'dysprositos', hard to get at",
+  "uses": "NdFeB magnet additive (heat resistance), control rods, data storage",
+  "discoveryPlace": "Paris, France",
+  "abundanceCrust": 5.2,
+  "crystalStructure": "hexagonal close-packed",
+  "thermalConductivity": 10.7
+ },
+ "Ho": {
+  "nameOrigin": "Latin 'Holmia', Stockholm",
+  "uses": "highest-known magnetic strength alloys, medical/dental lasers",
+  "discoveryPlace": "Zurich/Uppsala",
+  "abundanceCrust": 1.3,
+  "crystalStructure": "hexagonal close-packed",
+  "thermalConductivity": 16.2
+ },
+ "Er": {
+  "nameOrigin": "Ytterby, a village in Sweden",
+  "uses": "fiber-optic amplifiers (erbium-doped), pink glass/ceramic colorant",
+  "discoveryPlace": "Stockholm, Sweden",
+  "abundanceCrust": 2.3,
+  "crystalStructure": "hexagonal close-packed",
+  "thermalConductivity": 14.5
+ },
+ "Tm": {
+  "nameOrigin": "Thule, mythical northern land",
+  "uses": "portable X-ray devices, high-temp superconductors research",
+  "discoveryPlace": "Uppsala, Sweden",
+  "abundanceCrust": 0.52,
+  "crystalStructure": "hexagonal close-packed",
+  "thermalConductivity": 16.9
+ },
+ "Yb": {
+  "nameOrigin": "Ytterby, a village in Sweden",
+  "uses": "stress gauges, atomic clock research, fiber laser doping",
+  "discoveryPlace": "Geneva, Switzerland",
+  "abundanceCrust": 3,
+  "crystalStructure": "face-centred cubic",
+  "thermalConductivity": 38.5
+ },
+ "Lu": {
+  "nameOrigin": "Lutetia, ancient name for Paris",
+  "uses": "PET scan scintillators (LuAG/LYSO), petroleum cracking catalysts",
+  "discoveryPlace": "Paris, France",
+  "abundanceCrust": 0.5,
+  "crystalStructure": "hexagonal close-packed",
+  "thermalConductivity": 16.4
+ },
+ "Hf": {
+  "nameOrigin": "Latin 'Hafnia', Copenhagen",
+  "uses": "reactor control rods (naval), superalloys, high-k transistor gate oxides",
+  "discoveryPlace": "Copenhagen, Denmark",
+  "abundanceCrust": 3,
+  "crystalStructure": "hexagonal close-packed",
+  "thermalConductivity": 23,
+  "nuclearNote": "high neutron absorption; used for reactor control rods (esp. naval reactors)"
+ },
+ "Ta": {
+  "nameOrigin": "Tantalus, Greek mythological king",
+  "uses": "tantalum capacitors (electronics), surgical implants, corrosion-resistant equipment",
+  "discoveryPlace": "Uppsala, Sweden",
+  "abundanceCrust": 2,
+  "crystalStructure": "body-centred cubic",
+  "thermalConductivity": 57.5
+ },
+ "W": {
+  "nameOrigin": "Swedish 'tung sten', heavy stone; symbol from 'wolfram'",
+  "uses": "incandescent filaments, cutting tools/carbide, armor-piercing rounds",
+  "discoveryPlace": "Vergara, Spain",
+  "abundanceCrust": 1.25,
+  "crystalStructure": "body-centred cubic",
+  "thermalConductivity": 173
+ },
+ "Re": {
+  "nameOrigin": "Latin 'Rhenus', the Rhine river",
+  "uses": "jet engine superalloys, catalysts (reforming), thermocouples",
+  "discoveryPlace": "Berlin, Germany",
+  "abundanceCrust": 0.0007,
+  "crystalStructure": "hexagonal close-packed",
+  "thermalConductivity": 48
+ },
+ "Os": {
+  "nameOrigin": "Greek 'osme', smell (of its oxide)",
+  "uses": "hard-wearing alloy tips (pen nibs, instrument pivots), electrical contacts",
+  "discoveryPlace": "London, England",
+  "abundanceCrust": 0.0015,
+  "crystalStructure": "hexagonal close-packed",
+  "thermalConductivity": 87.6
+ },
+ "Ir": {
+  "nameOrigin": "Greek 'Iris', rainbow goddess (varied salt colors)",
+  "uses": "spark plugs, crucibles for crystal growth, standard kilogram alloy (historic)",
+  "discoveryPlace": "London, England",
+  "abundanceCrust": 0.001,
+  "crystalStructure": "face-centred cubic",
+  "thermalConductivity": 147
+ },
+ "Pt": {
+  "nameOrigin": "Spanish 'platina', little silver",
+  "uses": "catalytic converters, jewelry, lab equipment, fuel-cell catalysts",
+  "discoveryPlace": "South America / Spain",
+  "abundanceCrust": 0.005,
+  "crystalStructure": "face-centred cubic",
+  "thermalConductivity": 71.6
+ },
+ "Au": {
+  "nameOrigin": "Anglo-Saxon 'gold'; symbol from Latin 'aurum'",
+  "uses": "jewelry, electronics contacts, currency reserve, dentistry",
+  "discoveryPlace": null,
+  "abundanceCrust": 0.004,
+  "ancient": true,
+  "crystalStructure": "face-centred cubic",
+  "thermalConductivity": 317
+ },
+ "Hg": {
+  "nameOrigin": "Roman god Mercury; symbol from Latin 'hydrargyrum'",
+  "uses": "thermometers/barometers (historic), fluorescent lamps, dental amalgams, chlor-alkali cells",
+  "discoveryPlace": null,
+  "abundanceCrust": 0.085,
+  "ancient": true,
+  "thermalConductivity": 8.3
+ },
+ "Tl": {
+  "nameOrigin": "Greek 'thallos', green shoot (spectral line)",
+  "uses": "historically rodenticide/rat poison, infrared optics, high-Tc superconductors",
+  "discoveryPlace": "London, England",
+  "abundanceCrust": 0.85,
+  "crystalStructure": "hexagonal close-packed",
+  "thermalConductivity": 46.1
+ },
+ "Pb": {
+  "nameOrigin": "Anglo-Saxon 'lead'; symbol from Latin 'plumbum'",
+  "uses": "lead-acid batteries, radiation shielding, solder, ammunition",
+  "discoveryPlace": null,
+  "abundanceCrust": 14,
+  "ancient": true,
+  "crystalStructure": "face-centred cubic",
+  "thermalConductivity": 35.3
+ },
+ "Bi": {
+  "nameOrigin": "German 'weisse masse/wismuth', white mass",
+  "uses": "low-melting alloys/fuses, cosmetics (pearlescent pigment), Pepto-Bismol, lead-free solder",
+  "discoveryPlace": "unknown, Europe",
+  "abundanceCrust": 0.0085,
+  "crystalStructure": "rhombohedral",
+  "thermalConductivity": 7.97
+ },
+ "Po": {
+  "nameOrigin": "Latin 'Polonia', Poland",
+  "uses": "antistatic devices, historically neutron trigger sources (Po-Be); mostly research",
+  "discoveryPlace": "Paris, France",
+  "abundanceCrust": null,
+  "nuclearNote": "alpha-emitter used as a heat source / neutron initiator component"
+ },
+ "At": {
+  "nameOrigin": "Greek 'astatos', unstable",
+  "uses": "experimental targeted alpha-therapy (At-211) in cancer research",
+  "discoveryPlace": "Berkeley, California, USA",
+  "abundanceCrust": null
+ },
+ "Rn": {
+  "nameOrigin": "Named for radium (its decay parent)",
+  "uses": "historically radiotherapy sources; now mainly a soil-gas radiation hazard indicator",
+  "discoveryPlace": "Erlangen, Germany",
+  "abundanceCrust": null
+ },
+ "Fr": {
+  "nameOrigin": "France",
+  "uses": "no practical uses; extremely rare and short-lived, research only",
+  "discoveryPlace": "Paris, France",
+  "abundanceCrust": null
+ },
+ "Ra": {
+  "nameOrigin": "Latin 'radius/radius', ray",
+  "uses": "historically luminous paint and radiotherapy; now largely phased out (radioactivity)",
+  "discoveryPlace": "Paris, France",
+  "abundanceCrust": null,
+  "nuclearNote": "decay-chain member of U/Th series; legacy radium-dial contamination issue"
+ },
+ "Ac": {
+  "nameOrigin": "Greek 'aktinos', ray/beam",
+  "uses": "neutron source (Ac-Be), targeted alpha-therapy research (Ac-225)",
+  "discoveryPlace": "Paris, France",
+  "abundanceCrust": null
+ },
+ "Th": {
+  "nameOrigin": "Thor, Norse god of thunder",
+  "uses": "thorium fuel cycle research, gas mantles (historic), magnesium alloying",
+  "discoveryPlace": "Oslo, Norway",
+  "abundanceCrust": 9.6,
+  "crystalStructure": "face-centred cubic",
+  "thermalConductivity": 54,
+  "nuclearNote": "Th-232 fertile material, breeds to fissile U-233 in thorium fuel cycles"
+ },
+ "Pa": {
+  "nameOrigin": "Greek 'protos' + actinium, 'before actinium'",
+  "uses": "no significant applications; research and thorium-cycle tracer only",
+  "discoveryPlace": "Berlin, Germany",
+  "abundanceCrust": null
+ },
+ "U": {
+  "nameOrigin": "Planet Uranus",
+  "uses": "nuclear reactor fuel, weapons, depleted-uranium armor/counterweights",
+  "discoveryPlace": "Berlin, Germany",
+  "abundanceCrust": 2.7,
+  "crystalStructure": "orthorhombic",
+  "thermalConductivity": 27.5,
+  "nuclearNote": "U-235 fissile / U-238 fertile; primary fuel of nuclear reactors"
+ },
+ "Np": {
+  "nameOrigin": "Planet Neptune",
+  "uses": "minor actinide in spent fuel; Np-237 used to make Pu-238 for RTGs",
+  "discoveryPlace": "Berkeley, California, USA",
+  "abundanceCrust": null,
+  "nuclearNote": "Np-237 minor actinide, accumulates in spent fuel; transmutation target"
+ },
+ "Pu": {
+  "nameOrigin": "Dwarf planet Pluto",
+  "uses": "nuclear weapons, reactor fuel (MOX), radioisotope thermoelectric generators",
+  "discoveryPlace": "Berkeley, California, USA",
+  "abundanceCrust": null,
+  "nuclearNote": "Pu-239 fissile, bred from U-238; major component of spent fuel and MOX"
+ },
+ "Am": {
+  "nameOrigin": "The Americas",
+  "uses": "ionization smoke detectors (Am-241), industrial gauges",
+  "discoveryPlace": "Berkeley, California, USA",
+  "abundanceCrust": null,
+  "nuclearNote": "Am-241 minor actinide from Pu decay; used in smoke detectors, transmutation target"
+ },
+ "Cm": {
+  "nameOrigin": "Marie and Pierre Curie",
+  "uses": "alpha X-ray spectrometers (space probes, e.g. Mars rovers), RTG research",
+  "discoveryPlace": "Berkeley, California, USA",
+  "abundanceCrust": null,
+  "nuclearNote": "minor actinide produced by neutron capture in spent fuel; heat/dose contributor"
+ },
+ "Bk": {
+  "nameOrigin": "Berkeley, California",
+  "uses": "no practical uses; research quantities only",
+  "discoveryPlace": "Berkeley, California, USA",
+  "abundanceCrust": null
+ },
+ "Cf": {
+  "nameOrigin": "California",
+  "uses": "portable neutron source (Cf-252) for reactor startup and well logging",
+  "discoveryPlace": "Berkeley, California, USA",
+  "abundanceCrust": null
+ },
+ "Es": {
+  "nameOrigin": "Albert Einstein",
+  "uses": "no practical uses; discovered in nuclear-test debris, research only",
+  "discoveryPlace": "Berkeley, California, USA",
+  "abundanceCrust": null
+ },
+ "Fm": {
+  "nameOrigin": "Enrico Fermi",
+  "uses": "no practical uses; research quantities only",
+  "discoveryPlace": "Berkeley, California, USA",
+  "abundanceCrust": null
+ },
+ "Md": {
+  "nameOrigin": "Dmitri Mendeleev",
+  "uses": "no practical uses; research quantities only",
+  "discoveryPlace": "Berkeley, California, USA",
+  "abundanceCrust": null
+ },
+ "No": {
+  "nameOrigin": "Alfred Nobel",
+  "uses": "no practical uses; research quantities only",
+  "discoveryPlace": "Dubna, Soviet Union",
+  "abundanceCrust": null
+ },
+ "Lr": {
+  "nameOrigin": "Ernest Lawrence",
+  "uses": "no practical uses; research quantities only",
+  "discoveryPlace": "Berkeley, California, USA",
+  "abundanceCrust": null
+ },
+ "Rf": {
+  "nameOrigin": "Ernest Rutherford",
+  "uses": "no practical uses; superheavy research only",
+  "discoveryPlace": "Dubna, USSR / Berkeley, USA",
+  "abundanceCrust": null
+ },
+ "Db": {
+  "nameOrigin": "Dubna, Russia",
+  "uses": "no practical uses; superheavy research only",
+  "discoveryPlace": "Dubna, USSR / Berkeley, USA",
+  "abundanceCrust": null
+ },
+ "Sg": {
+  "nameOrigin": "Glenn T. Seaborg",
+  "uses": "no practical uses; superheavy research only",
+  "discoveryPlace": "Berkeley, California, USA",
+  "abundanceCrust": null
+ },
+ "Bh": {
+  "nameOrigin": "Niels Bohr",
+  "uses": "no practical uses; superheavy research only",
+  "discoveryPlace": "Darmstadt, Germany",
+  "abundanceCrust": null
+ },
+ "Hs": {
+  "nameOrigin": "Latin 'Hassia', Hesse (German state)",
+  "uses": "no practical uses; superheavy research only",
+  "discoveryPlace": "Darmstadt, Germany",
+  "abundanceCrust": null
+ },
+ "Mt": {
+  "nameOrigin": "Lise Meitner",
+  "uses": "no practical uses; superheavy research only",
+  "discoveryPlace": "Darmstadt, Germany",
+  "abundanceCrust": null
+ },
+ "Ds": {
+  "nameOrigin": "Darmstadt, Germany",
+  "uses": "no practical uses; superheavy research only",
+  "discoveryPlace": "Darmstadt, Germany",
+  "abundanceCrust": null
+ },
+ "Rg": {
+  "nameOrigin": "Wilhelm Conrad Roentgen",
+  "uses": "no practical uses; superheavy research only",
+  "discoveryPlace": "Darmstadt, Germany",
+  "abundanceCrust": null
+ },
+ "Cn": {
+  "nameOrigin": "Nicolaus Copernicus",
+  "uses": "no practical uses; superheavy research only",
+  "discoveryPlace": "Darmstadt, Germany",
+  "abundanceCrust": null
+ },
+ "Nh": {
+  "nameOrigin": "Nihon, Japanese for Japan",
+  "uses": "no practical uses; superheavy research only",
+  "discoveryPlace": "Wako/Dubna",
+  "abundanceCrust": null
+ },
+ "Fl": {
+  "nameOrigin": "Flerov Laboratory of Nuclear Reactions",
+  "uses": "no practical uses; superheavy research only",
+  "discoveryPlace": "Dubna, Russia",
+  "abundanceCrust": null
+ },
+ "Mc": {
+  "nameOrigin": "Moscow region, Russia",
+  "uses": "no practical uses; superheavy research only",
+  "discoveryPlace": "Dubna, Russia",
+  "abundanceCrust": null
+ },
+ "Lv": {
+  "nameOrigin": "Livermore, California",
+  "uses": "no practical uses; superheavy research only",
+  "discoveryPlace": "Dubna, Russia",
+  "abundanceCrust": null
+ },
+ "Ts": {
+  "nameOrigin": "Tennessee, USA",
+  "uses": "no practical uses; superheavy research only",
+  "discoveryPlace": "Dubna, Russia",
+  "abundanceCrust": null
+ },
+ "Og": {
+  "nameOrigin": "Yuri Oganessian",
+  "uses": "no practical uses; superheavy research only",
+  "discoveryPlace": "Dubna, Russia",
+  "abundanceCrust": null
+ }
+}

@@ -15,7 +15,7 @@ class CreateLicensors < ActiveRecord::Migration[8.1]
       t.timestamps
     end
 
-    add_index :licensors, [:idea_id, :stage, :position]
+    add_index :licensors, [ :idea_id, :stage, :position ]
     add_index :licensors, :stage
   end
 end

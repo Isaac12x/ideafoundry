@@ -1,6 +1,6 @@
 class IdeaAgentTokensController < ApplicationController
   before_action :set_idea
-  before_action :require_idea_work_tokens_enabled, only: [:create, :skill]
+  before_action :require_idea_work_tokens_enabled, only: [ :create, :skill ]
 
   def create
     token = nil

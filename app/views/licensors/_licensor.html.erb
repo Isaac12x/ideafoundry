@@ -18,10 +18,10 @@
     <div class="licensor-row__controls">
       <%= form_with url: licensor_path(licensor), method: :patch, class: "licensor-inline", data: { controller: "auto-submit" } do %>
         <input type="hidden" name="context" value="tab">
-        <label class="licensor-inline__label">Stage</label>
+        <label class="licensor-inline__label" for="licensor_stage_<%= licensor.id %>">Stage</label>
         <%= select_tag "licensor[stage]",
               options_for_select(Licensor::STAGE_ORDER.map { |s| [Licensor.stage_label(s), s] }, licensor.stage),
-              class: "idea-entry-input licensor-inline__select",
+              id: "licensor_stage_#{licensor.id}", class: "idea-entry-input licensor-inline__select",
               data: { action: "change->auto-submit#go" } %>
       <% end %>
 

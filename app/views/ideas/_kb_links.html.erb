@@ -1,0 +1,50 @@
+<%# Knowledge: KB projects, folders and files linked to this idea. Linking happens here, not in the KB. %>
+<% entries = idea_kb_link_entries(idea, @user) %>
+<section id="idea_kb_links_<%= idea.id %>" class="idea-kb-links"
+         data-controller="kb-link-combobox"
+         data-kb-link-combobox-search-url-value="<%= search_idea_kb_links_path(idea) %>"
+         data-kb-link-combobox-create-url-value="<%= idea_kb_links_path(idea) %>">
+  <h3>Knowledge</h3>
+  <% if entries.any? %>
+    <ul class="idea-kb-links__list">
+      <% entries.each do |entry| %>
+        <% link = entry[:link]; project = entry[:project] %>
+        <li class="idea-kb-links__item<%= " is-missing" if entry[:missing] %>">
+          <span class="idea-kb-links__glyph idea-kb-links__glyph--<%= link.entry_type %>" aria-hidden="true">
+            <% if link.entry_type == "file" %>
+              <%= render "kb/file_icon", extension: File.extname(link.relative_path).downcase %>
+            <% else %>
+              <%= render "kb/entry_icon", preference: nil, default_preference: nil, fallback: link.entry_type == "project" ? "project" : "folder" %>
+            <% end %>
+          </span>
+          <div class="idea-kb-links__body">
+            <% if entry[:missing] %>
+              <span class="idea-kb-links__name"><%= entry[:name] %></span>
+              <span class="idea-kb-links__meta">missing</span>
+            <% else %>
+              <%= link_to entry[:name], idea_kb_link_href(entry), class: "idea-kb-links__name" %>
+              <% if project %>
+                <span class="idea-kb-links__meta"><%= project.status %><% if project.private? %> · <span class="idea-kb-links__private" title="Private project"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg> private</span><% end %> · <%= pluralize(project.tests.size, "test") %>, <%= pluralize(project.tests.sum { |t| t.runs.size }, "run") %></span>
+                <% if project.goal.present? %><span class="idea-kb-links__goal"><%= truncate(project.goal, length: 120) %></span><% end %>
+              <% elsif entry[:dir] %>
+                <span class="idea-kb-links__meta"><%= entry[:dir] %></span>
+              <% end %>
+            <% end %>
+          </div>
+          <%= button_to "Unlink", idea_kb_link_path(idea, link), method: :delete, class: "btn btn-sm idea-kb-links__unlink", form: { class: "idea-kb-links__form" }, "aria-label": "Unlink #{entry[:name]}" %>
+        </li>
+      <% end %>
+    </ul>
+  <% else %>
+    <p class="idea-kb-links__empty">No linked projects, folders or files.</p>
+  <% end %>
+
+  <div class="idea-kb-links__combo">
+    <input type="text" class="idea-kb-links__input" placeholder="Link a KB project, folder or file…"
+           role="combobox" aria-expanded="false" aria-autocomplete="list" aria-controls="kb_link_options_<%= idea.id %>"
+           autocomplete="off" aria-label="Search the knowledge base to link"
+           data-kb-link-combobox-target="input"
+           data-action="input->kb-link-combobox#search keydown->kb-link-combobox#keydown">
+    <ul id="kb_link_options_<%= idea.id %>" role="listbox" class="idea-kb-links__options" hidden data-kb-link-combobox-target="list"></ul>
+  </div>
+</section>

@@ -7,6 +7,6 @@ class CreateDrawings < ActiveRecord::Migration[8.0]
       t.timestamps
     end
 
-    add_index :drawings, [:user_id, :updated_at]
+    add_index :drawings, [ :user_id, :updated_at ]
   end
 end

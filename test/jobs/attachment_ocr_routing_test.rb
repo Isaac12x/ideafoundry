@@ -28,7 +28,7 @@ class AttachmentOcrRoutingTest < ActiveJob::TestCase
     attachment = attach(idea, filename: "memo.pdf", content_type: "application/pdf")
 
     OcrClient.stub :probe_attachment, { "needs_long" => false, "page_count" => 2 } do
-      OcrClient.stub :extract, { "text" => "hello", "parts" => ["hello"] } do
+      OcrClient.stub :extract, { "text" => "hello", "parts" => [ "hello" ] } do
         AttachmentOcrJob.perform_now(attachment.id)
       end
     end
@@ -44,7 +44,7 @@ class AttachmentOcrRoutingTest < ActiveJob::TestCase
 
     # probe_attachment must not be called for non-paged types; stub it to raise.
     OcrClient.stub :probe_attachment, ->(*) { raise "should not probe images" } do
-      OcrClient.stub :extract, { "text" => "ocr", "parts" => ["ocr"] } do
+      OcrClient.stub :extract, { "text" => "ocr", "parts" => [ "ocr" ] } do
         AttachmentOcrJob.perform_now(attachment.id)
       end
     end

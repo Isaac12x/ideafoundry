@@ -13,12 +13,12 @@ class AttachmentOcrJobTest < ActiveJob::TestCase
     ocr_result = {
       "text" => "Part A\nPart B",
       "html" => "<div>Part A</div><div>Part B</div>",
-      "parts" => ["Part A", "Part B"],
+      "parts" => [ "Part A", "Part B" ],
       "pages" => [
         {
           "page" => 1,
           "html" => "<div>Part A</div><div>Part B</div>",
-          "blocks" => [{ "label" => "Text", "html" => "<div>Part A</div>" }]
+          "blocks" => [ { "label" => "Text", "html" => "<div>Part A</div>" } ]
         }
       ]
     }
@@ -30,7 +30,7 @@ class AttachmentOcrJobTest < ActiveJob::TestCase
     attachment.reload
     assert_equal "complete", attachment.ocr_status
     assert_equal "Part A\nPart B", attachment.ocr_text
-    assert_equal ["Part A", "Part B"], attachment.ocr_metadata["parts"]
+    assert_equal [ "Part A", "Part B" ], attachment.ocr_metadata["parts"]
     assert_equal "<div>Part A</div><div>Part B</div>", attachment.ocr_metadata["html"]
     assert_equal "<div>Part A</div><div>Part B</div>", attachment.ocr_metadata["pages"].first["html"]
   end

@@ -18,7 +18,7 @@ export default class extends Controller {
   }
 
   _globalKeydown(e) {
-    const key = e.key.toLowerCase()
+    const key = e.key?.toLowerCase()
     if ((e.metaKey || e.ctrlKey) && (key === "k" || key === "p")) {
       e.preventDefault()
       this.open()
@@ -81,8 +81,10 @@ export default class extends Controller {
       const url = new URL(this.searchUrlValue, window.location.origin)
       url.searchParams.set("q", q)
       const resp = await fetch(url, { headers: { Accept: "application/json" } })
+      if (!resp.ok) throw new Error(resp.status)
       const { results } = await resp.json()
-      this._render(results)
+      if (!this.hasInputTarget || this.inputTarget.value.trim() !== q) return // stale response
+      this._render(results || [])
     } catch { /* silently fail */ }
   }
 

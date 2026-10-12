@@ -1,0 +1,107 @@
+<% project = @project %>
+<%# Every form posts src+path so the server re-resolves inside the source. %>
+<% ids = capture do %><%= hidden_field_tag :src, @src, id: nil %><%= hidden_field_tag :path, project.rel, id: nil %><% end %>
+<div class="kbp" data-controller="kb-project">
+  <header class="kbp-head">
+    <p class="kbp-eyebrow">Project
+      <span class="kbp-eyebrow-sep" aria-hidden="true"></span>
+      <%= form_with url: kb_project_path, method: :patch, class: "kbp-inline" do %>
+        <%= ids %>
+        <%= hidden_field_tag :private, project.private? ? "1" : "0", id: nil %>
+        <button type="button" class="kbp-private <%= 'is-private' if project.private? %>"
+                data-next="<%= project.private? ? '0' : '1' %>"
+                data-action="click->kb-project#togglePrivate"
+                title="<%= project.private? ? 'Private: hidden from AI, agents and extraction. Click to change.' : 'Not private. Click to make private.' %>">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><% if project.private? %><path d="M8 11V7a4 4 0 018 0v4"/><% else %><path d="M8 11V7a4 4 0 017.5-1.9"/><% end %></svg>
+          <%= project.private? ? "Private" : "Not private" %>
+        </button>
+      <% end %>
+      <%= form_with url: kb_project_path, method: :patch, class: "kbp-inline" do %>
+        <%= ids %>
+        <select name="status" class="kbp-status kbp-status--<%= project.status %>" aria-label="Status"
+                data-action="change->kb-project#submit">
+          <% Kb::Project::STATUSES.each do |status| %>
+            <%= tag.option status.capitalize, value: status, selected: status == project.status %>
+          <% end %>
+        </select>
+      <% end %>
+    </p>
+    <h1 class="kbp-title"><%= project.name %></h1>
+    <%= form_with url: kb_project_path, method: :patch, class: "kbp-goal-form" do %>
+      <%= ids %>
+      <input type="text" name="goal" value="<%= project.goal %>" class="kbp-goal" autocomplete="off"
+             placeholder="Goal: what am I trying to find out?" aria-label="Goal"
+             data-action="change->kb-project#submit">
+    <% end %>
+  </header>
+
+  <section class="kbp-section" aria-labelledby="kbp-findings">
+    <h2 id="kbp-findings" class="kbp-h2">Findings</h2>
+    <% if project.conclusion.present? %>
+      <article class="kb-markdown rich-text-content kbp-prose"><%= render_markdown(project.conclusion) %></article>
+    <% else %>
+      <p class="kbp-empty">What did you get out of this project? Write it here when you know.</p>
+    <% end %>
+    <details class="kbp-edit">
+      <summary><%= project.conclusion.present? ? "Edit findings" : "Write findings" %></summary>
+      <%= form_with url: kb_project_path, method: :patch, class: "kbp-form" do %>
+        <%= ids %>
+        <textarea name="conclusion" rows="8" class="kbp-input" aria-label="Findings (markdown)"><%= project.conclusion %></textarea>
+        <div class="kbp-actions"><button class="kbp-btn kbp-btn--primary">Save findings</button></div>
+      <% end %>
+    </details>
+  </section>
+
+  <section class="kbp-section" aria-labelledby="kbp-tests">
+    <div class="kbp-h2-row">
+      <h2 id="kbp-tests" class="kbp-h2">Tests</h2>
+      <details class="kbp-edit kbp-edit--inline">
+        <summary>New test</summary>
+        <%= form_with url: kb_project_tests_path, method: :post, class: "kbp-form" do %>
+          <%= hidden_field_tag :src, @src, id: nil %>
+          <%= hidden_field_tag :dir, project.rel, id: nil %>
+          <input type="text" name="name" required class="kbp-input" placeholder="Test name, e.g. Survival at 4°C" aria-label="Test name" autocomplete="off">
+          <textarea name="objective" rows="2" class="kbp-input" placeholder="Objective / hypothesis" aria-label="Objective"></textarea>
+          <div class="kbp-actions"><button class="kbp-btn kbp-btn--primary">Add test</button></div>
+        <% end %>
+      </details>
+    </div>
+    <% tests = project.tests %>
+    <% if tests.empty? %>
+      <p class="kbp-empty">No tests yet. A test is something you do in the real world, repeatedly, and compare.</p>
+    <% end %>
+    <% tests.each do |test| %>
+      <%= render "kb/projects/test", test: test, project: project %>
+    <% end %>
+  </section>
+
+  <% if @entries.any? %>
+    <section class="kbp-section" aria-labelledby="kbp-entries">
+      <h2 id="kbp-entries" class="kbp-h2">Other entries</h2>
+      <ul class="kbp-entries">
+        <% @entries.each do |entry| %>
+          <li>
+            <% if entry[:dir] %>
+              <span class="kbp-entry kbp-entry--dir"><%= entry[:name] %>/</span>
+            <% else %>
+              <%= link_to entry[:name], kb_file_path(src: @src, file: entry[:rel]), class: "kbp-entry", data: { turbo_frame: "kb-content" } %>
+            <% end %>
+          </li>
+        <% end %>
+      </ul>
+    </section>
+  <% end %>
+
+  <section class="kbp-section" aria-labelledby="kbp-links">
+    <h2 id="kbp-links" class="kbp-h2">Linked from ideas</h2>
+    <% if @backlinks.empty? %>
+      <p class="kbp-empty">No idea links here yet. Link a project from an idea's page.</p>
+    <% else %>
+      <ul class="kbp-entries">
+        <% @backlinks.each do |link| %>
+          <li><%= link_to link.idea.title.presence || "Untitled idea", idea_path(link.idea), class: "kbp-entry", data: { turbo_frame: "_top" } %></li>
+        <% end %>
+      </ul>
+    <% end %>
+  </section>
+</div>

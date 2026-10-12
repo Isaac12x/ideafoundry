@@ -14,6 +14,8 @@ class KbFsJobsController < ApplicationController
     absolute = safe_context(base, context_path, context_kind)
     return render_error("The selected file or folder is no longer available.") unless absolute
 
+    return render_error("This path is in a private project.") if Kb::Privacy.private?(base, context_path)
+
     voice_message = params[:voice_message]
     prompt = params[:prompt].to_s.strip
     return render_error("Type a request or record a voice message.") if prompt.blank? && voice_message.blank?
@@ -82,7 +84,7 @@ class KbFsJobsController < ApplicationController
         "kb-sidebar-tree",
         partial: "kb/tree",
         locals: {
-          folders: Kb::TreeBuilder.new(@user).call,
+          folders: Kb::TreeBuilder.build(@user),
           selected_file: params[:sel_file].presence,
           selected_folder_index: params[:sel_src].presence&.to_i
         }

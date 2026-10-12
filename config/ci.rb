@@ -3,10 +3,14 @@
 ruby = RbConfig.ruby
 javascript_tests = Dir["test/javascript/*.mjs"].sort
 
-CI.run do
-  step "Setup", "bin/setup --skip-server"
-  step "Security: Importmap vulnerability audit", "bin/importmap audit"
-  step "Assets: JavaScript", "yarn", "build"
-  step "Tests: JavaScript", "node", "--test", *javascript_tests if javascript_tests.any?
-  step "Tests: Rails", "env", "RAILS_ENV=test", "PARALLEL_WORKERS=1", ruby, "bin/rails", "test"
+# Steps spawn their own bundler; drop the one bin/ci loaded (version mismatch -> superclass error).
+Bundler.with_original_env do
+  CI.run do
+    step "Setup", "bin/setup --skip-server"
+    step "Style: Ruby", "bin/rubocop"
+    step "Security: Importmap vulnerability audit", "bin/importmap audit"
+    step "Assets: JavaScript", "yarn", "build"
+    step "Tests: JavaScript", "node", "--test", *javascript_tests if javascript_tests.any?
+    step "Tests: Rails", "env", "RAILS_ENV=test", "PARALLEL_WORKERS=1", ruby, "bin/rails", "test"
+  end
 end

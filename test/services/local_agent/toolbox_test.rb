@@ -163,6 +163,56 @@ class LocalAgent::ToolboxTest < ActiveSupport::TestCase
 
   private
 
+  test "kb tools hide, refuse to read and refuse to write private project paths" do
+    dir = Rails.root.join("tmp", "kb-toolbox-priv-#{SecureRandom.hex(6)}").to_s
+    FileUtils.mkdir_p(File.join(dir, "proj"))
+    File.write(File.join(dir, "proj", ".kb-project.yml"), "private: true\n")
+    File.write(File.join(dir, "proj", "secret.md"), "secret")
+    File.write(File.join(dir, "open.md"), "open")
+    @user.update!(settings: { "kb" => { "folders" => [ dir ], "hide_native" => true } })
+    @user.update_local_agent_settings("enabled" => "1")
+
+    files = toolbox.call("list_kb").fetch(:kb_files).map { |e| e[:file] }
+    assert_equal [ "open.md" ], files
+
+    read = toolbox.call("read_kb", { "file" => "proj/secret.md" })
+    assert_equal "invalid_arguments", read.fetch(:error)
+    assert_match(/private project/, read.fetch(:details).to_s)
+
+    write = toolbox.call("write_kb", { "file" => "proj/new.md", "content" => "x" })
+    assert_equal "invalid_arguments", write.fetch(:error)
+    refute File.exist?(File.join(dir, "proj", "new.md"))
+  ensure
+    FileUtils.rm_rf(dir)
+  end
+
+  test "media digest tools write, search and read transcripts" do
+    @user.update_local_agent_settings("enabled" => "1")
+    dl = @user.kb_downloads.create!(source_index: 0, url: "https://youtu.be/abc", title: "Talk", status: "done",
+                                    transcript: "00:01 - hello", transcript_status: "done")
+
+    assert_difference [ "MediaDigest.count", "AgentEvent.count" ], 1 do
+      result = toolbox.call("write_media_digest", "kb_download_id" => dl.id, "body" => "- hello fact")
+      assert result.fetch(:ok)
+    end
+    found = toolbox.call("search_media_digests", "query" => "hello").fetch(:media_digests)
+    assert_equal [ dl.id ], found.map { |d| d[:kb_download_id] }
+    assert_equal "00:01 - hello", toolbox.call("read_record", "target_type" => "KbDownload", "target_id" => dl.id).dig(:record, :transcript)
+  end
+
+  test "write_media_digest is rejected while disabled" do
+    @user.update_local_agent_settings("enabled" => "0")
+    dl = @user.kb_downloads.create!(source_index: 0, url: "https://youtu.be/abc", status: "done")
+    assert_no_difference "MediaDigest.count" do
+      assert_equal "local_agent_disabled", toolbox.call("write_media_digest", "kb_download_id" => dl.id, "body" => "x").fetch(:error)
+    end
+  end
+
+  test "other users KbDownload is not found" do
+    foreign = users(:two).kb_downloads.create!(source_index: 0, url: "https://youtu.be/zzz", status: "done")
+    assert_equal "not_found", toolbox.call("read_record", "target_type" => "KbDownload", "target_id" => foreign.id).fetch(:error)
+  end
+
   def toolbox
     LocalAgent::Toolbox.new(user: @user)
   end

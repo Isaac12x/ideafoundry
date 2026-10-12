@@ -10,17 +10,17 @@ class IdeaAttachmentsControllerTest < ActionDispatch::IntegrationTest
 
   test "reorders idea attachments" do
     patch reorder_idea_attachments_url(@idea), params: {
-      attachment_ids: [@second.id, @first.id]
+      attachment_ids: [ @second.id, @first.id ]
     }
 
     assert_response :success
-    assert_equal [@second.id, @first.id], @idea.ordered_attachments.map(&:id)
+    assert_equal [ @second.id, @first.id ], @idea.ordered_attachments.map(&:id)
     assert_equal 1, @second.reload.position
     assert_equal 2, @first.reload.position
   end
 
   test "ocr endpoint enqueues extraction for an attachment" do
-    assert_enqueued_with(job: AttachmentOcrJob, args: [@first.id]) do
+    assert_enqueued_with(job: AttachmentOcrJob, args: [ @first.id ]) do
       post ocr_idea_attachment_url(@idea, @first)
     end
 

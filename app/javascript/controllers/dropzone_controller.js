@@ -52,13 +52,18 @@ export default class extends Controller {
   }
 
   // Also handle normal file input change
-  inputTargetConnected() {
-    this.inputTarget.addEventListener("change", () => {
+  inputTargetConnected(input) {
+    this._onChange ||= () => {
       if (this._processingFiles) return
-      if (this.inputTarget.files.length) {
+      if (this.hasInputTarget && this.inputTarget.files.length) {
         this._handleFiles(Array.from(this.inputTarget.files))
       }
-    })
+    }
+    input.addEventListener("change", this._onChange)
+  }
+
+  inputTargetDisconnected(input) {
+    input.removeEventListener("change", this._onChange)
   }
 
   async _handleFiles(rawFiles) {

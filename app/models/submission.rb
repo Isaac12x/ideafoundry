@@ -1,6 +1,6 @@
 class Submission < ApplicationRecord
   include TracksActivity
-  tracks_activity name_method: :title, ignore_fields: [:raw_data, :reviewed_at]
+  tracks_activity name_method: :title, ignore_fields: [ :raw_data, :reviewed_at ]
 
   INTAKE_REFERENCE_PREFIX = "IDEA-TMP".freeze
 
@@ -93,18 +93,18 @@ class Submission < ApplicationRecord
     cleaned_body = new_body.to_s.strip
     return body if cleaned_body.blank?
 
-    [body.presence, cleaned_body].compact.join("\n\n---\n\n")
+    [ body.presence, cleaned_body ].compact.join("\n\n---\n\n")
   end
 
   def merged_raw_data(raw_payload, source:, source_reference:, title:, body:, target:)
     data = case raw_data
-           when Hash
+    when Hash
              raw_data.deep_dup
-           when nil
+    when nil
              {}
-           else
+    else
              { "legacy_payload" => raw_data }
-           end
+    end
 
     data["events"] ||= []
     data["events"] << {

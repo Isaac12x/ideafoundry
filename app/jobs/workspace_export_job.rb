@@ -3,47 +3,47 @@ class WorkspaceExportJob < ApplicationJob
 
   def perform(export_job, password = nil)
     export_job.update!(status: :processing, progress: 0)
-    
+
     begin
       # Create temporary directory for export
-      temp_dir = Rails.root.join('tmp', 'exports', export_job.id.to_s)
+      temp_dir = Rails.root.join("tmp", "exports", export_job.id.to_s)
       FileUtils.mkdir_p(temp_dir)
-      
+
       # Export database data
       export_job.update_progress!(10)
       export_database_data(export_job.user, temp_dir)
-      
+
       # Export files
       export_job.update_progress!(30)
       export_files(export_job.user, temp_dir)
-      
+
       # Create manifest and documentation
       export_job.update_progress!(60)
       create_manifest(export_job.user, temp_dir)
       create_readme(temp_dir)
-      
+
       # Package the export
       export_job.update_progress!(80)
       final_path = package_export(temp_dir, password.present?)
-      
+
       # Encrypt if password provided
       if password.present?
         export_job.update_progress!(90)
         final_path = encrypt_export(final_path, password)
       end
-      
+
       # Complete the export
       export_job.complete!(final_path)
-      
+
       # Cleanup temporary directory
       FileUtils.rm_rf(temp_dir)
-      
+
     rescue => e
       Rails.logger.error "Export job #{export_job.id} failed: #{e.message}"
       Rails.logger.error e.backtrace.join("\n")
-      
+
       export_job.fail!(e.message)
-      
+
       # Cleanup on failure
       FileUtils.rm_rf(temp_dir) if temp_dir && Dir.exist?(temp_dir)
     end
@@ -65,9 +65,9 @@ class WorkspaceExportJob < ApplicationJob
       versions: versions_data(user),
       templates: templates_data(user)
     }
-    
+
     File.write(
-      temp_dir.join('data.json'),
+      temp_dir.join("data.json"),
       JSON.pretty_generate(data)
     )
   end
@@ -159,7 +159,7 @@ class WorkspaceExportJob < ApplicationJob
 
   def attachment_data(attachment)
     return nil unless attachment.attached?
-    
+
     {
       filename: attachment.filename.to_s,
       content_type: attachment.content_type,
@@ -170,7 +170,7 @@ class WorkspaceExportJob < ApplicationJob
   end
 
   def export_files(user, temp_dir)
-    files_dir = temp_dir.join('files')
+    files_dir = temp_dir.join("files")
     FileUtils.mkdir_p(files_dir)
 
     user_active_storage_attachments(user).each do |attachment|
@@ -228,9 +228,9 @@ class WorkspaceExportJob < ApplicationJob
         readme: "README_IMPORT.md"
       }
     }
-    
+
     File.write(
-      temp_dir.join('manifest.json'),
+      temp_dir.join("manifest.json"),
       JSON.pretty_generate(manifest)
     )
   end
@@ -289,53 +289,53 @@ class WorkspaceExportJob < ApplicationJob
       - Application: Idea Foundry
     README
 
-    File.write(temp_dir.join('README_IMPORT.md'), readme_content)
+    File.write(temp_dir.join("README_IMPORT.md"), readme_content)
   end
 
   def package_export(temp_dir, will_encrypt = false)
     timestamp = Time.current.strftime("%Y%m%d_%H%M%S")
-    output_dir = Rails.root.join('exports', 'backup')
+    output_dir = Rails.root.join("exports", "backup")
     FileUtils.mkdir_p(output_dir)
 
     if will_encrypt
       # Create ZIP for encryption
-      zip_path = Rails.root.join('exports', 'backup', "export_#{timestamp}.zip")
-      
+      zip_path = Rails.root.join("exports", "backup", "export_#{timestamp}.zip")
+
       Zip::File.open(zip_path, Zip::File::CREATE) do |zipfile|
-        Dir.glob(File.join(temp_dir, '**', '*')).each do |file|
+        Dir.glob(File.join(temp_dir, "**", "*")).each do |file|
           next if File.directory?(file)
-          
-          relative_path = file.sub("#{temp_dir}/", '')
+
+          relative_path = file.sub("#{temp_dir}/", "")
           zipfile.add(relative_path, file)
         end
       end
-      
+
       zip_path.to_s
     else
       # Create tar.gz
-      tar_path = Rails.root.join('exports', 'backup', "export_#{timestamp}.tar.gz")
-      
+      tar_path = Rails.root.join("exports", "backup", "export_#{timestamp}.tar.gz")
+
       system("cd #{temp_dir} && tar -czf #{tar_path} .")
-      
+
       tar_path.to_s
     end
   end
 
   def encrypt_export(file_path, password)
-    encrypted_path = file_path.sub(/\.(zip|tar\.gz)$/, '_encrypted.zip')
-    
+    encrypted_path = file_path.sub(/\.(zip|tar\.gz)$/, "_encrypted.zip")
+
     # Use rubyzip with encryption
     Zip::File.open(encrypted_path, Zip::File::CREATE) do |zipfile|
       zipfile.encryption_level = 1  # Standard encryption
       zipfile.password = password
-      
+
       filename = File.basename(file_path)
       zipfile.add(filename, file_path)
     end
-    
+
     # Remove unencrypted file
     File.delete(file_path)
-    
+
     encrypted_path
   end
 end

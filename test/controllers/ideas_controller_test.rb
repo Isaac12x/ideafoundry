@@ -38,8 +38,8 @@ class IdeasControllerTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_select "body[data-controller~=?]", "shortcuts"
-    assert_select "body[data-controller~=?]", "activity-panel", count: 0
     assert_select ".activity-panel", count: 0
+    assert_select ".activity-feed-wrap", count: 0
     assert_select "body[data-shortcuts-ideas-url-value=?]", ideas_path
     assert_select ".kb-notes-tab-strip .shortcuts-toggle[title=?]", "Keyboard shortcuts", text: "⌘"
     assert_select ".shortcuts-panel[data-shortcuts-target=?]", "panel"
@@ -208,7 +208,7 @@ class IdeasControllerTest < ActionDispatch::IntegrationTest
         post ideas_url, params: {
           idea: { title: "New Idea" },
           kanban_list_ids: { board.id => kanban_list.id },
-          named_list_ids: [named_list.id]
+          named_list_ids: [ named_list.id ]
         }
       end
     end
@@ -224,7 +224,7 @@ class IdeasControllerTest < ActionDispatch::IntegrationTest
       patch idea_url(draft), params: {
         idea: { title: "Promoted" },
         kanban_list_ids: { board.id => kanban_list.id },
-        named_list_ids: [named_list.id]
+        named_list_ids: [ named_list.id ]
       }
     end
 
@@ -331,7 +331,7 @@ class IdeasControllerTest < ActionDispatch::IntegrationTest
       content_type: "text/plain"
     )
     attachment = @idea.attachments.last
-    attachment.update!(ocr_status: "complete", ocr_text: "Widget bracket\nM4 bolt", ocr_metadata: { "parts" => ["Widget bracket", "M4 bolt"] })
+    attachment.update!(ocr_status: "complete", ocr_text: "Widget bracket\nM4 bolt", ocr_metadata: { "parts" => [ "Widget bracket", "M4 bolt" ] })
 
     get edit_idea_url(@idea)
 
@@ -378,15 +378,19 @@ class IdeasControllerTest < ActionDispatch::IntegrationTest
     get idea_url(@idea)
 
     assert_response :success
-    assert_select ".media-section__group--images img.attachment-thumbnail", 1
-    assert_select ".media-section__group--documents .attachment-file", 1
-    assert_select ".media-section__group--documents .attachment-name", text: "brief.pdf"
+    assert_select "[data-attachment-list=?] [data-attachment-kind=?]", "image", "image", 1
+    assert_select "[data-attachment-list=?] [data-attachment-kind=?]", "document", "document", 1
+    assert_select "[data-attachment-list=?] .attachment-card__name", "document", text: "brief.pdf"
+    # Media is managed in place: upload, delete and preview without leaving the page.
+    assert_select "[data-dropzone-upload-url-value*=?]", "variant=card"
+    assert_select ".attachment-card__remove", 2
+    assert_select "dialog.attachment-viewer-modal", 1
   end
 
   test "should update idea" do
     patch idea_url(@idea), params: { idea: { title: "Updated Title" } }
     assert_redirected_to idea_url(@idea, idea_edit_saved: 1)
-    
+
     @idea.reload
     assert_equal "Updated Title", @idea.title
   end
@@ -431,7 +435,7 @@ class IdeasControllerTest < ActionDispatch::IntegrationTest
   # Cool-off period validation tests (Requirement 3.4)
   test "should not allow editing idea during cool-off period" do
     @idea.update!(state: :incubating, cool_off_until: 1.day.from_now)
-    
+
     get edit_idea_url(@idea)
     assert_redirected_to idea_url(@idea)
     assert_match /cool-off period/, flash[:alert]
@@ -439,25 +443,25 @@ class IdeasControllerTest < ActionDispatch::IntegrationTest
 
   test "should not allow updating idea during cool-off period" do
     @idea.update!(state: :incubating, cool_off_until: 1.day.from_now)
-    
+
     patch idea_url(@idea), params: { idea: { title: "Should Not Update" } }
     assert_redirected_to idea_url(@idea)
     assert_match /cool-off period/, flash[:alert]
-    
+
     @idea.reload
     assert_not_equal "Should Not Update", @idea.title
   end
 
   test "should allow editing idea after cool-off period expires" do
     @idea.update!(state: :incubating, cool_off_until: 1.day.ago)
-    
+
     get edit_idea_url(@idea)
     assert_response :success
   end
 
   test "should allow editing idea not in cool-off period" do
     @idea.update!(state: :triage, cool_off_until: nil)
-    
+
     get edit_idea_url(@idea)
     assert_response :success
   end

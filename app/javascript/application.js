@@ -12,7 +12,16 @@ function autosize(el) {
   el.style.overflowY = "hidden";
   el.style.resize = "none";
   el.style.height = "auto";
-  el.style.height = `${el.scrollHeight + buffer}px`;
+  let content = el.scrollHeight;
+  // scrollHeight ignores placeholder text, so an empty field collapses and clips
+  // a multi-line placeholder. When empty, reserve room for the full placeholder.
+  if (el.value === "" && el.placeholder) {
+    el.value = el.placeholder;
+    content = Math.max(content, el.scrollHeight);
+    el.value = "";
+    el.style.height = "auto";
+  }
+  el.style.height = `${content + buffer}px`;
 }
 
 function autosizeAll(root) {

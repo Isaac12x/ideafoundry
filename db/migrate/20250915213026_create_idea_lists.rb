@@ -7,8 +7,8 @@ class CreateIdeaLists < ActiveRecord::Migration[8.0]
 
       t.timestamps
     end
-    
-    add_index :idea_lists, [:idea_id, :list_id], unique: true
-    add_index :idea_lists, [:list_id, :position]
+
+    add_index :idea_lists, [ :idea_id, :list_id ], unique: true
+    add_index :idea_lists, [ :list_id, :position ]
   end
 end

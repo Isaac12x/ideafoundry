@@ -38,6 +38,7 @@ export default class extends Controller {
 
   disconnect() {
     if (this._editor) this._editor.destroy()
+    this._editor = null
   }
 
   restoreFromIdeaDraft(event) {
@@ -178,13 +179,20 @@ export default class extends Controller {
     const form = new FormData()
     form.append("file", file)
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content
-    const res = await fetch(this.uploadUrlValue, {
-      method: "POST",
-      headers: csrfToken ? { "X-CSRF-Token": csrfToken } : {},
-      body: form,
-    })
-    if (!res.ok) return
-    const { url } = await res.json()
+    let url
+    try {
+      const res = await fetch(this.uploadUrlValue, {
+        method: "POST",
+        headers: csrfToken ? { "X-CSRF-Token": csrfToken } : {},
+        body: form,
+      })
+      if (!res.ok) throw new Error("upload failed")
+      ;({ url } = await res.json())
+    } catch {
+      window.AppDialog?.alert("The image could not be uploaded. Check your connection and try again.", { title: "Upload failed", confirmLabel: "Got it" })
+      return
+    }
+    if (!this._editor) return
     this._editor.chain().focus().setImage({ src: url }).run()
   }
 

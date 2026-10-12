@@ -1,7 +1,7 @@
 class Version < ApplicationRecord
   belongs_to :idea
-  belongs_to :parent_version, class_name: 'Version', optional: true
-  has_many :child_versions, class_name: 'Version', foreign_key: 'parent_version_id', dependent: :destroy
+  belongs_to :parent_version, class_name: "Version", optional: true
+  has_many :child_versions, class_name: "Version", foreign_key: "parent_version_id", dependent: :destroy
 
   # Validations
   validates :commit_message, presence: true
@@ -167,7 +167,7 @@ class Version < ApplicationRecord
 
   # Get the version tree path from root to this version
   def ancestry_path
-    path = [self]
+    path = [ self ]
     current = self
 
     while current.parent_version.present?
@@ -184,14 +184,14 @@ class Version < ApplicationRecord
 
     scoring_fields = %w[trl difficulty opportunity timing computed_score]
     changes = {}
-    
+
     parent_data = parent_version.snapshot_data
     current_data = snapshot_data
 
     scoring_fields.each do |field|
       parent_value = parent_data[field]
       current_value = current_data[field]
-      
+
       if parent_value != current_value
         changes[field] = {
           from: parent_value,
@@ -211,17 +211,17 @@ class Version < ApplicationRecord
 
   # Get the computed score for this version
   def computed_score
-    snapshot_data['computed_score']
+    snapshot_data["computed_score"]
   end
 
   # Get scoring metrics for this version
   def scoring_metrics
     {
-      trl: snapshot_data['trl'],
-      difficulty: snapshot_data['difficulty'],
-      opportunity: snapshot_data['opportunity'],
-      timing: snapshot_data['timing'],
-      computed_score: snapshot_data['computed_score']
+      trl: snapshot_data["trl"],
+      difficulty: snapshot_data["difficulty"],
+      opportunity: snapshot_data["opportunity"],
+      timing: snapshot_data["timing"],
+      computed_score: snapshot_data["computed_score"]
     }
   end
 
@@ -236,7 +236,7 @@ class Version < ApplicationRecord
     scoring_fields.each do |field|
       my_value = snapshot_data[field]
       other_value = other_data[field]
-      
+
       if my_value != other_value
         differences[field] = {
           from: other_value,
@@ -429,7 +429,7 @@ class Version < ApplicationRecord
     idea.notes.destroy_all
     id_map = {}
 
-    Array(snapshot_data["notes"]).sort_by { |attributes| [attributes["depth"].to_i, attributes["created_at"].to_s, attributes["id"].to_i] }.each do |attributes|
+    Array(snapshot_data["notes"]).sort_by { |attributes| [ attributes["depth"].to_i, attributes["created_at"].to_s, attributes["id"].to_i ] }.each do |attributes|
       note = idea.notes.create!(
         body: attributes["body"],
         parent_note_id: id_map[attributes["parent_note_id"]],

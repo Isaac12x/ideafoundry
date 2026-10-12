@@ -7,9 +7,14 @@
 default: &default
   adapter: sqlite3
   pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 6 } %>
+  # `timeout` makes Rails install a busy handler that releases the GVL between
+  # retries. Do NOT express the same wait as a `busy_timeout` pragma: PRAGMA
+  # busy_timeout replaces that handler with SQLite's own, which sleeps holding
+  # the GVL, so one blocked writer freezes every other thread in the process --
+  # including the thread holding the write lock -- and the wait can then only
+  # end in "database is locked".
   timeout: 5000
   pragmas:
-    busy_timeout: 5000
     journal_mode: wal
     journal_size_limit: 67108864
     wal_autocheckpoint: 1000
@@ -22,9 +27,11 @@ development:
     <<: *default
     database: storage/development_queue.sqlite3
     migrations_paths: db/queue_migrate
-    pragmas:
-      journal_mode: wal
-      busy_timeout: 10000
+    timeout: 10000
+  cache:
+    <<: *default
+    database: storage/development_cache.sqlite3
+    migrations_paths: db/cache_migrate
 
 # Warning: The database defined as "test" will be erased and
 # re-generated from your development database when you run "rake".
@@ -37,9 +44,11 @@ test:
     <<: *default
     database: storage/queue_test.sqlite3
     migrations_paths: db/queue_migrate
-    pragmas:
-      journal_mode: wal
-      busy_timeout: 10000
+    timeout: 10000
+  cache:
+    <<: *default
+    database: storage/test_cache.sqlite3
+    migrations_paths: db/cache_migrate
 
 production:
   primary:
@@ -54,6 +63,8 @@ production:
     migrations_paths: db/queue_migrate
     # Solid Queue arguments may contain user context, so encrypt this DB too.
     sqlcipher: true
-    pragmas:
-      journal_mode: wal
-      busy_timeout: 10000
+    timeout: 10000
+  cache:
+    <<: *default
+    database: storage/cache.sqlite3
+    migrations_paths: db/cache_migrate

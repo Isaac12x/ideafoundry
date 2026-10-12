@@ -1,0 +1,54 @@
+<% thumb = attachment.thumbnail_source %>
+<% peek = thumb ? nil : attachment.text_peek %>
+<% ext = File.extname(attachment.filename.to_s).delete(".").upcase %>
+<article class="attachment-card"
+     draggable="true"
+     data-attachment-reorder-target="item"
+     data-attachment-id="<%= attachment.id %>"
+     data-destroy-url="<%= idea_attachment_path(idea, attachment) %>"
+     data-update-url="<%= idea_attachment_path(idea, attachment, variant: :card) %>"
+     data-filename="<%= attachment.filename %>"
+     data-url="<%= rails_blob_path(attachment, disposition: "inline") %>"
+     data-content-type="<%= attachment.content_type %>"
+     data-attachment-kind="<%= attachment.image? ? 'image' : 'document' %>"
+     data-action="dragstart->attachment-reorder#dragStart dragend->attachment-reorder#dragEnd dragover->attachment-reorder#dragOver drop->attachment-reorder#drop">
+
+  <div class="attachment-card__open"
+       role="button"
+       tabindex="0"
+       aria-label="Open <%= attachment.filename %>"
+       data-action="click->attachment-viewer#open keydown.enter->attachment-viewer#open keydown.space->attachment-viewer#open">
+    <div class="attachment-card__figure">
+      <% if thumb %>
+        <%= image_tag thumb, class: "attachment-card__thumb", loading: "lazy", alt: "" %>
+      <% elsif peek %>
+        <div class="attachment-card__peek" aria-hidden="true"><%= peek %></div>
+      <% else %>
+        <div class="attachment-card__blank" aria-hidden="true">
+          <span class="attachment-card__blank-ext"><%= ext.presence || "file" %></span>
+        </div>
+      <% end %>
+      <% if !attachment.image? && (thumb || peek) %>
+        <span class="attachment-card__ext"><%= ext.presence || attachment.content_type.to_s.split("/").last %></span>
+      <% end %>
+    </div>
+
+    <div class="attachment-card__meta">
+      <p class="attachment-card__name" title="<%= attachment.filename %>"><%= attachment.filename %></p>
+      <p class="attachment-card__sub">
+        <span><%= number_to_human_size(attachment.byte_size) %></span>
+        <% if attachment.ocr_status.to_s.in?(%w[queued processing extracting]) %>
+          <span class="attachment-card__ocr">reading…</span>
+        <% end %>
+      </p>
+    </div>
+  </div>
+
+  <button type="button"
+          class="attachment-card__remove"
+          title="Remove <%= attachment.filename %>"
+          aria-label="Remove <%= attachment.filename %>"
+          data-action="click->attachment-viewer#openDelete">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+  </button>
+</article>

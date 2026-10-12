@@ -1,0 +1,65 @@
+<div class="import-page">
+  <header class="import-header">
+    <div>
+      <%= link_to @idea, class: "import-back" do %>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        <%= @idea.title.presence || "Untitled idea" %>
+      <% end %>
+      <h1>Import licensors</h1>
+      <p class="import-header__sub">Drop a spreadsheet of prospects. You will map its columns to licensor fields on the next screen.</p>
+    </div>
+  </header>
+
+  <%= form_with url: idea_licensor_imports_path(@idea), method: :post, multipart: true,
+                data: { controller: "auto-submit" }, class: "import-upload" do %>
+    <div class="dropzone import-dropzone"
+         data-controller="dropzone"
+         data-dropzone-accept-value=".csv,.tsv,.xlsx,.xlsm"
+         data-action="click->dropzone#click dragover->dropzone#dragover dragenter->dropzone#dragenter dragleave->dropzone#dragleave drop->dropzone#drop">
+      <svg class="import-dropzone__icon" width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/>
+      </svg>
+      <span class="import-dropzone__title">Drop a CSV or Excel file</span>
+      <span class="import-dropzone__hint">or click to choose — .csv, .tsv, .xlsx, .xlsm, up to 10&nbsp;MB</span>
+      <%= file_field_tag :file, accept: ".csv,.tsv,.xlsx,.xlsm",
+            class: "import-dropzone__input", data: { dropzone_target: "input", action: "change->auto-submit#go" } %>
+    </div>
+  <% end %>
+
+  <section class="import-explainer">
+    <h2>What happens next</h2>
+    <ol class="import-steps">
+      <li><span>1</span> Your sheet is stored with this idea, exactly as uploaded.</li>
+      <li><span>2</span> You map each column to a licensor field — company, email, stage, and the rest.</li>
+      <li><span>3</span> Matching rows land in the <%= link_to "Licensing CRM", licensing_crm_path %> as pipeline records.</li>
+    </ol>
+  </section>
+
+  <% if @previous_imports.present? %>
+    <section class="import-history">
+      <h2>Earlier imports</h2>
+      <ul class="import-history__list">
+        <% @previous_imports.each do |import| %>
+          <li class="import-history__row">
+            <div class="import-history__file">
+              <span class="import-history__name"><%= import.filename %></span>
+              <span class="import-history__meta">
+                <%= import.created_at.strftime("%d %b %Y") %>
+                <% if import.imported? %>
+                  · <%= pluralize(import.imported_count, "licensor") %> imported
+                <% else %>
+                  · not yet mapped
+                <% end %>
+              </span>
+            </div>
+            <div class="import-history__actions">
+              <%= link_to(import.imported? ? "Re-map" : "Continue", licensor_import_path(import), class: "btn btn-sm") %>
+              <%= button_to "Delete", licensor_import_path(import), method: :delete, class: "btn btn-sm btn-danger",
+                    form: { data: { turbo_confirm: "Delete this import? Licensors already created stay in the CRM." } } %>
+            </div>
+          </li>
+        <% end %>
+      </ul>
+    </section>
+  <% end %>
+</div>

@@ -1,7 +1,7 @@
 class TodoItemsController < ApplicationController
   before_action :set_user
   before_action :set_idea
-  before_action :set_todo_item, only: [:toggle, :destroy]
+  before_action :set_todo_item, only: [ :toggle, :destroy ]
 
   def create
     @todo_item = @idea.todo_items.build(todo_item_params)

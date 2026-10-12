@@ -5,6 +5,23 @@ pin "@hotwired/turbo-rails", to: "turbo.min.js", preload: true
 pin "@hotwired/stimulus", to: "stimulus.min.js", preload: true
 pin "@hotwired/stimulus-loading", to: "stimulus-loading.js", preload: true
 pin_all_from "app/javascript/controllers", under: "controllers"
+pin "lib/idea_draft_store", to: "lib/idea_draft_store.mjs"
+pin "lib/kb_anchor", to: "lib/kb_anchor.mjs"
+pin "lib/excalidraw_loader", to: "lib/excalidraw_loader.mjs"
+pin "lib/periodic_table/elements", to: "lib/periodic_table/elements.mjs"
+pin "lib/periodic_table/electrons", to: "lib/periodic_table/electrons.mjs"
+pin "lib/periodic_table/detail", to: "lib/periodic_table/detail.mjs"
+pin "lib/periodic_table/trends", to: "lib/periodic_table/trends.mjs"
+pin "lib/periodic_table/element_details", to: "lib/periodic_table/element_details.mjs"
+pin "lib/periodic_table/chem", to: "lib/periodic_table/chem.mjs"
+pin "lib/periodic_table/compounds", to: "lib/periodic_table/compounds.mjs"
+pin "lib/periodic_table/nuclides", to: "lib/periodic_table/nuclides.mjs"
+pin "lib/periodic_table/world", to: "lib/periodic_table/world.mjs"
+pin "lib/periodic_table/bench_chem", to: "lib/periodic_table/bench_chem.mjs"
+pin "lib/periodic_table/bench_views", to: "lib/periodic_table/bench_views.mjs"
+pin "lib/periodic_table/bench_nuclides", to: "lib/periodic_table/bench_nuclides.mjs"
+pin "lib/periodic_table/bench_map", to: "lib/periodic_table/bench_map.mjs"
+pin "lib/periodic_table/bench_guide", to: "lib/periodic_table/bench_guide.mjs"
 
 # HyperFormula (Excel-compatible formula engine) — lazy-loaded by napkin controller.
 pin "hyperformula", to: "https://esm.sh/hyperformula@3.2.0"

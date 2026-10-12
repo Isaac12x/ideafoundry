@@ -28,12 +28,14 @@ export default class extends Controller {
   disconnect() {
     this.stopResize()
     this.stopInventionCycle()
+    window.clearTimeout(this.swapTimer)
   }
 
   open(event) {
     event?.preventDefault()
     if (!this.hasPanelTarget) return
 
+    if (!this.isOpen()) this.trigger = document.activeElement
     this.panelTarget.hidden = false
     if (this.hasBackdropTarget) {
       this.backdropTarget.hidden = false
@@ -61,6 +63,8 @@ export default class extends Controller {
     }
     document.body.classList.remove("ask-agent-open")
     this.stopResize()
+    if (this.trigger?.isConnected) this.trigger.focus?.({ preventScroll: true })
+    this.trigger = null
   }
 
   closeOnEscape(event) {
@@ -166,8 +170,9 @@ export default class extends Controller {
     }
 
     this.inventionTarget.classList.add("is-swapping")
-    window.setTimeout(() => {
-      this.replaceInvention(template, invention)
+    window.clearTimeout(this.swapTimer)
+    this.swapTimer = window.setTimeout(() => {
+      if (this.hasInventionTarget) this.replaceInvention(template, invention)
     }, 180)
   }
 

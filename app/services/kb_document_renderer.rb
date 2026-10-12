@@ -1,7 +1,7 @@
 require "open3"
 require "cgi"
 
-# Converts a KB document (html/docx/xlsx) into a self-contained HTML string
+# Converts a KB document (html/docx/pptx/xlsx) into a self-contained HTML string
 # suitable for rendering inside a sandboxed, script-free iframe.
 class KbDocumentRenderer
   class ConversionError < StandardError; end
@@ -14,7 +14,7 @@ class KbDocumentRenderer
   def to_html
     case @ext
     when ".html", ".htm" then File.read(@path)
-    when ".docx" then docx_html
+    when ".docx", ".pptx" then pandoc_html
     when ".xlsx" then xlsx_html
     else ""
     end
@@ -22,9 +22,10 @@ class KbDocumentRenderer
 
   private
 
-  def docx_html
+  # pptx: pandoc emits one section per slide (title, text, notes, images).
+  def pandoc_html
     out, err, status = Open3.capture3(
-      "pandoc", @path, "-f", "docx", "-t", "html", "--embed-resources", "--standalone"
+      "pandoc", @path, "-f", @ext.delete_prefix("."), "-t", "html", "--embed-resources", "--standalone"
     )
     raise ConversionError, "pandoc failed: #{err}" unless status.success?
 

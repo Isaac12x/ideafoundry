@@ -1,6 +1,6 @@
 class SubmissionsController < ApplicationController
   before_action :set_user
-  before_action :set_submission, only: [:show, :approve, :reject, :reopen, :destroy]
+  before_action :set_submission, only: [ :show, :approve, :reject, :reopen, :destroy ]
 
   def index
     @status_counts = {

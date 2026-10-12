@@ -101,25 +101,25 @@ module Kb
       edited_duration = (finish_at - start_at) / speed
       # -t is deliberately an input option (before -i). As an output option it
       # would truncate slowed-down media before atempo/setpts can extend it.
-      command = ["ffmpeg", "-y", "-hide_banner", "-loglevel", "error", "-ss", number(start_at),
-                 "-t", number(finish_at - start_at), "-i", path, "-map_metadata", "0"]
+      command = [ "ffmpeg", "-y", "-hide_banner", "-loglevel", "error", "-ss", number(start_at),
+                 "-t", number(finish_at - start_at), "-i", path, "-map_metadata", "0" ]
 
       if video
         video_filters = build_video_filters(speed, edited_duration)
         audio_filters = build_audio_filters(speed, edited_duration)
-        command.concat(["-map", "0:v:0", "-map", "0:a?"])
-        command.concat(["-vf", video_filters.join(",")]) if video_filters.any?
+        command.concat([ "-map", "0:v:0", "-map", "0:a?" ])
+        command.concat([ "-vf", video_filters.join(",") ]) if video_filters.any?
         if truthy?("mute")
           command << "-an"
         elsif audio_filters.any? && info[:has_audio]
-          command.concat(["-af", audio_filters.join(",")])
+          command.concat([ "-af", audio_filters.join(",") ])
         end
         command.concat(VIDEO_CODECS.fetch(File.extname(path).downcase))
       else
         audio_filters = build_audio_filters(speed, edited_duration)
         command << "-vn"
-        command.concat(["-af", audio_filters.join(",")]) if audio_filters.any?
-        command.concat(["-ac", "1"]) if truthy?("mono")
+        command.concat([ "-af", audio_filters.join(",") ]) if audio_filters.any?
+        command.concat([ "-ac", "1" ]) if truthy?("mono")
         command.concat(AUDIO_CODECS.fetch(File.extname(path).downcase))
       end
 
@@ -172,7 +172,7 @@ module Kb
       fade_out = decimal("fade_out", 0.0, min: 0.0, max: duration)
       result = []
       result << "#{filter_name}=t=in:st=0:d=#{number(fade_in)}" if fade_in.positive?
-      result << "#{filter_name}=t=out:st=#{number([duration - fade_out, 0].max)}:d=#{number(fade_out)}" if fade_out.positive?
+      result << "#{filter_name}=t=out:st=#{number([ duration - fade_out, 0 ].max)}:d=#{number(fade_out)}" if fade_out.positive?
       result
     end
 
@@ -200,7 +200,7 @@ module Kb
     def preserve_revision(original_sha)
       relative_directory = File.dirname(path.delete_prefix("#{source_root}/"))
       relative_directory = nil if relative_directory == "."
-      history = File.join(source_root, ".ideafoundry-history", *[relative_directory, File.basename(path)].compact)
+      history = File.join(source_root, ".ideafoundry-history", *[ relative_directory, File.basename(path) ].compact)
       FileUtils.mkdir_p(history)
       extension = File.extname(path)
       stem = File.basename(path, extension)

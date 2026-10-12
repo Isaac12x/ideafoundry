@@ -10,7 +10,7 @@ class SqlcipherDatabaseMigratorTest < ActiveSupport::TestCase
 
     db = SQLite3::Database.new(@database_path.to_s)
     db.execute("CREATE TABLE ideas (id integer primary key, title text)")
-    db.execute("INSERT INTO ideas (title) VALUES (?)", ["Encrypted from app"])
+    db.execute("INSERT INTO ideas (title) VALUES (?)", [ "Encrypted from app" ])
     db.close
   end
 
@@ -58,8 +58,8 @@ class SqlcipherDatabaseMigratorTest < ActiveSupport::TestCase
     File.binwrite(encrypted_path, "not a sqlite header")
 
     RecoverySecret.stub(:present?, false) do
-      SqlcipherDatabaseMigrator.stub(:configured_database_paths, [@database_path.to_s, encrypted_path.to_s]) do
-        assert_equal [encrypted_path.to_s], SqlcipherDatabaseMigrator.locked_database_paths_without_recovery_secret(env: "production")
+      SqlcipherDatabaseMigrator.stub(:configured_database_paths, [ @database_path.to_s, encrypted_path.to_s ]) do
+        assert_equal [ encrypted_path.to_s ], SqlcipherDatabaseMigrator.locked_database_paths_without_recovery_secret(env: "production")
       end
     end
   end
@@ -70,7 +70,7 @@ class SqlcipherDatabaseMigratorTest < ActiveSupport::TestCase
     FileUtils.touch(empty_path)
 
     RecoverySecret.stub(:present?, false) do
-      SqlcipherDatabaseMigrator.stub(:configured_database_paths, [missing_path.to_s, empty_path.to_s]) do
+      SqlcipherDatabaseMigrator.stub(:configured_database_paths, [ missing_path.to_s, empty_path.to_s ]) do
         assert_empty SqlcipherDatabaseMigrator.locked_database_paths_without_recovery_secret(env: "production")
       end
     end
@@ -91,9 +91,9 @@ class SqlcipherDatabaseMigratorTest < ActiveSupport::TestCase
     File.binwrite(encrypted_path, "not a sqlite header")
 
     RecoverySecret.stub(:present?, true) do
-      SqlcipherDatabaseMigrator.stub(:configured_database_paths, [encrypted_path.to_s]) do
+      SqlcipherDatabaseMigrator.stub(:configured_database_paths, [ encrypted_path.to_s ]) do
         SqlcipherDatabaseMigrator.stub(:encrypted_database_openable_with_current_key?, false) do
-          assert_equal [encrypted_path.to_s], SqlcipherDatabaseMigrator.locked_database_paths_without_recovery_secret(env: "production")
+          assert_equal [ encrypted_path.to_s ], SqlcipherDatabaseMigrator.locked_database_paths_without_recovery_secret(env: "production")
         end
       end
     end
@@ -104,9 +104,24 @@ class SqlcipherDatabaseMigratorTest < ActiveSupport::TestCase
     File.binwrite(encrypted_path, "not a sqlite header")
 
     RecoverySecret.stub(:present?, true) do
-      SqlcipherDatabaseMigrator.stub(:configured_database_paths, [encrypted_path.to_s]) do
+      SqlcipherDatabaseMigrator.stub(:configured_database_paths, [ encrypted_path.to_s ]) do
         SqlcipherDatabaseMigrator.stub(:encrypted_database_openable_with_current_key?, true) do
           assert_empty SqlcipherDatabaseMigrator.locked_database_paths_without_recovery_secret(env: "production")
+        end
+      end
+    end
+  end
+
+  test "locked database detection uses the active record connection when the database is already open" do
+    encrypted_path = @root.join("encrypted.sqlite3")
+    File.binwrite(encrypted_path, "not a sqlite header")
+
+    RecoverySecret.stub(:present?, true) do
+      SqlcipherDatabaseMigrator.stub(:configured_database_paths, [ encrypted_path.to_s ]) do
+        SqlcipherDatabaseMigrator.stub(:accessible_via_active_record?, true) do
+          SqlcipherDatabaseMigrator.stub(:encrypted_database_openable_with_current_key?, ->(*) { raise "should not open a second SQLCipher connection" }) do
+            assert_empty SqlcipherDatabaseMigrator.locked_database_paths_without_recovery_secret(env: "production")
+          end
         end
       end
     end

@@ -1,7 +1,7 @@
 module Kb
   module MediaTypes
     MARKDOWN_EXTENSIONS = %w[.md].freeze
-    EMBED_EXTENSIONS = %w[.html .htm .docx .xlsx].freeze
+    EMBED_EXTENSIONS = %w[.html .htm .docx .pptx .xlsx].freeze
     PDF_EXTENSIONS = %w[.pdf].freeze
     IMAGE_EXTENSIONS = %w[.png .jpg .jpeg .webp].freeze
     VIDEO_EXTENSIONS = %w[.mp4 .webm .mov .ogv].freeze

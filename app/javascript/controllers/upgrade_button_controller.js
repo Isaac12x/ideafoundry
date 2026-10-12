@@ -4,21 +4,34 @@ export default class extends Controller {
   static targets = ["button"]
   static values = { upgradeUrl: String, statusUrl: String, healthUrl: String }
 
+  disconnect() {
+    clearInterval(this.interval)
+  }
+
   async upgrade() {
+    const label = this.buttonTarget.textContent
     this.buttonTarget.disabled = true
     this.buttonTarget.textContent = "Upgrading…"
 
     const token = document.querySelector('meta[name="csrf-token"]')?.content
-    await fetch(this.upgradeUrlValue, {
-      method: "POST",
-      headers: { "X-CSRF-Token": token, "Accept": "application/json" }
-    })
+    try {
+      const res = await fetch(this.upgradeUrlValue, {
+        method: "POST",
+        headers: { "X-CSRF-Token": token, "Accept": "application/json" }
+      })
+      if (!res.ok) throw new Error(res.status)
+    } catch {
+      this.buttonTarget.disabled = false
+      this.buttonTarget.textContent = label
+      return
+    }
 
     this.pollStatus()
   }
 
   pollStatus() {
-    const interval = setInterval(async () => {
+    clearInterval(this.interval)
+    const interval = this.interval = setInterval(async () => {
       try {
         const res = await fetch(this.statusUrlValue, { headers: { "Accept": "application/json" } })
         if (!res.ok) throw new Error("gone")
@@ -30,7 +43,8 @@ export default class extends Controller {
   }
 
   pollHealth() {
-    const interval = setInterval(async () => {
+    clearInterval(this.interval)
+    const interval = this.interval = setInterval(async () => {
       try {
         const res = await fetch(this.healthUrlValue)
         if (res.ok) {

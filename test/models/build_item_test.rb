@@ -47,14 +47,14 @@ class BuildItemTest < ActiveSupport::TestCase
     i2 = BuildItem.create!(user: @user, title: "B", position: 1)
     i3 = BuildItem.create!(user: @user, title: "C", position: 3, completed: true, completed_at: Time.current)
     result = @user.build_items.pending
-    assert_equal [i2, i1], result.to_a
+    assert_equal [ i2, i1 ], result.to_a
   end
 
   test "completed scope returns done items" do
     i1 = BuildItem.create!(user: @user, title: "Done", completed: true, completed_at: Time.current)
     i2 = BuildItem.create!(user: @user, title: "Not done")
     result = @user.build_items.done
-    assert_equal [i1], result.to_a
+    assert_equal [ i1 ], result.to_a
   end
 
   test "mark_completed! sets completed and timestamp" do
@@ -80,7 +80,7 @@ class BuildItemTest < ActiveSupport::TestCase
 
     assert_equal 3, item.checklist_total_count
     assert_equal 1, item.checklist_remaining_count
-    assert_equal [1, 2, 3], item.checklist_items.map { |entry| entry[:line_index] }
+    assert_equal [ 1, 2, 3 ], item.checklist_items.map { |entry| entry[:line_index] }
   end
 
   test "toggles checklist items in description" do
@@ -126,7 +126,7 @@ class BuildItemTest < ActiveSupport::TestCase
     b = BuildItem.create!(user: @user, title: "B", position: 2, pinned: true)
     c = BuildItem.create!(user: @user, title: "C", position: 3)
 
-    assert_equal [b, a, c], @user.build_items.pending.to_a
+    assert_equal [ b, a, c ], @user.build_items.pending.to_a
   end
 
   test "subitem_totals sums checklist lines across a collection" do
@@ -134,7 +134,7 @@ class BuildItemTest < ActiveSupport::TestCase
     i2 = BuildItem.new(description: "- [x] three")
     i3 = BuildItem.new(description: "no checklist here")
 
-    totals = BuildItem.subitem_totals([i1, i2, i3])
+    totals = BuildItem.subitem_totals([ i1, i2, i3 ])
     assert_equal 3, totals[:total]
     assert_equal 2, totals[:done]
   end
@@ -149,7 +149,7 @@ class BuildItemTest < ActiveSupport::TestCase
   test "absorb! folds another item in as a checklist subitem and destroys it" do
     target = BuildItem.create!(user: @user, title: "Parent", description: "intro")
     source = BuildItem.create!(user: @user, title: "Child", description: "- [ ] nested\nnote",
-                               links: [{ "url" => "https://x.test", "label" => "X" }])
+                               links: [ { "url" => "https://x.test", "label" => "X" } ])
 
     target.absorb!(source)
     target.reload
@@ -157,13 +157,13 @@ class BuildItemTest < ActiveSupport::TestCase
     assert_not BuildItem.exists?(source.id)
     assert_includes target.description, "- [ ] Child"
     assert_includes target.description, "  - [ ] nested"
-    assert_equal [{ "url" => "https://x.test", "label" => "X" }], target.links
+    assert_equal [ { "url" => "https://x.test", "label" => "X" } ], target.links
   end
 
   test "absorb! merges links without duplicating by url" do
     link = { "url" => "https://dup.test", "label" => "Dup" }
-    target = BuildItem.create!(user: @user, title: "Parent", links: [link])
-    source = BuildItem.create!(user: @user, title: "Child", links: [link])
+    target = BuildItem.create!(user: @user, title: "Parent", links: [ link ])
+    source = BuildItem.create!(user: @user, title: "Child", links: [ link ])
 
     target.absorb!(source)
     assert_equal 1, target.reload.links.size

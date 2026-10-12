@@ -2,7 +2,7 @@ require "test_helper"
 
 class SettingsControllerTest < ActionDispatch::IntegrationTest
   def setup
-    @user = User.first || User.create!(email: 'test@example.com', name: 'Test')
+    @user = User.first || User.create!(email: "test@example.com", name: "Test")
   end
 
   test "GET settings/topologies renders settings page" do
@@ -125,9 +125,9 @@ class SettingsControllerTest < ActionDispatch::IntegrationTest
     }
     assert_redirected_to settings_topologies_path
     @user.reload
-    assert_equal false, @user.topology_settings['show_ideas']
-    assert_equal 0.5, @user.topology_settings['bloom_strength']
-    assert_equal 'graph', @user.topology_settings['default_view']
+    assert_equal false, @user.topology_settings["show_ideas"]
+    assert_equal 0.5, @user.topology_settings["bloom_strength"]
+    assert_equal "graph", @user.topology_settings["default_view"]
   end
 
   test "PATCH settings/topologies rejects invalid keys" do
@@ -136,7 +136,7 @@ class SettingsControllerTest < ActionDispatch::IntegrationTest
     }
     assert_redirected_to settings_topologies_path
     @user.reload
-    assert_nil @user.settings&.dig('topology_settings', 'hacker')
+    assert_nil @user.settings&.dig("topology_settings", "hacker")
   end
 
   test "PATCH settings/topologies stores topology default template fields" do
@@ -239,7 +239,7 @@ class SettingsControllerTest < ActionDispatch::IntegrationTest
     FileUtils.mkdir_p(root)
     create_plaintext_sqlite_database(database_path)
 
-    SqlcipherDatabaseMigrator.stub(:configured_database_paths, [database_path.to_s]) do
+    SqlcipherDatabaseMigrator.stub(:configured_database_paths, [ database_path.to_s ]) do
       get settings_security_path
     end
 
@@ -298,7 +298,7 @@ class SettingsControllerTest < ActionDispatch::IntegrationTest
 
     with_recovery_passphrase_file(root.join("recovery_passphrase.key")) do
       with_sqlcipher_backup_dir(backup_dir) do
-        SqlcipherDatabaseMigrator.stub(:configured_database_paths, [database_path.to_s]) do
+        SqlcipherDatabaseMigrator.stub(:configured_database_paths, [ database_path.to_s ]) do
           post settings_security_encrypt_database_path, params: {
             database_encryption: {
               passphrase: "correct horse battery staple",
@@ -585,16 +585,16 @@ class SettingsControllerTest < ActionDispatch::IntegrationTest
 
   test "PATCH settings/notifications saves recipients and presets" do
     patch settings_notifications_path, params: {
-      email_settings: { recipients: 'a@b.com' },
-      event_presets: { state_changed: 'info', score_changed: 'digest' },
+      email_settings: { recipients: "a@b.com" },
+      event_presets: { state_changed: "info", score_changed: "digest" },
       notification_triggers: %w[state_changed]
     }
     assert_redirected_to settings_email_path
     @user.reload
-    assert_equal 'a@b.com', @user.email_settings['recipients']
-    assert_equal 'info', @user.event_preset_for('state_changed')
-    assert_equal 'digest', @user.event_preset_for('score_changed')
-    assert_equal ['state_changed'], @user.notification_triggers
+    assert_equal "a@b.com", @user.email_settings["recipients"]
+    assert_equal "info", @user.event_preset_for("state_changed")
+    assert_equal "digest", @user.event_preset_for("score_changed")
+    assert_equal [ "state_changed" ], @user.notification_triggers
   end
 
   test "PATCH settings/notifications as json saves toggle preferences" do
@@ -611,7 +611,7 @@ class SettingsControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_equal({ "saved" => true }, JSON.parse(response.body))
     @user.reload
-    assert_equal ["state_changed"], @user.notification_triggers
+    assert_equal [ "state_changed" ], @user.notification_triggers
     assert_equal "false", @user.notification_content.dig("state_changed", "include_scores")
     assert_equal "true", @user.notification_content.dig("state_changed", "include_description")
   end
@@ -701,7 +701,7 @@ class SettingsControllerTest < ActionDispatch::IntegrationTest
     patch settings_display_path, params: {
       display_settings: {
         quote: "Base quote",
-        quote_library: ["Alpha", "", "Beta"],
+        quote_library: [ "Alpha", "", "Beta" ],
         quote_pages: { "ideas" => "1", "kb" => "none" },
         nav_visible: { "ideas" => "1", "plan" => "1" }
       }
@@ -730,22 +730,22 @@ class SettingsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "display_contrast migrates legacy 'high' to 130" do
-    @user.update!(settings: { 'display_contrast' => 'high' })
+    @user.update!(settings: { "display_contrast" => "high" })
     assert_equal 130, @user.display_contrast
   end
 
   test "display_contrast migrates legacy 'normal' to 100" do
-    @user.update!(settings: { 'display_contrast' => 'normal' })
+    @user.update!(settings: { "display_contrast" => "normal" })
     assert_equal 100, @user.display_contrast
   end
 
   test "display_contrast returns stored integer value" do
-    @user.update!(settings: { 'display_contrast' => '120' })
+    @user.update!(settings: { "display_contrast" => "120" })
     assert_equal 120, @user.display_contrast
   end
 
   test "display_contrast clamps out-of-range value to 100" do
-    @user.update!(settings: { 'display_contrast' => '999' })
+    @user.update!(settings: { "display_contrast" => "999" })
     assert_equal 100, @user.display_contrast
   end
 
@@ -759,10 +759,10 @@ class SettingsControllerTest < ActionDispatch::IntegrationTest
 
   test "PATCH settings/kb persists drives alongside folders" do
     original = @user.settings.deep_dup
-    patch settings_kb_path, params: { kb_folders: [], kb_drives: ["/Volumes/Archive"] }
+    patch settings_kb_path, params: { kb_folders: [], kb_drives: [ "/Volumes/Archive" ] }
 
     assert_redirected_to settings_kb_path
-    assert_equal ["/Volumes/Archive"], @user.reload.kb_drives
+    assert_equal [ "/Volumes/Archive" ], @user.reload.kb_drives
   ensure
     @user.update!(settings: original)
   end
@@ -789,7 +789,7 @@ class SettingsControllerTest < ActionDispatch::IntegrationTest
   def create_plaintext_sqlite_database(path)
     db = SQLite3::Database.new(path.to_s)
     db.execute("CREATE TABLE ideas (id integer primary key, title text)")
-    db.execute("INSERT INTO ideas (title) VALUES (?)", ["Encrypted from settings"])
+    db.execute("INSERT INTO ideas (title) VALUES (?)", [ "Encrypted from settings" ])
   ensure
     db&.close
   end

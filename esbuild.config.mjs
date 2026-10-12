@@ -87,7 +87,7 @@ function excalidrawLocalOnlyPlugin() {
   return {
     name: "excalidraw-local-only",
     setup(build) {
-      build.onResolve({ filter: /^\.\.??\/chunk-.*\.js$/ }, (args) => {
+      build.onResolve({ filter: /^(?:\.{1,2}\/)+chunk-.*\.js$/ }, (args) => {
         if (
           args.importer.includes("node_modules/@excalidraw/excalidraw/dist/") &&
           connectorEnvChunks.has(path.basename(args.path))

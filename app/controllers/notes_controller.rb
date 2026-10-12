@@ -1,7 +1,7 @@
 class NotesController < ApplicationController
   before_action :set_user
   before_action :set_idea
-  before_action :set_note, only: [:destroy]
+  before_action :set_note, only: [ :destroy ]
 
   def create
     @note = @idea.notes.build(note_params)

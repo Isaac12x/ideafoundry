@@ -12,8 +12,8 @@ class CreateTopologiesAndIdeaTopologies < ActiveRecord::Migration[8.0]
       t.timestamps
     end
 
-    add_index :topologies, [:user_id, :parent_id]
-    add_index :topologies, [:user_id, :name], unique: true
+    add_index :topologies, [ :user_id, :parent_id ]
+    add_index :topologies, [ :user_id, :name ], unique: true
 
     # Create join table
     create_table :idea_topologies do |t|
@@ -23,7 +23,7 @@ class CreateTopologiesAndIdeaTopologies < ActiveRecord::Migration[8.0]
       t.timestamps
     end
 
-    add_index :idea_topologies, [:idea_id, :topology_id], unique: true
+    add_index :idea_topologies, [ :idea_id, :topology_id ], unique: true
 
     # Migrate existing category data
     execute <<-SQL

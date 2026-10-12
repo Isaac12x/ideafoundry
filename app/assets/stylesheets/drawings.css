@@ -44,7 +44,7 @@
 
 .drawing-row .drawing-meta {
   font-size: 0.85rem;
-  color: var(--text-muted, #888);
+  color: var(--text-muted);
 }
 
 /* Drawing canvas page */
@@ -150,7 +150,7 @@
 
 .idea-drawings__empty {
   font-size: 0.85rem;
-  color: var(--text-muted, #888);
+  color: var(--text-muted);
   font-style: italic;
 }
 
@@ -185,7 +185,7 @@
 
 .drawing-thumb__placeholder {
   font-size: 0.8rem;
-  color: var(--text-muted, #888);
+  color: var(--text-muted);
 }
 
 .drawing-thumb__row {
@@ -292,15 +292,20 @@ body.modal-open {
   background: var(--bg-elevated);
   border: 1px solid var(--border-default);
   border-radius: 6px;
-  color: var(--text-secondary, #aaa);
+  color: var(--text-secondary);
   cursor: pointer;
   font-size: 0.85rem;
 }
 
+.hero-mode-tab:hover {
+  border-color: var(--border-emphasis);
+  color: var(--text-primary);
+}
+
 .hero-mode-tab.active {
-  background: var(--accent, #6965db);
-  border-color: var(--accent, #6965db);
-  color: #fff;
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--text-on-accent);
 }
 
 .hero-mode-panel.hidden {
@@ -315,7 +320,7 @@ body.modal-open {
 
 .form-subsection-title {
   font-size: 0.85rem;
-  color: var(--text-muted, #888);
+  color: var(--text-muted);
   margin: 0 0 0.5rem 0;
   text-transform: uppercase;
   letter-spacing: 0.5px;

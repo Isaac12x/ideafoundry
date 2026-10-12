@@ -37,4 +37,16 @@ class IdeaAttachmentsJsonFormatTest < ActionDispatch::IntegrationTest
     assert body["success"]
     assert_includes body["html"], "current-attachments__item"
   end
+
+  test "variant=card returns the detail-page card partial" do
+    post idea_attachments_url(@idea, variant: "card"),
+      params: { files: [ fixture_file_upload("welcome.eml", "message/rfc822") ] },
+      headers: { "Accept" => "application/json" }
+
+    assert_response :success
+    body = JSON.parse(response.body)
+    assert_includes body["html"], "attachment-card"
+    assert_includes body["html"], "attachment-viewer#openDelete"
+    refute_includes body["html"], "current-attachments__item"
+  end
 end

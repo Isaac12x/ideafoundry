@@ -15,7 +15,7 @@ class List < ApplicationRecord
   validates :kanban_board, presence: true, if: :kanban?
   validates :position, presence: true
   validates :position, uniqueness: { scope: :kanban_board_id }, if: :kanban?
-  validates :position, uniqueness: { scope: [:user_id, :kind] }, if: :named?
+  validates :position, uniqueness: { scope: [ :user_id, :kind ] }, if: :named?
   validate :kanban_board_belongs_to_user
 
   # Callbacks

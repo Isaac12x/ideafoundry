@@ -8,25 +8,20 @@ export default class extends Controller {
     listId: Number,
   };
 
-  connect() {
-    this.setupDragAndDrop();
+  // Stimulus fires *TargetConnected for targets present at connect, so listeners
+  // are bound there only (stable refs below -> addEventListener dedupes).
+  initialize() {
+    this.handleDragStart = this.handleDragStart.bind(this);
+    this.handleDragEnd = this.handleDragEnd.bind(this);
+    this.handleDragOver = this.handleDragOver.bind(this);
+    this.handleDrop = this.handleDrop.bind(this);
+    this.handleDragEnter = this.handleDragEnter.bind(this);
+    this.handleDragLeave = this.handleDragLeave.bind(this);
   }
 
-  setupDragAndDrop() {
-    // Make all items draggable
-    this.itemTargets.forEach((item) => {
-      item.draggable = true;
-      item.addEventListener("dragstart", this.handleDragStart.bind(this));
-      item.addEventListener("dragend", this.handleDragEnd.bind(this));
-    });
-
-    // Setup drop zones
-    this.containerTargets.forEach((container) => {
-      container.addEventListener("dragover", this.handleDragOver.bind(this));
-      container.addEventListener("drop", this.handleDrop.bind(this));
-      container.addEventListener("dragenter", this.handleDragEnter.bind(this));
-      container.addEventListener("dragleave", this.handleDragLeave.bind(this));
-    });
+  disconnect() {
+    this.itemTargets.forEach((el) => this.itemTargetDisconnected(el));
+    this.containerTargets.forEach((el) => this.containerTargetDisconnected(el));
   }
 
   handleDragStart(event) {
@@ -178,18 +173,28 @@ export default class extends Controller {
     }, 3000);
   }
 
-  // Called when new items are added dynamically
   itemTargetConnected(element) {
     element.draggable = true;
-    element.addEventListener("dragstart", this.handleDragStart.bind(this));
-    element.addEventListener("dragend", this.handleDragEnd.bind(this));
+    element.addEventListener("dragstart", this.handleDragStart);
+    element.addEventListener("dragend", this.handleDragEnd);
   }
 
-  // Called when new containers are added dynamically
+  itemTargetDisconnected(element) {
+    element.removeEventListener("dragstart", this.handleDragStart);
+    element.removeEventListener("dragend", this.handleDragEnd);
+  }
+
   containerTargetConnected(element) {
-    element.addEventListener("dragover", this.handleDragOver.bind(this));
-    element.addEventListener("drop", this.handleDrop.bind(this));
-    element.addEventListener("dragenter", this.handleDragEnter.bind(this));
-    element.addEventListener("dragleave", this.handleDragLeave.bind(this));
+    element.addEventListener("dragover", this.handleDragOver);
+    element.addEventListener("drop", this.handleDrop);
+    element.addEventListener("dragenter", this.handleDragEnter);
+    element.addEventListener("dragleave", this.handleDragLeave);
+  }
+
+  containerTargetDisconnected(element) {
+    element.removeEventListener("dragover", this.handleDragOver);
+    element.removeEventListener("drop", this.handleDrop);
+    element.removeEventListener("dragenter", this.handleDragEnter);
+    element.removeEventListener("dragleave", this.handleDragLeave);
   }
 }

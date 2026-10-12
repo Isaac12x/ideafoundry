@@ -7,7 +7,7 @@ class KbEnhancementsTest < ActionDispatch::IntegrationTest
     @kb_dir = Rails.root.join("tmp", "kb-enhancements-#{SecureRandom.hex(6)}").to_s
     FileUtils.mkdir_p(File.join(@kb_dir, "research"))
     @user.update!(settings: (@user.settings || {}).merge(
-      "kb" => { "folders" => [@kb_dir], "hide_native" => true }
+      "kb" => { "folders" => [ @kb_dir ], "hide_native" => true }
     ))
   end
 
@@ -24,7 +24,7 @@ class KbEnhancementsTest < ActionDispatch::IntegrationTest
     )
 
     post kb_fs_upload_path,
-         params: { src: 0, dir: "research", files: [upload] },
+         params: { src: 0, dir: "research", files: [ upload ] },
          headers: { "Accept" => "text/vnd.turbo-stream.html" }
 
     assert_response :success
@@ -37,7 +37,7 @@ class KbEnhancementsTest < ActionDispatch::IntegrationTest
     File.write(File.join(@kb_dir, "research", "notes.txt"), "first")
     upload = Rack::Test::UploadedFile.new(StringIO.new("second"), "text/plain", original_filename: "notes.txt")
 
-    post kb_fs_upload_path, params: { src: 0, dir: "research", files: [upload] }
+    post kb_fs_upload_path, params: { src: 0, dir: "research", files: [ upload ] }
 
     assert_equal "first", File.read(File.join(@kb_dir, "research", "notes.txt"))
     assert_equal "second", File.read(File.join(@kb_dir, "research", "notes-2.txt"))

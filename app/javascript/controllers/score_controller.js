@@ -109,11 +109,18 @@ export default class extends Controller {
     }
   }
 
+  // Stimulus throws on a missing target even with `?.`, so guard with has*.
+  _sliderValue(type) {
+    return this[`has${type.charAt(0).toUpperCase() + type.slice(1)}SliderTarget`]
+      ? this[`${type}SliderTarget`].value
+      : 0;
+  }
+
   calculateScore() {
-    const trl = parseFloat(this.trlSliderTarget?.value) || 0;
-    const difficulty = parseFloat(this.difficultySliderTarget?.value) || 0;
-    const opportunity = parseFloat(this.opportunitySliderTarget?.value) || 0;
-    const timing = parseFloat(this.timingSliderTarget?.value) || 0;
+    const trl = parseFloat(this._sliderValue("trl")) || 0;
+    const difficulty = parseFloat(this._sliderValue("difficulty")) || 0;
+    const opportunity = parseFloat(this._sliderValue("opportunity")) || 0;
+    const timing = parseFloat(this._sliderValue("timing")) || 0;
 
     // Calculate raw score using configurable weights
     const weights = [this.trlWeightValue, this.difficultyWeightValue, this.opportunityWeightValue, this.timingWeightValue];
@@ -222,10 +229,10 @@ export default class extends Controller {
   async saveScoreToServer() {
     if (!this.ideaIdValue || !this.updateUrlValue) return;
 
-    const trl = parseInt(this.trlSliderTarget?.value) || 0;
-    const difficulty = parseInt(this.difficultySliderTarget?.value) || 0;
-    const opportunity = parseInt(this.opportunitySliderTarget?.value) || 0;
-    const timing = parseInt(this.timingSliderTarget?.value) || 0;
+    const trl = parseInt(this._sliderValue("trl")) || 0;
+    const difficulty = parseInt(this._sliderValue("difficulty")) || 0;
+    const opportunity = parseInt(this._sliderValue("opportunity")) || 0;
+    const timing = parseInt(this._sliderValue("timing")) || 0;
 
     const formData = new FormData();
     formData.append("idea[trl]", trl);

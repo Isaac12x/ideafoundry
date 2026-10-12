@@ -39,7 +39,7 @@ class KbEntryPreferenceTest < ActiveSupport::TestCase
       new_relative_path: "sources"
     )
 
-    assert_equal ["/tmp/other-kb", "sources"], [folder.reload.source_path, folder.relative_path]
-    assert_equal ["/tmp/other-kb", "sources/note.md"], [file.reload.source_path, file.relative_path]
+    assert_equal [ "/tmp/other-kb", "sources" ], [ folder.reload.source_path, folder.relative_path ]
+    assert_equal [ "/tmp/other-kb", "sources/note.md" ], [ file.reload.source_path, file.relative_path ]
   end
 end

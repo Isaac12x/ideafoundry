@@ -1,7 +1,7 @@
 import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
-  static targets = ["preview", "filenameInput", "fileInput", "deleteBtn"]
+  static targets = ["dialog", "preview", "filenameInput", "fileInput", "deleteBtn", "title", "downloadLink"]
   static values = {
     updateUrl: String,
     destroyUrl: String,
@@ -11,8 +11,11 @@ export default class extends Controller {
 
   open(event) {
     if (event.target.closest("button, a, input")) return
-    this._populate(event.currentTarget)
-    this.element.showModal()
+    const item = event.currentTarget.closest("[data-attachment-id]")
+    if (!item) return
+    event.preventDefault()
+    this._populate(item)
+    this.dialogTarget.showModal()
   }
 
   openDelete(event) {
@@ -20,12 +23,12 @@ export default class extends Controller {
     const item = event.currentTarget.closest("[data-attachment-id]")
     if (!item) return
     this._populate(item)
-    this.element.showModal()
+    this.dialogTarget.showModal()
     this.deleteBtnTarget.focus()
   }
 
   backdropClose(event) {
-    if (event.target === this.element) this.close()
+    if (event.target === this.dialogTarget) this.close()
   }
 
   save() {
@@ -45,7 +48,7 @@ export default class extends Controller {
     })
       .then(r => r.json())
       .then(data => {
-        if (!data.success) return
+        if (!data.success) return this._flash("Could not save changes.")
         const item = document.querySelector(`[data-attachment-id="${this.attachmentIdValue}"]`)
         if (item) {
           item.outerHTML = data.html
@@ -54,14 +57,25 @@ export default class extends Controller {
         }
         this.close()
       })
+      .catch(() => this._flash("Could not save changes."))
+  }
+
+  _flash(message) {
+    window.AppDialog?.alert(message, { title: "Attachment not saved", confirmLabel: "Got it" })
   }
 
   async confirmDelete() {
     const token = document.querySelector("meta[name='csrf-token']")?.content
-    const response = await fetch(this.destroyUrlValue, {
-      method: "DELETE",
-      headers: { "X-CSRF-Token": token, "Accept": "application/json" }
-    })
+    let response
+    try {
+      response = await fetch(this.destroyUrlValue, {
+        method: "DELETE",
+        headers: { "X-CSRF-Token": token, "Accept": "application/json" }
+      })
+    } catch {
+      return this._flash("Could not delete attachment.")
+    }
+    if (!response.ok && response.status !== 204) return this._flash("Could not delete attachment.")
     if (response.ok || response.status === 204) {
       const item = document.querySelector(`[data-attachment-id="${this.attachmentIdValue}"]`)
       if (item) {
@@ -74,8 +88,13 @@ export default class extends Controller {
   }
 
   close() {
-    this.element.close()
+    this.dialogTarget.close()
+  }
+
+  // Fires on dialog `close`, so Escape cleans up the same as the buttons do.
+  reset() {
     this.previewTarget.innerHTML = ""
+    this.dialogTarget.classList.remove("attachment-viewer-modal--wide")
     this.filenameInputTarget.value = ""
     this.fileInputTarget.value = ""
   }
@@ -87,11 +106,14 @@ export default class extends Controller {
     this.updateUrlValue = updateUrl
     this.filenameInputTarget.value = filename || ""
     this.fileInputTarget.value = ""
+    if (this.hasTitleTarget) this.titleTarget.textContent = filename || ""
+    if (this.hasDownloadLinkTarget) this.downloadLinkTarget.href = url || "#"
     this._renderPreview(url, contentType)
   }
 
   _renderPreview(url, contentType) {
     this.previewTarget.innerHTML = ""
+    this.dialogTarget.classList.remove("attachment-viewer-modal--wide")
     if (!url) return
     if (contentType?.startsWith("image/")) {
       const img = document.createElement("img")
@@ -99,11 +121,15 @@ export default class extends Controller {
       img.className = "attachment-viewer-modal__img"
       this.previewTarget.appendChild(img)
     } else if (contentType === "application/pdf") {
-      const embed = document.createElement("embed")
-      embed.src = url
-      embed.type = "application/pdf"
-      embed.className = "attachment-viewer-modal__embed"
-      this.previewTarget.appendChild(embed)
+      // Rendered in-page by pdf.js rather than handed to the browser's PDF
+      // plugin, which either hijacks the tab or opens a new one.
+      this.dialogTarget.classList.add("attachment-viewer-modal--wide")
+      const viewer = document.createElement("div")
+      viewer.className = "attachment-viewer-modal__pdf"
+      viewer.dataset.controller = "kb-pdf"
+      viewer.dataset.kbPdfUrlValue = url
+      viewer.dataset.kbPdfKeyValue = `attachment:${this.attachmentIdValue}`
+      this.previewTarget.appendChild(viewer)
     } else {
       const icon = document.createElement("div")
       icon.className = "attachment-viewer-modal__icon"

@@ -14,7 +14,7 @@ class KbEntryPreference < ApplicationRecord
   validates :icon_kind, inclusion: { in: ICON_KINDS }
   validates :emoji, length: { maximum: 24 }, allow_blank: true
   validates :relative_path,
-            uniqueness: { scope: [:user_id, :source_path, :entry_type] }
+            uniqueness: { scope: [ :user_id, :source_path, :entry_type ] }
   validate :image_icon_is_an_image
 
   scope :for_source, ->(path) { where(source_path: normalize_source_path(path)) }

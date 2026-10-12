@@ -1,18 +1,18 @@
 class ListsController < ApplicationController
   before_action :set_user
-  before_action :set_list, only: [:show, :edit, :update, :destroy, :send_email, :add_idea, :remove_idea]
+  before_action :set_list, only: [ :show, :edit, :update, :destroy, :send_email, :add_idea, :remove_idea ]
 
   def index
-    @default_view = normalized_list_view(params[:view].presence || @user.list_settings['default_view'])
-    @kanban_boards = @user.kanban_boards.ordered.includes(lists: { ideas: [:idea_lists, :idea_entries, :github_repository] })
+    @default_view = normalized_list_view(params[:view].presence || @user.list_settings["default_view"])
+    @kanban_boards = @user.kanban_boards.ordered.includes(lists: { ideas: [ :idea_lists, :idea_entries, :github_repository ] })
     @kanban_board = @user.kanban_boards.build
-    @kanban_lists = @user.lists.kanban.includes(:kanban_board, ideas: [:idea_lists, :idea_entries, :github_repository]).order(:kanban_board_id, :position)
+    @kanban_lists = @user.lists.kanban.includes(:kanban_board, ideas: [ :idea_lists, :idea_entries, :github_repository ]).order(:kanban_board_id, :position)
     @named_lists = @user.lists.named.ordered.includes(:ideas)
     @lists = @kanban_lists
   end
 
   def show
-    @ideas = @list.ideas.includes(:idea_lists, :idea_entries).order('idea_lists.position')
+    @ideas = @list.ideas.includes(:idea_lists, :idea_entries).order("idea_lists.position")
     @available_ideas = @user.ideas.non_draft.kept.order(:title).where.not(id: @list.idea_ids) if @list.named?
   end
 
@@ -24,9 +24,9 @@ class ListsController < ApplicationController
 
   def create
     @list = @user.lists.build(list_params)
-    
+
     if @list.save
-      redirect_to lists_path(view: @list.kind), notice: 'List was successfully created.'
+      redirect_to lists_path(view: @list.kind), notice: "List was successfully created."
     else
       load_kanban_boards
       render :new, status: :unprocessable_content
@@ -39,7 +39,7 @@ class ListsController < ApplicationController
 
   def update
     if @list.update(list_params)
-      redirect_to @list, notice: 'List was successfully updated.'
+      redirect_to @list, notice: "List was successfully updated."
     else
       load_kanban_boards
       render :edit, status: :unprocessable_content
@@ -47,11 +47,11 @@ class ListsController < ApplicationController
   end
 
   def send_email
-    recipients = params[:recipients].to_s.split(',').map(&:strip).reject(&:blank?)
+    recipients = params[:recipients].to_s.split(",").map(&:strip).reject(&:blank?)
     recipients = @user.email_recipients if recipients.empty?
 
     if recipients.empty?
-      redirect_to lists_path, alert: 'No recipients configured. Add recipients in Settings > Email or enter an address.'
+      redirect_to lists_path, alert: "No recipients configured. Add recipients in Settings > Email or enter an address."
       return
     end
 
@@ -64,30 +64,30 @@ class ListsController < ApplicationController
 
   def destroy
     @list.destroy
-    redirect_to lists_path, notice: 'List was successfully deleted.'
+    redirect_to lists_path, notice: "List was successfully deleted."
   end
 
   def add_idea
     unless @list.named?
-      redirect_to @list, alert: 'Ideas can only be added directly to named lists.'
+      redirect_to @list, alert: "Ideas can only be added directly to named lists."
       return
     end
 
     idea = @user.ideas.non_draft.find(params[:idea_id])
     @list.idea_lists.find_or_create_by!(idea: idea)
 
-    redirect_to @list, notice: 'Idea was added to the list.'
+    redirect_to @list, notice: "Idea was added to the list."
   end
 
   def remove_idea
     unless @list.named?
-      redirect_to @list, alert: 'Ideas can only be removed directly from named lists.'
+      redirect_to @list, alert: "Ideas can only be removed directly from named lists."
       return
     end
 
     @list.idea_lists.find_by!(idea_id: params[:idea_id]).destroy!
 
-    redirect_to @list, notice: 'Idea was removed from the list.'
+    redirect_to @list, notice: "Idea was removed from the list."
   end
 
   # PATCH /lists/update_idea_position
@@ -118,17 +118,17 @@ class ListsController < ApplicationController
       if existing && existing.list == new_list
         # Reordering within same list
         old_position = existing.position
-        new_list.idea_lists.where('position > ?', old_position).update_all('position = position - 1')
-        new_list.idea_lists.where('position >= ?', new_position).update_all('position = position + 1')
+        new_list.idea_lists.where("position > ?", old_position).update_all("position = position - 1")
+        new_list.idea_lists.where("position >= ?", new_position).update_all("position = position + 1")
         existing.update!(position: new_position)
       else
         # Moving to a different list
         if existing
           old_list = existing.list
-          old_list.idea_lists.where('position > ?', existing.position).update_all('position = position - 1')
+          old_list.idea_lists.where("position > ?", existing.position).update_all("position = position - 1")
         end
 
-        new_list.idea_lists.where('position >= ?', new_position).update_all('position = position + 1')
+        new_list.idea_lists.where("position >= ?", new_position).update_all("position = position + 1")
         if existing
           existing.update!(list: new_list, position: new_position)
         else
@@ -141,15 +141,15 @@ class ListsController < ApplicationController
       format.turbo_stream do
         streams = [
           turbo_stream.update("list_#{new_list.id}_ideas",
-            partial: 'lists/ideas',
-            locals: { list: new_list, ideas: new_list.ideas.includes(:idea_lists, :idea_entries, :github_repository).order('idea_lists.position') }
+            partial: "lists/ideas",
+            locals: { list: new_list, ideas: new_list.ideas.includes(:idea_lists, :idea_entries, :github_repository).order("idea_lists.position") }
           )
         ]
 
         if old_list
           streams << turbo_stream.update("list_#{old_list.id}_ideas",
-            partial: 'lists/ideas',
-            locals: { list: old_list, ideas: old_list.ideas.reload.includes(:idea_lists, :idea_entries, :github_repository).order('idea_lists.position') }
+            partial: "lists/ideas",
+            locals: { list: old_list, ideas: old_list.ideas.reload.includes(:idea_lists, :idea_entries, :github_repository).order("idea_lists.position") }
           )
         end
 
@@ -160,7 +160,7 @@ class ListsController < ApplicationController
   rescue ActiveRecord::RecordNotFound => e
     respond_to do |format|
       format.turbo_stream { head :not_found }
-      format.json { render json: { error: 'Record not found' }, status: :not_found }
+      format.json { render json: { error: "Record not found" }, status: :not_found }
     end
   rescue => e
     respond_to do |format|
@@ -176,8 +176,8 @@ class ListsController < ApplicationController
   end
 
   def list_params
-    permitted = [:name]
-    permitted += [:kind, :kanban_board_id] if action_name == "create"
+    permitted = [ :name ]
+    permitted += [ :kind, :kanban_board_id ] if action_name == "create"
     params.require(:list).permit(*permitted)
   end
 
@@ -186,7 +186,7 @@ class ListsController < ApplicationController
   end
 
   def normalized_list_view(view)
-    User::ALLOWED_LIST_DEFAULT_VIEWS.include?(view.to_s) ? view.to_s : User::DEFAULT_LIST_SETTINGS['default_view']
+    User::ALLOWED_LIST_DEFAULT_VIEWS.include?(view.to_s) ? view.to_s : User::DEFAULT_LIST_SETTINGS["default_view"]
   end
 
   def normalized_kanban_board_id(id)

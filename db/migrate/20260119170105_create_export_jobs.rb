@@ -11,7 +11,7 @@ class CreateExportJobs < ActiveRecord::Migration[8.0]
       t.timestamps
     end
 
-    add_index :export_jobs, [:user_id, :status]
+    add_index :export_jobs, [ :user_id, :status ]
     add_index :export_jobs, :created_at
   end
 end

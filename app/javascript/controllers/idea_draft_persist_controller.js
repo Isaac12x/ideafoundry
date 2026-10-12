@@ -6,7 +6,7 @@ import {
   hasMeaningfulDraft,
   restoreDraftFields,
   shouldShowResumePrompt,
-} from "../lib/idea_draft_store.mjs";
+} from "lib/idea_draft_store";
 
 export default class extends Controller {
   static targets = ["prompt", "savedAt", "error", "idleMessage", "storedMessage", "storedActions"];

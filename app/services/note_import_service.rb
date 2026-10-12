@@ -192,7 +192,7 @@ class NoteImportService
       if File.extname(filename).downcase == ".zip"
         expand_zip(filename, content)
       else
-        [Entry.new(path: filename, content: content, content_type: upload_content_type(file))]
+        [ Entry.new(path: filename, content: content, content_type: upload_content_type(file)) ]
       end
     end
   end
@@ -248,11 +248,11 @@ class NoteImportService
     when ".enex"
       parse_enex(entry)
     when ".htm", ".html"
-      [parse_html(entry)]
+      [ parse_html(entry) ]
     when ".json"
       parse_json(entry)
     when ".markdown", ".md", ".txt"
-      [parse_text(entry)]
+      [ parse_text(entry) ]
     else
       []
     end
@@ -274,7 +274,7 @@ class NoteImportService
     build_note(
       title: title,
       body: body,
-      folders: [folder_from_path(entry.path)],
+      folders: [ folder_from_path(entry.path) ],
       source_path: entry.path
     )
   end
@@ -290,7 +290,7 @@ class NoteImportService
     build_note(
       title: title,
       body: normalize_body(body_node.text),
-      folders: [folder_from_path(entry.path)],
+      folders: [ folder_from_path(entry.path) ],
       source_path: entry.path
     )
   end
@@ -307,7 +307,7 @@ class NoteImportService
       value.flat_map { |item| extract_json_notes(item, path) }
     when Hash
       if json_note_hash?(value)
-        [build_json_note(value, path)]
+        [ build_json_note(value, path) ]
       else
         value.values.flat_map { |item| extract_json_notes(item, path) }
       end
@@ -335,7 +335,7 @@ class NoteImportService
     ].compact_blank.join("\n\n")
 
     labels = json_labels(value)
-    folders = labels.presence || [folder_from_path(path)]
+    folders = labels.presence || [ folder_from_path(path) ]
 
     build_note(
       title: title,
@@ -391,7 +391,7 @@ class NoteImportService
       build_note(
         title: title,
         body: normalize_body(content_doc.text),
-        folders: [notebook],
+        folders: [ notebook ],
         source_path: entry.path,
         metadata: {
           "created" => node.at_xpath("created")&.text.presence,
@@ -406,7 +406,7 @@ class NoteImportService
     normalized_body = normalize_body(body)
     return if title.blank? && normalized_body.blank?
 
-    folder_names = Array(folders).filter_map { |folder| normalize_folder_name(folder) }.presence || ["Unfiled"]
+    folder_names = Array(folders).filter_map { |folder| normalize_folder_name(folder) }.presence || [ "Unfiled" ]
 
     {
       "title" => clean_title(title.presence || body_title(normalized_body) || source_path),

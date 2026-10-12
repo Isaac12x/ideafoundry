@@ -102,6 +102,8 @@ export default class extends Controller {
   }
 
   onKeydown(event) {
+    if (!event.key || event.isComposing) return
+
     if (this.hintMode) {
       this.handleHintKey(event)
       return
@@ -116,6 +118,7 @@ export default class extends Controller {
     if (this.handleComboShortcut(event)) return
 
     if (this.constructor.isEditableTarget(event.target)) return
+    if (document.querySelector("dialog[open]")) return
     if (event.metaKey || event.ctrlKey || event.altKey) return
 
     if (event.key === "?") {
@@ -148,7 +151,8 @@ export default class extends Controller {
     const key = event.key.toLowerCase()
     const mod = event.metaKey || event.ctrlKey
 
-    if (mod && event.shiftKey && key === "l") return false
+    // Lock (Ctrl/Cmd+L) belongs to typing-activity; don't swallow it here.
+    if (mod && !event.shiftKey && key === "l") return false
 
     if (mod && key === ".") {
       event.preventDefault()
