@@ -25,7 +25,7 @@ class DrawingTest < ActiveSupport::TestCase
 
   test "serializes content as JSON round-trip" do
     payload = {
-      "elements" => [{ "id" => "abc", "type" => "rectangle", "x" => 1, "y" => 2 }],
+      "elements" => [ { "id" => "abc", "type" => "rectangle", "x" => 1, "y" => 2 } ],
       "appState" => { "viewBackgroundColor" => "#fff" },
       "files" => {}
     }
@@ -38,7 +38,7 @@ class DrawingTest < ActiveSupport::TestCase
   test "ordered scope returns by updated_at desc" do
     older = Drawing.create!(idea: @idea, title: "old", content: { "elements" => [] }, updated_at: 2.days.ago)
     newer = Drawing.create!(idea: @idea, title: "new", content: { "elements" => [] }, updated_at: 1.minute.ago)
-    assert_equal [newer, older], @idea.drawings.ordered.to_a
+    assert_equal [ newer, older ], @idea.drawings.ordered.to_a
   end
 
   test "deleting idea destroys drawings" do

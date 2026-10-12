@@ -10,7 +10,7 @@ class CreateTemplates < ActiveRecord::Migration[8.0]
       t.timestamps
     end
 
-    add_index :templates, [:user_id, :name], unique: true
-    add_index :templates, [:user_id, :is_default]
+    add_index :templates, [ :user_id, :name ], unique: true
+    add_index :templates, [ :user_id, :is_default ]
   end
 end

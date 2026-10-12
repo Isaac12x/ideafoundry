@@ -37,10 +37,10 @@ class KbMediaEditProcessorTest < ActiveSupport::TestCase
     runner = lambda do |*command|
       commands << command
       if command.first == "ffprobe"
-        ['{"format":{"duration":"12.0"},"streams":[{"codec_type":"video","width":1920,"height":1080},{"codec_type":"audio","channels":2}]}', "", success_status]
+        [ '{"format":{"duration":"12.0"},"streams":[{"codec_type":"video","width":1920,"height":1080},{"codec_type":"audio","channels":2}]}', "", success_status ]
       else
         File.binwrite(command.last, "rendered-video")
-        ["", "", success_status]
+        [ "", "", success_status ]
       end
     end
 

@@ -12,7 +12,7 @@ module Kb
       TreeBuilder.bust_cache!(user)
 
       Turbo::StreamsChannel.broadcast_replace_to(
-        [user, "kb_tree"],
+        [ user, "kb_tree" ],
         target: "kb-sidebar-tree",
         partial: "kb/tree",
         locals: {

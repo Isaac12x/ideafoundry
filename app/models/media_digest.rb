@@ -50,7 +50,7 @@ class MediaDigest < ApplicationRecord
 
     hits = terms.map do |t|
       like = "%#{sanitize_sql_like(t)}%"
-      sanitize_sql_array(["(lower(media_digests.body) LIKE ? ESCAPE '\\' OR lower(COALESCE(kb_downloads.title, '')) LIKE ? ESCAPE '\\')", like, like])
+      sanitize_sql_array([ "(lower(media_digests.body) LIKE ? ESCAPE '\\' OR lower(COALESCE(kb_downloads.title, '')) LIKE ? ESCAPE '\\')", like, like ])
     end
     score = hits.map { |h| "CASE WHEN #{h} THEN 1 ELSE 0 END" }.join(" + ")
     current.joins(:kb_download).where(hits.join(" OR "))

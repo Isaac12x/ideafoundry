@@ -64,7 +64,7 @@ class IdeaKbLinksController < ApplicationController
       base = File.expand_path(source[:path])
       next unless File.directory?(base)
 
-      queue = [""]
+      queue = [ "" ]
       until queue.empty? || visited > SEARCH_VISIT_CAP
         dir = queue.shift
         children(File.join(base, dir)).each do |name|
@@ -81,7 +81,7 @@ class IdeaKbLinksController < ApplicationController
 
           type = is_dir ? (Kb::Project.at(base, rel) ? "project" : "dir") : "file"
           found << { src: index, path: rel, name: name, type: type, source: source[:label],
-                     rank: [{ "project" => 0, "dir" => 1, "file" => 2 }[type], name.downcase.include?(query) ? 0 : 1] }
+                     rank: [ { "project" => 0, "dir" => 1, "file" => 2 }[type], name.downcase.include?(query) ? 0 : 1 ] }
         end
       end
     end

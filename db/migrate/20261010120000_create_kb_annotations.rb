@@ -14,6 +14,6 @@ class CreateKbAnnotations < ActiveRecord::Migration[8.1]
       t.string :suffix, null: false, default: ""
       t.timestamps
     end
-    add_index :kb_annotations, [:user_id, :source_path, :relative_path], name: "index_kb_annotations_on_user_and_path"
+    add_index :kb_annotations, [ :user_id, :source_path, :relative_path ], name: "index_kb_annotations_on_user_and_path"
   end
 end

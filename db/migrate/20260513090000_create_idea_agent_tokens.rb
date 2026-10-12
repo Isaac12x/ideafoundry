@@ -11,6 +11,6 @@ class CreateIdeaAgentTokens < ActiveRecord::Migration[8.0]
     end
 
     add_index :idea_agent_tokens, :token_digest, unique: true
-    add_index :idea_agent_tokens, [:idea_id, :active]
+    add_index :idea_agent_tokens, [ :idea_id, :active ]
   end
 end

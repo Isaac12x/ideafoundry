@@ -64,7 +64,7 @@ class LicensorImportsControllerTest < ActionDispatch::IntegrationTest
     assert_redirected_to licensing_crm_path
 
     companies = @idea.licensors.pluck(:company)
-    assert_equal ["Acme Publishing", "Borealis Media", "Cobalt Games"], companies.sort
+    assert_equal [ "Acme Publishing", "Borealis Media", "Cobalt Games" ], companies.sort
     assert_equal "contacted", @idea.licensors.find_by(company: "Acme Publishing").stage
     assert_equal "negotiating", @idea.licensors.find_by(company: "Borealis Media").stage
   end
@@ -150,10 +150,10 @@ class LicensorImportsControllerTest < ActionDispatch::IntegrationTest
     path = Rails.root.join("tmp", "licensors-#{SecureRandom.hex(6)}.xlsx").to_s
     pkg = Axlsx::Package.new
     pkg.workbook.add_worksheet(name: "Prospects") do |sheet|
-      sheet.add_row ["Company", "Email", "Deal stage"]
-      sheet.add_row ["Delta Interactive", "hi@delta.test", "Meeting"]
+      sheet.add_row [ "Company", "Email", "Deal stage" ]
+      sheet.add_row [ "Delta Interactive", "hi@delta.test", "Meeting" ]
       # A numeric cell: Roo hands back a Float, which must not render as "12.0".
-      sheet.add_row ["Echo Ltd", "hi@echo.test", 12]
+      sheet.add_row [ "Echo Ltd", "hi@echo.test", 12 ]
     end
     pkg.serialize(path)
 

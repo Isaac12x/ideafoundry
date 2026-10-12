@@ -21,17 +21,17 @@ module Kb
     def self.fetch(url)
       bin = KbDownloadJob.yt_dlp_bin or raise NotInstalled, "yt-dlp is not installed."
       Dir.mktmpdir("kb-transcript") do |dir|
-        out, status = KbDownloadJob.capture([bin, "--no-playlist", "--no-simulate", "--skip-download", "--write-subs", "--write-auto-subs",
+        out, status = KbDownloadJob.capture([ bin, "--no-playlist", "--no-simulate", "--skip-download", "--write-subs", "--write-auto-subs",
                                              "--sub-langs", KbDownloadJob.youtube?(url) ? SUB_LANGS : OTHER_SUB_LANGS,
                                              "--sub-format", "json3/vtt/srt/best",
-                                             "-o", File.join(dir, "%(id)s.%(ext)s"), "--print", "id", url])
+                                             "-o", File.join(dir, "%(id)s.%(ext)s"), "--print", "id", url ])
         files = Dir[File.join(dir, "*")].select { |f| FORMATS.include?(File.extname(f).delete(".")) }
         # A failed side-track (e.g. 429 on one language) still exits non-zero; keep what landed.
         raise Error, "yt-dlp could not fetch subtitles for #{url}." unless status&.success? || files.any?
 
         # Best format first, then the plain "en" track over en-orig / en-US variants.
-        file = files.min_by { |f| ext = File.extname(f); [FORMATS.index(ext.delete(".")), File.basename(f).end_with?(".en#{ext}") ? 0 : 1, f] }
-        [out.to_s.lines.last.to_s.strip.presence, (file && render(File.read(file), File.extname(file).delete(".")))]
+        file = files.min_by { |f| ext = File.extname(f); [ FORMATS.index(ext.delete(".")), File.basename(f).end_with?(".en#{ext}") ? 0 : 1, f ] }
+        [ out.to_s.lines.last.to_s.strip.presence, (file && render(File.read(file), File.extname(file).delete("."))) ]
       end
     end
 
@@ -85,7 +85,7 @@ module Kb
     end
 
     def self.format(chunks)
-      chunks.map { |c| m, s = c[:start].divmod(60); "%02d:%02d - %s\n" % [m, s, c[:text]] }.join
+      chunks.map { |c| m, s = c[:start].divmod(60); "%02d:%02d - %s\n" % [ m, s, c[:text] ] }.join
     end
   end
 end

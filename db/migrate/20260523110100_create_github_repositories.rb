@@ -16,7 +16,7 @@ class CreateGithubRepositories < ActiveRecord::Migration[8.0]
       t.timestamps
     end
 
-    add_index :github_repositories, [:owner, :name]
+    add_index :github_repositories, [ :owner, :name ]
     add_index :github_repositories, :has_releases
   end
 end

@@ -13,7 +13,7 @@ class MediaDigestTest < ActiveSupport::TestCase
   test "newer digest supersedes older current one" do
     old = record("- old fact")
     new = record("- new fact")
-    assert_equal [new], MediaDigest.current.to_a
+    assert_equal [ new ], MediaDigest.current.to_a
     assert_equal new.id, old.reload.superseded_by_id
     assert old.superseded_at
   end
@@ -21,7 +21,7 @@ class MediaDigestTest < ActiveSupport::TestCase
   test "lower ranked pipeline does not supersede higher" do
     av = record("- av fact", "av_v1")
     low = record("- transcript fact")
-    assert_equal [av], MediaDigest.current.to_a
+    assert_equal [ av ], MediaDigest.current.to_a
     assert_equal av.id, low.reload.superseded_by_id
   end
 
@@ -34,8 +34,8 @@ class MediaDigestTest < ActiveSupport::TestCase
     MediaDigest.record!(user: @user, kb_download: other, body: "sourdough old")
     MediaDigest.record!(user: @user, kb_download: other, body: "sourdough only")
     record("sourdough starter hydration")
-    assert_equal ["sourdough starter hydration", "sourdough only"], MediaDigest.search("sourdough starter hydration").map(&:body)
-    assert_equal ["sourdough starter hydration"], MediaDigest.search("hydration").map(&:body)
+    assert_equal [ "sourdough starter hydration", "sourdough only" ], MediaDigest.search("sourdough starter hydration").map(&:body)
+    assert_equal [ "sourdough starter hydration" ], MediaDigest.search("hydration").map(&:body)
     assert_equal 2, MediaDigest.search("rails sourdough").size # title match on Rails Talk
   end
 

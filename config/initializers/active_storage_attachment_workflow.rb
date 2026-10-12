@@ -21,7 +21,7 @@ module ActiveStorageAttachmentWorkflow
   # What a card/list thumbnail should render: a resized image, or page one of a
   # PDF/video via the previewers. nil for formats nothing can rasterise.
   def thumbnail_source
-    return representation(resize_to_limit: [800, 800]) if representable?
+    return representation(resize_to_limit: [ 800, 800 ]) if representable?
 
     self if image?
   end

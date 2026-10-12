@@ -46,7 +46,7 @@ module Kb
     # link, the Wayback Machine's closest snapshot (raw, no toolbar), then
     # archive.today. Mirrors the lifehacker "archive site" technique.
     def self.archive_candidates(url, known_archive = nil)
-      list = [known_archive.presence]
+      list = [ known_archive.presence ]
       list << wayback_snapshot(url)
       list << "https://archive.ph/newest/#{url}"
       list.compact.uniq

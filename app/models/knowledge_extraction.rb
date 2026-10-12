@@ -4,7 +4,7 @@
 class KnowledgeExtraction < ApplicationRecord
   IDEA_ATTACHMENT = "idea_attachment".freeze
   KB_FILE = "kb_file".freeze
-  SOURCE_KINDS = [IDEA_ATTACHMENT, KB_FILE].freeze
+  SOURCE_KINDS = [ IDEA_ATTACHMENT, KB_FILE ].freeze
 
   # Statuses considered "in flight" — used by the idle supervisor to decide
   # whether the heavy backend may be stopped.
@@ -92,7 +92,7 @@ class KnowledgeExtraction < ApplicationRecord
   def progress_percent
     return 0 if page_count.to_i.zero?
 
-    [(pages_done.to_f / page_count * 100).round, 100].min
+    [ (pages_done.to_f / page_count * 100).round, 100 ].min
   end
 
   def display_name

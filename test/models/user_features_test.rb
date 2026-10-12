@@ -20,7 +20,7 @@ class UserFeaturesTest < ActiveSupport::TestCase
   end
 
   test "nav order persists and unknown keys are dropped" do
-    @user.update_display_quote("nav_order" => ["kb", "plan", "bogus"], "nav_visible" => User::NAV_PAGE_KEYS.index_with { "1" })
+    @user.update_display_quote("nav_order" => [ "kb", "plan", "bogus" ], "nav_visible" => User::NAV_PAGE_KEYS.index_with { "1" })
 
     order = @user.reload.nav_order
     assert_equal %w[kb plan], order.first(2)

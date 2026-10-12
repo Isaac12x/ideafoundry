@@ -7,7 +7,7 @@ class KbNamingSystemTest < ApplicationSystemTestCase
     @kb_dir = Rails.root.join("tmp", "kb-naming-system-#{SecureRandom.hex(6)}").to_s
     FileUtils.mkdir_p(File.join(@kb_dir, "notes"))
     File.write(File.join(@kb_dir, "draft.md"), "# Draft\n")
-    @user.update!(settings: (@user.settings || {}).merge("kb" => { "folders" => [@kb_dir], "hide_native" => true }))
+    @user.update!(settings: (@user.settings || {}).merge("kb" => { "folders" => [ @kb_dir ], "hide_native" => true }))
     # A spinner row keeps kb-tree-sync re-rendering the tree every ~2s.
     @download = @user.kb_downloads.create!(source_index: 0, source_path: @kb_dir, dir: "",
                                            url: "https://example.com/slow", status: "running")
@@ -25,7 +25,7 @@ class KbNamingSystemTest < ApplicationSystemTestCase
     find("[data-menu-item=rename]").click
 
     input = find(".kb-file-row.is-naming .kb-node-name-input")
-    input.send_keys([:command, "a"], "renam")
+    input.send_keys([ :command, "a" ], "renam")
     sleep 4.5
     input = find(".kb-file-row.is-naming .kb-node-name-input")
     assert_equal "renam", input.value
@@ -41,7 +41,7 @@ class KbNamingSystemTest < ApplicationSystemTestCase
     find(".kb-dir-header", text: "notes").right_click
     find("[data-menu-item=newFile]").click
 
-    find(".kb-node.is-naming .kb-node-name-input").send_keys([:command, "a"], "fre")
+    find(".kb-node.is-naming .kb-node-name-input").send_keys([ :command, "a" ], "fre")
     sleep 4.5
     input = find(".kb-node.is-naming .kb-node-name-input")
     assert_equal "fre", input.value

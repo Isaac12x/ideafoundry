@@ -29,7 +29,7 @@ class DevLauncherTest < ActiveSupport::TestCase
     stdout, stderr, status = run_dev(env: { "PORT" => preferred_port.to_s })
 
     assert status.success?, stderr
-    assert_equal ["start", "-f", "Procfile.dev", "-p", preferred_port.to_s], stdout.lines(chomp: true)
+    assert_equal [ "start", "-f", "Procfile.dev", "-p", preferred_port.to_s ], stdout.lines(chomp: true)
   end
 
   test "selects another port when the preferred port is occupied" do
@@ -43,7 +43,7 @@ class DevLauncherTest < ActiveSupport::TestCase
     assert status.success?, stderr
     assert_operator selected_port, :>, occupied_port
     assert_includes lines.first, "Port #{occupied_port} is already in use"
-    assert_equal ["start", "-f", "Procfile.dev", "-p", selected_port.to_s], lines.last(5)
+    assert_equal [ "start", "-f", "Procfile.dev", "-p", selected_port.to_s ], lines.last(5)
   ensure
     listener&.close
   end
@@ -52,7 +52,7 @@ class DevLauncherTest < ActiveSupport::TestCase
     stdout, stderr, status = run_dev("-p", "4567", env: { "PORT" => "3000" })
 
     assert status.success?, stderr
-    assert_equal ["start", "-f", "Procfile.dev", "-p", "4567"], stdout.lines(chomp: true)
+    assert_equal [ "start", "-f", "Procfile.dev", "-p", "4567" ], stdout.lines(chomp: true)
   end
 
   private

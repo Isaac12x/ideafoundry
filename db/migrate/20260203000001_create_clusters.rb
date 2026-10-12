@@ -9,8 +9,8 @@ class CreateClusters < ActiveRecord::Migration[8.0]
       t.timestamps
     end
 
-    add_index :clusters, [:user_id, :position]
-    add_index :clusters, [:user_id, :cluster_type]
+    add_index :clusters, [ :user_id, :position ]
+    add_index :clusters, [ :user_id, :cluster_type ]
 
     add_reference :ideas, :cluster, foreign_key: true
   end

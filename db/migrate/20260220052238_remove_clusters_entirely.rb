@@ -12,9 +12,9 @@ class RemoveClustersEntirely < ActiveRecord::Migration[8.0]
       t.integer "position"
       t.datetime "created_at", null: false
       t.datetime "updated_at", null: false
-      t.index ["user_id", "cluster_type"]
-      t.index ["user_id", "position"]
-      t.index ["user_id"]
+      t.index [ "user_id", "cluster_type" ]
+      t.index [ "user_id", "position" ]
+      t.index [ "user_id" ]
     end
   end
 end

@@ -4,7 +4,7 @@
 class LicensorImporter
   Result = Struct.new(:created, :skipped, :invalid_emails, keyword_init: true) do
     def summary
-      parts = ["#{created} #{'licensor'.pluralize(created)} imported"]
+      parts = [ "#{created} #{'licensor'.pluralize(created)} imported" ]
       parts << "#{skipped} skipped as duplicates" if skipped.positive?
       parts << "#{invalid_emails} #{'email'.pluralize(invalid_emails)} dropped as unreadable" if invalid_emails.positive?
       parts.to_sentence + "."
@@ -88,7 +88,7 @@ class LicensorImporter
     email = attributes[:contact_email]
     return false if email.blank? || email.match?(URI::MailTo::EMAIL_REGEXP)
 
-    attributes[:notes] = [attributes[:notes], "Imported email: #{email}"].compact_blank.join("\n")
+    attributes[:notes] = [ attributes[:notes], "Imported email: #{email}" ].compact_blank.join("\n")
     attributes[:contact_email] = ""
     true
   end
@@ -100,6 +100,6 @@ class LicensorImporter
   end
 
   def dedupe_key(attributes)
-    [attributes[:company].to_s.downcase.strip, attributes[:contact_email].to_s.downcase.strip]
+    [ attributes[:company].to_s.downcase.strip, attributes[:contact_email].to_s.downcase.strip ]
   end
 end

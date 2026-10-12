@@ -24,7 +24,7 @@ module LocalAgent
         *runner_arguments(run_once: run_once),
         chdir: Rails.root.to_s,
         out: Rails.root.join("log", "local_agent.log").to_s,
-        err: [:child, :out]
+        err: [ :child, :out ]
       )
       Process.detach(pid)
       run.update!(pid: pid, status: :running, started_at: Time.current, last_heartbeat_at: Time.current)
@@ -52,7 +52,7 @@ module LocalAgent
     end
 
     def runner_arguments(run_once:)
-      args = ["--run-id", run.id.to_s]
+      args = [ "--run-id", run.id.to_s ]
       args << "--once" if run_once
       args
     end

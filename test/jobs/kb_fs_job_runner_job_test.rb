@@ -8,7 +8,7 @@ class KbFsJobRunnerJobTest < ActiveJob::TestCase
     FileUtils.mkdir_p(File.join(@kb_dir, "research"))
     File.write(File.join(@kb_dir, "research", "brief.md"), "# Brief\n\nKnown evidence")
     @user.update!(settings: (@user.settings || {}).merge(
-      "kb" => { "folders" => [@kb_dir], "hide_native" => true }
+      "kb" => { "folders" => [ @kb_dir ], "hide_native" => true }
     ))
   end
 

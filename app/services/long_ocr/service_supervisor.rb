@@ -69,7 +69,7 @@ module LongOcr
     end
 
     def compose_base
-      ENV.fetch("OCR_LONG_COMPOSE_CMD", "docker compose").split + ["-f", compose_file]
+      ENV.fetch("OCR_LONG_COMPOSE_CMD", "docker compose").split + [ "-f", compose_file ]
     end
 
     def compose_file

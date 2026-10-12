@@ -45,7 +45,7 @@ module Kb
     end
 
     def browser
-      [ENV["CHROME_BIN"], *CANDIDATES].compact.find { |path| File.executable?(path) } ||
+      [ ENV["CHROME_BIN"], *CANDIDATES ].compact.find { |path| File.executable?(path) } ||
         %w[google-chrome chromium chromium-browser].find { |cmd| system("which", cmd, out: File::NULL, err: File::NULL) }
     end
   end

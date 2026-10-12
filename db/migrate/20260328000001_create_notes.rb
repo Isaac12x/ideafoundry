@@ -8,7 +8,7 @@ class CreateNotes < ActiveRecord::Migration[8.0]
       t.timestamps
     end
 
-    add_index :notes, [:idea_id, :created_at]
-    add_index :notes, [:parent_note_id, :created_at]
+    add_index :notes, [ :idea_id, :created_at ]
+    add_index :notes, [ :parent_note_id, :created_at ]
   end
 end

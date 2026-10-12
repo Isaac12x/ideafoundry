@@ -73,7 +73,7 @@ module LongOcr
     end
 
     def pages_per_request
-      [ENV.fetch("OCR_LONG_PAGES_PER_REQUEST", "0").to_i, 0].max
+      [ ENV.fetch("OCR_LONG_PAGES_PER_REQUEST", "0").to_i, 0 ].max
     end
 
     def deliver(markdown)
@@ -145,18 +145,18 @@ module LongOcr
       if @extraction.kb_file?
         bytes = File.binread(@extraction.kb_path)
         filename = File.basename(@extraction.kb_path)
-        [bytes, filename, content_type_for(filename)]
+        [ bytes, filename, content_type_for(filename) ]
       else
         attachment = @extraction.attachment
         raise "source attachment missing" unless attachment
 
-        [attachment.blob.download, attachment.filename.to_s, attachment.blob.content_type]
+        [ attachment.blob.download, attachment.filename.to_s, attachment.blob.content_type ]
       end
     end
 
     def probe_page_count(bytes, filename, content_type)
       result = OcrClient.probe(bytes: bytes, filename: filename, content_type: content_type)
-      [result["page_count"].to_i, 1].max
+      [ result["page_count"].to_i, 1 ].max
     end
 
     def kb_output_path
