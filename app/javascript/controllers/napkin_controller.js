@@ -8,7 +8,12 @@ export default class extends Controller {
   static values  = { initial: String, inputName: String, expanded: Boolean }
 
   connect() {
-    const init = this.initialValue ? JSON.parse(this.initialValue) : { rows: 10, cols: 5, cells: {} }
+    let init = { rows: 10, cols: 5, cells: {} }
+    try {
+      if (this.initialValue) init = JSON.parse(this.initialValue) || init
+    } catch {
+      /* corrupt saved grid: start blank */
+    }
     this.state = {
       rows: init.rows || 10,
       cols: init.cols || 5,
@@ -339,6 +344,8 @@ export default class extends Controller {
       this.hfSheetIndex = this.hf.getSheetId(this.hfSheetId)
       this.syncAllCellsToHF()
       this.renderGrid()
+    } catch (error) {
+      console.warn("Napkin formula engine failed to load:", error)
     } finally {
       this.parserLoading = false
       if (this.hasLoadingTarget) this.loadingTarget.classList.add("hidden")

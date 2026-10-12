@@ -168,6 +168,28 @@ class KbControllerTest < ActionDispatch::IntegrationTest
     end
   end
 
+  test "basics tab renders the periodic table instrument" do
+    get kb_path(tab: "basics")
+
+    assert_response :success
+    assert_select 'button.tab-button[data-tab-name="basics"]'
+    assert_select '[data-tab-panel="basics"] section.ptable[data-controller~="periodic-table"]'
+    assert_select "script[type=importmap]", text: %r{lib/periodic_table/elements}
+  end
+
+  test "basics tab renders the chemistry bench with every instrument" do
+    get kb_path(tab: "basics")
+
+    assert_select 'section.ptable section.ptable-bench[data-controller~="periodic-bench"]'
+    %w[combine formula equation alloy compare plot nuclides map guide].each do |tab|
+      assert_select %([role="tab"][data-tab="#{tab}"])
+      assert_select %([role="tabpanel"][data-panel="#{tab}"])
+    end
+    %w[chem compounds element_details nuclides world bench_chem bench_views bench_nuclides bench_map bench_guide].each do |mod|
+      assert_select "script[type=importmap]", text: %r{lib/periodic_table/#{mod}}
+    end
+  end
+
   private
 
   # Isolated per-test KB folder as src 0, so file ops never touch the shared

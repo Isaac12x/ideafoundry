@@ -27,6 +27,10 @@ class TypingLocksControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_match(/Typing rhythm score/, response.body)
     assert_select 'input[name="return_to"][value=?]', ideas_path
+    assert_select "body[data-controller~=?]", "activity-panel", count: 0
+    assert_select ".activity-panel", count: 0
+    assert_select ".nav-activity-trigger", count: 0
+    assert_select ".activity-feed-wrap", count: 0
   end
 
   test "enrollment stores fingerprint and unlocks session" do
@@ -120,6 +124,59 @@ class TypingLocksControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
   end
 
+  test "every configured unlock sentence is shown, validated and unlocks" do
+    @user.store_typing_fingerprint!(fingerprint_for(SAMPLE_TEXT, hold: 91, flight: 41))
+
+    TypingTextLibrary::UNLOCK_TEXTS.each do |id, text|
+      post verify_typing_lock_path, params: {
+        challenge_id: id,
+        timing_payload: timing_events_for(text, hold: 94, flight: 44).to_json,
+        return_to: ideas_path
+      }
+
+      assert_response :success, "#{id} did not unlock"
+      assert_match(/typing-lock-animation--matched/, response.body, "#{id} did not unlock")
+    end
+  end
+
+  test "lock page is not cacheable" do
+    @user.store_typing_fingerprint!(fingerprint_for(SAMPLE_TEXT))
+    get root_path
+    assert_equal "no-store", response.headers["Cache-Control"]
+  end
+
+  test "unlock page rotates sentences, never repeating the previous one" do
+    @user.store_typing_fingerprint!(fingerprint_for(SAMPLE_TEXT))
+    shown = 8.times.map do
+      get root_path
+      css_select("[data-typing-fingerprint-text-value]").first["data-typing-fingerprint-text-value"]
+    end
+
+    assert shown.all? { |t| TypingTextLibrary::UNLOCK_TEXTS.value?(t) }
+    assert shown.each_cons(2).none? { |a, b| a == b }
+    assert_operator shown.uniq.size, :>, 1
+  end
+
+  test "unknown challenge id does not validate against a fallback sentence" do
+    @user.store_typing_fingerprint!(fingerprint_for(SAMPLE_TEXT, hold: 91, flight: 41))
+    text = TypingTextLibrary::UNLOCK_TEXTS.values.first
+
+    post verify_typing_lock_path, params: {
+      challenge_id: "bogus",
+      timing_payload: timing_events_for(text, hold: 94, flight: 44).to_json,
+      return_to: ideas_path
+    }
+
+    assert_response :unprocessable_content
+  end
+
+  test "lock page omits skip link" do
+    @user.store_typing_fingerprint!(fingerprint_for(SAMPLE_TEXT))
+    get root_path
+    assert_select "a.skip-link", count: 0
+    assert_no_match(/Skip to main content/, response.body)
+  end
+
   test "activity refresh keeps unlocked session active after original unlock time" do
     unlock_text = TypingTextLibrary.unlock_text("spark-gap")
     @user.store_typing_fingerprint!(fingerprint_for(unlock_text, hold: 91, flight: 41))
@@ -185,9 +242,9 @@ class TypingLocksControllerTest < ActionDispatch::IntegrationTest
     assert_select "body[data-controller~=?]", "typing-activity"
     assert_select "body[data-typing-activity-lock-url-value=?]", root_path
     assert_select "body[data-typing-activity-lock-action-url-value=?]", lock_typing_lock_path(return_to: ideas_path)
-    assert_select "body[data-typing-activity-shortcut-value=?]", "Ctrl/Cmd+Shift+L"
+    assert_select "body[data-typing-activity-shortcut-value=?]", "Ctrl/Cmd+L"
     assert_select "form.nav-lock-form[action=?][method=?]", lock_typing_lock_path(return_to: ideas_path), "post"
-    assert_select "button.nav-lock-button[title=?]", "Lock (Ctrl/Cmd+Shift+L)", text: /Lock/
+    assert_select "button.nav-lock-button[title=?]", "Lock (Ctrl/Cmd+L)", text: /Lock/
   end
 
   test "failed unlock sample shows decoy score without lock language" do

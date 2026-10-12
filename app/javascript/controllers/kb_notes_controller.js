@@ -1,17 +1,4 @@
 import { Controller } from "@hotwired/stimulus"
-import { Editor } from "@tiptap/core"
-import Document from "@tiptap/extension-document"
-import Paragraph from "@tiptap/extension-paragraph"
-import Text from "@tiptap/extension-text"
-import Bold from "@tiptap/extension-bold"
-import Italic from "@tiptap/extension-italic"
-import Heading from "@tiptap/extension-heading"
-import BulletList from "@tiptap/extension-bullet-list"
-import OrderedList from "@tiptap/extension-ordered-list"
-import ListItem from "@tiptap/extension-list-item"
-import History from "@tiptap/extension-history"
-import HardBreak from "@tiptap/extension-hard-break"
-import Placeholder from "@tiptap/extension-placeholder"
 
 const STORAGE_PREFIX = "kb_note_"
 const CUSTOM_TABS_KEY = "kb_notes_custom_tabs"
@@ -29,8 +16,9 @@ export default class extends Controller {
     this._fileKey = this.fileKeyValue || null
     this._fileLabel = this.fileLabelValue || null
     this._customTabs = this._loadCustomTabs()
+    this._editor = null
+    this._editorReady = null
     this._renderTabs()
-    this._initEditor()
     this._watchKbPanel()
   }
 
@@ -97,7 +85,7 @@ export default class extends Controller {
     this._customTabs.push({ id, label: name.trim() })
     this._saveCustomTabs()
     this._activeKey = id
-    this._expand()
+    await this._expand()
     this._renderTabs()
     this._loadContent()
   }
@@ -125,9 +113,10 @@ export default class extends Controller {
 
   // ── Private ────────────────────────────────────────────────────────
 
-  _expand() {
+  async _expand() {
     this._expanded = true
     this.element.classList.add("kb-notes-expanded")
+    await this._ensureEditor()
     if (this._editor) {
       requestAnimationFrame(() => this._editor?.commands.focus("end"))
     }
@@ -170,8 +159,47 @@ export default class extends Controller {
     return tabs
   }
 
-  _initEditor() {
+  async _ensureEditor() {
+    if (this._editor) return
     if (!this.hasEditorElTarget) return
+
+    if (!this._editorReady) {
+      this._editorReady = this._buildEditor()
+    }
+    await this._editorReady
+  }
+
+  async _buildEditor() {
+    const [
+      { Editor },
+      { default: Document },
+      { default: Paragraph },
+      { default: Text },
+      { default: Bold },
+      { default: Italic },
+      { default: Heading },
+      { default: BulletList },
+      { default: OrderedList },
+      { default: ListItem },
+      { default: History },
+      { default: HardBreak },
+      { default: Placeholder },
+    ] = await Promise.all([
+      import("@tiptap/core"),
+      import("@tiptap/extension-document"),
+      import("@tiptap/extension-paragraph"),
+      import("@tiptap/extension-text"),
+      import("@tiptap/extension-bold"),
+      import("@tiptap/extension-italic"),
+      import("@tiptap/extension-heading"),
+      import("@tiptap/extension-bullet-list"),
+      import("@tiptap/extension-ordered-list"),
+      import("@tiptap/extension-list-item"),
+      import("@tiptap/extension-history"),
+      import("@tiptap/extension-hard-break"),
+      import("@tiptap/extension-placeholder"),
+    ])
+
     this._editor = new Editor({
       element: this.editorElTarget,
       extensions: [

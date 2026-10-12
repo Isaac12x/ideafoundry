@@ -34,6 +34,7 @@ class RecoverySecretsControllerTest < ActionDispatch::IntegrationTest
     assert_select "input[type=?][name=?][value=?]", "hidden", "return_to", settings_security_path
     assert_select "body[data-controller]", count: 0
     assert_select ".activity-panel", count: 0
+    assert_select ".nav-activity-trigger", count: 0
     assert_select ".app-dialog", count: 0
   end
 

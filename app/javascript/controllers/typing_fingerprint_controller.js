@@ -29,9 +29,12 @@ export default class extends Controller {
     this.pending = [];
     this.startedAt = null;
     this.lastLength = 0;
+    this.keystrokes = 0;
+    this.mistakes = 0;
     this.submitted = false;
     this.transitionComplete = false;
     this.redirectFallbackTimer = null;
+    this.tickTimer = null;
     this.scheduleRedirectFallback();
     if (!this.hasInputTarget) return;
 
@@ -42,6 +45,7 @@ export default class extends Controller {
 
   disconnect() {
     if (this.redirectFallbackTimer) clearTimeout(this.redirectFallbackTimer);
+    this.stopTicking();
   }
 
   keydown(event) {
@@ -55,13 +59,15 @@ export default class extends Controller {
     const index = this.inputTarget.value.length;
     this.pending.push({
       key: event.key,
+      code: event.code,
       index,
       down: performance.now()
     });
   }
 
   keyup(event) {
-    const pending = [...this.pending].reverse().find((item) => item.key === event.key && item.up === undefined);
+    // Match on the physical key: releasing Shift first turns keyup "A" into "a".
+    const pending = [...this.pending].reverse().find((item) => item.code === event.code && item.up === undefined);
     if (pending) {
       pending.up = performance.now();
       this.events.push(pending);
@@ -77,6 +83,12 @@ export default class extends Controller {
     if (value.length < this.lastLength) {
       this.events = this.events.filter((event) => event.index < value.length);
       this.pending = this.pending.filter((event) => event.index < value.length);
+    }
+
+    // Accuracy counts every character ever committed, so a corrected typo still costs.
+    for (let index = this.lastLength; index < value.length; index += 1) {
+      this.keystrokes += 1;
+      if (value[index] !== this.textValue[index]) this.mistakes += 1;
     }
 
     this.lastLength = value.length;
@@ -142,14 +154,34 @@ export default class extends Controller {
     this.progressBarTarget.style.width = `${progress}%`;
     this.inputTarget.classList.toggle("has-error", hasMismatch);
 
-    const accuracy = value.length === 0 ? 100 : Math.round((validPrefix / value.length) * 100);
-    this.accuracyTarget.textContent = `${accuracy}%`;
+    this.accuracyTarget.textContent = `${this.accuracy()}%`;
+    this.accuracyTarget.classList.toggle("is-degraded", this.accuracy() < 100);
     this.rhythmTarget.textContent = `${this.validEvents().length}`;
     this.updateTime();
+    this.startTicking();
 
     const complete = this.isComplete();
     if (this.hasSubmitTarget) this.submitTarget.disabled = !complete;
     if (complete) this.submitCompletedSample();
+  }
+
+  accuracy() {
+    if (this.keystrokes === 0) return 100;
+    return Math.max(0, Math.round(((this.keystrokes - this.mistakes) / this.keystrokes) * 100));
+  }
+
+  // Keystrokes are bursty; the clock has to run between them.
+  startTicking() {
+    if (this.tickTimer || !this.startedAt || this.submitted) return;
+
+    this.tickTimer = setInterval(() => this.updateTime(), 250);
+  }
+
+  stopTicking() {
+    if (!this.tickTimer) return;
+
+    clearInterval(this.tickTimer);
+    this.tickTimer = null;
   }
 
   updateTime() {
@@ -285,6 +317,8 @@ export default class extends Controller {
     this.syncBodyAttributes(nextDocument.body);
     if (nextHeader && currentHeader) currentHeader.replaceWith(nextHeader);
     currentMain.replaceWith(nextMain);
+    // Backlog side-door lives outside header/main; drop it once the next page no longer renders it (i.e. unlocked).
+    if (!nextDocument.querySelector(".lock-sidedoor")) document.querySelector(".lock-sidedoor")?.remove();
 
     if (options.url) {
       window.history.replaceState({}, nextDocument.title, options.url);

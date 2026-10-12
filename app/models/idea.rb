@@ -17,7 +17,9 @@ class Idea < ApplicationRecord
   has_many :notes, dependent: :destroy
   has_many :idea_entries, dependent: :destroy
   has_many :licensors, dependent: :destroy
+  has_many :licensor_imports, dependent: :destroy
   has_many :drawings, dependent: :destroy
+has_many :kb_links, class_name: "IdeaKbLink", dependent: :destroy
   has_many :mood_images, dependent: :destroy
   has_one :github_repository, dependent: :destroy
   has_one_attached :hero_image

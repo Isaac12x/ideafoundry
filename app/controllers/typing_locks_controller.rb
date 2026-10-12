@@ -7,8 +7,9 @@ class TypingLocksController < ApplicationController
     @return_to = return_to_path
     return if render_failed_unlock_cooldown(status: :ok)
 
-    @challenge_id = params[:challenge_id].presence || TypingTextLibrary.random_unlock_id
+    @challenge_id = next_unlock_challenge_id
     @challenge_text = TypingTextLibrary.unlock_text(@challenge_id)
+    response.headers["Cache-Control"] = "no-store"
   end
 
   def verify
@@ -17,9 +18,10 @@ class TypingLocksController < ApplicationController
     @return_to = return_to_path
     return if render_failed_unlock_cooldown(status: :too_many_requests)
 
+    # Unknown id must not silently validate against a fallback prompt.
     match = TypingFingerprint.match(
       template: @user.typing_fingerprint || {},
-      events: timing_events,
+      events: TypingTextLibrary.unlock_id?(@challenge_id) ? timing_events : [],
       expected_text: @challenge_text
     )
 

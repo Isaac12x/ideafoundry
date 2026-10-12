@@ -10,7 +10,7 @@ class ApplicationController < ActionController::Base
   VOICE_ID_RETURN_TO_SESSION_KEY = "voice_id_return_to"
   VOICE_ID_TIMEOUT = 5.minutes
 
-  helper_method :backlog_enabled?, :feature_enabled?
+  helper_method :backlog_enabled?, :feature_enabled?, :backlog_escape_available?, :backlog_lock_bypass_active?
 
   prepend_around_action :with_recovery_secret_from_session
   prepend_before_action :set_user
@@ -68,6 +68,22 @@ class ApplicationController < ActionController::Base
     Rails.application.config.x.backlog_enabled == true
   end
 
+  # Capture-an-idea escape hatch: the backlog is reachable while the workspace is
+  # locked, so a passing thought does not have to survive a typing challenge.
+  # BACKLOG_ENABLED is the opt-in; the app itself runs in production locally, so
+  # gating on Rails.env here would make the escape hatch unreachable in practice.
+  def backlog_escape_available?
+    backlog_enabled?
+  end
+
+  def backlog_lock_bypass?
+    backlog_escape_available? && controller_path == "build_items"
+  end
+
+  def backlog_lock_bypass_active?
+    @backlog_lock_bypass == true
+  end
+
   def feature_enabled?(key)
     set_user unless defined?(@user) && @user
     @user.feature_enabled?(key)
@@ -83,6 +99,11 @@ class ApplicationController < ActionController::Base
     set_user unless defined?(@user) && @user
     return unless @user&.security_lock_enabled?
     return if typing_session_unlocked?
+
+    if backlog_lock_bypass?
+      @backlog_lock_bypass = true
+      return
+    end
 
     target = safe_return_path(request.fullpath)
 
@@ -225,11 +246,19 @@ class ApplicationController < ActionController::Base
       @challenge_id = failed_unlock["challenge_id"].presence || ""
       @challenge_text = ""
     else
-      @challenge_id = params[:challenge_id].presence || TypingTextLibrary.random_unlock_id
+      @challenge_id = next_unlock_challenge_id
       @challenge_text = TypingTextLibrary.unlock_text(@challenge_id)
     end
+    response.headers["Cache-Control"] = "no-store"
     @return_to = return_to
     render "typing_locks/new", status: :ok
+  end
+
+  # Honor only a known requested id; otherwise rotate away from the last one shown.
+  def next_unlock_challenge_id
+    requested = params[:challenge_id].to_s
+    id = TypingTextLibrary.unlock_id?(requested) ? requested : TypingTextLibrary.random_unlock_id(except: session[:last_unlock_challenge_id])
+    session[:last_unlock_challenge_id] = id
   end
 
   def render_voice_id_unlock(return_to:, error: nil, opening: false)

@@ -14,6 +14,7 @@
   background: transparent; border: 0; cursor: pointer; padding: 4px;
   display: flex; align-items: center; color: var(--text-muted);
 }
+.napkin-toggle-btn:hover { color: var(--text-primary); }
 .napkin-toggle-btn[aria-expanded="true"] .napkin-chevron { transform: rotate(180deg); }
 .napkin-chevron { transition: transform .15s ease; }
 

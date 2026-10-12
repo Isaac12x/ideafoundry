@@ -20,6 +20,8 @@ export default class extends Controller {
     document.removeEventListener("click", this.closeOnClick);
     document.removeEventListener("keydown", this.closeOnKeydown);
     this.menu?.remove();
+    clearTimeout(this.toastTimer);
+    this.toast?.remove();
   }
 
   open(event) {
@@ -263,7 +265,8 @@ export default class extends Controller {
     this.toast.textContent = message;
     document.body.appendChild(this.toast);
 
-    setTimeout(() => {
+    clearTimeout(this.toastTimer);
+    this.toastTimer = setTimeout(() => {
       this.toast?.remove();
       this.toast = null;
     }, 2500);

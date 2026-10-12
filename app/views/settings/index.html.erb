@@ -2,6 +2,10 @@
 <div class="settings-container">
   <div class="page-header">
     <h2>Settings</h2>
+    <%= link_to settings_activity_path, class: "btn btn-sm", title: "Activity log" do %>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      Activity
+    <% end %>
   </div>
 
   <div class="settings-list">

@@ -88,7 +88,8 @@ body.kb-page .app-main {
 
 /* ---- Sidebar ---- */
 .kb-sidebar {
-  width: 260px;
+  position: relative;
+  width: var(--kb-sidebar-width, 260px);
   flex-shrink: 0;
   border-right: 1px solid var(--border-default);
   background: var(--bg-surface);
@@ -97,33 +98,142 @@ body.kb-page .app-main {
   overflow: hidden;
 }
 
+/* Drag handle straddling the sidebar's right edge. It is a wide hit area
+   over a hairline, so the border stays the only thing you see until you
+   reach for it. */
+.kb-sidebar-resizer {
+  position: absolute;
+  top: 0;
+  right: -3px;
+  bottom: 0;
+  width: 7px;
+  z-index: 3;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: col-resize;
+  touch-action: none;
+}
+
+.kb-sidebar-resizer::after {
+  content: "";
+  position: absolute;
+  inset: 0 3px;
+  background: var(--accent);
+  opacity: 0;
+  transition: opacity 120ms;
+}
+
+.kb-sidebar-resizer:hover::after,
+.kb-sidebar-resizer:focus-visible::after,
+.kb-sidebar.is-resizing .kb-sidebar-resizer::after {
+  opacity: 1;
+}
+
+.kb-sidebar-resizer:focus-visible {
+  outline: none;
+}
+
+/* Kill text selection and iframe pointer-grabs for the drag's duration. */
+body.kb-resizing,
+body.kb-resizing * {
+  cursor: col-resize !important;
+  user-select: none !important;
+}
+
+body.kb-resizing iframe {
+  pointer-events: none;
+}
+
 .kb-sidebar-inner {
   flex: 1;
   overflow-y: auto;
   padding: 0.75rem 0;
 }
 
-/* Folder group */
+/* ── Tree geometry ──────────────────────────────────────────────────────
+   Every row — source header, folder, file, async placeholder — is a
+   .kb-node built from the same four slots, so names line up column-wise
+   whatever the row's kind. Indentation lives on the container
+   (.kb-node-children), never on the row, which keeps siblings flush and
+   lets one hairline stand in as the subtree's guide rail. */
+.kb-tree {
+  --kb-row-min-h: 25px;
+  --kb-row-pad: 6px;
+  --kb-twisty: 13px;
+  --kb-glyph: 15px;
+  --kb-gap: 4px;
+  /* One indent step per level. Deep trees get narrow fast, so this is the
+     smallest step that still reads as a step next to the guide rail. */
+  --kb-indent: 15px;
+}
+
+.kb-node {
+  display: flex;
+  align-items: center;
+  gap: var(--kb-gap);
+  min-width: 0;
+  min-height: var(--kb-row-min-h);
+  margin: 1px var(--kb-row-pad) 1px 0;
+  padding: 0 var(--kb-row-pad);
+  border-radius: 5px;
+  color: var(--text-secondary);
+  transition: background 120ms, color 120ms;
+}
+
+/* Fixed-width slots: the twisty is a spacer on rows that can't expand. */
+.kb-node-twisty {
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 var(--kb-twisty);
+  width: var(--kb-twisty);
+  height: var(--kb-twisty);
+}
+
+.kb-node-glyph {
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 var(--kb-glyph);
+  width: var(--kb-glyph);
+  height: var(--kb-glyph);
+}
+
+.kb-node-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The star is the last slot on every row: after the name, after any
+   per-row actions, hard against the right edge. */
+.kb-node-star {
+  flex: 0 0 auto;
+}
+
+/* Indentation + guide rail. The rail sits under the parent's twisty. */
+.kb-node-children {
+  margin-left: calc(var(--kb-row-pad) + var(--kb-twisty) / 2);
+  padding-left: calc(var(--kb-indent) - var(--kb-twisty) / 2);
+  border-left: 1px solid var(--border-subtle);
+}
+
 .kb-folder-group {
-  margin-bottom: 0.25rem;
+  margin-bottom: 0.4rem;
 }
 
 .kb-folder-header {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-  width: 100%;
-  padding: 0.4rem 0.75rem;
   color: var(--text-secondary);
-  font-size: 0.78rem;
+  font-size: 0.72rem;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.05em;
+  flex-wrap: wrap;
 }
 
 .kb-folder-chevron {
-  transition: transform 0.2s;
+  transition: transform 0.15s ease;
   flex-shrink: 0;
 }
 
@@ -131,19 +241,18 @@ body.kb-page .app-main {
   transform: rotate(-90deg);
 }
 
-.kb-folder-label {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 .kb-tree-folder-actions {
   display: flex;
   align-items: center;
-  gap: 0.05rem;
+  gap: 1px;
   flex-shrink: 0;
+  opacity: 0;
+  transition: opacity 120ms;
+}
+
+.kb-folder-header:hover .kb-tree-folder-actions,
+.kb-tree-folder-actions:focus-within {
+  opacity: 1;
 }
 
 .kb-folder-status {
@@ -152,35 +261,21 @@ body.kb-page .app-main {
   font-size: 0.68rem;
   font-weight: 600;
   letter-spacing: 0;
-  margin-left: 2rem;
+  margin-left: calc(var(--kb-glyph) + var(--kb-gap));
   text-transform: none;
   white-space: normal;
 }
 
-/* File list */
-.kb-folder-files {
-  padding-left: 0;
-}
-
 /* Subdirectory nodes */
 .kb-dir-group {
-  margin-bottom: 0.05rem;
+  min-width: 0;
 }
 
 .kb-dir-header {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-  width: 100%;
-  padding: 0.3rem 0.75rem;
-  background: none;
-  border: none;
-  color: var(--text-secondary);
-  font-size: 0.8rem;
+  font-size: 0.82rem;
   font-weight: 500;
   cursor: pointer;
   text-align: left;
-  transition: background 0.15s;
 }
 
 .kb-dir-header:hover {
@@ -188,18 +283,7 @@ body.kb-page .app-main {
   color: var(--text-primary);
 }
 
-.kb-dir-label {
-  flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.kb-dir-children {
-  padding-left: 0.85rem;
-}
-
-.kb-dir-group.is-collapsed .kb-dir-children {
+.kb-dir-group.is-collapsed > .kb-dir-children {
   display: none;
 }
 
@@ -210,49 +294,23 @@ body.kb-page .app-main {
   pointer-events: none;
 }
 
-
 .kb-no-files {
   display: block;
-  padding: 0.25rem 1.25rem;
+  padding: 0.3rem 0 0.3rem var(--kb-row-pad, 6px);
   font-size: 0.75rem;
   color: var(--text-muted);
   font-style: italic;
 }
 
 .kb-file-link {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.3rem 0.75rem;
+  display: block;
+  min-width: 0;
   font-size: 0.82rem;
-  color: var(--text-secondary);
+  color: inherit;
   text-decoration: none;
-  border-radius: 4px;
-  margin: 0.05rem 0.4rem;
-  transition: background 0.12s, color 0.12s;
-  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-.kb-file-link:hover {
-  background: var(--bg-elevated);
-  color: var(--text-primary);
-}
-
-.kb-file-link.is-active {
-  background: var(--accent-muted);
-  color: var(--accent);
-  font-weight: 500;
-}
-
-.kb-file-link svg {
-  flex-shrink: 0;
-  opacity: 0.5;
-}
-
-.kb-file-link.is-active svg {
-  opacity: 1;
+  white-space: nowrap;
 }
 
 /* Empty tree */
@@ -717,6 +775,7 @@ turbo-frame#kb-content {
 }
 
 .kb-pdf-page {
+  position: relative;
   background: #fff;
   border-radius: 2px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
@@ -727,6 +786,38 @@ turbo-frame#kb-content {
   display: block;
   width: 100%;
   height: 100%;
+}
+
+/* pdf.js text layer: invisible glyph boxes over the canvas, so the page reads
+   as real text to selection, copy and find-in-page. */
+.kb-pdf-text {
+  position: absolute;
+  inset: 0;
+  overflow: clip;
+  line-height: 1;
+  text-align: initial;
+  text-size-adjust: none;
+  forced-color-adjust: none;
+  transform-origin: 0 0;
+  caret-color: CanvasText;
+}
+
+.kb-pdf-text span,
+.kb-pdf-text br {
+  position: absolute;
+  color: transparent;
+  white-space: pre;
+  cursor: text;
+  transform-origin: 0% 0%;
+}
+
+.kb-pdf-text span.markedContent {
+  top: 0;
+  height: 0;
+}
+
+.kb-pdf-text span::selection {
+  background: color-mix(in oklab, var(--accent, #6ea8fe) 45%, transparent);
 }
 
 /* Keep the extracted-knowledge link visible while scrolling pages */
@@ -1144,8 +1235,7 @@ body.has-notes-bar.kb-page .kb-content-area {
   }
 }
 
-.kb-file-link.is-dragging,
-.kb-dir-header.is-dragging {
+.kb-node.is-dragging {
   opacity: 0.45;
 }
 
@@ -1291,12 +1381,11 @@ body.has-notes-bar.kb-page .kb-content-area {
 }
 
 .kb-favorite-button {
-  width: 13px;
+  width: 16px;
   height: 16px;
-  margin-left: -0.25rem;
   color: var(--text-muted);
   cursor: pointer;
-  opacity: 0.18;
+  opacity: 0;
   transition: color 120ms, opacity 120ms, transform 120ms;
 }
 
@@ -1313,18 +1402,23 @@ body.has-notes-bar.kb-page .kb-content-area {
   color: var(--state-orange, #d68a36);
 }
 
+/* The star fills the moment it's clicked — the class is toggled locally, so
+   the row never waits on the server to look right. */
+.kb-favorite-button.is-favorite svg {
+  fill: currentColor;
+}
+
 .kb-favorite-button:active {
   transform: scale(0.88);
 }
 
 .kb-dir-toggle {
-  width: 12px;
-  height: 18px;
   cursor: pointer;
 }
 
 .kb-dir-label {
-  flex: 1;
+  display: block;
+  width: 100%;
   min-width: 0;
   overflow: hidden;
   text-align: left;
@@ -1334,24 +1428,12 @@ body.has-notes-bar.kb-page .kb-content-area {
 }
 
 .kb-file-row {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-  min-width: 0;
-  margin: 0.05rem 0.4rem;
-  padding: 0.3rem 0.35rem;
-  border-radius: 4px;
-  color: var(--text-secondary);
-  transition: background 120ms, color 120ms;
+  font-size: 0.82rem;
 }
 
 .kb-file-row:hover {
   background: var(--bg-elevated);
   color: var(--text-primary);
-}
-
-.kb-file-row.is-dragging {
-  opacity: 0.45;
 }
 
 .kb-file-row.is-active {
@@ -1360,10 +1442,21 @@ body.has-notes-bar.kb-page .kb-content-area {
   font-weight: 500;
 }
 
+/* A folder opened by deep link: brief accent wash that fades out. */
+.kb-dir-header.is-revealed {
+  animation: kb-reveal 1.8s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes kb-reveal {
+  0%, 35% { background: var(--accent-muted); color: var(--accent); }
+  100% { background: transparent; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kb-dir-header.is-revealed { animation: none; background: var(--accent-muted); }
+}
+
 .kb-file-type-icon {
-  display: inline-grid;
-  place-items: center;
-  flex: 0 0 14px;
   opacity: 0.58;
 }
 
@@ -1371,36 +1464,58 @@ body.has-notes-bar.kb-page .kb-content-area {
   opacity: 1;
 }
 
-.kb-file-row .kb-file-link {
-  flex: 1;
+/* ── Inline naming ──────────────────────────────────────────────────────
+   A new or renamed node is typed where its name already sits, so the row
+   never jumps and there's no dialog to aim at. */
+.kb-node-name-input[hidden],
+.kb-node-name .kb-file-link[hidden],
+.kb-node-name .kb-dir-label[hidden] {
+  display: none;
+}
+
+.kb-node-name-input {
+  display: block;
+  width: 100%;
   min-width: 0;
   margin: 0;
-  padding: 0;
-  border-radius: 0;
-  background: none;
-  color: inherit;
-  display: block;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  padding: 0 3px;
+  border: 1px solid var(--accent);
+  border-radius: 3px;
+  background: var(--bg-base);
+  color: var(--text-primary);
+  font: inherit;
+  font-weight: 400;
+  letter-spacing: normal;
+  text-transform: none;
+  outline: none;
 }
 
-.kb-file-row .kb-file-link:hover,
-.kb-file-row .kb-file-link.is-active {
-  background: none;
-  color: inherit;
+.kb-node.is-naming {
+  background: var(--bg-elevated);
 }
 
+/* Pending downloads and AI jobs sit on the same left edge as the file
+   names they will become, so the tree doesn't shift when they resolve. */
 .kb-async-row {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: var(--kb-gap, 5px);
   min-width: 0;
-  margin: 0.1rem 0.55rem;
-  padding: 0.35rem 0.45rem;
+  margin: 1px var(--kb-row-pad, 6px) 1px 0;
+  padding: 0.3rem var(--kb-row-pad, 6px) 0.3rem
+           calc(var(--kb-row-pad, 6px) + var(--kb-twisty, 14px) + var(--kb-gap, 5px));
   border: 1px dashed var(--border-subtle);
+  border-radius: 5px;
   color: var(--text-muted);
   font-size: 0.74rem;
   line-height: 1.3;
+}
+
+.kb-async-row .kb-file-link {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: inherit;
 }
 
 .kb-async-row span {
@@ -1773,4 +1888,424 @@ body.has-notes-bar.kb-page .kb-content-area {
   .kb-job-record.is-recording .kb-job-record__dot {
     animation-duration: 2s;
   }
+}
+
+/* ── Web page references: picker dialog ──────────────────────────────────
+   Pops up as soon as a cited page is saved. Reads like the bibliography it
+   came from: numbered entries, serif citations, the source site in small caps. */
+.kb-refs-dialog {
+  width: min(48rem, calc(100vw - 2rem));
+  max-height: min(88vh, 56rem);
+  padding: 0;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md, 10px);
+  color: var(--text-primary);
+  background: var(--bg-base);
+  box-shadow: 0 24px 64px -24px color-mix(in srgb, var(--bg-base) 40%, black);
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+.kb-refs-dialog::backdrop {
+  background: color-mix(in srgb, var(--bg-base) 72%, transparent);
+  backdrop-filter: blur(3px);
+  animation: kb-refs-fade 240ms ease-out both;
+}
+@keyframes kb-refs-fade { from { opacity: 0; } }
+.kb-refs-dialog .kb-refs { padding-top: clamp(1.5rem, 3vw, 2.5rem); }
+.kb-refs-dialog .kb-refs__list { padding-bottom: 1.5rem; }
+.kb-refs-dialog .kb-refs__none { padding-bottom: 1.5rem; }
+
+.kb-refs__plan {
+  margin: 1.1rem 0 0;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: 3px;
+  color: var(--text-secondary);
+  background: var(--bg-surface);
+  font: 400 0.78rem/1.6 var(--font-mono);
+  white-space: pre;
+  overflow-x: auto;
+}
+.kb-refs__plan span { color: var(--text-primary); }
+
+.kb-refs {
+  --refs-measure: 46rem;
+  max-width: var(--refs-measure);
+  margin: 0 auto;
+  padding: clamp(1.75rem, 4vw, 3.5rem) clamp(1rem, 4vw, 2.5rem) 0;
+  animation: kb-refs-in 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes kb-refs-in {
+  from { opacity: 0; transform: translateY(6px); }
+}
+
+.kb-refs__kicker {
+  margin: 0 0 0.9rem;
+  color: var(--accent);
+  font: 600 0.68rem/1 var(--font-body);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+.kb-refs__title {
+  margin: 0;
+  color: var(--text-primary);
+  font: 400 clamp(2.2rem, 5vw, 3.4rem)/1 var(--font-display);
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+.kb-refs__lede {
+  max-width: 36rem;
+  margin: 1rem 0 0;
+  color: var(--text-secondary);
+  font-size: 0.92rem;
+  line-height: 1.55;
+}
+.kb-refs__lede--done { color: var(--text-primary); }
+.kb-refs__folder {
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 0.82em;
+  white-space: nowrap;
+}
+.kb-refs__empty { margin-top: 2rem; color: var(--text-secondary); }
+
+.kb-refs__tools {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 2.25rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--border-default);
+  background: var(--bg-base);
+}
+.kb-refs__filter {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--text-muted);
+}
+.kb-refs__filter input {
+  flex: 1;
+  min-width: 0;
+  padding: 0.3rem 0;
+  border: 0;
+  outline: none;
+  color: var(--text-primary);
+  background: none;
+  font: inherit;
+  font-size: 0.88rem;
+}
+.kb-refs__filter:focus-within { color: var(--accent); }
+.kb-refs__link {
+  padding: 0;
+  border: 0;
+  color: var(--text-secondary);
+  background: none;
+  font: 500 0.78rem var(--font-body);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.kb-refs__link:hover,
+.kb-refs__link:focus-visible { color: var(--accent); }
+
+.kb-refs__list { margin: 0; padding: 0 0 6rem; list-style: none; }
+.kb-refs__item[hidden] { display: none; }
+.kb-refs__entry {
+  display: grid;
+  grid-template-columns: 1.1rem 2.4rem minmax(0, 1fr);
+  gap: 0.35rem 0.6rem;
+  align-items: baseline;
+  padding: 0.85rem 0.5rem;
+  margin: 0 -0.5rem;
+  border-bottom: 1px solid var(--border-subtle);
+  border-radius: 2px;
+  cursor: pointer;
+  transition: background-color 140ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.kb-refs__entry:hover { background: var(--bg-surface); }
+
+.kb-refs__check {
+  appearance: none;
+  position: relative;
+  top: 0.15em;
+  width: 0.9rem;
+  height: 0.9rem;
+  margin: 0;
+  border: 1px solid var(--border-emphasis);
+  border-radius: 2px;
+  background: var(--bg-input);
+  cursor: pointer;
+  transition: background-color 140ms ease-out, border-color 140ms ease-out;
+}
+.kb-refs__check:checked {
+  border-color: var(--accent);
+  background: var(--accent)
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3.5 8.5l3 3 6-7' fill='none' stroke='%230c0c0f' stroke-width='2.2'/%3E%3C/svg%3E") center / 80% no-repeat;
+}
+.kb-refs__check:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.kb-refs__num {
+  color: var(--text-muted);
+  font: 400 0.72rem/1 var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+.kb-refs__entry:has(.kb-refs__check:checked) .kb-refs__num { color: var(--accent); }
+
+.kb-refs__body { display: grid; gap: 0.3rem; min-width: 0; }
+.kb-refs__label {
+  color: var(--text-primary);
+  font: 400 1.02rem/1.4 var(--font-display);
+  overflow-wrap: anywhere;
+}
+.kb-refs__meta { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
+.kb-refs__host {
+  color: var(--text-secondary);
+  font: 500 0.66rem/1 var(--font-body);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.kb-refs__tag {
+  padding: 0.12rem 0.35rem;
+  border: 1px solid var(--border-default);
+  border-radius: 3px;
+  color: var(--text-secondary);
+  font: 500 0.6rem/1 var(--font-body);
+  letter-spacing: 0.06em;
+}
+.kb-refs__none { padding: 2rem 0 6rem; color: var(--text-secondary); font-style: italic; }
+
+.kb-refs__bar {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin: 0 calc(-1 * clamp(1rem, 4vw, 2.5rem));
+  padding: 0.85rem clamp(1rem, 4vw, 2.5rem);
+  border-top: 1px solid var(--border-default);
+  background: color-mix(in srgb, var(--bg-base) 92%, transparent);
+  backdrop-filter: blur(6px);
+}
+.kb-refs__count {
+  flex: 1;
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  font-variant-numeric: tabular-nums;
+}
+.kb-refs__ghost,
+.kb-refs__pull {
+  padding: 0.55rem 1rem;
+  border-radius: var(--radius-sm);
+  font: 600 0.82rem var(--font-body);
+  cursor: pointer;
+}
+.kb-refs__ghost { border: 0; color: var(--text-secondary); background: none; }
+.kb-refs__ghost:hover { color: var(--text-primary); }
+.kb-refs__pull {
+  border: 1px solid var(--accent);
+  color: var(--text-on-accent);
+  background: var(--accent);
+  transition: background-color 140ms ease-out, opacity 140ms ease-out;
+}
+.kb-refs__pull:hover:not(:disabled) { background: var(--accent-hover); }
+.kb-refs__pull:disabled { opacity: 0.35; cursor: default; }
+
+@media (max-width: 600px) {
+  .kb-refs__entry { grid-template-columns: 1.1rem minmax(0, 1fr); }
+  .kb-refs__num { display: none; }
+  .kb-refs__tools { flex-wrap: wrap; gap: 0.5rem 1rem; }
+  .kb-refs__filter { flex-basis: 100%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kb-refs, .kb-refs-dialog::backdrop { animation: none; }
+}
+
+/* ── Marker toolbar (kb-annotate) ─────────────────────────────────────────
+   Pops over a text selection in markdown, PDFs and embedded docs. Pens on
+   the left choose highlight vs underline; the ink chips preview the stroke
+   they'll lay down. Mark styles themselves live in kb_annotate_controller.js
+   so the same CSS can be injected into the document iframe. */
+.kb-marker {
+  --ink-yellow: oklch(0.86 0.17 95);
+  --ink-green: oklch(0.78 0.15 150);
+  --ink-pink: oklch(0.76 0.15 5);
+  --ink-blue: oklch(0.74 0.12 240);
+  position: fixed;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem;
+  border-radius: 10px;
+  background: oklch(0.24 0.012 260);
+  color: oklch(0.93 0.01 260);
+  box-shadow: 0 1px 0 oklch(1 0 0 / 0.06) inset, 0 8px 24px -8px oklch(0.15 0.02 260 / 0.55);
+  animation: kb-marker-in 0.16s cubic-bezier(0.25, 1, 0.5, 1);
+  user-select: none;
+}
+
+.kb-marker[hidden] { display: none; }
+
+.kb-marker::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -4px;
+  width: 8px;
+  height: 8px;
+  background: inherit;
+  transform: translateX(-50%) rotate(45deg);
+  border-radius: 1px;
+}
+
+.kb-marker.is-below::after { bottom: auto; top: -4px; }
+
+@keyframes kb-marker-in {
+  from { opacity: 0; transform: translateY(4px); }
+}
+
+.kb-marker.is-below { animation-name: kb-marker-in-below; }
+
+@keyframes kb-marker-in-below {
+  from { opacity: 0; transform: translateY(-4px); }
+}
+
+.kb-marker button {
+  display: grid;
+  place-items: center;
+  border: 0;
+  padding: 0;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+}
+
+.kb-marker button:focus-visible {
+  outline: 2px solid var(--ink-yellow);
+  outline-offset: 2px;
+}
+
+.kb-marker__pens,
+.kb-marker__inks {
+  display: flex;
+  align-items: center;
+}
+
+.kb-marker__pens {
+  gap: 2px;
+  padding-right: 0.35rem;
+  border-right: 1px solid oklch(1 0 0 / 0.1);
+}
+
+.kb-marker__pen {
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  opacity: 0.55;
+  transition: opacity 0.12s, background-color 0.12s;
+}
+
+.kb-marker__pen:hover { opacity: 0.85; }
+
+.kb-marker__pen[aria-pressed="true"] {
+  opacity: 1;
+  background: oklch(1 0 0 / 0.1);
+}
+
+.kb-marker__pen svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+}
+
+.kb-marker__pen[data-kb-annotate-style-param="highlight"] svg rect {
+  fill: currentColor;
+  fill-opacity: 0.35;
+  stroke: none;
+}
+
+.kb-marker__inks { gap: 4px; }
+
+/* Chisel-tip chip for the highlighter; flattens into a pen stroke for underline. */
+.kb-marker__ink {
+  position: relative;
+  width: 26px;
+  height: 28px;
+}
+
+.kb-marker__ink::before {
+  content: "";
+  width: 16px;
+  height: 14px;
+  background: var(--ink);
+  border-radius: 2px 5px 2px 5px;
+  transform: skewX(-12deg);
+  transition: height 0.18s cubic-bezier(0.25, 1, 0.5, 1), transform 0.18s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.kb-marker[data-style="underline"] .kb-marker__ink::before {
+  height: 3px;
+  border-radius: 2px;
+  transform: translateY(5px);
+}
+
+.kb-marker__ink:hover::before { transform: skewX(-12deg) translateY(-2px); }
+.kb-marker[data-style="underline"] .kb-marker__ink:hover::before { transform: translateY(3px); }
+
+.kb-marker__ink[aria-pressed="true"]::after {
+  content: "";
+  position: absolute;
+  bottom: 1px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.kb-marker__ink--yellow { --ink: var(--ink-yellow); }
+.kb-marker__ink--green  { --ink: var(--ink-green); }
+.kb-marker__ink--pink   { --ink: var(--ink-pink); }
+.kb-marker__ink--blue   { --ink: var(--ink-blue); }
+
+.kb-marker__erase {
+  width: 28px;
+  height: 28px;
+  margin-left: 0.1rem;
+  border-radius: 7px;
+  opacity: 0.7;
+}
+
+.kb-marker__erase[hidden] { display: none; }
+
+.kb-marker__erase:hover {
+  opacity: 1;
+  background: oklch(0.6 0.19 25 / 0.25);
+}
+
+.kb-marker__erase svg {
+  width: 14px;
+  height: 14px;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kb-marker,
+  .kb-marker__ink::before { animation: none; transition: none; }
+}
+
+/* Keyboard focus on tree rows: inset so the sidebar's overflow doesn't clip it. */
+.kb-node[role="treeitem"]:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
 }
