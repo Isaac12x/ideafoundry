@@ -12,7 +12,7 @@ class KbDownload < ApplicationRecord
 
   STATUSES = %w[pending running done failed].freeze
   FORMATS  = %w[auto page video audio].freeze
-  VIDEO_EXTS = %w[.mp4 .webm .mov .ogv .mkv .m4v].freeze
+  VIDEO_EXTS = %w[.mp4 .webm .mov .ogv .mkv .m4v .mpg .mpeg .avi .flv .wmv .3gp].freeze
 
   serialize :reference_list, coder: JSON, type: Array
 
