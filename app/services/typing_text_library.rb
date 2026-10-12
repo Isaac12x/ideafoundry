@@ -116,7 +116,7 @@ class TypingTextLibrary
     # Never repeats the previous prompt so each lock screen rotates.
     def random_unlock_id(except: nil)
       ids = UNLOCK_TEXTS.keys
-      (ids - [except.to_s]).sample || ids.sample
+      (ids - [ except.to_s ]).sample || ids.sample
     end
   end
 end

@@ -6,7 +6,7 @@ class KbProjectsTest < ActionDispatch::IntegrationTest
     @original_settings = @user.settings.deep_dup
     @kb_dir = Rails.root.join("tmp", "kb-projects-#{SecureRandom.hex(6)}").to_s
     FileUtils.mkdir_p(@kb_dir)
-    @user.update!(settings: (@user.settings || {}).merge("kb" => { "folders" => [@kb_dir], "hide_native" => true }))
+    @user.update!(settings: (@user.settings || {}).merge("kb" => { "folders" => [ @kb_dir ], "hide_native" => true }))
   end
 
   teardown do
@@ -71,13 +71,13 @@ class KbProjectsTest < ActionDispatch::IntegrationTest
 
     upload = Rack::Test::UploadedFile.new(StringIO.new("png"), "image/png", original_filename: "../shot.png")
     post kb_project_runs_path, params: { src: 0, path: test_rel, date: "2026-10-06", result: "ok",
-                                         measurements: [{ name: "pH", value: "4.0", unit: "" }], files: [upload] }
+                                         measurements: [ { name: "pH", value: "4.0", unit: "" } ], files: [ upload ] }
     post kb_project_runs_path, params: { src: 0, path: test_rel, date: "2026-10-20",
-                                         measurements: [{ name: "pH", value: "4.5", unit: "" }] }
+                                         measurements: [ { name: "pH", value: "4.5", unit: "" } ] }
 
     runs = Kb::Project.at(@kb_dir, "Ferment").tests.first.runs
     assert_equal %w[2026-10-06 2026-10-20], runs.map(&:name)
-    assert_equal ["shot.png"], runs.first.files
+    assert_equal [ "shot.png" ], runs.first.files
     assert_equal "ok", runs.first.result
 
     get kb_project_path(src: 0, path: "Ferment")
@@ -86,7 +86,7 @@ class KbProjectsTest < ActionDispatch::IntegrationTest
     assert_select ".kbp-thumb img"
 
     patch kb_project_runs_path, params: { src: 0, path: runs.last.rel, date: "2026-10-20", conditions: "4C",
-                                          measurements: [{ name: "pH", value: "4.1", unit: "" }] }
+                                          measurements: [ { name: "pH", value: "4.1", unit: "" } ] }
     assert_equal "4C", Kb::Project.at(@kb_dir, "Ferment").tests.first.runs.last.conditions
   end
 
@@ -124,7 +124,7 @@ class KbProjectsTest < ActionDispatch::IntegrationTest
     run = project.create_test!(name: "Fridge").create_run!(date: "2026-10-06")
     File.write(File.join(project.abs, "notes.md"), "x")
 
-    [run.rel, "Ferment/notes.md", "Ferment/Tests", "Ferment", "Ferment/Tests/../notes.md"].each do |path|
+    [ run.rel, "Ferment/notes.md", "Ferment/Tests", "Ferment", "Ferment/Tests/../notes.md" ].each do |path|
       delete kb_project_tests_path, params: { src: 0, path: path }
     end
     assert File.exist?(run.abs)

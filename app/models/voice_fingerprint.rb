@@ -79,7 +79,7 @@ class VoiceFingerprint
     def duration_tolerance(values)
       return nil if values.blank?
 
-      [values.max - values.min + 600, 1_200].max
+      [ values.max - values.min + 600, 1_200 ].max
     end
 
     def duration_matches?(template, sample)

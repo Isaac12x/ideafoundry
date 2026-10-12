@@ -28,7 +28,7 @@ module Kb
 
     # Malformed, missing or non-hash YAML reads as {}.
     def self.read_meta(path)
-      data = YAML.safe_load(File.read(path), permitted_classes: [Date, Time], aliases: false)
+      data = YAML.safe_load(File.read(path), permitted_classes: [ Date, Time ], aliases: false)
       data.is_a?(Hash) ? data : {}
     rescue StandardError
       {}

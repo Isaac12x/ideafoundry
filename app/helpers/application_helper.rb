@@ -122,7 +122,7 @@ module ApplicationHelper
   def backlog_description_list_item(build_item, item)
     return tag.li(item[:text]) unless item[:checklist]
 
-    classes = ["backlog-checklist-item"]
+    classes = [ "backlog-checklist-item" ]
     classes << "backlog-checklist-item--done" if item[:completed]
 
     tag.li(class: classes.join(" ")) do

@@ -17,7 +17,7 @@ class CreateIdeas < ActiveRecord::Migration[8.0]
 
       t.timestamps
     end
-    
+
     add_index :ideas, :state
     add_index :ideas, :category
     add_index :ideas, :computed_score

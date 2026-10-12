@@ -16,6 +16,6 @@ class CatchAllRedirectTest < ActionDispatch::IntegrationTest
     get "/assets/controllers/does_not_exist-deadbeef.js"
     assert_not_equal "/", (response.location && URI(response.location).path),
       "missing asset should not redirect to /"
-    assert_includes [404, 200], response.status
+    assert_includes [ 404, 200 ], response.status
   end
 end

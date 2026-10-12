@@ -23,10 +23,10 @@ class LicensorImport < ApplicationRecord
   # Header text that should auto-map to a field, matched loosely (see .guess_field).
   FIELD_HINTS = {
     "company"       => %w[company organisation organization licensor account name firm publisher studio],
-    "contact_name"  => ["contact", "contact name", "person", "full name", "first name", "owner", "rep"],
+    "contact_name"  => [ "contact", "contact name", "person", "full name", "first name", "owner", "rep" ],
     "contact_email" => %w[email e-mail mail],
     "contact_url"   => %w[url website site web link domain],
-    "next_action"   => ["next action", "next step", "action", "todo", "follow up", "followup"],
+    "next_action"   => [ "next action", "next step", "action", "todo", "follow up", "followup" ],
     "notes"         => %w[notes note comment comments description remarks],
     "stage"         => %w[stage status pipeline phase]
   }.freeze

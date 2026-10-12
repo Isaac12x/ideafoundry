@@ -89,7 +89,7 @@ class RecoveryKeychain
     end
 
     def store(data_json)
-      IO.popen([HELPER, "store"], "w") do |io|
+      IO.popen([ HELPER, "store" ], "w") do |io|
         io.write(data_json)
       end
       $?.success?
@@ -118,7 +118,7 @@ class RecoveryKeychain
     end
 
     def store(data_json)
-      IO.popen(["secret-tool", "store", "--label=#{LABEL}", *ATTRS], "w") do |io|
+      IO.popen([ "secret-tool", "store", "--label=#{LABEL}", *ATTRS ], "w") do |io|
         io.write(data_json)
       end
       $?.success?

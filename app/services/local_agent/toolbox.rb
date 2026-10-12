@@ -103,11 +103,11 @@ module LocalAgent
     def normalize_arguments(arguments)
       raw = if arguments.respond_to?(:to_unsafe_h)
               arguments.to_unsafe_h
-            elsif arguments.respond_to?(:to_h)
+      elsif arguments.respond_to?(:to_h)
               arguments.to_h
-            else
+      else
               {}
-            end
+      end
 
       raw.deep_stringify_keys
     end
@@ -352,7 +352,7 @@ module LocalAgent
 
     def tool_list_kb_highlights(args)
       limit = (args["limit"].presence || 200).to_i.clamp(1, 1000)
-      sources = kb_sources.each_with_index.to_h { |source, idx| [File.expand_path(source[:path]), idx] }
+      sources = kb_sources.each_with_index.to_h { |source, idx| [ File.expand_path(source[:path]), idx ] }
       marks = user.kb_annotations.where(source_path: sources.keys).order(created_at: :desc)
       if args["file"].present?
         base = kb_base(kb_src_index(args))
@@ -479,14 +479,14 @@ module LocalAgent
 
     def transition_idea!(idea, state, args)
       result = case state
-               when "first_try" then idea.transition_to_first_try!
-               when "second_try" then idea.transition_to_second_try!
-               when "incubating" then idea.fail_attempt!(cool_off_duration(args))
-               when "validated" then idea.complete_attempt!
-               when "parked" then idea.park!
-               when "rejected" then idea.reject!
-               when "shipped" then idea.ship!
-               when "triage", "idea_new"
+      when "first_try" then idea.transition_to_first_try!
+      when "second_try" then idea.transition_to_second_try!
+      when "incubating" then idea.fail_attempt!(cool_off_duration(args))
+      when "validated" then idea.complete_attempt!
+      when "parked" then idea.park!
+      when "rejected" then idea.reject!
+      when "shipped" then idea.ship!
+      when "triage", "idea_new"
                  Idea.send(:without_history_tracking) do
                    idea.transaction do
                      idea.update!(state: state, cool_off_until: nil)
@@ -494,9 +494,9 @@ module LocalAgent
                    end
                  end
                  true
-               else
+      else
                  raise ArgumentError, "Unsupported idea state: #{state}"
-               end
+      end
 
       raise ArgumentError, "Idea cannot transition to #{state}" unless result
     end

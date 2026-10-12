@@ -20,7 +20,7 @@ module LocalAgent
 
       candidates
         .map { |candidate| penalize_recent_activity(candidate) }
-        .sort_by { |candidate| [-candidate[:priority], candidate[:target_type], candidate[:target_id].to_i] }
+        .sort_by { |candidate| [ -candidate[:priority], candidate[:target_type], candidate[:target_id].to_i ] }
         .first(limit)
     end
 

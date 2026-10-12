@@ -9,7 +9,7 @@ class DrawingsControllerTest < ActionDispatch::IntegrationTest
 
   def sample_payload
     {
-      "elements" => [{ "id" => "n1", "type" => "rectangle", "x" => 0, "y" => 0 }],
+      "elements" => [ { "id" => "n1", "type" => "rectangle", "x" => 0, "y" => 0 } ],
       "appState" => { "viewBackgroundColor" => "#fff" },
       "files" => {}
     }
@@ -95,7 +95,7 @@ class DrawingsControllerTest < ActionDispatch::IntegrationTest
     begin
       get idea_drawing_path(@idea, d)
       # Rails may render its own 404 page in test env or raise; either is acceptable.
-      assert_includes [404, 302], response.status
+      assert_includes [ 404, 302 ], response.status
     rescue ActiveRecord::RecordNotFound
       assert true
     end

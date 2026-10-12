@@ -15,17 +15,17 @@ class KbControllerTest < ActionDispatch::IntegrationTest
   test "configured kb path persists and shows unavailable when folder is missing" do
     missing_path = Rails.root.join("tmp", "missing-kb-#{SecureRandom.hex(8)}").to_s
 
-    patch settings_kb_path, params: { kb_folders: [missing_path] }
+    patch settings_kb_path, params: { kb_folders: [ missing_path ] }
 
     assert_redirected_to settings_kb_path
-    assert_equal [missing_path], @user.reload.kb_folders
+    assert_equal [ missing_path ], @user.reload.kb_folders
 
     get kb_path
 
     assert_response :success
     assert_select ".kb-folder-label[title=?]", missing_path
     assert_select ".kb-folder-status", text: "(unavailable)"
-    assert_equal [missing_path], @user.reload.kb_folders
+    assert_equal [ missing_path ], @user.reload.kb_folders
   end
 
   test "markdown files in native kb folder are included automatically" do
@@ -198,7 +198,7 @@ class KbControllerTest < ActionDispatch::IntegrationTest
     @kb_dir = Rails.root.join("tmp", "kb-test-#{SecureRandom.hex(8)}").to_s
     FileUtils.mkdir_p(@kb_dir)
     @user.update!(settings: (@user.settings || {}).merge(
-      "kb" => { "folders" => [@kb_dir], "hide_native" => true }
+      "kb" => { "folders" => [ @kb_dir ], "hide_native" => true }
     ))
   end
 end

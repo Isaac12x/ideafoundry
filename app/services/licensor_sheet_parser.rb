@@ -46,8 +46,8 @@ class LicensorSheetParser
     sheet = spreadsheet
     return Grid.new(rows: [], truncated_rows: false, truncated_columns: false) if sheet.first_row.nil?
 
-    last_row    = [sheet.last_row, sheet.first_row + MAX_ROWS - 1].min
-    last_column = [sheet.last_column, sheet.first_column + MAX_COLUMNS - 1].min
+    last_row    = [ sheet.last_row, sheet.first_row + MAX_ROWS - 1 ].min
+    last_column = [ sheet.last_column, sheet.first_column + MAX_COLUMNS - 1 ].min
 
     rows = (sheet.first_row..last_row).map do |row|
       (sheet.first_column..last_column).map { |col| format_cell(sheet.cell(row, col)) }

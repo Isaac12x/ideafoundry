@@ -1,7 +1,7 @@
 class LicensorsController < ApplicationController
   before_action :set_user
-  before_action :set_idea, only: [:create]
-  before_action :set_licensor, only: [:show, :update, :destroy]
+  before_action :set_idea, only: [ :create ]
+  before_action :set_licensor, only: [ :show, :update, :destroy ]
 
   def create
     @licensor = @idea.licensors.build(licensor_params)
@@ -45,9 +45,9 @@ class LicensorsController < ApplicationController
     respond_to do |format|
       format.turbo_stream do
         streams = case params[:context]
-                  when "board", "panel" then [board_stream, turbo_stream.remove("licensor-panel")]
-                  else licensors_tab_stream(idea)
-                  end
+        when "board", "panel" then [ board_stream, turbo_stream.remove("licensor-panel") ]
+        else licensors_tab_stream(idea)
+        end
         render turbo_stream: streams
       end
       format.html { redirect_back fallback_location: licensing_crm_path, notice: "Licensor removed." }
@@ -75,9 +75,9 @@ class LicensorsController < ApplicationController
   def update_streams(errors: false)
     case params[:context]
     when "board"
-      [board_stream]
+      [ board_stream ]
     when "panel"
-      [board_stream, turbo_stream.replace("licensor-panel", partial: "licensing/crm/record_panel", locals: { licensor: @licensor })]
+      [ board_stream, turbo_stream.replace("licensor-panel", partial: "licensing/crm/record_panel", locals: { licensor: @licensor }) ]
     else
       licensors_tab_stream(@licensor.idea)
     end

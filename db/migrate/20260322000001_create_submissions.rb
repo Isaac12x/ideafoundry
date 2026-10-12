@@ -15,8 +15,8 @@ class CreateSubmissions < ActiveRecord::Migration[8.0]
       t.timestamps
     end
 
-    add_index :submissions, [:user_id, :status]
-    add_index :submissions, [:source, :source_reference], unique: true
+    add_index :submissions, [ :user_id, :status ]
+    add_index :submissions, [ :source, :source_reference ], unique: true
     add_index :submissions, :reviewed_at
   end
 end

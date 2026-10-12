@@ -40,7 +40,7 @@ class IdeaAttachmentsJsonFormatTest < ActionDispatch::IntegrationTest
 
   test "variant=card returns the detail-page card partial" do
     post idea_attachments_url(@idea, variant: "card"),
-      params: { files: [fixture_file_upload("welcome.eml", "message/rfc822")] },
+      params: { files: [ fixture_file_upload("welcome.eml", "message/rfc822") ] },
       headers: { "Accept" => "application/json" }
 
     assert_response :success

@@ -113,12 +113,12 @@ class KbDownloadJob < ApplicationJob
     bin = yt_dlp_bin
     return fail!(dl, "yt-dlp is not installed.") if bin.nil?
 
-    args = [bin, "--no-playlist", "--no-overwrites", "--no-simulate",
-            "--print", "after_move:filepath", "-P", dir, "-o", "%(title)s.%(ext)s"]
+    args = [ bin, "--no-playlist", "--no-overwrites", "--no-simulate",
+            "--print", "after_move:filepath", "-P", dir, "-o", "%(title)s.%(ext)s" ]
     case dl.format
-    when "audio" then args += ["-t", "mp3"]
-    when "video" then args += ["-t", "mp4"]
-    when "auto"  then args += ["-t", "mp4"] if youtube?(dl.url)
+    when "audio" then args += [ "-t", "mp3" ]
+    when "video" then args += [ "-t", "mp4" ]
+    when "auto"  then args += [ "-t", "mp4" ] if youtube?(dl.url)
     end
     args << dl.url
 
@@ -198,13 +198,13 @@ class KbDownloadJob < ApplicationJob
   def self.capture(args)
     out, err, status = Open3.capture3(*args)
     Rails.logger.info("yt-dlp: #{err}") unless status.success?
-    [out, status]
+    [ out, status ]
   rescue Errno::ENOENT
-    [nil, nil]
+    [ nil, nil ]
   end
 
   def self.yt_dlp_bin
-    [ENV["YT_DLP_BIN"], File.expand_path("~/.local/bin/yt-dlp"), "yt-dlp"].compact.find do |cand|
+    [ ENV["YT_DLP_BIN"], File.expand_path("~/.local/bin/yt-dlp"), "yt-dlp" ].compact.find do |cand|
       cand == "yt-dlp" ? system("which", "yt-dlp", out: File::NULL, err: File::NULL) : File.executable?(cand)
     end
   end

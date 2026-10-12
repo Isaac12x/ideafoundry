@@ -15,7 +15,7 @@ class IdeaEnrichmentServiceTest < ActiveSupport::TestCase
   test "stores enrichment results in idea metadata" do
     service = IdeaEnrichmentService.new(@idea)
     mock_results = {
-      "competitors" => [{ name: "TestComp", url: "https://test.com", description: "A competitor" }],
+      "competitors" => [ { name: "TestComp", url: "https://test.com", description: "A competitor" } ],
       "market" => [],
       "resources" => []
     }

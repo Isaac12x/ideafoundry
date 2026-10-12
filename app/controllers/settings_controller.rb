@@ -13,12 +13,12 @@ class SettingsController < ApplicationController
     if @user.update_features(features_params)
       ActivityLog.record_settings!(user: @user, setting: "Features")
       respond_to do |format|
-        format.html { redirect_to settings_features_path, notice: 'Areas updated.' }
+        format.html { redirect_to settings_features_path, notice: "Areas updated." }
         format.json { render json: { success: true } }
       end
     else
       respond_to do |format|
-        format.html { redirect_to settings_features_path, alert: 'Failed to update areas.' }
+        format.html { redirect_to settings_features_path, alert: "Failed to update areas." }
         format.json { render json: { success: false }, status: :unprocessable_content }
       end
     end
@@ -31,14 +31,14 @@ class SettingsController < ApplicationController
   def update_display
     if @user.update_display_quote(display_settings_params) && update_default_kb_folder_icon(display_settings_params)
       respond_to do |format|
-        format.html { redirect_to settings_display_path, notice: 'Display settings updated.' }
+        format.html { redirect_to settings_display_path, notice: "Display settings updated." }
         format.json { render json: { saved: true } }
       end
     else
       load_display_settings
       respond_to do |format|
         format.html do
-          flash.now[:alert] = 'Failed to update display settings.'
+          flash.now[:alert] = "Failed to update display settings."
           render :display, status: :unprocessable_content
         end
         format.json { render json: { saved: false }, status: :unprocessable_entity }
@@ -52,7 +52,7 @@ class SettingsController < ApplicationController
 
   def update_scoring
     weights = scoring_params
-    
+
     # Validate weights are numeric and within reasonable bounds
     if valid_scoring_weights?(weights)
       @user.update_scoring_weights(weights)
@@ -63,27 +63,27 @@ class SettingsController < ApplicationController
       ActivityLog.record_settings!(user: @user, setting: "Scoring")
 
       respond_to do |format|
-        format.html { redirect_to settings_scoring_path, notice: 'Scoring weights updated successfully. All idea scores have been recalculated.' }
-        format.json { 
-          render json: { 
-            success: true, 
+        format.html { redirect_to settings_scoring_path, notice: "Scoring weights updated successfully. All idea scores have been recalculated." }
+        format.json {
+          render json: {
+            success: true,
             weights: @user.scoring_weights,
-            message: 'Scoring weights updated successfully'
+            message: "Scoring weights updated successfully"
           }
         }
       end
     else
       @scoring_systems = @user.available_scoring_systems
       respond_to do |format|
-        format.html { 
-          flash.now[:alert] = 'Invalid scoring weights. Please ensure all values are numbers between -1 and 1.'
-          render :scoring, status: :unprocessable_content 
+        format.html {
+          flash.now[:alert] = "Invalid scoring weights. Please ensure all values are numbers between -1 and 1."
+          render :scoring, status: :unprocessable_content
         }
-        format.json { 
-          render json: { 
-            success: false, 
-            errors: ['Invalid scoring weights. Please ensure all values are numbers between -1 and 1.']
-          }, status: :unprocessable_content 
+        format.json {
+          render json: {
+            success: false,
+            errors: [ "Invalid scoring weights. Please ensure all values are numbers between -1 and 1." ]
+          }, status: :unprocessable_content
         }
       end
     end
@@ -286,7 +286,7 @@ class SettingsController < ApplicationController
     presets = params[:event_presets]&.permit!&.to_h || {}
     recipients = params.dig(:email_settings, :recipients)
 
-    @user.update_email_settings({ 'recipients' => recipients.to_s }) if recipients.present? || params.key?(:email_settings)
+    @user.update_email_settings({ "recipients" => recipients.to_s }) if recipients.present? || params.key?(:email_settings)
     @user.update_notification_triggers(triggers)
     @user.update_notification_content(content) if params.key?(:notification_content)
     @user.update_notification_templates(templates) if params.key?(:notification_templates)
@@ -312,14 +312,14 @@ class SettingsController < ApplicationController
 
     if @user.update_list_settings(raw)
       respond_to do |format|
-        format.html { redirect_to settings_lists_path, notice: 'List settings updated.' }
+        format.html { redirect_to settings_lists_path, notice: "List settings updated." }
         format.json { render json: { saved: true } }
       end
     else
       @list_settings = @user.list_settings
       respond_to do |format|
         format.html do
-          flash.now[:alert] = 'Failed to update list settings.'
+          flash.now[:alert] = "Failed to update list settings."
           render :lists, status: :unprocessable_content
         end
         format.json { render json: { saved: false }, status: :unprocessable_entity }
@@ -332,16 +332,16 @@ class SettingsController < ApplicationController
     coerced = raw.to_h.each_with_object({}) do |(k, v), h|
       default = User::DEFAULT_TOPOLOGY_SETTINGS[k]
       h[k] = case default
-              when true, false then ActiveModel::Type::Boolean.new.cast(v)
-              when Integer then v.to_i
-              when Float then v.to_f
-              else v.to_s
-              end
+      when true, false then ActiveModel::Type::Boolean.new.cast(v)
+      when Integer then v.to_i
+      when Float then v.to_f
+      else v.to_s
+      end
     end
 
     if @user.update_topology_settings(coerced) && update_topology_template_fields
       respond_to do |format|
-        format.html { redirect_to settings_topologies_path, notice: 'Topology & graph settings updated.' }
+        format.html { redirect_to settings_topologies_path, notice: "Topology & graph settings updated." }
         format.json { render json: { saved: true } }
       end
     else
@@ -349,7 +349,7 @@ class SettingsController < ApplicationController
       @topologies = @user.topologies.ordered
       respond_to do |format|
         format.html do
-          flash.now[:alert] = 'Failed to update settings.'
+          flash.now[:alert] = "Failed to update settings."
           render :topologies, status: :unprocessable_content
         end
         format.json { render json: { saved: false }, status: :unprocessable_entity }
@@ -364,20 +364,20 @@ class SettingsController < ApplicationController
   def update_idea_tabs
     raw = if params[:reset_idea_tabs].present?
             User::DEFAULT_IDEA_TAB_SETTINGS
-          else
+    else
             params[:idea_tabs]&.permit!&.to_h || {}
-          end
+    end
 
     if @user.update_idea_tab_settings(raw)
       respond_to do |format|
-        format.html { redirect_to settings_idea_tabs_path, notice: 'Idea tab visibility updated.' }
+        format.html { redirect_to settings_idea_tabs_path, notice: "Idea tab visibility updated." }
         format.json { render json: { saved: true } }
       end
     else
       @idea_tab_settings = @user.idea_tab_settings
       respond_to do |format|
         format.html do
-          flash.now[:alert] = 'Failed to update idea tab settings.'
+          flash.now[:alert] = "Failed to update idea tab settings."
           render :idea_tabs, status: :unprocessable_content
         end
         format.json { render json: { saved: false }, status: :unprocessable_entity }
@@ -416,14 +416,14 @@ class SettingsController < ApplicationController
 
   def exports
     @export_jobs = @user.export_jobs.recent.limit(20)
-    @active_export = @user.export_jobs.exports.where(status: [:pending, :processing]).first
-    @active_backup = @user.export_jobs.backups.where(status: [:pending, :processing]).first
+    @active_export = @user.export_jobs.exports.where(status: [ :pending, :processing ]).first
+    @active_backup = @user.export_jobs.backups.where(status: [ :pending, :processing ]).first
     @last_backup = @user.export_jobs.backups.where(status: :completed).order(created_at: :desc).first
     @backup_settings = @user.backup_settings
   end
 
   def create_export
-    active_export = @user.export_jobs.exports.where(status: [:pending, :processing]).first
+    active_export = @user.export_jobs.exports.where(status: [ :pending, :processing ]).first
     if active_export
       redirect_to settings_exports_path, alert: "An export is already in progress."
       return
@@ -446,7 +446,7 @@ class SettingsController < ApplicationController
   end
 
   def create_backup
-    active_backup = @user.export_jobs.backups.where(status: [:pending, :processing]).first
+    active_backup = @user.export_jobs.backups.where(status: [ :pending, :processing ]).first
     if active_backup
       redirect_to settings_exports_path, alert: "A backup is already in progress."
       return
@@ -471,8 +471,8 @@ class SettingsController < ApplicationController
 
     send_file @export_job.file_path,
               filename: @export_job.download_filename,
-              type: @export_job.password_protected? ? 'application/zip' : 'application/gzip',
-              disposition: 'attachment'
+              type: @export_job.password_protected? ? "application/zip" : "application/gzip",
+              disposition: "attachment"
   end
 
   def destroy_export
@@ -484,7 +484,7 @@ class SettingsController < ApplicationController
   end
 
   def cleanup_exports
-    old_exports = @user.export_jobs.where('created_at < ?', 7.days.ago)
+    old_exports = @user.export_jobs.where("created_at < ?", 7.days.ago)
 
     cleanup_count = 0
     old_exports.each do |export_job|
@@ -847,8 +847,8 @@ class SettingsController < ApplicationController
 
   def valid_scoring_weights?(weights)
     weights.values.all? do |weight|
-      weight.present? && 
-      weight.to_f.between?(-1.0, 1.0) && 
+      weight.present? &&
+      weight.to_f.between?(-1.0, 1.0) &&
       weight.to_f.to_s == weight.to_f.round(2).to_s
     end
   end

@@ -7,7 +7,7 @@ class KbMediaEditRunnerJobTest < ActiveJob::TestCase
     @kb_dir = Rails.root.join("tmp", "kb-media-job-#{SecureRandom.hex(6)}").to_s
     FileUtils.mkdir_p(@kb_dir)
     File.binwrite(File.join(@kb_dir, "artifact.xyz"), "original-artifact")
-    @user.update!(settings: (@user.settings || {}).merge("kb" => { "folders" => [@kb_dir], "hide_native" => true }))
+    @user.update!(settings: (@user.settings || {}).merge("kb" => { "folders" => [ @kb_dir ], "hide_native" => true }))
   end
 
   teardown do

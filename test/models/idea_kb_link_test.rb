@@ -15,9 +15,9 @@ class IdeaKbLinkTest < ActiveSupport::TestCase
     IdeaKbLink.move_subtree!(user: @user, source_path: "/kb", old_relative_path: "P",
                              new_source_path: "/kb", new_relative_path: "Q")
     paths = @idea.kb_links.reload.pluck(:source_path, :relative_path)
-    assert_includes paths, ["/kb", "Q"]
-    assert_includes paths, ["/kb", "Q/a.md"]
-    assert_includes paths, ["/kb", "Pother"]
+    assert_includes paths, [ "/kb", "Q" ]
+    assert_includes paths, [ "/kb", "Q/a.md" ]
+    assert_includes paths, [ "/kb", "Pother" ]
     assert_equal 3, paths.size
   end
 

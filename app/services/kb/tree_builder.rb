@@ -29,7 +29,7 @@ module Kb
       sources = KbSource.list(user)
       preferences = user.kb_entry_preferences.with_attached_icon_image.to_a
       preferences_by_key = preferences.index_by do |preference|
-        [preference.source_path, preference.relative_path, preference.entry_type]
+        [ preference.source_path, preference.relative_path, preference.entry_type ]
       end
       default_folder_preference = preferences.find(&:default_folder?)
       downloads_by_source = active_downloads_by_source(sources)
@@ -58,7 +58,7 @@ module Kb
           exists: Dir.exist?(source_path),
           native: source[:native],
           drive: source[:drive],
-          preference: preferences_by_key[[source_path, "", "root"]],
+          preference: preferences_by_key[[ source_path, "", "root" ]],
           default_folder_preference: default_folder_preference
         }
       end
@@ -70,7 +70,7 @@ module Kb
 
     def cached_filesystem_entries(base)
       generation = self.class.cache_generation(user.id)
-      Rails.cache.fetch(["kb/tree/fs-v1", user.id, base, generation]) do
+      Rails.cache.fetch([ "kb/tree/fs-v1", user.id, base, generation ]) do
         scan_filesystem_entries(base)
       end
     end
@@ -115,7 +115,7 @@ module Kb
           type: :file,
           rel: file[:rel],
           abs: file[:abs],
-          preference: preferences[[source_path, file[:rel], "file"]]
+          preference: preferences[[ source_path, file[:rel], "file" ]]
         }
       end
       root
@@ -130,7 +130,7 @@ module Kb
           type: :dir,
           children: {},
           rel: relative_path,
-          preference: preferences[[source_path, relative_path, "folder"]]
+          preference: preferences[[ source_path, relative_path, "folder" ]]
         }
         node = current[directory]
         current = node[:children]

@@ -36,7 +36,7 @@ module KbProjects
   def project_test_create
     project_action(rel_param: :dir) do |base, project|
       dir = params[:dir].to_s.sub(%r{/+\z}, "")
-      unless [project.rel, File.join(project.rel, Kb::Project::TESTS_DIR)].include?(dir)
+      unless [ project.rel, File.join(project.rel, Kb::Project::TESTS_DIR) ].include?(dir)
         raise ArgumentError, "Tests live inside a project."
       end
 
@@ -178,7 +178,7 @@ module KbProjects
   end
 
   def run_attrs
-    permitted = params.permit(:date, :conditions, :result, measurements: [:name, :value, :unit]).to_h
+    permitted = params.permit(:date, :conditions, :result, measurements: [ :name, :value, :unit ]).to_h
     attrs = { date: permitted[:date].presence || Date.current.iso8601,
               conditions: permitted[:conditions].to_s, result: permitted[:result].to_s,
               measurements: permitted[:measurements] || [] }

@@ -39,7 +39,7 @@ class ExportJob < ApplicationRecord
   end
 
   def update_progress!(progress_value)
-    update!(progress: [0, [progress_value, 100].min].max)
+    update!(progress: [ 0, [ progress_value, 100 ].min ].max)
   end
 
   def complete!(file_path)
@@ -68,22 +68,22 @@ class ExportJob < ApplicationRecord
 
   def file_size_human
     return "0 B" unless file_exists?
-    
+
     size = file_size
     units = %w[B KB MB GB TB]
     unit_index = 0
-    
+
     while size >= 1024 && unit_index < units.length - 1
       size /= 1024.0
       unit_index += 1
     end
-    
+
     "#{size.round(1)} #{units[unit_index]}"
   end
 
   def download_filename
     return nil unless completed? && file_path.present?
-    
+
     timestamp = created_at.strftime("%Y%m%d_%H%M%S")
     extension = password_protected? ? ".zip" : ".tar.gz"
     "idea_foundry_export_#{timestamp}#{extension}"
@@ -91,14 +91,14 @@ class ExportJob < ApplicationRecord
 
   def cleanup_file!
     return unless file_path.present? && File.exist?(file_path)
-    
+
     File.delete(file_path)
     update!(file_path: nil)
   end
 
   def duration
     return nil unless completed? || failed?
-    
+
     end_time = updated_at
     start_time = created_at
     end_time - start_time
@@ -106,7 +106,7 @@ class ExportJob < ApplicationRecord
 
   def duration_human
     return nil unless duration
-    
+
     seconds = duration.to_i
     if seconds < 60
       "#{seconds}s"

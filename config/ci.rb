@@ -7,6 +7,7 @@ javascript_tests = Dir["test/javascript/*.mjs"].sort
 Bundler.with_original_env do
   CI.run do
     step "Setup", "bin/setup --skip-server"
+    step "Style: Ruby", "bin/rubocop"
     step "Security: Importmap vulnerability audit", "bin/importmap audit"
     step "Assets: JavaScript", "yarn", "build"
     step "Tests: JavaScript", "node", "--test", *javascript_tests if javascript_tests.any?

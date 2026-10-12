@@ -5,7 +5,7 @@ class VersionsControllerTest < ActionDispatch::IntegrationTest
     @user = users(:one)
     @idea = ideas(:one)
     @idea.update!(user: @user)
-    
+
     # Create some versions for testing
     @version1 = Version.create_from_idea(@idea, "Initial version")
     @idea.update!(title: "Updated Title")
@@ -45,7 +45,7 @@ class VersionsControllerTest < ActionDispatch::IntegrationTest
   test "should show side by side diff on compare page" do
     get compare_idea_versions_url(@idea, from: @version1.id, to: @version2.id)
     assert_response :success
-    
+
     diff = @version2.diff_with(@version1)
     if diff.any?
       assert_select ".side-by-side-diff"
@@ -55,14 +55,14 @@ class VersionsControllerTest < ActionDispatch::IntegrationTest
 
   test "should restore version" do
     original_title = @idea.title
-    
+
     post restore_idea_version_url(@idea, @version1)
     assert_redirected_to idea_path(@idea)
-    
+
     @idea.reload
-    assert_equal @version1.snapshot_data['title'], @idea.title
+    assert_equal @version1.snapshot_data["title"], @idea.title
     assert_not_equal original_title, @idea.title
-    
+
     # Should create a new version for the restoration
     assert @idea.versions.where("commit_message LIKE ?", "%Restored from version%").exists?
   end
@@ -85,10 +85,10 @@ class VersionsControllerTest < ActionDispatch::IntegrationTest
     @idea.update!(title: "Same Title")
     version_a = Version.create_from_idea(@idea, "Version A")
     version_b = Version.create_from_idea(@idea, "Version B")
-    
+
     get compare_idea_versions_url(@idea, from: version_a.id, to: version_b.id)
     assert_response :success
-    
+
     diff = version_b.diff_with(version_a)
     if diff.empty?
       assert_select ".no-changes"
@@ -98,7 +98,7 @@ class VersionsControllerTest < ActionDispatch::IntegrationTest
   test "should display timeline with correct order" do
     get idea_versions_url(@idea)
     assert_response :success
-    
+
     # Versions should be in chronological order
     versions = @idea.versions.chronological
     assert_equal versions.first.id, @version1.id
@@ -108,7 +108,7 @@ class VersionsControllerTest < ActionDispatch::IntegrationTest
   test "should show parent version link on detail page" do
     get idea_version_url(@idea, @version2)
     assert_response :success
-    
+
     if @version2.parent_version
       assert_select "a[href=?]", idea_version_path(@idea, @version2.parent_version)
     end
@@ -117,7 +117,7 @@ class VersionsControllerTest < ActionDispatch::IntegrationTest
   test "should show child versions on detail page" do
     get idea_version_url(@idea, @version2)
     assert_response :success
-    
+
     if @version2.child_versions.any?
       assert_select ".children-info"
       @version2.child_versions.each do |child|
@@ -136,7 +136,7 @@ class VersionsControllerTest < ActionDispatch::IntegrationTest
   test "should show compare with parent button when parent exists" do
     get idea_version_url(@idea, @version2)
     assert_response :success
-    
+
     if @version2.parent_version
       assert_select "a[href=?]", compare_idea_versions_path(@idea, from: @version2.parent_version_id, to: @version2.id)
     end
@@ -145,7 +145,7 @@ class VersionsControllerTest < ActionDispatch::IntegrationTest
   test "should indicate root version" do
     get idea_version_url(@idea, @version1)
     assert_response :success
-    
+
     if @version1.root?
       assert_select ".root-info"
       assert_select ".badge", "Root Version"
@@ -155,7 +155,7 @@ class VersionsControllerTest < ActionDispatch::IntegrationTest
   test "should show branch indicator for versions with children" do
     get idea_versions_url(@idea)
     assert_response :success
-    
+
     @idea.versions.each do |version|
       if version.has_branches?
         # Timeline item should have has-branches class

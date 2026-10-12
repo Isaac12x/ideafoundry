@@ -426,7 +426,7 @@ class TypingLocksControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "voice id posts audio to the bundled local transcription service" do
-    Tempfile.create(["voice-id", ".webm"]) do |file|
+    Tempfile.create([ "voice-id", ".webm" ]) do |file|
       file.write("fake audio")
       file.rewind
       upload = Rack::Test::UploadedFile.new(file.path, "audio/webm")

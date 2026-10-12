@@ -41,7 +41,7 @@ class RecoverySecretsControllerTest < ActionDispatch::IntegrationTest
   test "locked SQLCipher database asks for recovery before reading typing lock settings" do
     locked_path = Rails.root.join("tmp/encrypted_sqlcipher_before_typing.sqlite3").to_s
 
-    SqlcipherDatabaseMigrator.stub(:locked_database_paths_without_recovery_secret, [locked_path]) do
+    SqlcipherDatabaseMigrator.stub(:locked_database_paths_without_recovery_secret, [ locked_path ]) do
       User.stub(:first, -> { raise "typing lock should not read the database before recovery unlock" }) do
         get root_path
       end

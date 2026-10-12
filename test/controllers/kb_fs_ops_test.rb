@@ -6,7 +6,7 @@ class KbFsOpsTest < ActionDispatch::IntegrationTest
     @original_settings = @user.settings.deep_dup
     @kb_dir = Rails.root.join("tmp", "kb-fs-test-#{SecureRandom.hex(6)}").to_s
     FileUtils.mkdir_p(@kb_dir)
-    @user.update_kb_folders([@kb_dir])
+    @user.update_kb_folders([ @kb_dir ])
     @src = 1 # index 0 is the native App KB source
   end
 
@@ -167,11 +167,11 @@ class KbFsOpsTest < ActionDispatch::IntegrationTest
           as: :json
 
     assert_response :success
-    assert_equal ["Positioning.md"], Dir.children(@kb_dir)
+    assert_equal [ "Positioning.md" ], Dir.children(@kb_dir)
   end
 
   test "rejects operations when the source folder is unavailable" do
-    @user.update_kb_folders([Rails.root.join("tmp", "missing-#{SecureRandom.hex(4)}").to_s])
+    @user.update_kb_folders([ Rails.root.join("tmp", "missing-#{SecureRandom.hex(4)}").to_s ])
 
     post kb_fs_create_path, params: { src: @src, dir: "", name: "x", kind: "file" }
 
