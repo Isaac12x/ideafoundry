@@ -43,6 +43,22 @@ class KbTranscriptJobTest < ActiveJob::TestCase
     assert_no_enqueued_jobs
   end
 
+  test "non-youtube errors end awaiting_audio, not failed" do
+    dl = run_with(->(_) { raise "boom" }, video(url: "https://vimeo.com/1", transcript_attempts: KbTranscriptJob::MAX_ATTEMPTS - 1))
+    assert_equal [ "awaiting_audio", "boom" ], [ dl.transcript_status, dl.transcript_error ]
+  end
+
+  test "sweep revives day-old failed rows" do
+    old = video(transcript_status: "failed", transcript_attempts: KbTranscriptJob::MAX_ATTEMPTS)
+    old.update_columns(updated_at: 2.days.ago)
+    recent = video(transcript_status: "failed")
+    assert_enqueued_jobs 1, only: KbTranscriptJob do
+      KbTranscriptJob.sweep
+    end
+    assert_equal [ "pending", 0 ], [ old.reload.transcript_status, old.transcript_attempts ]
+    assert_equal "failed", recent.reload.transcript_status
+  end
+
   test "missing yt-dlp stays pending without burning attempts" do
     dl = run_with(->(_) { raise Kb::VideoTranscript::NotInstalled, "yt-dlp is not installed." }, video)
     assert_equal [ "pending", 0 ], [ dl.transcript_status, dl.transcript_attempts ]

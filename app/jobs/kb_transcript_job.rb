@@ -6,12 +6,18 @@ class KbTranscriptJob < ApplicationJob
 
   MAX_ATTEMPTS = 5
   STALE_AFTER = 30.minutes # > longest backoff (4**2 min) so retries aren't doubled
+  REVIVE_FAILED_AFTER = 1.day # YouTube/yt-dlp breakage is usually fixed by then
 
   def self.sweep
     likes = ([ "url LIKE '%youtu%'" ] + KbDownload::VIDEO_EXTS.map { |e| "filename LIKE '%#{e}'" }).join(" OR ")
     KbDownload.where(status: "done", transcript_status: nil).where(likes).find_each(&:queue_transcript)
     KbDownload.where(transcript_status: "pending", updated_at: ..STALE_AFTER.ago).find_each do |dl|
       dl.touch
+      perform_later(dl.id)
+    end
+    # Only YouTube rows end "failed" (see retry_or_fail); give them a fresh run.
+    KbDownload.where(transcript_status: "failed", updated_at: ..REVIVE_FAILED_AFTER.ago).find_each do |dl|
+      dl.update!(transcript_status: "pending", transcript_attempts: 0)
       perform_later(dl.id)
     end
   end
@@ -40,7 +46,9 @@ class KbTranscriptJob < ApplicationJob
 
   private
 
-  # error nil = no English subtitles found.
+  # error nil = no English subtitles found. Out of attempts: anything without
+  # captions waits for the audio service; only YouTube errors end "failed" (the
+  # captions exist there, so the sweep retries them daily).
   def retry_or_fail(dl, error)
     attempts = dl.transcript_attempts + 1
     message = error ? error.message.truncate(250) : "No English subtitles found."
@@ -48,7 +56,7 @@ class KbTranscriptJob < ApplicationJob
       dl.update!(transcript_attempts: attempts, transcript_error: message)
       self.class.set(wait: (attempts**2).minutes).perform_later(dl.id)
     else
-      dl.update!(transcript_attempts: attempts, transcript_status: error ? "failed" : "awaiting_audio", transcript_error: message)
+      dl.update!(transcript_attempts: attempts, transcript_status: error && dl.youtube? ? "failed" : "awaiting_audio", transcript_error: message)
     end
   end
 end
