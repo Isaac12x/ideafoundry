@@ -10,7 +10,16 @@
        <% end %>>
     <%= render "kb/file_metadata", content: content %>
 
-    <div class="kb-document__body kb-document__body--<%= kind %>">
+    <% annotatable = %i[markdown embed pdf].include?(kind) %>
+    <div class="kb-document__body kb-document__body--<%= kind %>"
+         <% if annotatable %>
+           data-controller="kb-annotate"
+           data-kb-annotate-url-value="<%= kb_annotations_path %>"
+           data-kb-annotate-src-value="<%= content.src %>"
+           data-kb-annotate-file-value="<%= content.rel %>"
+           data-action="pointerup->kb-annotate#select keyup->kb-annotate#select kb-pdf:page-text->kb-annotate#addPdfPage"
+         <% end %>>
+      <%= render "kb/annotate_toolbar" if annotatable %>
       <% if kind == :markdown %>
         <div class="kb-markdown-wrap"
              data-controller="kb-resume"
@@ -27,7 +36,7 @@
       <% elsif kind == :embed %>
         <iframe class="kb-embed"
                 src="<%= content.raw_url %>"
-                sandbox
+                sandbox="allow-same-origin"
                 referrerpolicy="no-referrer"
                 loading="lazy"
                 title="<%= content.filename %>"></iframe>

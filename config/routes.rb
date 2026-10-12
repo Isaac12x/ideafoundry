@@ -75,6 +75,7 @@ Rails.application.routes.draw do
       post :add_to_list
       post :create_version
       post :make_primary
+      post :toggle_licensing
     end
     collection do
       get :archived
@@ -92,6 +93,9 @@ Rails.application.routes.draw do
         get :extraction_status
         patch :update
       end
+    end
+    resources :kb_links, only: [:create, :destroy], controller: :idea_kb_links do
+      collection { get :search }
     end
     resources :versions, only: [:index, :show] do
       member do
@@ -112,6 +116,7 @@ Rails.application.routes.draw do
     resources :notes, only: [:create, :destroy]
     resources :idea_entries, only: [:create, :update, :destroy]
     resources :licensors, only: [:create]
+    resources :licensor_imports, only: [:new, :create]
     resources :drawings, only: [:new, :show, :create, :update, :destroy]
     resources :agent_tokens, only: [:create, :destroy], controller: :idea_agent_tokens
   end
@@ -120,6 +125,7 @@ Rails.application.routes.draw do
   resources :licensors, only: [:show, :update, :destroy] do
     resources :contacts, only: [:create, :destroy], controller: :licensor_contacts
   end
+  resources :licensor_imports, only: [:show, :update, :destroy]
   namespace :licensing do
     get "crm", to: "crm#index"
   end
@@ -248,7 +254,18 @@ Rails.application.routes.draw do
   post 'knowledge-base/fs/open', to: 'kb#fs_open', as: :kb_fs_open
   delete 'knowledge-base/fs', to: 'kb#fs_delete', as: :kb_fs_delete
   get 'knowledge-base/tree', to: 'kb#tree', as: :kb_tree
+  resources :kb_annotations, path: 'knowledge-base/annotations', only: [:index, :create, :update, :destroy]
+  get   'knowledge-base/projects', to: 'kb#project_show', as: :kb_project
+  patch 'knowledge-base/projects', to: 'kb#project_update'
+  post  'knowledge-base/projects/convert', to: 'kb#project_convert', as: :kb_project_convert
+  post  'knowledge-base/projects/tests', to: 'kb#project_test_create', as: :kb_project_tests
+  patch 'knowledge-base/projects/tests', to: 'kb#project_test_update'
+  delete 'knowledge-base/projects/tests', to: 'kb#project_test_destroy'
+  post  'knowledge-base/projects/runs', to: 'kb#project_run_create', as: :kb_project_runs
+  patch 'knowledge-base/projects/runs', to: 'kb#project_run_update'
   post 'knowledge-base/jobs', to: 'kb_fs_jobs#create', as: :kb_fs_jobs
+  post   'knowledge-base/downloads/:id/references', to: 'kb_references#create', as: :kb_download_references
+  delete 'knowledge-base/downloads/:id/references', to: 'kb_references#destroy'
   resources :facts, only: [:create, :destroy]
   resources :maxims, only: [:create, :destroy]
 

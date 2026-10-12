@@ -4,10 +4,10 @@ module LocalAgent
       update_idea create_note create_todo update_todo update_build_item
       approve_submission reject_submission transition_idea assign_list
       assign_topology create_fact create_maxim run_enrichment
-      create_recommendation record_event write_kb
+      create_recommendation record_event write_kb write_media_digest
     ].freeze
 
-    READ_TOOLS = %w[get_settings list_work read_record list_kb read_kb].freeze
+    READ_TOOLS = %w[get_settings list_work read_record list_kb read_kb list_kb_highlights search_media_digests].freeze
     TERMINAL_IDEA_STATES = %w[rejected shipped].freeze
     TOOL_DESCRIPTIONS = {
       "get_settings" => "Read current Rails local-agent settings and status.",
@@ -30,7 +30,10 @@ module LocalAgent
       "record_event" => "Record an AgentEvent summary, heartbeat, skip, recommendation, error, or action.",
       "list_kb" => "List markdown files in the user's knowledge-base sources (the same tree shown at /knowledge-base).",
       "read_kb" => "Read a knowledge-base markdown file by source index and relative path.",
-      "write_kb" => "Create or update a knowledge-base markdown file so it appears in the user's KB tree."
+      "list_kb_highlights" => "List passages the user highlighted or underlined in KB documents (optionally one file by src + file), newest first.",
+      "write_kb" => "Create or update a knowledge-base markdown file so it appears in the user's KB tree.",
+      "write_media_digest" => "Store a distilled facts digest of a KB video's transcript (kb_download_id, body, optional pipeline). Hidden system knowledge, never shown to the user.",
+      "search_media_digests" => "Keyword-search hidden system knowledge distilled from KB videos (query, optional limit). Issue several queries with different terms."
     }.freeze
 
     def self.supported_tool_names
@@ -318,10 +321,14 @@ module LocalAgent
         base = File.expand_path(source[:path])
         next unless Dir.exist?(base)
 
+        memo = {}
         Dir.glob(File.join(base, "**", "*")).sort.each do |path|
           next unless File.file?(path) && KbController::MARKDOWN_EXTENSIONS.include?(File.extname(path).downcase)
 
-          entries << { src: idx, source: source[:label], file: path.sub("#{base}/", "") }
+          rel = path.sub("#{base}/", "")
+          next if Kb::Privacy.private?(base, rel, memo) # private projects are invisible, names included
+
+          entries << { src: idx, source: source[:label], file: rel }
           break if entries.size >= limit
         end
         break if entries.size >= limit
@@ -335,11 +342,31 @@ module LocalAgent
       base = kb_base(src_index)
       raise ArgumentError, "KB source not available" if base.nil?
 
+      kb_reject_private!(base, args.fetch("file"))
       abs = kb_safe_abs(base, args.fetch("file"))
       raise ActiveRecord::RecordNotFound, "KB file not found" if abs.nil? || !File.file?(abs)
       raise ArgumentError, "Not a markdown file" unless KbController::MARKDOWN_EXTENSIONS.include?(File.extname(abs).downcase)
 
       ok(kb_file: { src: src_index, file: args["file"], content: File.read(abs) })
+    end
+
+    def tool_list_kb_highlights(args)
+      limit = (args["limit"].presence || 200).to_i.clamp(1, 1000)
+      sources = kb_sources.each_with_index.to_h { |source, idx| [File.expand_path(source[:path]), idx] }
+      marks = user.kb_annotations.where(source_path: sources.keys).order(created_at: :desc)
+      if args["file"].present?
+        base = kb_base(kb_src_index(args))
+        raise ArgumentError, "KB source not available" if base.nil?
+
+        marks = marks.for_file(base, args["file"])
+      end
+
+      memo = {}
+      highlights = marks.limit(limit).reject { |mark| Kb::Privacy.private?(mark.source_path, mark.relative_path, memo) }.map do |mark|
+        { src: sources[mark.source_path], file: mark.relative_path, page: mark.page, style: mark.style,
+          color: mark.color, quote: mark.quote, created_at: mark.created_at.iso8601 }
+      end
+      ok(kb_highlights: highlights)
     end
 
     def tool_write_kb(args)
@@ -351,6 +378,7 @@ module LocalAgent
       rel = "#{rel}.md" unless File.extname(rel).casecmp?(".md")
       raise ArgumentError, "Invalid KB path" if kb_invalid_rel?(rel)
 
+      kb_reject_private!(base, rel)
       abs = kb_safe_abs(base, rel)
       raise ArgumentError, "Invalid KB path" if abs.nil? || abs == base
 
@@ -361,6 +389,26 @@ module LocalAgent
       verb = existed ? "updated" : "created"
       record_action_event("#{verb}_kb_file", nil, "Local agent #{verb} KB file #{rel}", { "src" => src_index, "file" => rel })
       ok(kb_file: { src: src_index, file: rel, bytes: File.size(abs), created: !existed })
+    end
+
+    # Hidden system knowledge distilled from KB videos; no UI exposes it.
+    def tool_write_media_digest(args)
+      download = user.kb_downloads.find(args.fetch("kb_download_id"))
+      digest = MediaDigest.record!(user: user, kb_download: download, body: args.fetch("body"),
+                                   pipeline: args["pipeline"].presence || MediaDigest::PIPELINES.first)
+
+      record_action_event("wrote_media_digest", download, "Wrote #{digest.pipeline} digest for #{download.label}", args.except("body"))
+      ok(media_digest: serialize_digest(digest))
+    end
+
+    def tool_search_media_digests(args)
+      limit = (args["limit"].presence || MediaDigest::SEARCH_LIMIT).to_i.clamp(1, 50)
+      ok(media_digests: user.media_digests.search(args["query"], limit: limit).includes(:kb_download).map { |d| serialize_digest(d) })
+    end
+
+    def serialize_digest(digest)
+      { id: digest.id, kb_download_id: digest.kb_download_id, title: digest.kb_download.title,
+        url: digest.kb_download.url, pipeline: digest.pipeline, body: digest.body, created_at: digest.created_at }
     end
 
     # KB sources in the same order KbController renders them: native first
@@ -399,6 +447,10 @@ module LocalAgent
 
       abs = File.expand_path(File.join(base, rel))
       abs.start_with?("#{base}/") || abs == base ? abs : nil
+    end
+
+    def kb_reject_private!(base, rel)
+      raise ArgumentError, "This path is in a private project" if Kb::Privacy.private?(base, rel)
     end
 
     def kb_invalid_rel?(rel)
@@ -486,6 +538,8 @@ module LocalAgent
         Note.joins(:idea).where(ideas: { user_id: user.id }).find(id)
       when "BuildItem"
         user.build_items.find(id)
+      when "KbDownload"
+        user.kb_downloads.find(id)
       when "Fact"
         user.facts.find(id)
       when "Maxim"
@@ -604,6 +658,18 @@ module LocalAgent
           completed: record.completed?,
           checklist_remaining_count: record.checklist_remaining_count,
           updated_at: record.updated_at
+        }
+      when KbDownload
+        {
+          id: record.id,
+          target_type: "KbDownload",
+          title: record.title,
+          url: record.url,
+          filename: record.filename,
+          file_rel: record.file_rel,
+          video_id: record.video_id,
+          transcript_status: record.transcript_status,
+          transcript: record.transcript
         }
       when Fact, Maxim
         {

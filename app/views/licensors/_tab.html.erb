@@ -2,6 +2,8 @@
   <div class="licensors-tab__intro">
     <p>Potential licensors for this idea. Advance stages and log contacts here, or manage the full pipeline in the
       <%= link_to "Licensing CRM →", licensing_crm_path, class: "licensors-crm-link" %>.</p>
+    <p><%= link_to "Import from a spreadsheet →", new_idea_licensor_import_path(idea), class: "licensors-crm-link" %>
+      Map a CSV or Excel file's columns onto these fields.</p>
   </div>
 
   <%= render "licensors/form", idea: idea, licensor: (local_assigns[:licensor] || Licensor.new) %>

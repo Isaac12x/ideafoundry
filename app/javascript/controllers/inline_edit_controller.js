@@ -1,16 +1,24 @@
 import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
+  async #get(url) {
+    try {
+      return await fetch(url, {
+        headers: {
+          "Accept": "text/vnd.turbo-stream.html",
+          "X-CSRF-Token": document.querySelector('meta[name="csrf-token"]')?.content
+        }
+      })
+    } catch {
+      return null
+    }
+  }
+
   async start(event) {
     event.preventDefault()
     const id = event.currentTarget.dataset.buildItemId
-    const response = await fetch(`/backlog/${id}/edit`, {
-      headers: {
-        "Accept": "text/vnd.turbo-stream.html",
-        "X-CSRF-Token": document.querySelector('meta[name="csrf-token"]')?.content
-      }
-    })
-    if (!response.ok) return
+    const response = await this.#get(`/backlog/${id}/edit`)
+    if (!response?.ok) return
 
     const html = await response.text()
     Turbo.renderStreamMessage(html)
@@ -28,13 +36,8 @@ export default class extends Controller {
     const id = event.currentTarget.dataset.buildItemId || event.currentTarget.closest(".backlog-item")?.dataset.itemId
     if (!id) return
 
-    const response = await fetch(`/backlog/${id}/cancel_edit`, {
-      headers: {
-        "Accept": "text/vnd.turbo-stream.html",
-        "X-CSRF-Token": document.querySelector('meta[name="csrf-token"]')?.content
-      }
-    })
-    if (!response.ok) return
+    const response = await this.#get(`/backlog/${id}/cancel_edit`)
+    if (!response?.ok) return
 
     const html = await response.text()
     Turbo.renderStreamMessage(html)

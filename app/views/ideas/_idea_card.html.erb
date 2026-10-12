@@ -1,3 +1,4 @@
+<% cache ["idea-card-v1", idea, idea.updated_at, idea.computed_score, feature_enabled?(:licensing), feature_enabled?(:idea_states)] do %>
 <div class="idea-card idea-card--<%= idea.state %>"
      data-idea-context-menu-target="idea"
      data-action="contextmenu->idea-context-menu#open"
@@ -57,3 +58,4 @@
     <% end %>
   <% end %>
 </div>
+<% end %>

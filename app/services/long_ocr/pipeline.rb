@@ -23,6 +23,11 @@ module LongOcr
     end
 
     def run
+      # Re-check at run time: the project may have become private after enqueue.
+      if @extraction.kb_file? && Kb::Privacy.private?("/", @extraction.kb_path.to_s.delete_prefix("/"))
+        raise "This path is in a private project"
+      end
+
       bytes, filename, content_type = source
 
       @extraction.update!(status: :starting, backend: @backend.to_s, source_filename: filename, error: nil)

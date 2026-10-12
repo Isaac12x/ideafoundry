@@ -4,7 +4,11 @@ export default class extends Controller {
   static targets = ["container", "hidden", "urlInput", "labelInput", "empty"]
 
   connect() {
-    this.links = JSON.parse(this.hiddenTarget.value || "[]")
+    try {
+      this.links = JSON.parse(this.hiddenTarget.value || "[]")
+    } catch {
+      this.links = []
+    }
     this.render()
   }
 

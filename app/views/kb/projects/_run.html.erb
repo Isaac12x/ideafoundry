@@ -1,0 +1,44 @@
+<li class="kbp-run">
+  <time class="kbp-run-date" datetime="<%= run.date&.iso8601 %>">
+    <span class="kbp-run-day"><%= run.date&.strftime("%d") %></span>
+    <span class="kbp-run-month"><%= run.date&.strftime("%b %Y") || run.name %></span>
+  </time>
+  <div class="kbp-run-body">
+    <% if run.conditions.present? %><p class="kbp-run-field"><span class="kbp-label">Conditions</span><%= run.conditions %></p><% end %>
+    <% if run.result.present? %>
+      <div class="kbp-run-field"><span class="kbp-label">Result</span>
+        <div class="kb-markdown rich-text-content kbp-prose"><%= render_markdown(run.result) %></div>
+      </div>
+    <% end %>
+    <% if run.measurements.any? %>
+      <dl class="kbp-measures">
+        <% run.measurements.each do |m| %>
+          <div><dt><%= m["name"] %></dt><dd><%= m["value"] %><% if m["unit"].present? %> <span class="kbp-unit"><%= m["unit"] %></span><% end %></dd></div>
+        <% end %>
+      </dl>
+    <% end %>
+    <% files = run.files %>
+    <% if files.any? %>
+      <ul class="kbp-files">
+        <% files.each do |name| %>
+          <% rel = File.join(run.rel, name) %>
+          <li>
+            <% if project_image?(name) %>
+              <%= link_to kb_file_path(src: @src, file: rel), class: "kbp-thumb", title: name, data: { turbo_frame: "kb-content" } do %>
+                <img src="<%= kb_serve_path(src: @src, file: rel) %>" alt="<%= name %>" loading="lazy">
+              <% end %>
+            <% elsif File.file?(File.join(run.abs, name)) %>
+              <%= link_to name, kb_file_path(src: @src, file: rel), class: "kbp-file", data: { turbo_frame: "kb-content" } %>
+            <% else %>
+              <span class="kbp-file"><%= name %>/</span>
+            <% end %>
+          </li>
+        <% end %>
+      </ul>
+    <% end %>
+    <details class="kbp-edit">
+      <summary>Edit run</summary>
+      <%= render "kb/projects/run_form", test: run.test, run: run, project: project %>
+    </details>
+  </div>
+</li>

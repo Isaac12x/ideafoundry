@@ -326,7 +326,7 @@ export default class extends Controller {
       grid.querySelectorAll("[data-custom-field]").forEach(target => {
         target.classList.add("drop-target-highlight")
         target.addEventListener("dragover", this.allowDrop)
-        target.addEventListener("drop", this.handleDrop.bind(this))
+        target.addEventListener("drop", (this._drop ||= this.handleDrop.bind(this)))
       })
     })
   }
@@ -371,6 +371,7 @@ export default class extends Controller {
       grid.querySelectorAll("[data-custom-field]").forEach(el => {
         el.classList.remove("drop-target-highlight", "drop-target-active")
         el.removeEventListener("dragover", this.allowDrop)
+        if (this._drop) el.removeEventListener("drop", this._drop)
       })
     })
   }

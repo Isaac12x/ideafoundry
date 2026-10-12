@@ -111,4 +111,19 @@ class SqlcipherDatabaseMigratorTest < ActiveSupport::TestCase
       end
     end
   end
+
+  test "locked database detection uses the active record connection when the database is already open" do
+    encrypted_path = @root.join("encrypted.sqlite3")
+    File.binwrite(encrypted_path, "not a sqlite header")
+
+    RecoverySecret.stub(:present?, true) do
+      SqlcipherDatabaseMigrator.stub(:configured_database_paths, [encrypted_path.to_s]) do
+        SqlcipherDatabaseMigrator.stub(:accessible_via_active_record?, true) do
+          SqlcipherDatabaseMigrator.stub(:encrypted_database_openable_with_current_key?, ->(*) { raise "should not open a second SQLCipher connection" }) do
+            assert_empty SqlcipherDatabaseMigrator.locked_database_paths_without_recovery_secret(env: "production")
+          end
+        end
+      end
+    end
+  end
 end

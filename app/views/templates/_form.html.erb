@@ -89,7 +89,7 @@
               <% if section_type %>
                 <span class="tpl-field-chip__type tpl-field-chip__type--<%= section_type %>" style="font-size:0.6rem;"><%= section_type %></span>
               <% end %>
-              <button type="button" class="tpl-form__section-remove" data-action="click->template-form#removeSectionItem">&times;</button>
+              <button type="button" class="tpl-form__section-remove" data-action="click->template-form#removeSectionItem" aria-label="Remove item">&times;</button>
               <%= form.hidden_field "section_order][#{index}", value: section %>
             </div>
           <% end %>
@@ -189,13 +189,13 @@
           <% template.effective_tab_definitions.each do |tab| %>
             <div class="tpl-sidebar__tab-item" data-tab-name="<%= tab['name'] %>">
               <span class="tpl-sidebar__tab-label"><%= tab['label'].presence || tab['name'].humanize %></span>
-              <button type="button" class="tpl-sidebar__tab-remove" data-action="click->template-form#removeTab" data-tab-name="<%= tab['name'] %>">&times;</button>
+              <button type="button" class="tpl-sidebar__tab-remove" data-action="click->template-form#removeTab" data-tab-name="<%= tab['name'] %>" aria-label="Remove tab <%= tab['label'] %>">&times;</button>
             </div>
           <% end %>
         </div>
         <div class="tpl-sidebar__tab-form">
-          <input type="text" class="form-control form-control--sm" placeholder="name (slug)" data-template-form-target="newTabName">
-          <input type="text" class="form-control form-control--sm" placeholder="Display Label" data-template-form-target="newTabLabel">
+          <input type="text" class="form-control form-control--sm" placeholder="name (slug)" aria-label="New tab name (slug)" data-template-form-target="newTabName">
+          <input type="text" class="form-control form-control--sm" placeholder="Display Label" aria-label="New tab display label" data-template-form-target="newTabLabel">
           <button type="button" class="btn btn-secondary btn-sm" data-action="click->template-form#addTab">+ Add Tab</button>
         </div>
       </div>

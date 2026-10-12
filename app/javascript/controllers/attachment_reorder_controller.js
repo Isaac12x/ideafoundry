@@ -70,11 +70,16 @@ export default class extends Controller {
     const item = event.currentTarget.closest("[data-attachment-reorder-target='item']")
     if (!item) return
     const token = document.querySelector("meta[name='csrf-token']")?.content
-    const response = await fetch(item.dataset.destroyUrl, {
-      method: "DELETE",
-      headers: { "X-CSRF-Token": token, "Accept": "application/json" }
-    })
-    if (response.ok || response.status === 204) item.remove()
+    try {
+      const response = await fetch(item.dataset.destroyUrl, {
+        method: "DELETE",
+        headers: { "X-CSRF-Token": token, "Accept": "application/json" }
+      })
+      if (response.ok || response.status === 204) item.remove()
+      else this._setStatus("Could not remove attachment.")
+    } catch {
+      this._setStatus("Could not remove attachment.")
+    }
   }
 
   async persist() {
@@ -85,17 +90,20 @@ export default class extends Controller {
     this.itemTargets.forEach(item => body.append("attachment_ids[]", item.dataset.attachmentId))
 
     this._setStatus("Saving attachment order…")
-    const response = await fetch(this.urlValue, {
-      method: "PATCH",
-      headers: {
-        "X-CSRF-Token": token,
-        "Accept": "application/json",
-        "Content-Type": "application/x-www-form-urlencoded"
-      },
-      body
-    })
-
-    this._setStatus(response.ok ? "Attachment order saved." : "Could not save attachment order.")
+    try {
+      const response = await fetch(this.urlValue, {
+        method: "PATCH",
+        headers: {
+          "X-CSRF-Token": token,
+          "Accept": "application/json",
+          "Content-Type": "application/x-www-form-urlencoded"
+        },
+        body
+      })
+      this._setStatus(response.ok ? "Attachment order saved." : "Could not save attachment order.")
+    } catch {
+      this._setStatus("Could not save attachment order.")
+    }
   }
 
   _setStatus(message) {
@@ -113,7 +121,7 @@ export default class extends Controller {
   _syncSectionCounts() {
     this.element.querySelectorAll("[data-attachment-list]").forEach(list => {
       const count = list.querySelectorAll("[data-attachment-id]").length
-      const headerCount = list.closest(".current-attachments__section")?.querySelector(".current-attachments__section-header span")
+      const headerCount = this.element.querySelector(`[data-attachment-count="${list.dataset.attachmentList}"]`)
       if (headerCount) headerCount.textContent = count
     })
   }

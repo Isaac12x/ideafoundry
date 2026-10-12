@@ -1,0 +1,81 @@
+<% column_count  = @grid.column_count %>
+<% preview_rows  = @grid.rows.first(LicensorSheetParser::PREVIEW_ROWS) %>
+<% data_row_count = @grid.rows.size - (@import.headers_in_first_row? ? 1 : 0) %>
+<% column_letters = ("A".."ZZ").first(column_count) %>
+<% field_options = LicensorImport::FIELDS.map { |f| [LicensorImport.field_label(f), f] } %>
+
+<div class="import-page import-page--wide">
+  <header class="import-header">
+    <div>
+      <%= link_to new_idea_licensor_import_path(@import.idea), class: "import-back" do %>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        Upload a different file
+      <% end %>
+      <h1>Map <span class="import-header__file"><%= @import.filename %></span></h1>
+      <p class="import-header__sub">
+        <%= pluralize(data_row_count, "row") %> · <%= pluralize(column_count, "column") %> ·
+        for <%= link_to (@import.idea.title.presence || "Untitled idea"), @import.idea, class: "import-header__idea" %>
+      </p>
+    </div>
+  </header>
+
+  <% if @grid.truncated_rows || @grid.truncated_columns %>
+    <p class="import-notice">
+      Large sheet — reading the first
+      <%= "#{LicensorSheetParser::MAX_ROWS} rows" if @grid.truncated_rows %><%= " and " if @grid.truncated_rows && @grid.truncated_columns %><%= "#{LicensorSheetParser::MAX_COLUMNS} columns" if @grid.truncated_columns %>.
+    </p>
+  <% end %>
+
+  <%= form_with url: licensor_import_path(@import), method: :patch, class: "import-mapper" do %>
+    <div class="import-toolbar">
+      <label class="import-toggle">
+        <%= check_box_tag :headers_in_first_row, "1", @import.headers_in_first_row?, id: "headers_in_first_row" %>
+        <span>
+          First row holds column names
+          <em>Untick if row 1 is already a licensor.</em>
+        </span>
+      </label>
+      <div class="import-toolbar__actions">
+        <%= link_to "Cancel", @import.idea, class: "btn btn-sm" %>
+        <%= submit_tag "Import #{pluralize(data_row_count, 'row')}", class: "btn btn-sm btn-primary" %>
+      </div>
+    </div>
+
+    <div class="import-grid__scroll">
+      <table class="import-grid">
+        <thead>
+          <tr class="import-grid__mapping">
+            <th class="import-grid__gutter" scope="col"><span class="import-grid__letter">maps to</span></th>
+            <% column_count.times do |index| %>
+              <th>
+                <span class="import-grid__letter"><%= column_letters[index] %></span>
+                <%= select_tag "mapping[#{index}]",
+                      options_for_select(field_options, @mapping[index.to_s]),
+                      include_blank: "— skip —",
+                      class: "import-grid__select",
+                      aria: { label: "Field for column #{column_letters[index]}" } %>
+              </th>
+            <% end %>
+          </tr>
+        </thead>
+        <tbody>
+          <% preview_rows.each_with_index do |row, row_index| %>
+            <% header_row = @import.headers_in_first_row? && row_index.zero? %>
+            <tr class="<%= "is-sourceheader" if header_row %>">
+              <th class="import-grid__gutter" scope="row"><%= row_index + 1 %></th>
+              <% column_count.times do |index| %>
+                <td title="<%= row[index] %>"><%= row[index] %></td>
+              <% end %>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+
+    <% if @grid.rows.size > preview_rows.size %>
+      <p class="import-grid__more">
+        Showing the first <%= preview_rows.size %> rows — all <%= pluralize(data_row_count, "row") %> will be imported.
+      </p>
+    <% end %>
+  <% end %>
+</div>

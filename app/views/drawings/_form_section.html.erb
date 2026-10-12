@@ -15,10 +15,12 @@
 
 <div class="idea-drawings"
      data-controller="idea-drawings"
-     data-idea-drawings-role-value="<%= role %>"
-     data-idea-drawings-create-url-value="<%= idea_drawings_path(idea) %>"
-     data-idea-drawings-show-url-pattern-value="/ideas/<%= idea.id %>/drawings/__ID__"
-     data-idea-drawings-thumbnail-mode-value="<%= mode %>"
+     <%= tag.attributes(idea_drawings_loader_values.merge(
+       idea_drawings_role_value: role,
+       idea_drawings_create_url_value: idea_drawings_path(idea),
+       idea_drawings_show_url_pattern_value: "/ideas/#{idea.id}/drawings/__ID__",
+       idea_drawings_thumbnail_mode_value: mode
+     )) %>
      data-action="keydown@window->idea-drawings#closeOnEsc">
 
   <div class="idea-drawings__header">

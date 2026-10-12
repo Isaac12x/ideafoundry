@@ -65,6 +65,17 @@ class KbFsJobsControllerTest < ActionDispatch::IntegrationTest
     assert_no_enqueued_jobs only: KbFsJobRunnerJob
   end
 
+  test "rejects context inside a private project" do
+    FileUtils.mkdir_p(File.join(@kb_dir, "proj"))
+    File.write(File.join(@kb_dir, "proj", ".kb-project.yml"), "private: true\n")
+    File.write(File.join(@kb_dir, "proj", "n.md"), "x")
+
+    post kb_fs_jobs_path, params: { src: 0, path: "proj/n.md", context_kind: "file", prompt: "Review" }, as: :turbo_stream
+
+    assert_response :unprocessable_content
+    assert_empty @user.kb_fs_jobs
+  end
+
   test "rejects context traversal" do
     post kb_fs_jobs_path,
          params: { src: 0, path: "../outside", context_kind: "folder", prompt: "Review" },

@@ -109,7 +109,7 @@
   transform: translateY(-50%);
   width: 14px;
   height: 14px;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%235c5860' stroke-width='2' stroke-linecap='round'%3E%3Cline x1='12' y1='5' x2='12' y2='19'/%3E%3Cline x1='5' y1='12' x2='19' y2='12'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23868088' stroke-width='2' stroke-linecap='round'%3E%3Cline x1='12' y1='5' x2='12' y2='19'/%3E%3Cline x1='5' y1='12' x2='19' y2='12'/%3E%3C/svg%3E");
   background-size: contain;
   pointer-events: none;
   z-index: 1;
@@ -281,6 +281,7 @@
   flex-shrink: 0;
 }
 
+.todo-item:focus-within .todo-actions,
 .todo-item:hover .todo-actions {
   opacity: 1;
 }

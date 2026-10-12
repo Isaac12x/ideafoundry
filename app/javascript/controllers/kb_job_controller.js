@@ -17,7 +17,13 @@ export default class extends Controller {
     this.promptTarget.focus()
   }
 
+  disconnect() {
+    window.clearTimeout(this.recordingTimeout)
+    this._stopTracks()
+  }
+
   close() {
+    window.clearTimeout(this.recordingTimeout)
     this._stopTracks()
     if (this.recorder?.state === "recording") this.recorder.stop()
     this.dialogTarget.close()

@@ -9,18 +9,18 @@ export default class extends Controller {
     row.dataset.kbFoldersTarget = "row";
     row.innerHTML = `
       <div class="kb-folder-row">
-        <input type="text" name="kb_folders[]" placeholder="/path/to/your/docs" class="kb-folder-input" />
+        <input type="text" name="kb_folders[]" placeholder="/path/to/your/docs" aria-label="Folder path" class="kb-folder-input" />
         <button type="button" class="btn btn-sm kb-folder-browse-btn"
-                data-action="click->kb-folders#browse" title="Choose folder…">
+                data-action="click->kb-folders#browse" title="Choose folder…" aria-label="Choose folder">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
           Browse
         </button>
         <button type="button" class="btn btn-sm kb-folder-open-btn"
-                data-action="click->kb-folders#openFolder" title="Open in Finder" disabled>
+                data-action="click->kb-folders#openFolder" title="Open in Finder" aria-label="Open in Finder" disabled>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
         </button>
         <button type="button" class="btn btn-sm btn-danger kb-folder-remove"
-                data-action="click->kb-folders#removeRow" title="Remove">
+                data-action="click->kb-folders#removeRow" title="Remove" aria-label="Remove folder">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
           </svg>

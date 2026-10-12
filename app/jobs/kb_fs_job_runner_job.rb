@@ -8,13 +8,19 @@ class KbFsJobRunnerJob < ApplicationJob
     base = available_source_path(task)
     return fail_task!(task, "The selected knowledge-base source is no longer available.", base: nil) unless base
 
+    # Re-check: the project may have become private after enqueue.
+    if Kb::Privacy.private?(base, task.context_path)
+      return fail_task!(task, "This path is in a private project.", base: base)
+    end
+
     task.update!(status: "running", started_at: Time.current)
     transcribe_voice!(task) if task.voice_message.attached?
 
     context = Kb::ContextReader.new(
       base: base,
       relative_path: task.context_path,
-      kind: task.context_kind
+      kind: task.context_kind,
+      user: task.user
     ).call
     result = LocalAgent::PromptClient.new.call(instruction: task.request_text, context: context)
     result_path = write_result(base, task.target_dir, task, result, error: false)

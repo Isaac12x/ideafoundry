@@ -16,6 +16,7 @@ module LocalAgent
       candidates.concat(attachment_candidates)
       candidates.concat(organization_candidates)
       candidates.concat(github_candidates)
+      candidates.concat(transcript_digest_candidates)
 
       candidates
         .map { |candidate| penalize_recent_activity(candidate) }
@@ -179,6 +180,23 @@ module LocalAgent
           title: repository.idea.title,
           repository_url: repository.repository_url,
           last_checked_at: repository.last_checked_at
+        })
+      end
+    end
+
+    # Derived from DB state (transcript done, no current digest), so it stays
+    # discoverable until the agent writes one, however long it was offline.
+    def transcript_digest_candidates
+      user.kb_downloads
+          .where(transcript_status: "done")
+          .where.not(id: MediaDigest.current.select(:kb_download_id))
+          .order(:created_at).limit(20).map do |download|
+        candidate(download, 60, "Distill video transcript into facts", {
+          title: download.title,
+          url: download.url,
+          kb_download_id: download.id,
+          transcript_chars: download.transcript.to_s.length,
+          response_instructions: "Read the transcript with read_record target_type=KbDownload target_id=#{download.id}, then call write_media_digest with kb_download_id=#{download.id} and body = concise Markdown bullet facts: core message, key claims, numbers, names, definitions, steps/instructions, with MM:SS timestamps where useful. Omit greetings, sponsor reads, calls to subscribe, filler and repetition. Do not invent anything not in the transcript."
         })
       end
     end

@@ -107,6 +107,69 @@ class KbFsOpsTest < ActionDispatch::IntegrationTest
     assert_equal "after", File.read(File.join(@kb_dir, "a.md"))
   end
 
+  test "creating without a name makes a placeholder and flags it for inline naming" do
+    post kb_fs_create_path, params: { src: @src, dir: "", kind: "file" }, as: :turbo_stream
+
+    assert_response :success
+    assert File.file?(File.join(@kb_dir, "Untitled.md"))
+    assert_select "input.kb-node-name-input[data-kb-autofocus][value=?]", "Untitled.md"
+
+    post kb_fs_create_path, params: { src: @src, dir: "", kind: "folder" }, as: :turbo_stream
+
+    assert Dir.exist?(File.join(@kb_dir, "Untitled folder"))
+  end
+
+  test "unnamed creates never collide" do
+    post kb_fs_create_path, params: { src: @src, dir: "", kind: "file" }, as: :turbo_stream
+    post kb_fs_create_path, params: { src: @src, dir: "", kind: "file" }, as: :turbo_stream
+
+    assert File.file?(File.join(@kb_dir, "Untitled.md"))
+    assert File.file?(File.join(@kb_dir, "Untitled-2.md"))
+  end
+
+  test "renaming as JSON returns the new path instead of a tree" do
+    File.write(File.join(@kb_dir, "a.md"), "hi")
+
+    patch kb_fs_rename_path, params: { src: @src, path: "a.md", name: "notes" }, as: :json
+
+    assert_response :success
+    assert_equal({ "rel" => "notes.md", "name" => "notes.md" }, response.parsed_body)
+    assert File.file?(File.join(@kb_dir, "notes.md"))
+  end
+
+  test "a JSON rename failure reports the reason without a flash" do
+    File.write(File.join(@kb_dir, "a.md"), "hi")
+
+    patch kb_fs_rename_path, params: { src: @src, path: "a.md", name: "a.exe" }, as: :json
+
+    assert_response :unprocessable_content
+    assert_equal "Unsupported file extension.", response.parsed_body["error"]
+    assert_nil flash[:alert]
+  end
+
+  test "favouriting as JSON answers silently" do
+    File.write(File.join(@kb_dir, "a.md"), "hi")
+
+    patch kb_fs_preference_path,
+          params: { src: @src, path: "a.md", entry_type: "file", favorite: "1" },
+          as: :json
+
+    assert_response :no_content
+    assert_empty response.body
+    assert_nil flash[:notice]
+    assert @user.kb_entry_preferences.find_by!(relative_path: "a.md").favorite?
+  end
+
+  test "create then name leaves exactly one file under the typed name" do
+    post kb_fs_create_path, params: { src: @src, dir: "", kind: "file" }, as: :turbo_stream
+    patch kb_fs_rename_path,
+          params: { src: @src, path: "Untitled.md", name: "Positioning" },
+          as: :json
+
+    assert_response :success
+    assert_equal ["Positioning.md"], Dir.children(@kb_dir)
+  end
+
   test "rejects operations when the source folder is unavailable" do
     @user.update_kb_folders([Rails.root.join("tmp", "missing-#{SecureRandom.hex(4)}").to_s])
 

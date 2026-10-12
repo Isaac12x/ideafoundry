@@ -1,0 +1,11 @@
+<%# Shown on the backlog while the rest of the workspace stays locked. %>
+<div class="backlog-only-strip">
+  <span class="backlog-only-strip__dot" aria-hidden="true"></span>
+  <span class="backlog-only-strip__text">Backlog only — workspace still locked</span>
+  <%= link_to root_path, class: "backlog-only-strip__unlock", data: { turbo: false } do %>
+    Unlock
+    <svg width="14" height="8" viewBox="0 0 14 8" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true">
+      <path d="M0 4h12M9 1l3 3-3 3"/>
+    </svg>
+  <% end %>
+</div>

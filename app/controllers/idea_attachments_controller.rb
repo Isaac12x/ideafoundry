@@ -22,9 +22,7 @@ class IdeaAttachmentsController < ApplicationController
     end
     @idea.record_history!("Updated media", automatic: true) if new_attachments.any?
 
-    html = new_attachments.map { |attachment|
-      render_to_string(partial: "idea_attachments/item", formats: [:html], locals: { attachment: attachment, idea: @idea })
-    }.join
+    html = new_attachments.map { |attachment| render_attachment(attachment) }.join
 
     render json: { success: true, html: html }
   end
@@ -51,8 +49,7 @@ class IdeaAttachmentsController < ApplicationController
       attachment.update!(position: position)
     end
 
-    html = render_to_string(partial: "idea_attachments/item", formats: [:html], locals: { attachment: attachment, idea: @idea })
-    render json: { success: true, html: html }
+    render json: { success: true, html: render_attachment(attachment) }
   end
 
   def reorder
@@ -110,6 +107,12 @@ class IdeaAttachmentsController < ApplicationController
   end
 
   private
+
+  # "card" for the idea detail grid, list row everywhere else.
+  def render_attachment(attachment)
+    partial = params[:variant] == "card" ? "idea_attachments/card" : "idea_attachments/item"
+    render_to_string(partial: partial, formats: [:html], locals: { attachment: attachment, idea: @idea })
+  end
 
   def search_attachments(query)
     @idea.ordered_attachments.filter_map do |attachment|

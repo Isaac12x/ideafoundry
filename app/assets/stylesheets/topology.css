@@ -858,7 +858,7 @@ input[type="color"].form-control::-webkit-color-swatch {
   outline: none;
   font-family: var(--font-body);
 }
-.topology-graph-search::placeholder { color: var(--text-muted, #5c5860); }
+.topology-graph-search::placeholder { color: var(--text-muted); }
 .topology-graph-search:focus { border-color: var(--accent, #d4953a); }
 
 .topology-graph-zoom {
@@ -935,5 +935,24 @@ input[type="color"].form-control::-webkit-color-swatch {
   }
   .topology-graph-canvas--compact {
     height: 280px;
+  }
+}
+
+/* ── Keyboard focus + reduced motion ─────────────────────── */
+.topology-node__toggle:focus-visible,
+.topology-node__label:focus-within,
+.topology-graph-search:focus-visible,
+.view-toggle__btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .topology-node > .topology-node-content,
+  .topology-node-content,
+  .topology-graph-wrapper *,
+  .topology-tree * {
+    animation: none !important;
+    transition: none !important;
   }
 }

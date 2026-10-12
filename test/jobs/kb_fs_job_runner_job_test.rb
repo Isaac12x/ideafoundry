@@ -80,6 +80,18 @@ class KbFsJobRunnerJobTest < ActiveJob::TestCase
 
   private
 
+  test "re-checks privacy at run time and never calls the model" do
+    task = build_task(prompt: "Find gaps")
+    File.write(File.join(@kb_dir, "research", ".kb-project.yml"), "private: true\n")
+
+    LocalAgent::PromptClient.stub(:new, ->(*) { raise "model must not be called" }) do
+      KbFsJobRunnerJob.perform_now(task.id)
+    end
+
+    assert task.reload.failed?
+    assert_match(/private project/, task.error)
+  end
+
   def build_task(prompt:)
     @user.kb_fs_jobs.create!(
       source_index: 0,

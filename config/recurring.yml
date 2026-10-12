@@ -8,6 +8,18 @@
 #     args: [ 1000, { batch_size: 500 } ]
 #     schedule: every hour
 
+# Dev only sweeps the queue table. Finished jobs are preserved, so without this
+# solid_queue_jobs grows forever and every poll scans a bigger table.
+development:
+  clear_solid_queue_finished_jobs:
+    command: "SolidQueue::Job.clear_finished_in_batches(sleep_between_batches: 0.3)"
+    schedule: every hour at minute 12
+
+  # Lost/stale YouTube transcript fetches + backfill of older downloads
+  sweep_kb_transcripts:
+    command: "KbTranscriptJob.sweep"
+    schedule: every 15 minutes
+
 production:
   # Queue maintenance
   clear_solid_queue_finished_jobs:
@@ -62,3 +74,8 @@ production:
     class: LongOcrIdleStopJob
     queue: default
     schedule: every 2 minutes
+
+  # Lost/stale YouTube transcript fetches + backfill of older downloads
+  sweep_kb_transcripts:
+    command: "KbTranscriptJob.sweep"
+    schedule: every 15 minutes
