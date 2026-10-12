@@ -3,14 +3,14 @@ source "https://rubygems.org"
 ruby "3.4.5"
 
 # Bundle edge Rails instead: gem "rails", github: "rails/rails", branch: "main"
-gem "rails", "~> 8.1.3"
+gem "rails", "~> 8.1.4"
 
 # The original asset pipeline for Rails [https://github.com/rails/sprockets-rails]
 gem "sprockets-rails"
 
 # Use sqlite3 as the database for Active Record. Production databases require
 # SQLCipher, so build sqlite3 from source with the Bundler flags in .bundle/config.
-gem "sqlite3", "~> 2.7", ">= 2.7.3", force_ruby_platform: true
+gem "sqlite3", "~> 2.9", force_ruby_platform: true
 
 # Use the Puma web server [https://github.com/puma/puma]
 gem "puma", "~> 8.0"
@@ -46,16 +46,16 @@ gem "solid_queue"
 gem "solid_cache"
 
 # Action Mailbox for email processing
-gem "actionmailbox", "~> 8.1.3"
+gem "actionmailbox", "~> 8.1.4"
 
 # Action Text for rich text content
-gem "actiontext", "~> 8.1.3"
+gem "actiontext", "~> 8.1.4"
 
 # Image processing for Active Storage variants
 gem "image_processing", "~> 1.2"
 
 # ZIP file handling for exports
-gem "rubyzip", "~> 2.3"
+gem "rubyzip", "~> 3.7"
 
 # Pagination
 gem "kaminari"
@@ -114,6 +114,6 @@ end
 gem "redcarpet", "~> 3.6"
 
 # Read .xlsx spreadsheets for KB rendering (converted to HTML tables)
-gem "roo", "~> 2.10"
+gem "roo", "~> 3.0"
 
 gem "rack-attack"
