@@ -77,6 +77,8 @@ class KbDownloadJobReaderTest < ActiveJob::TestCase
     @user = User.first || User.create!(email: "test@example.com", name: "Test")
     @original_settings = @user.settings.deep_dup
     @kb_dir = Rails.root.join("tmp", "kb-reader-test-#{SecureRandom.hex(6)}").to_s
+    KbDownloadJob.singleton_class.alias_method :real_video_kind, :video_kind
+    KbDownloadJob.define_singleton_method(:video_kind) { |_url| nil } # no yt-dlp probe / network
     FileUtils.mkdir_p(@kb_dir)
     @user.update_kb_folders([ @kb_dir ])
     @article = "<html><head><title>Einstein</title></head><body><article>" \
@@ -85,6 +87,7 @@ class KbDownloadJobReaderTest < ActiveJob::TestCase
   end
 
   teardown do
+    KbDownloadJob.singleton_class.alias_method :video_kind, :real_video_kind
     @user.update!(settings: @original_settings)
     FileUtils.rm_rf(@kb_dir)
   end
@@ -167,5 +170,32 @@ class KbDownloadJobReaderTest < ActiveJob::TestCase
 
     assert_equal "failed", dl.reload.status
     assert_match(/Paywalled/, dl.error)
+  end
+
+  test "auto: a page yt-dlp has an extractor for is downloaded as video, not a PDF" do
+    dl = enqueue("https://www.ted.com/talks/some_talk")
+    job = KbDownloadJob.new
+    job.define_singleton_method(:yt_dlp) { |_dl, d, _kind = nil| File.join(d, "talk.mp4").tap { |f| File.write(f, "x") } }
+    KbDownloadJob.stub(:video_kind, :video) do
+      Kb::WebPage.stub(:fetch, ->(_) { flunk "article path must not run" }) { job.perform(dl.id) }
+    end
+
+    assert_equal [ "done", "talk.mp4", "pending" ], dl.reload.then { |d| [ d.status, d.filename, d.transcript_status ] }
+  end
+
+  test "auto: a page with no video extractor still becomes a reader PDF" do
+    dl = enqueue("https://en.wikipedia.org/wiki/Einstein")
+    page = Kb::WebPage.new(@article, dl.url)
+    Kb::WebPage.stub(:fetch, page) do
+      Kb::ReaderPdf.stub(:write, ->(_h, dest) { File.write(dest, "%PDF"); true }) { KbDownloadJob.perform_now(dl.id) }
+    end
+
+    assert_equal "Einstein.pdf", dl.reload.filename
+  end
+
+  test "vimeo page URLs use the embed player" do
+    assert_equal "https://player.vimeo.com/video/76979871", KbDownloadJob.media_url("https://vimeo.com/76979871")
+    assert_equal "https://player.vimeo.com/video/1?h=abc123", KbDownloadJob.media_url("https://vimeo.com/1/abc123")
+    assert_equal "https://example.com/v", KbDownloadJob.media_url("https://example.com/v")
   end
 end
