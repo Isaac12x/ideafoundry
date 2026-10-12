@@ -14,6 +14,8 @@ class KbDownloadJob < ApplicationJob
   ARCHIVE_WAIT = 5.minutes
 
   YOUTUBE_HOSTS = %w[youtube.com www.youtube.com m.youtube.com music.youtube.com youtu.be].freeze
+  # yt-dlp's page scrapers, not real video sites (HTML5MediaEmbed matches any article with an <audio>).
+  NOT_SITE_EXTRACTORS = %w[Generic HTML5MediaEmbed].freeze
   # Extensions we fetch directly instead of routing through yt-dlp.
   DIRECT_EXTS = %w[
     .pdf .md .html .htm .docx .xlsx .csv .txt .json .zip
@@ -57,6 +59,11 @@ class KbDownloadJob < ApplicationJob
     elsif %w[video audio].include?(dl.format)
       yt_dlp(dl, dir) || http_download(dl, dir)
     else
+      # A page yt-dlp has a real extractor for is a video, not an article.
+      if dl.format == "auto" && (kind = self.class.video_kind(dl.url))
+        saved = yt_dlp(dl, dir, kind)
+        return saved if saved
+      end
       page = reader_pdf(dl, dir)
       return page if page || dl.failed?
       return http_download(dl, dir) if dl.format == "page"
@@ -109,7 +116,27 @@ class KbDownloadJob < ApplicationJob
     :retry
   end
 
-  def yt_dlp(dl, dir)
+  # :video / :audio when yt-dlp has a site-specific (non-generic) extractor for
+  # the URL, or it's a bare HLS/DASH manifest; nil for articles and unknown pages.
+  def self.video_kind(url)
+    bin = yt_dlp_bin or return nil
+    return :video if %w[.m3u8 .mpd].include?(File.extname(URI.parse(url).path.to_s).downcase)
+
+    out, status = capture([ bin, "--no-playlist", "--simulate", "--print", "extractor_key", "--print", "vcodec", media_url(url) ])
+    key, vcodec = out.to_s.lines.map(&:strip).first(2)
+    return nil unless status&.success? && key.present? && !NOT_SITE_EXTRACTORS.include?(key)
+    vcodec == "none" ? :audio : :video
+  rescue URI::InvalidURIError
+    nil
+  end
+
+  # Vimeo's page extractor demands a login now; the embed player URL does not.
+  def self.media_url(url)
+    m = url.match(%r{\Ahttps?://(?:www\.)?vimeo\.com/(?:[^/?#]+/)*?(\d+)(?:/([0-9a-f]+))?/?(?:[?#].*)?\z}i)
+    m ? "https://player.vimeo.com/video/#{m[1]}#{"?h=#{m[2]}" if m[2]}" : url
+  end
+
+  def yt_dlp(dl, dir, kind = nil)
     bin = yt_dlp_bin
     return fail!(dl, "yt-dlp is not installed.") if bin.nil?
 
@@ -118,9 +145,12 @@ class KbDownloadJob < ApplicationJob
     case dl.format
     when "audio" then args += [ "-t", "mp3" ]
     when "video" then args += [ "-t", "mp4" ]
-    when "auto"  then args += [ "-t", "mp4" ] if youtube?(dl.url)
+    when "auto"
+      args += [ "-t", "mp4" ] if youtube?(dl.url)
+      # ponytail: merge only, no remux -- some sites (archive.org .ogv) can't convert to mp4.
+      args += [ "--merge-output-format", "mp4" ] if kind == :video
     end
-    args << dl.url
+    args << self.class.media_url(dl.url)
 
     out, status = capture(args)
     return nil unless status&.success?
@@ -170,8 +200,9 @@ class KbDownloadJob < ApplicationJob
   def youtube?(url) = self.class.youtube?(url)
 
   def self.direct_file?(url)
-    ext = File.extname(URI.parse(url).path.to_s).downcase
-    DIRECT_EXTS.include?(ext)
+    path = URI.parse(url).path.to_s
+    # A wiki "File:x.webm" page is HTML, not the file.
+    DIRECT_EXTS.include?(File.extname(path).downcase) && !path.include?("/wiki/")
   rescue URI::InvalidURIError
     false
   end

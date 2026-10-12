@@ -24,7 +24,7 @@ module Kb
         out, status = KbDownloadJob.capture([ bin, "--no-playlist", "--no-simulate", "--skip-download", "--write-subs", "--write-auto-subs",
                                              "--sub-langs", KbDownloadJob.youtube?(url) ? SUB_LANGS : OTHER_SUB_LANGS,
                                              "--sub-format", "json3/vtt/srt/best",
-                                             "-o", File.join(dir, "%(id)s.%(ext)s"), "--print", "id", url ])
+                                             "-o", File.join(dir, "%(id)s.%(ext)s"), "--print", "id", KbDownloadJob.media_url(url) ])
         files = Dir[File.join(dir, "*")].select { |f| FORMATS.include?(File.extname(f).delete(".")) }
         # A failed side-track (e.g. 429 on one language) still exits non-zero; keep what landed.
         raise Error, "yt-dlp could not fetch subtitles for #{url}." unless status&.success? || files.any?
@@ -44,7 +44,7 @@ module Kb
     # VTT / SRT. Rolling auto-captions repeat the previous cue's last line; drop those.
     def self.parse_cues(content)
       prev = []
-      content.to_s.split(/\r?\n\r?\n+/).filter_map do |block|
+      content.to_s.split(/\r?\n(?:[[:blank:]]*\r?\n)+/).filter_map do |block|
         lines = block.lines.map(&:chomp)
         i = lines.index { |l| l.match?(TIMING) } or next
         from, to = lines[i].match(TIMING).captures.map { |t| seconds(t) }
