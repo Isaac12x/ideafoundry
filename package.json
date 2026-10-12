@@ -8,7 +8,7 @@
   },
   "dependencies": {
     "3d-force-graph": "^1.73.4",
-    "@excalidraw/excalidraw": "0.18.1",
+    "@excalidraw/excalidraw": "0.18.0-143b5b6",
     "@rails/actioncable": "^7.0.0",
     "hyperformula": "^3.2.0",
     "react": "^18.3.1",
