@@ -15,7 +15,7 @@
   id="excalidraw-root-<%= @drawing.id %>"
   class="excalidraw-mount"
   data-controller="excalidraw"
-  <%= tag.attributes(excalidraw_stimulus_values) %>
+  <%= tag.attributes(data: excalidraw_stimulus_values) %>
   data-standalone="true"
   data-drawing-id="<%= @drawing.id %>"
   data-drawing-title="<%= @drawing.title %>"

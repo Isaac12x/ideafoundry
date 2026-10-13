@@ -15,7 +15,7 @@
 
 <div class="idea-drawings"
      data-controller="idea-drawings"
-     <%= tag.attributes(idea_drawings_loader_values.merge(
+     <%= tag.attributes(data: idea_drawings_loader_values.merge(
        idea_drawings_role_value: role,
        idea_drawings_create_url_value: idea_drawings_path(idea),
        idea_drawings_show_url_pattern_value: "/ideas/#{idea.id}/drawings/__ID__",
