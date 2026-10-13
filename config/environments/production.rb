@@ -55,7 +55,6 @@ Rails.application.configure do
   config.active_support.report_deprecations = false
 
   config.cache_store = :solid_cache_store
-  config.solid_cache.connects_to = { database: { writing: :cache } }
 
   config.active_job.queue_adapter = :solid_queue
   config.solid_queue.connects_to = { database: { writing: :queue } }
