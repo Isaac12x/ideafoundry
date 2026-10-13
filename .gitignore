@@ -580,3 +580,7 @@ iOSInjectionProject/
 *.wasm
 *.wat
 *.xhtml
+
+# App source: the generic web-file ignores above must not hide Rails assets/controllers
+!app/javascript/**/*.js
+!app/assets/stylesheets/**/*.css

@@ -11,7 +11,7 @@
   id="excalidraw-root-new"
   class="excalidraw-mount"
   data-controller="excalidraw"
-  <%= tag.attributes(excalidraw_stimulus_values) %>
+  <%= tag.attributes(data: excalidraw_stimulus_values) %>
   data-standalone="true"
   data-drawing-role="<%= params[:role] || 'general' %>"
   data-idea-id="<%= @idea.id %>"

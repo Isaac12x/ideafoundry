@@ -68,7 +68,7 @@
     </div>
     <div class="topology-graph-wrapper"
          data-controller="topology-graph"
-         <%= tag.attributes(topology_graph_stimulus_values.merge(
+         <%= tag.attributes(data: topology_graph_stimulus_values.merge(
            topology_graph_url_value: neighborhood_topology_path(@topology, format: :json),
            topology_graph_focus_id_value: "t_#{@topology.id}",
            topology_graph_show_ideas_value: true
