@@ -12,5 +12,7 @@ Bundler.with_original_env do
     step "Assets: JavaScript", "yarn", "build"
     step "Tests: JavaScript", "node", "--test", *javascript_tests if javascript_tests.any?
     step "Tests: Rails", "env", "RAILS_ENV=test", "PARALLEL_WORKERS=1", ruby, "bin/rails", "test"
+    # Boot production config eagerly (no DB/secrets needed) to catch config conflicts like solid_cache database vs connects_to.
+    step "Boot: production eager load", "env", "RAILS_ENV=production", "SECRET_KEY_BASE_DUMMY=1", ruby, "bin/rails", "runner", "Rails.application.eager_load!"
   end
 end
