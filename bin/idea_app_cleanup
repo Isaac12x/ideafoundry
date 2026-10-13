@@ -1,0 +1,25 @@
+#!/bin/zsh
+# Sourced by start_idea_app.sh. Stops leftover SolidQueue/Puma processes of THIS
+# installation only: matched by process title AND cwd == APP_DIR, never by pattern alone.
+# Usage: idea_app_kill_stale "$APP_DIR" [exclude_pid ...]
+idea_app_kill_stale() {
+  local app_dir="$1"; shift
+  local -a skip=($$ $PPID "$@") pids
+  local pid
+  for pid in $(pgrep -f 'solid-queue-|^puma '); do
+    (( ${skip[(Ie)$pid]} )) && continue
+    [[ "$(lsof -a -d cwd -p "$pid" -Fn 2>/dev/null | sed -n 's/^n//p')" == "$app_dir" ]] && pids+=($pid)
+  done
+  (( ${#pids} )) || return 0
+  echo "==> Stopping stale idea-app processes: ${pids[*]}"
+  kill -TERM $pids 2>/dev/null
+  local i
+  for i in {1..20}; do
+    pids=($(for pid in $pids; do kill -0 $pid 2>/dev/null && echo $pid; done))
+    (( ${#pids} )) || return 0
+    sleep 1
+  done
+  echo "==> Force killing: ${pids[*]}"
+  kill -KILL $pids 2>/dev/null
+  return 0
+}
