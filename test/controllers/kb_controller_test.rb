@@ -29,9 +29,9 @@ class KbControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "markdown files in native kb folder are included automatically" do
-    native_dir = Rails.root.join("storage", "kb")
+    native_dir = KbSource::NATIVE_PATH
     filename = "native-kb-#{SecureRandom.hex(8)}.md"
-    @native_doc_path = native_dir.join(filename)
+    @native_doc_path = File.join(native_dir, filename)
     FileUtils.mkdir_p(native_dir)
     File.write(@native_doc_path, "# Native KB Doc\n\nNative body")
     @user.update!(settings: (@user.settings || {}).merge("kb" => { "folders" => [] }))
@@ -124,7 +124,7 @@ class KbControllerTest < ActionDispatch::IntegrationTest
 
   test "creating a file whose name is a URL enqueues a download instead of writing a file" do
     assert_enqueued_with(job: KbDownloadJob) do
-      assert_no_difference -> { Dir.glob(Rails.root.join("storage", "kb", "*")).size } do
+      assert_no_difference -> { Dir.glob(File.join(KbSource::NATIVE_PATH, "*")).size } do
         post kb_fs_create_path, params: {
           src: 0, dir: "", kind: "file",
           name: "https://youtu.be/dQw4w9WgXcQ", format: "audio"

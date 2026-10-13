@@ -1246,6 +1246,9 @@ body.has-notes-bar.kb-page .kb-content-area {
 
 .kb-context-menu-prompt {
   padding: 0.2rem;
+  /* Fixed width: long URLs scroll inside the input instead of stretching the menu. */
+  width: min(24rem, calc(100vw - 2rem));
+  box-sizing: border-box;
 }
 
 .kb-context-menu-input {
@@ -1258,6 +1261,68 @@ body.has-notes-bar.kb-page .kb-content-area {
   font-size: 0.84rem;
   padding: 0.4rem 0.5rem;
   outline: none;
+}
+
+.kb-context-menu-input {
+  text-overflow: ellipsis;
+}
+
+.kb-context-menu-input:focus {
+  text-overflow: clip;
+}
+
+.kb-format-chips {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin-top: 0.45rem;
+  padding: 0 0.1rem;
+}
+
+.kb-format-chips__label {
+  margin-right: 0.3rem;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.kb-format-chip {
+  position: relative;
+  cursor: pointer;
+}
+
+.kb-format-chip input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.kb-format-chip span {
+  display: inline-block;
+  padding: 0.2rem 0.55rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: 999px;
+  color: var(--text-muted);
+  font-size: 0.76rem;
+  transition: color 0.12s, border-color 0.12s, background 0.12s;
+}
+
+.kb-format-chip:hover span {
+  color: var(--text-primary);
+  border-color: var(--border-default);
+}
+
+.kb-format-chip input:checked + span {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--accent-muted);
+}
+
+.kb-format-chip input:focus-visible + span {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
 }
 
 /* ── Tree ops: new button, drag states ───────────────────────────────── */
