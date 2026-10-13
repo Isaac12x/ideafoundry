@@ -1,0 +1,282 @@
+/* ============================================
+   Activity slide-over drawer
+   ============================================ */
+
+.activity-panel {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: none;
+  justify-content: flex-end;
+  pointer-events: none;
+}
+
+.activity-panel.is-open {
+  display: flex;
+  pointer-events: auto;
+}
+
+/* Never leak the drawer onto security lock screens */
+body.typing-lock-page .activity-panel,
+body.typing-lock-page .nav-activity-trigger {
+  display: none !important;
+}
+
+.activity-panel__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(6, 6, 9, 0.55);
+  backdrop-filter: blur(2px);
+  animation: activity-panel-fade 0.2s ease;
+}
+
+.activity-panel__drawer {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: min(480px, 92vw);
+  height: 100%;
+  background: var(--bg-surface);
+  border-left: 1px solid var(--border-default);
+  box-shadow: -24px 0 60px rgba(0, 0, 0, 0.45);
+  animation: activity-panel-slide 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes activity-panel-fade {
+  from { opacity: 0; }
+}
+
+@keyframes activity-panel-slide {
+  from { transform: translateX(24px); opacity: 0.4; }
+}
+
+.activity-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.activity-panel__title {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.activity-panel__close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: var(--radius-sm);
+}
+
+.activity-panel__close:hover,
+.activity-panel__close:focus-visible {
+  color: var(--text-primary);
+  background: var(--bg-elevated);
+}
+
+.activity-panel__body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.activity-panel__loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 1rem;
+  color: var(--text-muted);
+}
+
+.activity-panel__spinner {
+  animation: activity-panel-spin 0.8s linear infinite;
+}
+
+@keyframes activity-panel-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ============================================
+   Activity audit feed
+   ============================================ */
+
+.activity-feed-wrap {
+  padding: 1rem 1.25rem 1.5rem;
+}
+
+/* In the settings page the wrapping container already provides padding */
+.settings-container .activity-feed-wrap {
+  padding: 0;
+  margin-top: 1.5rem;
+}
+
+/* ---- Filter pills ---- */
+
+.activity-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 1.25rem;
+}
+
+.activity-filter-pill {
+  padding: 0.25rem 0.7rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  border: 1px solid var(--border-default);
+  color: var(--text-muted);
+  text-decoration: none;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+  white-space: nowrap;
+}
+
+.activity-filter-pill:hover {
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+}
+
+.activity-filter-pill--active {
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  border-color: var(--border-emphasis);
+}
+
+/* ---- Empty state ---- */
+
+.activity-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 3rem 1rem;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.activity-empty p {
+  margin: 0;
+  font-size: 0.85rem;
+}
+
+/* ---- Date groups ---- */
+
+.activity-group {
+  margin-bottom: 1.5rem;
+}
+
+.activity-group:last-child {
+  margin-bottom: 0;
+}
+
+.activity-group-label {
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 0.4rem;
+  padding-left: 0.1rem;
+}
+
+/* ---- Feed entries ---- */
+
+.activity-feed {
+  background: var(--bg-base);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.activity-entry {
+  display: flex;
+  align-items: baseline;
+  gap: 0.55rem;
+  padding: 0.6rem 0.875rem;
+  border-bottom: 1px solid var(--border-subtle);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.activity-entry:last-child {
+  border-bottom: none;
+}
+
+/* ---- Actor badge ---- */
+
+.activity-entry__actor {
+  flex-shrink: 0;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 0.12rem 0.45rem;
+  border-radius: 4px;
+  white-space: nowrap;
+  line-height: 1.6;
+}
+
+.activity-entry__actor--user {
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  color: var(--accent);
+  border: 1px solid color-mix(in srgb, var(--accent) 28%, transparent);
+}
+
+.activity-entry__actor--server {
+  background: color-mix(in srgb, var(--text-muted) 10%, transparent);
+  color: var(--text-muted);
+  border: 1px solid var(--border-subtle);
+}
+
+.activity-entry__actor--agent {
+  background: color-mix(in srgb, #a78bfa 12%, transparent);
+  color: #a78bfa;
+  border: 1px solid color-mix(in srgb, #a78bfa 25%, transparent);
+}
+
+/* ---- Entry body ---- */
+
+.activity-entry__body {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: var(--text-secondary, var(--text-primary));
+}
+
+.activity-entry__verb {
+  color: var(--text-muted);
+}
+
+.activity-entry__kind {
+  color: var(--text-muted);
+}
+
+.activity-entry__name {
+  color: var(--text-primary);
+}
+
+.activity-entry__fields {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+/* ---- Timestamp ---- */
+
+.activity-entry__time {
+  flex-shrink: 0;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  padding-left: 0.25rem;
+}
