@@ -106,7 +106,8 @@ end
 group :test do
   # Use system testing [https://guides.rubyonrails.org/testing.html#system-testing]
   gem "capybara"
-  gem "minitest", "~> 5.25"
+  gem "minitest", "~> 6.0"
+  gem "minitest-mock" # extracted from minitest 6
   gem "selenium-webdriver"
   # Generate .xlsx fixtures for KB rendering tests (roo reads, caxlsx writes)
   gem "caxlsx"
