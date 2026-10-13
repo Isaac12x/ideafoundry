@@ -56,6 +56,7 @@ class KbController < ApplicationController
     @selected_file = rel_path
     @selected_folder_index = folder_index
     remember_document(folder_index, rel_path) if displayable_content?(@content)
+    mark_download_opened(folder_index, rel_path) if @content&.kind != :missing
   end
 
   def raw
@@ -390,6 +391,25 @@ class KbController < ApplicationController
     )
   end
 
+  def sort
+    mode = params[:mode].to_s
+    return fs_error("Unsupported sort order.") unless Kb::TreeBuilder::SORT_MODES.include?(mode)
+
+    @user.settings = (@user.settings || {}).deep_merge("kb" => { "sort" => mode })
+    @user.save!
+    return head(:no_content) if request.format.json?
+    return redirect_to(kb_path) unless request.format.turbo_stream?
+
+    # Not respond_fs: that would drop the open file's highlight.
+    Kb::TreeBuilder.bust_cache!(@user)
+    @folders = build_folder_tree
+    @selected_folder_index, @selected_file = remembered_document
+    render turbo_stream: [
+      turbo_stream.replace("kb-sidebar-tree", partial: "kb/tree"),
+      turbo_stream.replace("kb-sort", partial: "kb/sort", locals: { mode: mode })
+    ]
+  end
+
   private
 
   def fs_error(message)
@@ -606,6 +626,21 @@ class KbController < ApplicationController
       return rel_dir == "." ? name : File.join(rel_dir, name)
     end
     nil
+  end
+
+  # Clears the sidebar "new download" dot; rebroadcasts only if a row changed.
+  def mark_download_opened(folder_index, rel_path)
+    source = kb_sources[folder_index] unless folder_index.negative?
+    return unless source && rel_path.present?
+
+    dir = File.dirname(rel_path)
+    changed = @user.kb_downloads.where(status: "done", opened_at: nil,
+                                       source_path: File.expand_path(source[:path]),
+                                       dir: dir == "." ? "" : dir, filename: File.basename(rel_path))
+                   .update_all(opened_at: Time.current)
+    return if changed.zero?
+
+    Kb::TreeBroadcaster.call(@user) # busts the tree cache itself
   end
 
   def resolve_kb_path(folder_index, rel_path, extensions: KB_EXTENSIONS)

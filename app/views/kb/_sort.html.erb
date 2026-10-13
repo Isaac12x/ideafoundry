@@ -1,0 +1,20 @@
+<% sort_field, sort_dir = mode.split("_") %>
+<details class="kb-sort" id="kb-sort">
+  <summary class="kb-sort-toggle" aria-label="Sort tree: <%= sort_field.capitalize %> <%= sort_dir == 'asc' ? 'ascending' : 'descending' %>" title="Sort tree">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="15" y2="12"/><line x1="4" y1="18" x2="10" y2="18"/></svg>
+    <%= sort_field.capitalize %> <%= sort_dir == "asc" ? "↑" : "↓" %>
+  </summary>
+  <div class="kb-sort-menu" role="group" aria-label="Sort tree by">
+    <% %w[name type date].each do |field| %>
+      <% active = field == sort_field %>
+      <%= button_to kb_sort_path(mode: "#{field}_#{active && sort_dir == 'asc' ? 'desc' : 'asc'}"),
+            method: :patch, form: { class: "kb-sort-form" },
+            class: "kb-sort-option #{'is-active' if active}",
+            "aria-pressed": active.to_s,
+            "aria-label": "Sort by #{field}#{active ? ', toggle direction' : ''}" do %>
+        <span><%= field.capitalize %></span>
+        <% if active %><span aria-hidden="true"><%= sort_dir == "asc" ? "↑" : "↓" %></span><% end %>
+      <% end %>
+    <% end %>
+  </div>
+</details>

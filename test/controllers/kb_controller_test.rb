@@ -29,9 +29,9 @@ class KbControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "markdown files in native kb folder are included automatically" do
-    native_dir = Rails.root.join("storage", "kb")
+    native_dir = KbSource::NATIVE_PATH
     filename = "native-kb-#{SecureRandom.hex(8)}.md"
-    @native_doc_path = native_dir.join(filename)
+    @native_doc_path = File.join(native_dir, filename)
     FileUtils.mkdir_p(native_dir)
     File.write(@native_doc_path, "# Native KB Doc\n\nNative body")
     @user.update!(settings: (@user.settings || {}).merge("kb" => { "folders" => [] }))
@@ -124,7 +124,7 @@ class KbControllerTest < ActionDispatch::IntegrationTest
 
   test "creating a file whose name is a URL enqueues a download instead of writing a file" do
     assert_enqueued_with(job: KbDownloadJob) do
-      assert_no_difference -> { Dir.glob(Rails.root.join("storage", "kb", "*")).size } do
+      assert_no_difference -> { Dir.glob(File.join(KbSource::NATIVE_PATH, "*")).size } do
         post kb_fs_create_path, params: {
           src: 0, dir: "", kind: "file",
           name: "https://youtu.be/dQw4w9WgXcQ", format: "audio"
@@ -188,6 +188,39 @@ class KbControllerTest < ActionDispatch::IntegrationTest
     %w[chem compounds element_details nuclides world bench_chem bench_views bench_nuclides bench_map bench_guide].each do |mod|
       assert_select "script[type=importmap]", text: %r{lib/periodic_table/#{mod}}
     end
+  end
+
+  test "finished download shows a new dot until its file is opened" do
+    use_isolated_kb_folder
+    FileUtils.mkdir_p(File.join(@kb_dir, "docs"))
+    File.write(File.join(@kb_dir, "docs", "fresh.md"), "# Fresh")
+    File.write(File.join(@kb_dir, "old.md"), "# Old")
+    base = { user: @user, source_index: 0, url: "https://example.com/x", status: "done", source_path: File.expand_path(@kb_dir) }
+    fresh = KbDownload.create!(base.merge(dir: "docs", filename: "fresh.md"))
+    KbDownload.create!(base.merge(filename: "old.md", opened_at: 1.day.ago))
+
+    get kb_path
+    assert_select ".kb-file-row.is-new", count: 1
+    assert_select ".kb-file-row.is-new .kb-file-link", text: "fresh.md"
+    assert_select ".kb-dir-header .kb-new-dot--dir", count: 1
+
+    get kb_file_path(src: 0, file: "docs/fresh.md")
+    assert_response :success
+    assert_not_nil fresh.reload.opened_at
+
+    get kb_path
+    assert_select ".kb-new-dot", count: 0
+  end
+
+  test "sort persists a whitelisted mode and rejects others" do
+    patch kb_sort_path(mode: "date_desc"), as: :turbo_stream
+
+    assert_response :success
+    assert_equal "date_desc", @user.reload.settings.dig("kb", "sort")
+
+    patch kb_sort_path(mode: "bogus"), as: :turbo_stream
+
+    assert_equal "date_desc", @user.reload.settings.dig("kb", "sort")
   end
 
   private

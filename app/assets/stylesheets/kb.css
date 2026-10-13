@@ -313,6 +313,37 @@ body.kb-resizing iframe {
   white-space: nowrap;
 }
 
+/* Unseen finished download: quiet accent dot after the name until first opened. */
+.kb-file-row.is-new:not(.is-active) .kb-file-link {
+  font-weight: 600;
+}
+
+.kb-new-dot {
+  flex: 0 0 auto;
+  width: 6px;
+  height: 6px;
+  margin: 0 0.35rem;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: kb-new-dot-in 0.3s ease-out;
+}
+
+.kb-new-dot--dir {
+  width: 5px;
+  height: 5px;
+  opacity: 0.45;
+  animation: none;
+}
+
+@keyframes kb-new-dot-in {
+  from { opacity: 0; transform: scale(0.4); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kb-new-dot { animation: none; }
+}
+
 /* Empty tree */
 .kb-empty-tree {
   display: flex;
@@ -346,6 +377,62 @@ body.kb-resizing iframe {
 .kb-add-folder-link:hover {
   color: var(--accent);
 }
+
+/* Tree sort control - native details menu in the footer */
+.kb-tree-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  position: relative;
+}
+
+.kb-sort-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.74rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  list-style: none;
+  border-radius: 4px;
+  padding: 0.15rem 0.3rem;
+}
+
+.kb-sort-toggle::-webkit-details-marker { display: none; }
+.kb-sort-toggle:hover,
+.kb-sort[open] .kb-sort-toggle { color: var(--accent); }
+.kb-sort-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+.kb-sort-menu {
+  position: absolute;
+  right: 0.75rem;
+  bottom: calc(100% - 0.25rem);
+  min-width: 7rem;
+  padding: 0.25rem;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-default);
+  border-radius: 6px;
+}
+
+.kb-sort-form { margin: 0; }
+
+.kb-sort-option {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0.3rem 0.5rem;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  background: none;
+  border: 0;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.kb-sort-option:hover,
+.kb-sort-option:focus-visible { color: var(--accent); background: var(--bg-surface); }
+.kb-sort-option.is-active { color: var(--text-primary); font-weight: 600; }
 
 /* ---- Content area ---- */
 .kb-content-area {
@@ -1159,6 +1246,9 @@ body.has-notes-bar.kb-page .kb-content-area {
 
 .kb-context-menu-prompt {
   padding: 0.2rem;
+  /* Fixed width: long URLs scroll inside the input instead of stretching the menu. */
+  width: min(24rem, calc(100vw - 2rem));
+  box-sizing: border-box;
 }
 
 .kb-context-menu-input {
@@ -1171,6 +1261,68 @@ body.has-notes-bar.kb-page .kb-content-area {
   font-size: 0.84rem;
   padding: 0.4rem 0.5rem;
   outline: none;
+}
+
+.kb-context-menu-input {
+  text-overflow: ellipsis;
+}
+
+.kb-context-menu-input:focus {
+  text-overflow: clip;
+}
+
+.kb-format-chips {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin-top: 0.45rem;
+  padding: 0 0.1rem;
+}
+
+.kb-format-chips__label {
+  margin-right: 0.3rem;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.kb-format-chip {
+  position: relative;
+  cursor: pointer;
+}
+
+.kb-format-chip input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.kb-format-chip span {
+  display: inline-block;
+  padding: 0.2rem 0.55rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: 999px;
+  color: var(--text-muted);
+  font-size: 0.76rem;
+  transition: color 0.12s, border-color 0.12s, background 0.12s;
+}
+
+.kb-format-chip:hover span {
+  color: var(--text-primary);
+  border-color: var(--border-default);
+}
+
+.kb-format-chip input:checked + span {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--accent-muted);
+}
+
+.kb-format-chip input:focus-visible + span {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
 }
 
 /* ── Tree ops: new button, drag states ───────────────────────────────── */
