@@ -180,7 +180,10 @@ GEM
     matrix (0.4.3)
     mini_mime (1.1.5)
     mini_portile2 (2.8.9)
-    minitest (5.27.0)
+    minitest (6.0.6)
+      drb (~> 2.0)
+      prism (~> 1.5)
+    minitest-mock (5.27.0)
     msgpack (1.8.5)
     multi_xml (0.9.1)
       bigdecimal (>= 3.1, < 5)
@@ -395,7 +398,8 @@ DEPENDENCIES
   jbuilder
   jsbundling-rails
   kaminari
-  minitest (~> 5.25)
+  minitest (~> 6.0)
+  minitest-mock
   puma (~> 8.0)
   rack-attack
   rails (~> 8.1.4)
