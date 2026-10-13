@@ -1,0 +1,204 @@
+/* =============================================================
+   Command Palette  ⌘P / Ctrl+P — Dark Forge
+   ============================================================= */
+
+.command-palette {
+  border: none;
+  padding: 0;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-emphasis);
+  border-radius: var(--radius-lg);
+  box-shadow:
+    0 0 0 1px rgba(212, 149, 58, 0.08),
+    0 32px 80px rgba(0, 0, 0, 0.75),
+    0 8px 24px rgba(0, 0, 0, 0.4);
+  position: fixed;
+  top: 18vh;
+  left: 50%;
+  translate: -50% 0;
+  margin: 0;
+  width: min(600px, calc(100vw - 32px));
+  max-height: 68vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* A <dialog> is display:none when closed via the UA sheet, but the author
+   `display: flex` above overrides that — so it would render permanently.
+   Re-hide it when not open; showModal() adds [open] to reveal it. */
+.command-palette:not([open]) {
+  display: none;
+}
+
+.command-palette::backdrop {
+  background: rgba(12, 12, 15, 0.72);
+}
+
+@keyframes cp-open {
+  from {
+    opacity: 0;
+    scale: 0.95;
+    translate: -50% -10px;
+  }
+  to {
+    opacity: 1;
+    scale: 1;
+    translate: -50% 0;
+  }
+}
+
+.command-palette[open] {
+  animation: cp-open 160ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* ---- Search input row ---- */
+
+.cp-header {
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.cp-search-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+}
+
+.cp-search-icon {
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.cp-input {
+  flex: 1;
+  background: none;
+  border: none;
+  outline: none;
+  font-family: var(--font-body);
+  font-size: 1.05rem;
+  font-weight: 400;
+  color: var(--text-primary);
+  caret-color: var(--accent);
+  /* remove native search input chrome */
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.cp-input::-webkit-search-cancel-button { display: none; }
+.cp-input::placeholder { color: var(--text-muted); }
+
+/* ---- Results list ---- */
+
+.cp-results {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 4px 0;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-emphasis) transparent;
+}
+
+.cp-hint,
+.cp-empty {
+  margin: 0;
+  padding: 24px 20px;
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.cp-result {
+  display: block;
+  padding: 10px 18px;
+  text-decoration: none;
+  border-left: 2px solid transparent;
+  transition: background 60ms ease, border-color 60ms ease;
+}
+
+.cp-result:hover,
+.cp-result--active {
+  background: var(--bg-overlay);
+  border-left-color: var(--accent);
+}
+
+.cp-result-main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.cp-result-title {
+  flex: 1;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 0.95rem;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.cp-score {
+  flex-shrink: 0;
+  font-family: var(--font-body);
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: 0.02em;
+}
+
+.cp-result-state.idea-state {
+  flex-shrink: 0;
+  font-size: 0.62rem;
+  padding: 2px 7px;
+}
+
+.cp-result-snippet {
+  margin-top: 3px;
+  font-family: var(--font-body);
+  font-size: 0.76rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ---- Footer ---- */
+
+.cp-footer {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 7px 18px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.cp-kbd-hint,
+.cp-trigger-hint {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-body);
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
+.cp-footer kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  background: var(--bg-overlay);
+  border: 1px solid var(--border-emphasis);
+  border-radius: 4px;
+  padding: 1px 5px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
