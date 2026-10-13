@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-- **Ruby** 3.4.5 (use [rbenv](https://github.com/rbenv/rbenv) or [asdf](https://asdf-vm.com/))
+- **Ruby** 4.0.7 (use [rbenv](https://github.com/rbenv/rbenv) or [asdf](https://asdf-vm.com/))
 - **Node.js** 20+ and npm (for esbuild graph bundle)
 - **SQLite3** (usually pre-installed on macOS/Linux)
 - **SQLCipher** (required for production/encrypted SQLite databases)
