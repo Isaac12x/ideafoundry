@@ -1,0 +1,902 @@
+/* ============================================
+   Periodic Table — Detail panel ("Specimen Atlas")
+   Everything scoped under .ptable-detail. Archival museum-plate feel:
+   Instrument Serif display symbol, mono tabular numbers, hairline rules,
+   amber accent used sparingly. No modals, no glassmorphism, no side-stripe
+   borders, no gradient text.
+   ============================================ */
+
+.ptable-detail {
+  --cat: var(--accent);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid var(--border-default);
+  border-top: 2px solid var(--cat);
+  border-radius: var(--radius-lg);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  overflow: hidden;
+}
+
+
+@media (max-width: 720px) {
+  .ptable-detail {
+    width: 100%;
+    border-left: 0;
+  }
+}
+
+.ptable-detail * {
+  box-sizing: border-box;
+}
+
+/* ---- Header plate ---- */
+.ptd-plate {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 0 0 auto;
+  padding: 1rem 1.1rem 1.25rem;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.ptd-nav,
+.ptd-close {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+
+.ptd-nav:hover:not(:disabled),
+.ptd-close:hover {
+  color: var(--text-primary);
+  border-color: var(--border-emphasis);
+  background: var(--bg-overlay);
+}
+
+.ptd-nav:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.ptd-nav:focus-visible,
+.ptd-close:focus-visible,
+.ptd-tabs button:focus-visible,
+.ptd-links a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.ptd-plate-main {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  min-width: 0;
+}
+
+.ptd-plate-symbol {
+  flex: 0 0 auto;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: clamp(3.4rem, 8vw, 5.6rem);
+  line-height: 1;
+  color: var(--text-primary);
+}
+
+.ptd-plate-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.ptd-plate-number {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  letter-spacing: 0.04em;
+}
+
+.ptd-plate-name {
+  margin: 0;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 400;
+  font-size: 1.3rem;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+.ptd-plate-mass {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.74rem;
+  color: var(--text-secondary);
+}
+
+.ptd-chip {
+  display: inline-flex;
+  align-self: flex-start;
+  align-items: center;
+  margin-top: 0.15rem;
+  padding: 0.15rem 0.5rem;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-xl);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--text-secondary);
+}
+
+.ptd-chip--category {
+  border-color: color-mix(in oklch, var(--cat) 55%, var(--border-default));
+  color: color-mix(in oklch, var(--cat) 70%, var(--text-primary));
+}
+
+.ptd-chips { display: flex; flex-wrap: wrap; gap: 0.3rem; }
+
+.ptd-chip--hazard {
+  border-color: color-mix(in oklch, var(--warning) 60%, var(--border-default));
+  color: var(--warning);
+}
+
+/* ---- Tabs ---- */
+.ptd-tabs {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 0.25rem;
+  padding: 0 0.75rem;
+  border-bottom: 1px solid var(--border-subtle);
+  overflow-x: auto;
+}
+
+.ptd-tabs button {
+  appearance: none;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: none;
+  padding: 0.65rem 0.6rem;
+  color: var(--text-muted);
+  font: 600 0.76rem/1 var(--font-body);
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.ptd-tabs button:hover {
+  color: var(--text-primary);
+}
+
+.ptd-tabs button[aria-selected="true"] {
+  color: var(--text-primary);
+  border-bottom-color: var(--cat);
+}
+
+/* ---- Tab panels ---- */
+.ptd-tabpanels {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 1.1rem 1.1rem 1.5rem;
+}
+
+.ptable-detail [role="tabpanel"] {
+  animation: ptd-panel-in 180ms ease both;
+}
+
+@keyframes ptd-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.ptd-summary {
+  margin: 0 0 1rem;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.ptd-subhead {
+  margin: 1.4rem 0 0.6rem;
+  color: var(--text-muted);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.ptd-empty {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  font-style: italic;
+}
+
+/* ---- Definition lists ---- */
+.ptd-deflist {
+  display: grid;
+  gap: 0;
+  margin: 0;
+}
+
+.ptd-row {
+  display: grid;
+  grid-template-columns: 11rem 1fr;
+  gap: 0.75rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.ptd-row dt {
+  color: var(--text-muted);
+  font-size: 0.76rem;
+}
+
+.ptd-row dd {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.ptd-deflist:not(.ptd-deflist--props) .ptd-row dd {
+  font-family: var(--font-body);
+  font-variant-numeric: normal;
+  text-align: left;
+}
+
+/* Museum-label styling for the History tab */
+.ptd-museum-label .ptd-row {
+  grid-template-columns: 8rem 1fr;
+}
+
+.ptd-museum-label .ptd-row dt {
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.ptd-museum-label .ptd-row dd {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 1rem;
+  text-align: left;
+  color: var(--text-primary);
+}
+
+.ptd-nuclear-note {
+  margin: 0;
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  line-height: 1.6;
+}
+
+/* ---- Ionization strip ---- */
+.ptd-ionization {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.ptd-ie-bar {
+  display: grid;
+  grid-template-columns: 2.4rem 1fr 5.2rem;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.ptd-ie-label {
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  font-family: var(--font-mono);
+}
+
+.ptd-ie-track {
+  position: relative;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--bg-input);
+  overflow: hidden;
+}
+
+.ptd-ie-fill {
+  display: block;
+  height: 100%;
+  background: var(--cat);
+}
+
+.ptd-ie-value {
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+/* ---- Bohr model ---- */
+.ptd-bohr-wrap {
+  display: flex;
+  justify-content: center;
+  padding: 0.5rem 0 0.75rem;
+}
+
+.ptd-bohr {
+  max-width: 100%;
+  height: auto;
+}
+
+.ptd-nucleus {
+  fill: var(--bg-elevated);
+  stroke: var(--cat);
+  stroke-width: 1.5;
+}
+
+.ptd-nucleus-label {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 1.6rem;
+  fill: var(--text-primary);
+}
+
+.ptd-orbit {
+  fill: none;
+  stroke: var(--border-default);
+  stroke-width: 1;
+}
+
+.ptd-electron {
+  fill: var(--text-secondary);
+}
+
+.ptd-electron.is-valence {
+  fill: var(--accent);
+}
+
+.ptd-shell {
+  transform-box: view-box;
+  transform-origin: 50% 50%;
+  animation: ptd-spin calc(var(--i, 1) * 6s) linear infinite;
+}
+
+@keyframes ptd-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ptd-shell {
+    animation: none;
+  }
+  .ptable-detail [role="tabpanel"] {
+    animation: none;
+  }
+}
+
+.ptd-shell-counts {
+  margin: 0 0 1rem;
+  text-align: center;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.82rem;
+  letter-spacing: 0.03em;
+}
+
+.ptd-badge-row {
+  margin: 0.9rem 0 0;
+}
+
+.ptd-badge {
+  display: inline-flex;
+  padding: 0.25rem 0.6rem;
+  border: 1px solid color-mix(in oklch, var(--cat) 50%, var(--border-default));
+  border-radius: var(--radius-xl);
+  color: var(--text-primary);
+  font-size: 0.74rem;
+  font-weight: 600;
+  background: color-mix(in oklch, var(--cat) 12%, var(--bg-surface));
+}
+
+/* ---- Orbital-box diagram ---- */
+.ptd-orbital-diagram {
+  display: grid;
+  gap: 0.6rem;
+  margin-top: 1.1rem;
+}
+
+.ptd-orbital-row {
+  display: grid;
+  grid-template-columns: 2.2rem 1fr;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.ptd-orbital-row-label {
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+}
+
+.ptd-orbital-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.ptd-subshell {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.ptd-subshell-label {
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+}
+
+.ptd-subshell.is-valence .ptd-subshell-label {
+  color: var(--cat);
+  font-weight: 600;
+}
+
+.ptd-boxes {
+  display: flex;
+  gap: 2px;
+}
+
+.ptd-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 1.3rem;
+  height: 1.3rem;
+  border: 1px solid var(--border-default);
+  font-size: 0.62rem;
+  line-height: 0.62rem;
+  color: var(--text-primary);
+}
+
+.ptd-subshell.is-valence .ptd-box {
+  border-color: color-mix(in oklch, var(--cat) 45%, var(--border-default));
+}
+
+.ptd-arrow-up,
+.ptd-arrow-down {
+  display: block;
+}
+
+/* ---- Oxidation-state number line ---- */
+.ptd-oxidation {
+  margin-top: 1.1rem;
+}
+
+.ptd-ox-line {
+  display: flex;
+  border-top: 1px solid var(--border-default);
+  padding-top: 0.4rem;
+}
+
+.ptd-ox-tick {
+  flex: 1 1 0;
+  display: flex;
+  justify-content: center;
+  padding-top: 0.3rem;
+  border-left: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.ptd-ox-tick:first-child {
+  border-left: 0;
+}
+
+.ptd-ox-tick.is-active {
+  color: var(--text-primary);
+  background: color-mix(in oklch, var(--cat) 25%, var(--bg-elevated));
+  border-radius: 2px;
+}
+
+.ptd-ox-tick.is-main {
+  color: var(--text-on-accent);
+  background: var(--cat);
+  font-weight: 700;
+  border-radius: 2px;
+}
+
+.ptd-ox-tick.is-icsd { box-shadow: inset 0 -2px 0 var(--accent); }
+
+/* ---- Isotopes ---- */
+.ptd-composition {
+  display: flex;
+  height: 18px;
+  margin-bottom: 1rem;
+  border-radius: 3px;
+  overflow: hidden;
+  background: repeating-linear-gradient(
+    45deg,
+    var(--bg-input),
+    var(--bg-input) 4px,
+    var(--bg-elevated) 4px,
+    var(--bg-elevated) 8px
+  );
+}
+
+.ptd-composition-seg {
+  display: block;
+  height: 100%;
+  background: var(--cat);
+  border-right: 1px solid var(--bg-surface);
+}
+
+.ptd-composition-seg {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in oklch, var(--cat) calc(100% - var(--k, 0) * 18%), var(--bg-elevated));
+}
+
+.ptd-composition-seg b {
+  font: 600 0.58rem var(--font-mono);
+  color: var(--text-on-accent);
+  white-space: nowrap;
+}
+
+.ptd-isotopes-list {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.ptd-isotope {
+  display: grid;
+  grid-template-columns: 3.4rem 1fr 4.2rem;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.3rem 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.ptd-isotope-mass {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.78rem;
+  color: var(--text-primary);
+}
+
+.ptd-isotope-bar {
+  position: relative;
+  height: 5px;
+  border-radius: 3px;
+  background: var(--bg-input);
+  overflow: hidden;
+}
+
+.ptd-isotope-fill {
+  display: block;
+  height: 100%;
+  background: var(--cat);
+}
+
+.ptd-isotope-value {
+  grid-column: 3;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.72rem;
+  text-align: right;
+}
+
+.ptd-isotope-halflife {
+  grid-column: 2 / span 2;
+  color: var(--text-muted);
+  font-size: 0.74rem;
+  font-family: var(--font-mono);
+}
+
+.ptd-isotope-tag {
+  display: none;
+}
+
+.ptd-isotope.is-radioactive .ptd-isotope-mass {
+  color: var(--text-muted);
+}
+
+/* ---- External links ---- */
+.ptd-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1rem;
+  flex: 0 0 auto;
+  padding: 0.85rem 1.1rem;
+  border-top: 1px solid var(--border-subtle);
+  background: color-mix(in srgb, var(--bg-surface) 90%, var(--bg-elevated));
+}
+
+.ptd-links a {
+  color: var(--text-secondary);
+  font-size: 0.76rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+}
+
+.ptd-links a:hover {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+/* ============ Expanded panel (atom / bulk / ions / compounds / earth) ============ */
+.ptd-plate-actions { display: flex; align-items: center; gap: 0.4rem; align-self: start; }
+
+.ptd-tray-btn {
+  height: 32px;
+  padding: 0 0.7rem;
+  border: 1px dashed var(--border-emphasis);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-secondary);
+  font: 600 0.72rem var(--font-body);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.ptd-tray-btn:hover { color: var(--accent); border-color: var(--accent); }
+.ptd-tray-btn.is-on { border-style: solid; border-color: var(--accent); color: var(--accent); background: var(--accent-muted); }
+
+.ptd-plate-mass small { margin-left: 0.25rem; color: var(--text-muted); font-size: 0.66rem; }
+
+.ptd-quick {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px;
+  margin-bottom: 1rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  background: var(--border-subtle);
+  overflow: hidden;
+}
+
+.ptd-quick-cell {
+  display: grid;
+  gap: 1px;
+  padding: 0.5rem 0.65rem;
+  background: var(--bg-surface);
+  min-width: 0;
+}
+
+.ptd-quick-cell span { font-size: 0.62rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); }
+.ptd-quick-cell b { font: 500 0.92rem var(--font-mono); color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ptd-quick-cell small { font-size: 0.62rem; color: var(--text-muted); }
+
+.ptd-prose, .ptd-story {
+  margin: 0 0 1rem;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  line-height: 1.6;
+}
+
+.ptd-story {
+  margin-top: 1rem;
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  line-height: 1.5;
+  color: var(--text-primary);
+}
+
+.ptd-section + .ptd-section { margin-top: 0.4rem; }
+.ptd-note { margin: -0.2rem 0 0.7rem; font-size: 0.74rem; line-height: 1.5; color: var(--text-muted); }
+
+.ptd-row dt[title] { cursor: help; }
+.ptd-q {
+  display: inline-grid;
+  place-items: center;
+  width: 12px;
+  height: 12px;
+  margin-left: 4px;
+  border: 1px solid var(--border-default);
+  border-radius: 50%;
+  font-size: 0.5rem;
+  color: var(--text-muted);
+  vertical-align: 1px;
+}
+
+.ptd-row dd small { color: var(--text-muted); font-size: 0.72rem; }
+
+.ptd-atom-head {
+  display: grid;
+  grid-template-columns: minmax(0, 200px) 1fr;
+  gap: 0.8rem;
+  align-items: center;
+}
+
+@media (max-width: 520px) { .ptd-atom-head { grid-template-columns: 1fr; } }
+
+.ptd-atom-head .ptd-row { grid-template-columns: 7rem 1fr; }
+.ptd-term { font-family: var(--font-display); font-style: italic; font-size: 1.1rem; }
+
+.ptd-ie-bar.is-jump .ptd-ie-label,
+.ptd-ie-bar.is-jump .ptd-ie-value { color: var(--accent); }
+.ptd-ie-bar.is-jump .ptd-ie-fill { background: var(--accent); }
+.ptd-ionization { max-height: 280px; overflow-y: auto; padding-right: 4px; }
+
+.ptd-bars { display: grid; gap: 0.35rem; }
+
+.ptd-bar {
+  display: grid;
+  grid-template-columns: 11rem 1fr 4.6rem;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.74rem;
+  color: var(--text-secondary);
+}
+
+.ptd-bar-track { height: 6px; border-radius: 3px; background: var(--bg-input); overflow: hidden; }
+.ptd-bar-track span { display: block; height: 100%; background: var(--cat); }
+.ptd-bar b { font: 500 0.72rem var(--font-mono); text-align: right; color: var(--text-primary); }
+
+.ptd-legend-inline { display: flex; flex-wrap: wrap; gap: 0.3rem 0.8rem; align-items: center; margin: 0.5rem 0 0; font-size: 0.7rem; color: var(--text-muted); }
+.ptd-legend-inline .k { display: inline-block; width: 12px; height: 9px; border-radius: 2px; margin-right: -0.4rem; }
+.ptd-legend-inline .k-main { background: var(--cat); }
+.ptd-legend-inline .k-other { background: color-mix(in oklch, var(--cat) 25%, var(--bg-elevated)); }
+.ptd-legend-inline .k-icsd { box-shadow: inset 0 -2px 0 var(--accent); background: var(--bg-elevated); }
+
+.ptd-table-wrap { overflow-x: auto; margin: 0 -0.2rem; }
+
+.ptd-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.76rem;
+}
+
+.ptd-table th {
+  position: sticky;
+  top: 0;
+  padding: 0.35rem 0.45rem;
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border-default);
+  color: var(--text-muted);
+  font-size: 0.64rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.ptd-table td {
+  padding: 0.32rem 0.45rem;
+  border-bottom: 1px solid var(--border-subtle);
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.ptd-table td:nth-child(2) { white-space: normal; }
+.ptd-table tr.is-reliable td { color: var(--text-primary); font-weight: 600; }
+.ptd-table--iso tr.is-stable td:first-child { color: var(--text-primary); font-weight: 600; }
+.ptd-table--iso td:nth-child(2) { white-space: nowrap; }
+.ptd-table abbr { text-decoration: underline dotted; cursor: help; }
+
+.ptd-formula { font-family: var(--font-body); color: var(--text-primary); }
+.ptd-formula sub, .pb-formula-cell sub { font-size: 0.72em; }
+
+.ptd-tag {
+  font-family: var(--font-body);
+  font-size: 0.62rem;
+  padding: 1px 6px;
+  border-radius: 999px;
+  border: 1px solid var(--accent-emphasis);
+  color: var(--accent);
+}
+
+.ptd-compounds, .ptd-alloys { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.4rem; }
+
+.ptd-compounds li { display: grid; gap: 1px; padding-bottom: 0.4rem; border-bottom: 1px solid var(--border-subtle); }
+.ptd-compounds small, .ptd-alloys small { color: var(--text-muted); font-size: 0.72rem; }
+
+.ptd-compound {
+  display: flex;
+  gap: 0.6rem;
+  align-items: baseline;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text-secondary);
+  font: 0.82rem var(--font-body);
+  text-align: left;
+  cursor: pointer;
+}
+
+.ptd-compound .ptd-formula { min-width: 6.5rem; font-size: 0.9rem; }
+.ptd-compound:hover span:last-child { color: var(--accent); }
+
+.ptd-alloys li { font-size: 0.8rem; color: var(--text-secondary); }
+.ptd-alloys b { font-weight: 500; color: var(--text-primary); }
+
+.ptd-link-btn {
+  margin-top: 0.8rem;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font: 600 0.76rem var(--font-body);
+  cursor: pointer;
+}
+
+.ptd-links .ptd-link-btn { margin: 0 0 0 auto; color: var(--text-secondary); }
+.ptd-link-btn:hover { text-decoration: underline; }
+
+.ptd-minimap { margin: 0 0 0.8rem; }
+.ptd-minimap svg { width: 100%; height: auto; display: block; border-radius: var(--radius-sm); background: color-mix(in oklch, var(--bg-input) 70%, oklch(30% 0.03 240)); }
+.ptd-land { fill: color-mix(in oklch, var(--bg-overlay) 80%, var(--cat)); stroke: var(--border-emphasis); stroke-width: 0.2; }
+.ptd-pin { fill: var(--accent); }
+.ptd-pin-halo { fill: none; stroke: var(--accent); stroke-width: 0.6; opacity: 0.6; }
+.ptd-minimap figcaption { margin-top: 0.3rem; font-size: 0.72rem; color: var(--text-muted); }
+
+@media (prefers-reduced-motion: no-preference) {
+  .ptd-pin-halo { animation: ptd-ping 2.4s ease-out infinite; transform-box: fill-box; transform-origin: center; }
+}
+
+@keyframes ptd-ping {
+  from { transform: scale(0.4); opacity: 0.9; }
+  to { transform: scale(1.6); opacity: 0; }
+}
+
+.ptd-gauge {
+  position: relative;
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  margin-bottom: 0.6rem;
+  padding: 0.6rem 0.7rem;
+  border-radius: var(--radius-sm);
+  background: var(--bg-input);
+  overflow: hidden;
+}
+
+.ptd-gauge-fill {
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 3px;
+  width: calc(var(--v) * 100%);
+  background: linear-gradient(90deg, var(--success), var(--warning) 55%, var(--danger));
+}
+
+.ptd-gauge b { font: 500 1.4rem var(--font-mono); color: var(--text-primary); }
+.ptd-gauge small { font-size: 0.72rem; color: var(--text-muted); }
+
+.ptd-rank { margin: 0; padding-left: 1.1rem; text-align: left; font-family: var(--font-body); }
