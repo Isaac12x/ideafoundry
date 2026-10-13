@@ -52,7 +52,7 @@ gem "actionmailbox", "~> 8.1.4"
 gem "actiontext", "~> 8.1.4"
 
 # Image processing for Active Storage variants
-gem "image_processing", "~> 1.2"
+gem "image_processing", "~> 2.2"
 
 # ZIP file handling for exports
 gem "rubyzip", "~> 3.7"
@@ -64,7 +64,7 @@ gem "kaminari"
 gem "sha3"
 
 # Local QR code rendering for authenticator app setup
-gem "rqrcode", "~> 2.2"
+gem "rqrcode", "~> 3.2"
 
 # Resend for email delivery
 gem "resend"
@@ -79,7 +79,7 @@ gem "tzinfo-data", platforms: %i[ mswin mswin64 mingw x64_mingw jruby ]
 gem "bootsnap", require: false
 
 # Formula evaluation for napkin calculations
-gem "dentaku", "~> 3.5"
+gem "dentaku", "~> 4.0"
 
 
 
