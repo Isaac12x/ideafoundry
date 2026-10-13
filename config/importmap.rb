@@ -24,7 +24,7 @@ pin "lib/periodic_table/bench_map", to: "lib/periodic_table/bench_map.mjs"
 pin "lib/periodic_table/bench_guide", to: "lib/periodic_table/bench_guide.mjs"
 
 # HyperFormula (Excel-compatible formula engine) — lazy-loaded by napkin controller.
-pin "hyperformula", to: "https://esm.sh/hyperformula@3.2.0"
+pin "hyperformula", to: "https://esm.sh/hyperformula@3.5.0"
 
 # TipTap WYSIWYG editor (ESM via esm.sh)
 pin "@tiptap/core", to: "https://esm.sh/@tiptap/core@2.11.5"
