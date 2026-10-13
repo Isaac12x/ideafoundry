@@ -143,7 +143,7 @@ bin/rails assets:precompile
 
 # Reap orphaned SolidQueue/Puma from a previous crashed run of this installation
 source "$APP_DIR/bin/idea_app_cleanup"
-idea_app_kill_stale "$APP_DIR"
+idea_app_kill_stale "$APP_DIR" "$PORT"
 
 # Start SolidQueue in background when the DB is already unlocked
 if [[ "$DB_LOCKED" == "1" ]]; then
@@ -182,7 +182,7 @@ cleanup() {
     echo "==> Shutting down SolidQueue (PID $JOBS_PID)..."
     kill -TERM "$JOBS_PID" 2>/dev/null || true
     # TERM lets the supervisor drain its forks; stragglers get KILL after 20s
-    idea_app_kill_stale "$APP_DIR"
+    idea_app_kill_stale "$APP_DIR" "$PORT"
     rm -f tmp/pids/solid_queue.pid
   fi
 }
