@@ -141,6 +141,10 @@ fi
 # Precompile assets if missing or stale
 bin/rails assets:precompile
 
+# Reap orphaned SolidQueue/Puma from a previous crashed run of this installation
+source "$APP_DIR/bin/idea_app_cleanup"
+idea_app_kill_stale "$APP_DIR"
+
 # Start SolidQueue in background when the DB is already unlocked
 if [[ "$DB_LOCKED" == "1" ]]; then
   echo "==> Database locked; skipping SolidQueue until the recovery passphrase unlocks encrypted data."
@@ -176,8 +180,10 @@ cleanup() {
   fi
   if [[ -n "$JOBS_PID" ]]; then
     echo "==> Shutting down SolidQueue (PID $JOBS_PID)..."
-    kill "$JOBS_PID" 2>/dev/null || true
-    wait "$JOBS_PID" 2>/dev/null || true
+    kill -TERM "$JOBS_PID" 2>/dev/null || true
+    # TERM lets the supervisor drain its forks; stragglers get KILL after 20s
+    idea_app_kill_stale "$APP_DIR"
+    rm -f tmp/pids/solid_queue.pid
   fi
 }
 trap cleanup EXIT INT TERM
