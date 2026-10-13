@@ -80,6 +80,11 @@ export default class extends Controller {
     document.removeEventListener("turbo:before-stream-render", this._onBeforeStreamRender)
   }
 
+  // Optimistically drop the "new download" dot; the server clears opened_at on open.
+  markSeen(event) {
+    event.currentTarget.closest(".kb-file-row")?.classList.remove("is-new")
+  }
+
   show(event) {
     event.preventDefault()
     event.stopPropagation()

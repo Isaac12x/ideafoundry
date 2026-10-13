@@ -3,7 +3,7 @@
   editing_src = local_assigns[:editing_src]
   editing_rel = local_assigns[:editing_rel]
 %>
-<% tree.sort.each do |name, node| %>
+<% tree.each do |name, node| %>
   <% if node[:type] == :dir %>
     <% favorite = node[:preference]&.favorite? %>
     <% editing = editing_rel.present? && editing_src == folder_index && editing_rel == node[:rel] %>
@@ -57,6 +57,7 @@
                  <%= "hidden" unless editing %>
                  data-action="keydown->kb-tree#nameKeydown blur->kb-tree#nameCommit">
         </span>
+        <% if node[:has_new] %><span class="kb-new-dot kb-new-dot--dir" aria-hidden="true" title="New download inside"></span><span class="sr-only">New download inside</span><% end %>
         <button type="button"
                 class="kb-node-star kb-favorite-button <%= 'is-favorite' if favorite %>"
                 aria-label="<%= favorite ? 'Remove from favourites' : 'Add to favourites' %>"
@@ -93,7 +94,7 @@
       file_url = kb_file_path(file: node[:rel], src: folder_index)
       display_name = File.basename(node[:rel])
     %>
-    <div class="kb-node kb-file-row <%= 'is-active' if active %>" draggable="true"
+    <div class="kb-node kb-file-row <%= 'is-active' if active %> <%= 'is-new' if node[:new] %>" draggable="true"
          role="treeitem" tabindex="-1" aria-label="<%= display_name %>" aria-selected="<%= active ? 'true' : 'false' %>"<%= ' aria-current="page"'.html_safe if active %>
          data-action="contextmenu->kb-tree#show dragstart->kb-tree#dragStart dragend->kb-tree#dragEnd"
          data-kb-tree-type-param="file"
@@ -110,7 +111,7 @@
               draggable: "false",
               data: {
                 turbo_frame: "kb-content",
-                action: "click->kb-notes#trackFile",
+                action: "click->kb-notes#trackFile click->kb-tree#markSeen",
                 "kb-notes-file-param": node[:rel],
                 "kb-notes-src-param": folder_index,
               },
@@ -121,6 +122,7 @@
                <%= "hidden" unless editing %>
                data-action="keydown->kb-tree#nameKeydown blur->kb-tree#nameCommit">
       </span>
+      <% if node[:new] %><span class="kb-new-dot" aria-hidden="true"></span><span class="sr-only">New</span><% end %>
       <button type="button"
               class="kb-node-star kb-favorite-button <%= 'is-favorite' if favorite %>"
               aria-label="<%= favorite ? 'Remove from favourites' : 'Add to favourites' %>"

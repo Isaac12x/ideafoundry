@@ -1,6 +1,8 @@
 module Kb
   class TreeBuilder
     CACHE_GENERATION_KEY = "kb/tree/generation"
+    SORT_MODES = %w[name_asc name_desc type_asc type_desc date_asc date_desc].freeze
+    DEFAULT_SORT = "name_asc".freeze
 
     class << self
       def build(user)
@@ -19,6 +21,43 @@ module Kb
       def cache_generation_key(user_id)
         "#{CACHE_GENERATION_KEY}/#{user_id}"
       end
+
+      def sort_mode_for(user)
+        mode = user.settings&.dig("kb", "sort")
+        SORT_MODES.include?(mode) ? mode : DEFAULT_SORT
+      end
+
+      # Reorders every sibling group in place: download/job placeholders first,
+      # then favourites, then the rest, each ordered by mode ("name_asc", ...).
+      def sort_tree(tree, mode = DEFAULT_SORT)
+        mode = DEFAULT_SORT unless SORT_MODES.include?(mode)
+        field, direction = mode.split("_")
+        groups = tree.partition { |_, node| %i[download job].include?(node[:type]) }
+        placeholders, entries = groups
+        favorites, others = entries.partition { |_, node| node[:preference]&.favorite? }
+        ordered = [ favorites, others ].flat_map do |group|
+          sorted = group.sort_by { |name, node| sort_key(field, name, node) }
+          direction == "desc" ? sorted.reverse : sorted
+        end
+        sorted_pairs = placeholders + ordered
+        tree.replace(sorted_pairs.to_h)
+        tree.each_value { |node| sort_tree(node[:children], mode) if node[:type] == :dir }
+        tree
+      end
+
+      private
+
+      def sort_key(field, name, node)
+        natural = name.downcase.scan(/\d+|\D+/).map { |part| part.match?(/\A\d/) ? [ 0, part.to_i ] : [ 1, part ] }
+        case field
+        when "type"
+          [ node[:type] == :dir ? 0 : 1, node[:type] == :dir ? "" : File.extname(name).downcase, natural, name ]
+        when "date"
+          [ node[:mtime].to_f, natural, name ]
+        else
+          [ natural, name ]
+        end
+      end
     end
 
     def initialize(user)
@@ -34,6 +73,7 @@ module Kb
       default_folder_preference = preferences.find(&:default_folder?)
       downloads_by_source = active_downloads_by_source(sources)
       jobs_by_source = user.kb_fs_jobs.visible_in_tree.recent.group_by(&:source_path)
+      unseen = unseen_download_keys
 
       sources.each_with_index.map do |source, index|
         source_path = File.expand_path(source[:path])
@@ -45,8 +85,10 @@ module Kb
           preferences_by_key
         )
         annotate_projects(tree, source_path)
+        mark_unseen(tree, source_path, unseen)
         inject_downloads(tree, downloads_by_source[source_path] || [])
         inject_jobs(tree, jobs_by_source[source_path] || [])
+        self.class.sort_tree(tree, sort_mode)
 
         {
           index: index,
@@ -68,9 +110,13 @@ module Kb
 
     attr_reader :user
 
+    def sort_mode
+      self.class.sort_mode_for(user)
+    end
+
     def cached_filesystem_entries(base)
       generation = self.class.cache_generation(user.id)
-      Rails.cache.fetch([ "kb/tree/fs-v1", user.id, base, generation ]) do
+      Rails.cache.fetch([ "kb/tree/fs-v2", user.id, base, generation ]) do
         scan_filesystem_entries(base)
       end
     end
@@ -87,9 +133,9 @@ module Kb
         next if hidden_path?(rel)
 
         if File.directory?(path)
-          dirs << rel
+          dirs << { rel: rel, mtime: File.mtime(path).to_f }
         elsif File.file?(path)
-          files << { rel: rel, abs: path }
+          files << { rel: rel, abs: path, mtime: File.mtime(path).to_f }
         end
       end
       { files: files, dirs: dirs }
@@ -101,8 +147,8 @@ module Kb
 
     def build_nested_tree(files, dirs, source_path, preferences)
       root = {}
-      dirs.each do |relative_path|
-        dir_node_for(root, relative_path.split("/"), source_path, preferences)
+      dirs.each do |dir|
+        dir_node_for(root, dir[:rel].split("/"), source_path, preferences)[:mtime] = dir[:mtime]
       end
       files.each do |file|
         parts = file[:rel].split("/")
@@ -115,6 +161,7 @@ module Kb
           type: :file,
           rel: file[:rel],
           abs: file[:abs],
+          mtime: file[:mtime],
           preference: preferences[[ source_path, file[:rel], "file" ]]
         }
       end
@@ -152,6 +199,25 @@ module Kb
         node[:private] = true if private_here
         annotate_projects(node[:children], base, private_here) if node[:type] == :dir
       end
+    end
+
+    # Set of [source_path, file_rel] for finished downloads not opened yet.
+    def unseen_download_keys
+      user.kb_downloads.where(status: "done", opened_at: nil).where.not(filename: [ nil, "" ])
+          .pluck(:source_path, :dir, :filename)
+          .to_set { |path, dir, name| [ path && File.expand_path(path), dir.present? ? File.join(dir, name) : name ] }
+    end
+
+    # Flags unseen file nodes (node[:new]) and their ancestor dirs (node[:has_new]).
+    def mark_unseen(children, source_path, unseen)
+      return false if unseen.empty?
+
+      children.values.count do |node|
+        case node[:type]
+        when :file then node[:new] = true if unseen.include?([ source_path, node[:rel] ])
+        when :dir then node[:has_new] = true if mark_unseen(node[:children], source_path, unseen)
+        end
+      end.positive?
     end
 
     def inject_downloads(tree, downloads)

@@ -190,6 +190,39 @@ class KbControllerTest < ActionDispatch::IntegrationTest
     end
   end
 
+  test "finished download shows a new dot until its file is opened" do
+    use_isolated_kb_folder
+    FileUtils.mkdir_p(File.join(@kb_dir, "docs"))
+    File.write(File.join(@kb_dir, "docs", "fresh.md"), "# Fresh")
+    File.write(File.join(@kb_dir, "old.md"), "# Old")
+    base = { user: @user, source_index: 0, url: "https://example.com/x", status: "done", source_path: File.expand_path(@kb_dir) }
+    fresh = KbDownload.create!(base.merge(dir: "docs", filename: "fresh.md"))
+    KbDownload.create!(base.merge(filename: "old.md", opened_at: 1.day.ago))
+
+    get kb_path
+    assert_select ".kb-file-row.is-new", count: 1
+    assert_select ".kb-file-row.is-new .kb-file-link", text: "fresh.md"
+    assert_select ".kb-dir-header .kb-new-dot--dir", count: 1
+
+    get kb_file_path(src: 0, file: "docs/fresh.md")
+    assert_response :success
+    assert_not_nil fresh.reload.opened_at
+
+    get kb_path
+    assert_select ".kb-new-dot", count: 0
+  end
+
+  test "sort persists a whitelisted mode and rejects others" do
+    patch kb_sort_path(mode: "date_desc"), as: :turbo_stream
+
+    assert_response :success
+    assert_equal "date_desc", @user.reload.settings.dig("kb", "sort")
+
+    patch kb_sort_path(mode: "bogus"), as: :turbo_stream
+
+    assert_equal "date_desc", @user.reload.settings.dig("kb", "sort")
+  end
+
   private
 
   # Isolated per-test KB folder as src 0, so file ops never touch the shared
