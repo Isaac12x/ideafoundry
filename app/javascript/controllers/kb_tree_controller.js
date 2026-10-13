@@ -80,6 +80,11 @@ export default class extends Controller {
     document.removeEventListener("turbo:before-stream-render", this._onBeforeStreamRender)
   }
 
+  // Optimistically drop the "new download" dot; the server clears opened_at on open.
+  markSeen(event) {
+    event.currentTarget.closest(".kb-file-row")?.classList.remove("is-new")
+  }
+
   show(event) {
     event.preventDefault()
     event.stopPropagation()
@@ -428,6 +433,7 @@ export default class extends Controller {
   promptInputChanged() {
     if (!this.hasFormatTarget) return
     this.formatTarget.hidden = !/^https?:\/\/\S+$/i.test(this.promptInputTarget.value.trim())
+    this._keepMenuOnScreen()
   }
 
   promptSubmit(event) {
@@ -437,7 +443,9 @@ export default class extends Controller {
 
     const node = this._node
     const fields = { src: node.src, dir: this._targetDir(node), name, kind: "file" }
-    if (this.hasFormatTarget && !this.formatTarget.hidden) fields.format = this.formatTarget.value
+    if (this.hasFormatTarget && !this.formatTarget.hidden) {
+      fields.format = this.formatTarget.querySelector("input:checked")?.value || "auto"
+    }
     this._submitForm(this.createUrlValue, "post", fields)
   }
 
@@ -648,12 +656,26 @@ export default class extends Controller {
   _promptFor() {
     this.itemsTarget.hidden = true
     this.promptTarget.hidden = false
-    if (this.hasFormatTarget) this.formatTarget.hidden = true
+    if (this.hasFormatTarget) {
+      this.formatTarget.hidden = true
+      this.formatTarget.querySelector('input[value="auto"]').checked = true
+    }
 
     const input = this.promptInputTarget
     input.value = ""
     input.placeholder = "Paste a link to download"
+    this._keepMenuOnScreen()
     input.focus()
+  }
+
+  // The prompt is wider than the item list the menu was positioned for.
+  _keepMenuOnScreen() {
+    const menu = this.menuTarget
+    const rect = menu.getBoundingClientRect()
+    const dx = Math.max(0, rect.right - (window.innerWidth - 8))
+    const dy = Math.max(0, rect.bottom - (window.innerHeight - 8))
+    menu.style.left = `${parseFloat(menu.style.left) - dx}px`
+    menu.style.top = `${parseFloat(menu.style.top) - dy}px`
   }
 
   _targetDir(node) {

@@ -72,6 +72,7 @@
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Add folder
           <% end %>
+          <%= render "kb/sort", mode: Kb::TreeBuilder.sort_mode_for(@user) %>
         </div>
       </aside>
 
@@ -219,12 +220,16 @@
       <input type="text" class="kb-context-menu-input" autocomplete="off"
              data-kb-tree-target="promptInput"
              data-action="input->kb-tree#promptInputChanged" />
-      <select class="kb-context-menu-format" data-kb-tree-target="format" hidden>
-        <option value="auto">Auto (download link)</option>
-        <option value="page">Web page (reader PDF)</option>
-        <option value="video">Video (mp4)</option>
-        <option value="audio">Audio (mp3)</option>
-      </select>
+      <%# Auto sniffs the link server-side (article -> PDF, video site -> mp4); chips only override it. %>
+      <div class="kb-format-chips" role="radiogroup" aria-label="Save as" data-kb-tree-target="format" hidden>
+        <span class="kb-format-chips__label">Save as</span>
+        <% [ %w[auto Auto], %w[page Page], %w[video Video], %w[audio Audio] ].each do |value, label| %>
+          <label class="kb-format-chip">
+            <input type="radio" name="kb_download_format" value="<%= value %>" <%= "checked" if value == "auto" %>>
+            <span><%= label %></span>
+          </label>
+        <% end %>
+      </div>
     </form>
   </div>
 
