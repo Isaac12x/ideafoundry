@@ -2,15 +2,14 @@
   "compilerOptions": {
     "target": "es2020",
     "module": "esnext",
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "jsx": "react-jsx",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "outDir": "./app/assets/builds",
-    "baseUrl": ".",
     "paths": {
-      "*": ["app/javascript/*"]
+      "*": ["./app/javascript/*"]
     }
   },
   "include": ["app/javascript/**/*"]
