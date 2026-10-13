@@ -254,6 +254,7 @@ Rails.application.routes.draw do
   post "knowledge-base/fs/open", to: "kb#fs_open", as: :kb_fs_open
   delete "knowledge-base/fs", to: "kb#fs_delete", as: :kb_fs_delete
   get "knowledge-base/tree", to: "kb#tree", as: :kb_tree
+  patch "knowledge-base/sort", to: "kb#sort", as: :kb_sort
   resources :kb_annotations, path: "knowledge-base/annotations", only: [ :index, :create, :update, :destroy ]
   get   "knowledge-base/projects", to: "kb#project_show", as: :kb_project
   patch "knowledge-base/projects", to: "kb#project_update"

@@ -580,6 +580,14 @@ iOSInjectionProject/
 *.wasm
 *.wat
 *.xhtml
+# Added by code-review-graph
+.code-review-graph/
+graphify-out/
+.claude/worktrees/
+.claude/settings.json.bak
+
+.kiro/
+
 
 # App source: the generic web-file ignores above must not hide Rails assets/controllers
 !app/javascript/**/*.js
