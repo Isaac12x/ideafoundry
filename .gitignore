@@ -580,3 +580,8 @@ iOSInjectionProject/
 *.wasm
 *.wat
 *.xhtml
+# Added by code-review-graph
+.code-review-graph/
+graphify-out/
+.claude/worktrees/
+.claude/settings.json.bak
