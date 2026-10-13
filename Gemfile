@@ -53,6 +53,7 @@ gem "actiontext", "~> 8.1.4"
 
 # Image processing for Active Storage variants
 gem "image_processing", "~> 2.2"
+gem "ruby-vips", "~> 2.3"
 
 # ZIP file handling for exports
 gem "rubyzip", "~> 3.7"
