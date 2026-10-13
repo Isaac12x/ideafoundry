@@ -41,7 +41,7 @@
     <div data-tabs-target="panel" data-tab-panel="graph" class="hidden">
       <div class="topology-graph-wrapper"
            data-controller="topology-graph"
-           <%= tag.attributes(topology_graph_stimulus_values.merge(
+           <%= tag.attributes(data: topology_graph_stimulus_values.merge(
              topology_graph_url_value: graph_data_topologies_path(format: :json),
              topology_graph_show_ideas_value: true
            )) %>>
