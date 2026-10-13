@@ -585,3 +585,5 @@ iOSInjectionProject/
 graphify-out/
 .claude/worktrees/
 .claude/settings.json.bak
+
+.kiro/
