@@ -1,12 +1,16 @@
 #!/bin/zsh
 # Sourced by start_idea_app.sh. Stops leftover SolidQueue/Puma processes of THIS
 # installation only: matched by process title AND cwd == APP_DIR, never by pattern alone.
-# Usage: idea_app_kill_stale "$APP_DIR" [exclude_pid ...]
+# Puma is matched only on the production PORT, so a `bin/dev` server (port 3000) from the
+# same checkout survives. SolidQueue is matched by cwd alone: Procfile.dev never starts jobs
+# and config/puma.rb only runs it with SOLID_QUEUE_IN_PUMA, so dev has none of its own.
+# (macOS `ps -E` can't be relied on to filter by RAILS_ENV, hence not used.)
+# Usage: idea_app_kill_stale "$APP_DIR" "$PORT" [exclude_pid ...]
 idea_app_kill_stale() {
-  local app_dir="$1"; shift
+  local app_dir="$1" port="$2"; shift 2
   local -a skip=($$ $PPID "$@") pids
   local pid
-  for pid in $(pgrep -f 'solid-queue-|^puma '); do
+  for pid in $(pgrep -f "solid-queue-|^puma .*:${port}\\)"); do
     (( ${skip[(Ie)$pid]} )) && continue
     [[ "$(lsof -a -d cwd -p "$pid" -Fn 2>/dev/null | sed -n 's/^n//p')" == "$app_dir" ]] && pids+=($pid)
   done
