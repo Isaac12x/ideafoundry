@@ -1,6 +1,6 @@
 source "https://rubygems.org"
 
-ruby "3.4.5"
+ruby "4.0.7"
 
 # Bundle edge Rails instead: gem "rails", github: "rails/rails", branch: "main"
 gem "rails", "~> 8.1.4"
@@ -52,7 +52,8 @@ gem "actionmailbox", "~> 8.1.4"
 gem "actiontext", "~> 8.1.4"
 
 # Image processing for Active Storage variants
-gem "image_processing", "~> 1.2"
+gem "image_processing", "~> 2.2"
+gem "ruby-vips", "~> 2.3"
 
 # ZIP file handling for exports
 gem "rubyzip", "~> 3.7"
@@ -64,7 +65,7 @@ gem "kaminari"
 gem "sha3"
 
 # Local QR code rendering for authenticator app setup
-gem "rqrcode", "~> 2.2"
+gem "rqrcode", "~> 3.2"
 
 # Resend for email delivery
 gem "resend"
@@ -79,7 +80,7 @@ gem "tzinfo-data", platforms: %i[ mswin mswin64 mingw x64_mingw jruby ]
 gem "bootsnap", require: false
 
 # Formula evaluation for napkin calculations
-gem "dentaku", "~> 3.5"
+gem "dentaku", "~> 4.0"
 
 
 
@@ -105,7 +106,8 @@ end
 group :test do
   # Use system testing [https://guides.rubyonrails.org/testing.html#system-testing]
   gem "capybara"
-  gem "minitest", "~> 5.25"
+  gem "minitest", "~> 6.0"
+  gem "minitest-mock" # extracted from minitest 6
   gem "selenium-webdriver"
   # Generate .xlsx fixtures for KB rendering tests (roo reads, caxlsx writes)
   gem "caxlsx"

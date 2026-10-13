@@ -7,14 +7,14 @@
     "verify:excalidraw-local-only": "node scripts/check_excalidraw_bundle.mjs"
   },
   "dependencies": {
-    "3d-force-graph": "^1.73.4",
+    "3d-force-graph": "^1.80.1",
     "@excalidraw/excalidraw": "0.18.0-143b5b6",
-    "@rails/actioncable": "^7.0.0",
-    "hyperformula": "^3.2.0",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "three": "^0.183.0",
-    "three-spritetext": "^1.9.0"
+    "@rails/actioncable": "^8.1.400",
+    "hyperformula": "^3.5.0",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "three": "^0.186.1",
+    "three-spritetext": "^1.10.0"
   },
   "overrides": {
     "dompurify": "3.4.12",
@@ -30,9 +30,9 @@
     "nanoid": "5.0.9"
   },
   "devDependencies": {
-    "@types/react": "^18.3.0",
-    "@types/react-dom": "^18.3.0",
-    "esbuild": "^0.28.1",
-    "typescript": "^5.4.0"
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "esbuild": "^0.28.2",
+    "typescript": "^7.0.2"
   }
 }
