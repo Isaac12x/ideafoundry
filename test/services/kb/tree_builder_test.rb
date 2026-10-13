@@ -41,4 +41,26 @@ class Kb::TreeBuilderTest < ActiveSupport::TestCase
       end
     end
   end
+
+  test "sort_tree puts favourites first and orders by mode" do
+    fav = Struct.new(:favorite?).new(true)
+    tree = lambda do
+      {
+        "b.md" => { type: :file, mtime: 1 },
+        "A.txt" => { type: :file, mtime: 3 },
+        "z" => { type: :dir, mtime: 2, children: { "y" => { type: :file }, "x" => { type: :file } } },
+        "f2.md" => { type: :file, mtime: 0, preference: fav },
+        "~job-1" => { type: :job }
+      }
+    end
+    order = ->(mode) { Kb::TreeBuilder.sort_tree(tree.call, mode).keys }
+
+    assert_equal %w[~job-1 f2.md A.txt b.md z], order.("name_asc")
+    assert_equal %w[~job-1 f2.md z b.md A.txt], order.("name_desc")
+    assert_equal %w[~job-1 f2.md z b.md A.txt], order.("type_asc")
+    assert_equal %w[~job-1 f2.md A.txt b.md z], order.("type_desc")
+    assert_equal %w[~job-1 f2.md A.txt z b.md], order.("date_desc")
+    assert_equal %w[~job-1 f2.md b.md z A.txt], order.("date_asc")
+    assert_equal %w[x y], Kb::TreeBuilder.sort_tree(tree.call, "name_asc")["z"][:children].keys
+  end
 end
