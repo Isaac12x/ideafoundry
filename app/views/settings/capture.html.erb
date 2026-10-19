@@ -1,0 +1,58 @@
+<%= render 'settings/upgrade_bar' %>
+<div class="settings-container capture-page">
+  <div class="page-header">
+    <h2>Chrome Capture</h2>
+    <%= link_to settings_path, class: "btn btn-sm" do %>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      Back to Settings
+    <% end %>
+  </div>
+
+  <section class="tab-toggle-section">
+    <header class="tab-toggle-section__header">
+      <h3>Extension setup</h3>
+      <p>Point the extension at this app.</p>
+    </header>
+    <div class="capture-section-body">
+      <p class="config-description">
+        Set the extension's queue address to <code><%= request.base_url %>/api/v1/capture</code>
+        and use a token from <%= link_to "API Keys", settings_api_keys_path %>.
+        ChatGPT and Claude conversation links pasted into the KB's "Download from URL…" are sent to the extension, which saves them into the folder you chose.
+      </p>
+    </div>
+  </section>
+
+  <section class="tab-toggle-section">
+    <header class="tab-toggle-section__header">
+      <h3>Recent captures</h3>
+      <p>Your last 10 capture requests.</p>
+    </header>
+    <% if @capture_jobs.any? %>
+      <div class="export-history">
+        <% @capture_jobs.each do |job| %>
+          <div class="export-row">
+            <div class="export-row-info">
+              <span class="capture-job-url" title="<%= job.url %>"><%= job.url %></span>
+              <span class="export-badge"><%= job.file_format %></span>
+              <span class="export-badge <%= job.state %>"><%= job.state.capitalize %></span>
+              <% if job.dir.present? %>
+                <span class="export-meta">in <%= job.dir %></span>
+              <% end %>
+              <% if job.filename.present? %>
+                <span class="export-meta"><%= job.filename %></span>
+              <% end %>
+              <% if job.error.present? %>
+                <span class="export-error"><%= job.error %></span>
+              <% end %>
+              <span class="export-meta"><%= time_ago_in_words(job.created_at) %> ago</span>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    <% else %>
+      <div class="empty-state-small">
+        <p>No captures yet. Paste a ChatGPT or Claude link into KB "Download from URL…"; the extension checks about every 30 seconds.</p>
+      </div>
+    <% end %>
+  </section>
+</div>

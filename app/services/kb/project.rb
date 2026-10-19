@@ -1,10 +1,24 @@
 module Kb
   # A KB folder marked with .kb-project.yml. Holds research entries + Tests/.
   class Project < YamlNode
+    include Findings
+
     META_FILE = ".kb-project.yml".freeze
-    FIELDS = %w[goal status private conclusion].freeze
+    FIELDS = %w[goal brief status private conclusion concluded_on stage stages].freeze
+    ROLES = %w[working reference output].freeze
+    DEFAULT_STAGES = %w[Frame Research Test Conclude].freeze
+    MAX_STAGES = 8
+    MAX_STAGE_LEN = 40
+    MAX_NOTE = 280
     STATUSES = %w[active paused concluded].freeze
     TESTS_DIR = "Tests".freeze
+    # First match wins; word-start only ("testing" hits, "contest" doesn't).
+    STAGE_MODES = {
+      "frame" => /\b(?:frame|defin|scope|question|brief)/,
+      "research" => /\b(?:research|read|explor|learn|survey)/,
+      "test" => /\b(?:test|experiment|trial|build|prototype|try)/,
+      "conclude" => /\b(?:conclu|done|wrap|result|report|decid|ship)/
+    }.freeze
 
     class << self
       # rel is the project folder.
@@ -52,6 +66,13 @@ module Kb
         project
       end
 
+      # Array or newline-separated String -> clean unique list (<= MAX_STAGES).
+      def normalize_stages(value)
+        items = value.is_a?(String) ? value.split("\n") : Array(value)
+        items.map { |s| s.to_s.strip }.reject { |s| s.blank? || s.length > MAX_STAGE_LEN }
+             .uniq(&:downcase).first(MAX_STAGES)
+      end
+
       def cast_bool(value)
         ActiveModel::Type::Boolean.new.cast(value) ? true : false
       end
@@ -59,17 +80,101 @@ module Kb
 
     def goal = meta["goal"].to_s
     def conclusion = meta["conclusion"].to_s
+    def brief = meta["brief"].to_s
+
+    def concluded_on
+      value = meta["concluded_on"]
+      value.is_a?(Date) ? value : Date.iso8601(value.to_s)
+    rescue Date::Error
+      nil
+    end
     def status = STATUSES.include?(meta["status"]) ? meta["status"] : "active"
     # ponytail: missing/malformed => private (fail closed)
     def private? = meta["private"] == false ? false : true
 
+    # Falls back to the defaults when missing/invalid.
+    def stages
+      list = self.class.normalize_stages(meta["stages"])
+      list.presence || DEFAULT_STAGES
+    end
+
+    def stage
+      stages.include?(meta["stage"]) ? meta["stage"] : stages.first
+    end
+
+    # "frame" | "research" | "test" | "conclude": drives the page layout.
+    def stage_mode(stage = self.stage)
+      by_name = STAGE_MODES.find { |_, pattern| stage.to_s.downcase.match?(pattern) }
+      return by_name.first if by_name
+
+      index = stages.index(stage)
+      return "frame" if index == 0
+      index == stages.size - 1 ? "conclude" : "research"
+    end
+
+    # Project first, then each test; only owners with findings.
+    def all_findings
+      ([ self ] + tests).filter_map do |owner|
+        items = owner.findings
+        { owner: owner, items: items } if items.any?
+      end
+    end
+
+    def material(name)
+      entry = meta["materials"].is_a?(Hash) ? meta["materials"][name.to_s] : nil
+      entry = {} unless entry.is_a?(Hash)
+      role = ROLES.include?(entry["role"]) ? entry["role"] : nil
+      { "role" => role, "stage" => stages.include?(entry["stage"]) ? entry["stage"] : "", "note" => entry["note"].to_s }
+    end
+
     def update!(attrs)
       attrs = attrs.to_h.stringify_keys
+      if attrs.key?("stages")
+        list = self.class.normalize_stages(attrs["stages"])
+        raise ArgumentError, "Add at least one valid stage." if list.empty?
+
+        attrs["stages"] = list
+        current = attrs.key?("stage") ? attrs["stage"].to_s : meta["stage"]
+        attrs["stage"] = list.include?(current) ? current : list.first
+      elsif attrs.key?("stage") && !stages.include?(attrs["stage"].to_s)
+        raise ArgumentError, "Invalid stage."
+      end
       if attrs.key?("status") && !STATUSES.include?(attrs["status"].to_s)
         raise ArgumentError, "Invalid status."
       end
       attrs["private"] = self.class.cast_bool(attrs["private"]) if attrs.key?("private")
+      attrs["concluded_on"] = concluded_stamp(attrs["status"]) if attrs.key?("status")
       super(attrs)
+    end
+
+    # Only way to write materials (not in FIELDS). All blank drops the key.
+    def update_material!(name, role: nil, stage: nil, note: nil)
+      raise ArgumentError, "Entry not found." unless material_child?(name)
+
+      role, stage, note = role.to_s, stage.to_s, note.to_s.strip.first(MAX_NOTE)
+      raise ArgumentError, "Invalid role." unless role.blank? || ROLES.include?(role)
+      raise ArgumentError, "Invalid stage." unless stage.blank? || stages.include?(stage)
+
+      all = materials_hash
+      if role.blank? && stage.blank? && note.blank?
+        all.delete(name)
+      else
+        all[name] = { "role" => role, "stage" => stage, "note" => note }
+      end
+      write_meta!(meta.merge("materials" => all))
+      @meta = nil
+      self
+    end
+
+    # Keeps metadata attached when a direct child is renamed on disk.
+    def rename_material!(old, new)
+      all = materials_hash
+      return self unless all.key?(old.to_s) && self.class.valid_name?(new.to_s)
+
+      all[new.to_s] = all.delete(old.to_s)
+      write_meta!(meta.merge("materials" => all))
+      @meta = nil
+      self
     end
 
     def tests
@@ -85,6 +190,24 @@ module Kb
     end
 
     private
+
+    # Keeps the original date while concluded; clears it otherwise.
+    def concluded_stamp(status)
+      return nil unless status.to_s == "concluded"
+
+      meta["concluded_on"].presence || Date.current.iso8601
+    end
+
+    def materials_hash
+      meta["materials"].is_a?(Hash) ? meta["materials"].dup : {}
+    end
+
+    def material_child?(name)
+      return false if name.to_s == TESTS_DIR || !self.class.valid_name?(name.to_s)
+
+      path = File.join(abs, name.to_s)
+      File.exist?(path) && !File.symlink?(path)
+    end
 
     def tests_abs
       dir = File.join(abs, TESTS_DIR)

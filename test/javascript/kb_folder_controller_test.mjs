@@ -23,6 +23,29 @@ test("collapse and uncollapse all update every nested folder and persist the sta
   assert.deepEqual(JSON.parse(storage.getItem("kb-tree-collapsed")), [])
 })
 
+test("groups that start collapsed store only a deviation from the default", async () => {
+  const storage = memoryStorage()
+  const KbFolderController = await loadController(storage)
+  const group = folderGroup("0:proj/Tests")
+  group.dataset = { kbFolderDefaultOpenValue: "false" }
+  const controller = new KbFolderController()
+  controller.element = group
+  controller.defaultOpenValue = false
+
+  controller.connect()
+  assert.equal(group.classList.contains("is-collapsed"), true)
+
+  controller.toggle({ stopPropagation() {} })
+  assert.equal(group.classList.contains("is-collapsed"), false)
+  assert.deepEqual(JSON.parse(storage.getItem("kb-tree-collapsed")), ["0:proj/Tests"])
+
+  controller.connect()
+  assert.equal(group.classList.contains("is-collapsed"), false)
+
+  controller.toggle({ stopPropagation() {} })
+  assert.deepEqual(JSON.parse(storage.getItem("kb-tree-collapsed")), [])
+})
+
 async function loadController(localStorage) {
   const source = await readFile(
     new URL("../../app/javascript/controllers/kb_folder_controller.js", import.meta.url),

@@ -10,8 +10,9 @@ module Kb
       end
 
       def bust_cache!(user)
-        generation_key = cache_generation_key(user.id)
-        Rails.cache.write(generation_key, cache_generation(user.id) + 1)
+        key = cache_generation_key(user.id)
+        # increment is atomic; it returns nil when the key is missing (or the store can't), so seed it then.
+        Rails.cache.increment(key) || Rails.cache.write(key, cache_generation(user.id) + 1)
       end
 
       def cache_generation(user_id)
@@ -193,12 +194,19 @@ module Kb
 
         project = node[:type] == :dir ? Kb::Project.at(base, node[:rel]) : nil
         if project
-          node[:project] = { id: project.id, status: project.status, private: project.private? }
+          node[:project] = { id: project.id, status: project.status, private: project.private?,
+                             stage: project.stage, stage_index: project.stages.index(project.stage) || 0,
+                             stage_count: project.stages.size, roles: material_roles(project, node[:children]) }
         end
         private_here = inherited_private || project&.private? || false
         node[:private] = true if private_here
         annotate_projects(node[:children], base, private_here) if node[:type] == :dir
       end
+    end
+
+    # { child_name => role or nil } for the project's direct children.
+    def material_roles(project, children)
+      children.keys.to_h { |name| [ name, project.material(name)["role"] ] }
     end
 
     # Set of [source_path, file_rel] for finished downloads not opened yet.

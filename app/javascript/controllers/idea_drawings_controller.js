@@ -1,4 +1,5 @@
 import { Controller } from "@hotwired/stimulus";
+import { confirmDialog, alertDialog } from "lib/app_dialog"
 import { loadExcalidrawAssets } from "lib/excalidraw_loader";
 
 // Manages drawings within the idea form: opens an Excalidraw modal to
@@ -91,7 +92,7 @@ export default class extends Controller {
   async delete(event) {
     event.preventDefault();
     const btn = event.currentTarget;
-    const confirmed = await window.AppDialog?.confirm("Delete this drawing? This cannot be undone.", {
+    const confirmed = await confirmDialog("Delete this drawing? This cannot be undone.", {
       title: "Delete drawing?",
       confirmLabel: "Delete drawing",
       variant: "danger",
@@ -106,7 +107,7 @@ export default class extends Controller {
         headers: { "Accept": "application/json", "X-CSRF-Token": this._csrf() },
       });
     } catch {
-      window.AppDialog?.alert("The drawing could not be deleted. Try again.", { title: "Delete failed", confirmLabel: "Got it" });
+      alertDialog("The drawing could not be deleted. Try again.", { title: "Delete failed", confirmLabel: "Got it" });
       return;
     }
     if (res.ok) {

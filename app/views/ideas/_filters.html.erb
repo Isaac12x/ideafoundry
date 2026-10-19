@@ -11,6 +11,7 @@
 <div class="filters-panel"
      data-controller="auto-filter">
   <%= form_with url: ideas_path, method: :get, data: { turbo_frame: "ideas_list", auto_filter_target: "form" } do |form| %>
+    <%= hidden_field_tag :filters, 1, id: nil %>
     <div class="filter-top-bar">
       <div class="filter-search-bar">
         <%= form.search_field :search, value: params[:search], placeholder: "Search ideas...", class: "form-control", data: { auto_filter_target: "search", action: "input->auto-filter#debouncedSubmit" } %>
@@ -78,30 +79,24 @@
         </div>
 
         <div class="filter-group">
-          <%= form.label :sort_by, "Sort by" %>
-          <%= form.select :sort_by,
+          <%= form.label :sort, "Sort by" %>
+          <%= form.select :sort,
               options_for_select(
                 [
-                  ['Newest', 'created_at'],
-                  ['Recently Updated', 'updated_at'],
-                  ['Title A–Z', 'title'],
-                  ['State', 'state'],
-                  ['Score', 'score'],
-                  ['TRL', 'trl']
+                  ['Newest created', 'created_desc'],
+                  ['Oldest created', 'created_asc'],
+                  ['Recently updated', 'updated_desc'],
+                  ['Least recently updated', 'updated_asc'],
+                  ['Title A–Z', 'title_asc'],
+                  ['Title Z–A', 'title_desc'],
+                  ['Score high–low', 'score_desc'],
+                  ['Score low–high', 'score_asc'],
+                  ['TRL high–low', 'trl_desc'],
+                  ['TRL low–high', 'trl_asc'],
+                  ['State A–Z', 'state_asc'],
+                  ['State Z–A', 'state_desc']
                 ],
-                params[:sort_by] || 'score'
-              ),
-              {},
-              class: "form-control",
-              data: { action: "change->auto-filter#submit" } %>
-        </div>
-
-        <div class="filter-group">
-          <%= form.label :sort_order, "Order" %>
-          <%= form.select :sort_order,
-              options_for_select(
-                [['Descending', 'desc'], ['Ascending', 'asc']],
-                params[:sort_order] || 'desc'
+                IdeasController::IDEA_SORTS.key?(params[:sort].to_s) ? params[:sort] : 'score_desc'
               ),
               {},
               class: "form-control",
@@ -110,7 +105,7 @@
       </div>
 
       <div class="filter-actions">
-        <%= link_to "Clear", ideas_path, class: "btn btn-sm" %>
+        <%= link_to "Clear", ideas_path(reset: 1), class: "btn btn-sm", data: { turbo_frame: "_top" } %>
       </div>
     </div>
   <% end %>
