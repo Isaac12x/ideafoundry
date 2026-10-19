@@ -1,4 +1,5 @@
 import { Controller } from "@hotwired/stimulus"
+import { promptDialog, alertDialog } from "lib/app_dialog"
 import { Editor } from "@tiptap/core"
 import Document from "@tiptap/extension-document"
 import Paragraph from "@tiptap/extension-paragraph"
@@ -150,7 +151,7 @@ export default class extends Controller {
 
   async _insertLink() {
     const prev = this._editor.getAttributes("link").href || ""
-    const url = await window.AppDialog?.prompt("Enter the destination for this link. Leave it empty to remove the current link.", {
+    const url = await promptDialog("Enter the destination for this link. Leave it empty to remove the current link.", {
       title: "Add a link",
       inputLabel: "URL",
       defaultValue: prev,
@@ -189,7 +190,7 @@ export default class extends Controller {
       if (!res.ok) throw new Error("upload failed")
       ;({ url } = await res.json())
     } catch {
-      window.AppDialog?.alert("The image could not be uploaded. Check your connection and try again.", { title: "Upload failed", confirmLabel: "Got it" })
+      alertDialog("The image could not be uploaded. Check your connection and try again.", { title: "Upload failed", confirmLabel: "Got it" })
       return
     }
     if (!this._editor) return

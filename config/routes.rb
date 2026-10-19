@@ -23,6 +23,13 @@ Rails.application.routes.draw do
         resource :document, only: [ :show, :update ], controller: :idea_documents
       end
       resources :submissions, only: [ :create, :show ]
+      scope :capture, controller: :capture, as: :capture do
+        get :health
+        post "jobs", action: :create
+        post "jobs/claim", action: :claim
+        get "jobs/:id", action: :show
+        post "jobs/:id/complete", action: :complete
+      end
     end
   end
 
@@ -217,6 +224,8 @@ Rails.application.routes.draw do
   post "settings/backup/now", to: "settings#create_backup", as: :settings_backup_now
   get "settings/api_keys", to: "settings#api_keys"
   post "settings/api_keys", to: "settings#create_api_key"
+  get "settings/capture", to: "settings#capture", as: :settings_capture
+  get "settings/api_keys/:id/reveal", to: "settings#reveal_api_key", as: :settings_api_key_reveal
   delete "settings/api_keys/:id", to: "settings#destroy_api_key", as: :settings_api_key_destroy
 
   get "ideas/:idea_id/agent-skill.md", to: "idea_agent_tokens#skill", as: :idea_agent_skill
@@ -258,10 +267,14 @@ Rails.application.routes.draw do
   resources :kb_annotations, path: "knowledge-base/annotations", only: [ :index, :create, :update, :destroy ]
   get   "knowledge-base/projects", to: "kb#project_show", as: :kb_project
   patch "knowledge-base/projects", to: "kb#project_update"
+  patch "knowledge-base/projects/materials", to: "kb#project_material_update", as: :kb_project_materials
   post  "knowledge-base/projects/convert", to: "kb#project_convert", as: :kb_project_convert
   post  "knowledge-base/projects/tests", to: "kb#project_test_create", as: :kb_project_tests
   patch "knowledge-base/projects/tests", to: "kb#project_test_update"
   delete "knowledge-base/projects/tests", to: "kb#project_test_destroy"
+  post  "knowledge-base/projects/findings", to: "kb#project_finding_create", as: :kb_project_findings
+  patch "knowledge-base/projects/findings", to: "kb#project_finding_update"
+  delete "knowledge-base/projects/findings", to: "kb#project_finding_destroy"
   post  "knowledge-base/projects/runs", to: "kb#project_run_create", as: :kb_project_runs
   patch "knowledge-base/projects/runs", to: "kb#project_run_update"
   post "knowledge-base/jobs", to: "kb_fs_jobs#create", as: :kb_fs_jobs

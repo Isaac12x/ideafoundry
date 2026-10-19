@@ -1,0 +1,30 @@
+<%# Report: every finding, grouped by owner, numbered so the conclusion can cite them. %>
+<% groups = project.all_findings %>
+<% total = groups.sum { |g| g[:items].size } %>
+<%= render layout: "kb/projects/section", locals: { id: "summary", title: "Summary of findings", summary: (total.zero? ? "None recorded" : pluralize(total, "finding")), open: open, lead: lead, mode: mode, project: project } do %>
+  <% if groups.empty? %>
+    <p class="kbp-empty">Nothing recorded. Add findings under "Findings so far" or on each test, and they collect here.</p>
+  <% else %>
+    <div class="kbp-report-findings">
+      <% groups.each do |group| %>
+        <% owner = group[:owner] %>
+        <section class="kbp-fgroup">
+          <h3 class="kbp-fgroup-head">
+            <% if owner.is_a?(Kb::ProjectTest) %>
+              <a href="#<%= kb_test_dom_id(owner) %>" class="kbp-fgroup-name" data-target="<%= kb_test_dom_id(owner) %>" data-action="kb-project#jump"><%= owner.name %></a>
+              <%= render "kb/projects/verdict", verdict: owner.verdict %>
+            <% else %>
+              <span class="kbp-fgroup-name">General</span>
+            <% end %>
+          </h3>
+          <ul class="kbp-flist">
+            <% group[:items].each do |item| %>
+              <li><span class="kbp-fnum" aria-hidden="true"></span><p><%= item["text"] %></p>
+                <time class="kbp-finding-date" datetime="<%= item['at'] %>"><%= (Date.iso8601(item["at"]).strftime("%d %b %Y") rescue item["at"]) %></time></li>
+            <% end %>
+          </ul>
+        </section>
+      <% end %>
+    </div>
+  <% end %>
+<% end %>

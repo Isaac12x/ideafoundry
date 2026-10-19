@@ -1,0 +1,61 @@
+<% text = project.conclusion %>
+<% summary = text.present? ? truncate(text.gsub(/[#*_>`\[\]-]/, "").squish, length: 90) : "Not written yet" %>
+<%= render layout: "kb/projects/section", locals: { id: "conclusion", title: "Conclusion", summary: summary, open: open, lead: lead, mode: mode, project: project } do %>
+  <% if text.present? %>
+    <article class="kb-markdown rich-text-content kbp-prose kbp-conclusion"><%= render_markdown(text) %></article>
+  <% elsif mode != "conclude" %>
+    <p class="kbp-empty">The final written answer to the goal. Leave it until the Conclude stage.</p>
+  <% end %>
+  <% if text.blank? && mode == "conclude" %>
+    <%# Nothing written yet: the editor is the section, no disclosure in between. %>
+    <%= form_with url: kb_project_path, method: :patch, class: "kbp-form kbp-form--flush" do %>
+      <%= ids %>
+      <textarea name="conclusion" rows="<%= mode == 'conclude' ? 12 : 8 %>" class="kbp-input" aria-label="Conclusion (markdown)"
+                placeholder="Answer the goal in your own words: what you set out to find out, what you found, how sure you are. Cite findings as [F1]."><%= text %></textarea>
+      <div class="kbp-actions">
+        <button class="kbp-btn kbp-btn--primary">Save conclusion</button>
+        <% if mode == "conclude" %>
+          <button type="button" class="kbp-btn" data-action="kb-project#draft" data-draft="<%= kb_conclusion_draft(project) %>"
+                  title="Fill the editor with a draft: the question, each test by verdict with its findings, then general findings">Draft from findings</button>
+        <% end %>
+      </div>
+    <% end %>
+  <% else %>
+    <details class="kbp-edit">
+      <summary><%= text.present? ? "Edit conclusion" : "Write the conclusion" %></summary>
+      <%= form_with url: kb_project_path, method: :patch, class: "kbp-form kbp-form--flush" do %>
+        <%= ids %>
+        <textarea name="conclusion" rows="<%= mode == 'conclude' ? 12 : 8 %>" class="kbp-input" aria-label="Conclusion (markdown)"
+                  placeholder="Answer the goal in your own words: what you set out to find out, what you found, how sure you are. Cite findings as [F1]."><%= text %></textarea>
+        <div class="kbp-actions">
+          <button class="kbp-btn kbp-btn--primary">Save conclusion</button>
+          <% if mode == "conclude" %>
+            <button type="button" class="kbp-btn" data-action="kb-project#draft" data-draft="<%= kb_conclusion_draft(project) %>"
+                    title="Fill the editor with a draft: the question, each test by verdict with its findings, then general findings">Draft from findings</button>
+          <% end %>
+        </div>
+      <% end %>
+    </details>
+  <% end %>
+  <% if mode == "conclude" %>
+    <% if project.status == "concluded" %>
+      <%= form_with url: kb_project_path, method: :patch, class: "kbp-reopen" do %>
+        <%= ids %>
+        <%= hidden_field_tag :status, "active", id: nil %>
+        <button class="kbp-link">Reopen project</button>
+      <% end %>
+    <% else %>
+      <%= form_with url: kb_project_path, method: :patch, class: "kbp-close" do %>
+        <%= ids %>
+        <%= hidden_field_tag :status, "concluded", id: nil %>
+        <div>
+          <p class="kbp-close-title">Ready to close this project?</p>
+          <p class="kbp-close-hint">Marking it concluded stamps today's date and marks it done in the sidebar. You can reopen it any time.</p>
+          <% unsettled = kb_unsettled_tests(project) %>
+          <% if unsettled.any? %><p class="kbp-close-hint kbp-close-warn"><%= unsettled.size == 1 ? "1 test has" : "#{unsettled.size} tests have" %> no verdict and will show as open: <%= unsettled.map(&:name).to_sentence %>.</p><% end %>
+        </div>
+        <button class="kbp-btn kbp-btn--primary">Mark project concluded</button>
+      <% end %>
+    <% end %>
+  <% end %>
+<% end %>

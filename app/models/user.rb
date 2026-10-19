@@ -10,6 +10,7 @@ class User < ApplicationRecord
   has_many :build_items, dependent: :destroy
   has_many :submissions, dependent: :destroy
   has_many :api_keys, dependent: :destroy
+  has_many :capture_jobs, dependent: :destroy
   has_many :facts, dependent: :destroy
   has_many :maxims, dependent: :destroy
   has_many :agent_runs, dependent: :destroy

@@ -1,0 +1,41 @@
+<% brief = project.brief %>
+<% sections = kb_brief_sections(brief) %>
+<% state = sections.transform_values(&:present?) %>
+<% summary = if mode == "frame"
+     "#{state.values.count(true)} of 3 answered"
+   elsif brief.present?
+     truncate(brief.gsub(/[#*_>`\[\]-]/, "").squish, length: 90)
+   else
+     "Not written yet"
+   end %>
+<%= render layout: "kb/projects/section", locals: { id: "brief", title: "Brief", summary: summary, open: open, lead: lead, mode: mode, project: project } do %>
+  <% if mode == "frame" %>
+    <%# Frame is about three answers; show which ones the brief already gives. %>
+    <ol class="kbp-prompts">
+      <% KbProjectHelper::BRIEF_PROMPTS.each do |key, label, hint| %>
+        <li class="kbp-prompt<%= ' is-done' if state[key] %>">
+          <span class="kbp-prompt-mark" aria-hidden="true"><%= state[key] ? "✓" : "" %></span>
+          <span class="kbp-prompt-label"><%= label %><span class="sr-only"><%= state[key] ? " (answered)" : " (not answered yet)" %></span></span>
+          <% if state[key] %>
+            <div class="kb-markdown rich-text-content kbp-prose kbp-prompt-answer"><%= render_markdown(sections[key]) %></div>
+          <% else %>
+            <span class="kbp-prompt-hint"><%= hint %></span>
+          <% end %>
+        </li>
+      <% end %>
+    </ol>
+  <% end %>
+  <% if brief.present? && mode != "frame" %>
+    <article class="kb-markdown rich-text-content kbp-prose kbp-brief"><%= render_markdown(brief) %></article>
+  <% elsif mode != "frame" %>
+    <p class="kbp-empty">No brief yet. Switch to the Frame stage to write one.</p>
+  <% end %>
+  <details class="kbp-edit" <%= 'open' if brief.blank? && mode == "frame" %>>
+    <summary><%= brief.present? ? "Edit brief" : "Write the brief" %></summary>
+    <%= form_with url: kb_project_path, method: :patch, class: "kbp-form" do %>
+      <%= ids %>
+      <textarea name="brief" rows="12" class="kbp-input" aria-label="Brief (markdown)"><%= brief.presence || KbProjectHelper::BRIEF_TEMPLATE %></textarea>
+      <div class="kbp-actions"><button class="kbp-btn kbp-btn--primary">Save brief</button></div>
+    <% end %>
+  </details>
+<% end %>

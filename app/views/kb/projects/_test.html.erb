@@ -1,73 +1,134 @@
-<% runs = test.runs %>
+<% runs = kb_runs(test) %>
 <% table = measurement_table(runs) %>
-<article class="kbp-test">
+<% last = runs.last %>
+<% findings = test.findings.size %>
+<% tones = KbProjectHelper::TONES %>
+<% cid = kb_test_dom_id(test) %>
+<% nudge = runs.size >= 2 && test.verdict == "open" %>
+<article class="kbp-test<%= ' is-open' if open %>" id="<%= cid %>"
+         data-controller="kb-collapse" data-kb-collapse-key-value="kbp:<%= @src %>:<%= project.rel %>:<%= mode %>:test:<%= test.rel %>"
+         data-kb-collapse-open-value="<%= open %>" data-action="kb-collapse:open->kb-collapse#show">
   <header class="kbp-test-head">
-    <h3 class="kbp-test-name"><%= test.name %></h3>
-    <%= form_with url: kb_project_tests_path, method: :delete, class: "kbp-test-delete",
-          data: { action: "submit->kb-project#confirmDeleteTest", test_name: test.name, run_count: runs.size } do %>
-      <%= hidden_field_tag :src, @src, id: nil %>
-      <%= hidden_field_tag :path, test.rel, id: nil %>
-      <button class="kbp-link kbp-link--danger" aria-label="Delete test <%= test.name %>">Delete test</button>
-    <% end %>
-  </header>
-  <% if test.objective.present? %><p class="kbp-objective"><%= test.objective %></p><% end %>
-  <% if test.protocol.present? %>
-    <div class="kbp-protocol"><span class="kbp-label">Protocol</span>
-      <div class="kb-markdown rich-text-content kbp-prose"><%= render_markdown(test.protocol) %></div>
-    </div>
-  <% end %>
-  <details class="kbp-edit">
-    <summary>Edit objective &amp; protocol</summary>
-    <%= form_with url: kb_project_tests_path, method: :patch, class: "kbp-form" do %>
-      <%= hidden_field_tag :src, @src, id: nil %>
-      <%= hidden_field_tag :path, test.rel, id: nil %>
-      <%= hidden_field_tag :project, project.rel, id: nil %>
-      <label class="kbp-label">Objective</label>
-      <textarea name="objective" rows="2" class="kbp-input"><%= test.objective %></textarea>
-      <label class="kbp-label">Protocol (markdown)</label>
-      <textarea name="protocol" rows="6" class="kbp-input"><%= test.protocol %></textarea>
-      <div class="kbp-actions"><button class="kbp-btn kbp-btn--primary">Save</button></div>
-    <% end %>
-  </details>
-
-  <% if table %>
-    <div class="kbp-compare" role="region" aria-label="Measurements across runs" tabindex="0">
-      <table>
-        <thead><tr><th scope="col">Measurement</th>
-          <% table[:runs].each do |run| %><th scope="col"><time datetime="<%= run.date&.iso8601 %>"><%= run.date&.strftime("%d %b %y") || run.name %></time></th><% end %>
-        </tr></thead>
-        <tbody>
-          <% table[:rows].each do |row| %>
-            <tr><th scope="row"><%= row[:name] %></th>
-              <% row[:cells].each do |cell| %>
-                <td>
-                  <% if cell %>
-                    <span class="kbp-val"><%= cell[:value] %><% if cell[:unit].present? %> <span class="kbp-unit"><%= cell[:unit] %></span><% end %></span>
-                    <% if cell[:delta] %><span class="kbp-delta <%= cell[:delta].zero? ? 'is-flat' : (cell[:delta].positive? ? 'is-up' : 'is-down') %>"><%= cell[:delta].zero? ? "same" : format("%+g", cell[:delta]) %></span><% end %>
-                  <% else %>
-                    <span class="kbp-none">–</span>
-                  <% end %>
-                </td>
-              <% end %>
-            </tr>
-          <% end %>
-        </tbody>
-      </table>
-    </div>
-  <% end %>
-
-  <details class="kbp-edit kbp-log">
-    <summary>Log run</summary>
-    <%= render "kb/projects/run_form", test: test, run: nil, project: project %>
-  </details>
-
-  <% if runs.empty? %>
-    <p class="kbp-empty">No runs yet.</p>
-  <% else %>
-    <ol class="kbp-ledger">
-      <% runs.reverse_each do |run| %>
-        <%= render "kb/projects/run", run: run, project: project %>
+    <button type="button" class="kbp-test-toggle" aria-expanded="<%= open %>" aria-controls="<%= cid %>-body"
+            data-kb-collapse-target="toggle" data-action="kb-collapse#toggle">
+      <span class="kbp-chev" aria-hidden="true"></span>
+      <h3 class="kbp-test-name"><%= test.name %></h3>
+    </button>
+    <div class="kbp-test-ctl">
+      <%= form_with url: kb_project_tests_path, method: :patch, class: "kbp-inline" do %>
+        <%= hidden_field_tag :src, @src, id: nil %>
+        <%= hidden_field_tag :path, test.rel, id: nil %>
+        <%= hidden_field_tag :project, project.rel, id: nil %>
+        <%= render "kb/projects/stage_select", project: project, value: test.stage, label: "Stage of test #{test.name}" %>
       <% end %>
-    </ol>
-  <% end %>
+      <% if nudge %><span class="kbp-nudge">Ready for a verdict?</span><% end %>
+      <%= form_with url: kb_project_tests_path, method: :patch, class: "kbp-inline" do %>
+        <%= hidden_field_tag :src, @src, id: nil %>
+        <%= hidden_field_tag :path, test.rel, id: nil %>
+        <%= hidden_field_tag :project, project.rel, id: nil %>
+        <select name="verdict" class="kbp-pill kbp-verdict" aria-label="Verdict of test <%= test.name %>" data-tone="<%= tones[test.verdict] %>"
+                data-controller="select-menu" data-action="change->kb-project#submit">
+          <% Kb::ProjectTest::VERDICTS.each do |v| %>
+            <%= tag.option v.capitalize, value: v, selected: v == test.verdict, data: { tone: tones[v] } %>
+          <% end %>
+        </select>
+      <% end %>
+    </div>
+  </header>
+  <p class="kbp-test-line">
+    <span><%= pluralize(runs.size, "run") %></span>
+    <span><%= last ? "last #{last.date&.strftime('%d %b %Y') || last.name}" : "not run yet" %></span>
+    <span><%= pluralize(findings, "finding") %></span>
+    <% if nudge %><span class="kbp-nudge">Ready for a verdict?</span><% end %>
+    <% if test.objective.present? %><span class="kbp-test-obj"><%= truncate(test.objective.squish, length: 110) %></span><% end %>
+  </p>
+  <div class="kbp-test-body" id="<%= cid %>-body" data-kb-collapse-target="body" <%= 'hidden' unless open %>>
+    <% if test.objective.present? %>
+      <div class="kbp-objective"><span class="kbp-label">Objective</span><p><%= test.objective %></p></div>
+    <% end %>
+
+    <% if test.protocol.present? %>
+      <div class="kbp-protocol" data-controller="kb-collapse" data-kb-collapse-key-value="kbp:<%= @src %>:<%= test.rel %>:protocol"
+           data-kb-collapse-open-value="false" data-action="kb-collapse:open->kb-collapse#show">
+        <button type="button" class="kbp-subhead" aria-expanded="false" aria-controls="<%= cid %>-protocol"
+                data-kb-collapse-target="toggle" data-action="kb-collapse#toggle"><span class="kbp-chev" aria-hidden="true"></span>Protocol</button>
+        <div id="<%= cid %>-protocol" data-kb-collapse-target="body" hidden>
+          <div class="kb-markdown rich-text-content kbp-prose"><%= render_markdown(test.protocol) %></div>
+        </div>
+      </div>
+    <% end %>
+
+    <section class="kbp-block" aria-label="Runs of <%= test.name %>">
+      <h4 class="kbp-subhead kbp-subhead--static">Runs</h4>
+      <details class="kbp-edit kbp-log">
+        <summary>+ Log run</summary>
+        <%= render "kb/projects/run_form", test: test, run: nil, project: project %>
+      </details>
+
+      <% if table %>
+        <p class="kbp-caption">Measurements, oldest to newest</p>
+        <div class="kbp-compare" role="region" aria-label="Measurements across runs" tabindex="0">
+          <table>
+            <thead><tr><th scope="col">Measurement</th>
+              <% table[:runs].each do |run| %><th scope="col"><time datetime="<%= run.date&.iso8601 %>"><%= run.date&.strftime("%d %b %y") || run.name %></time></th><% end %>
+            </tr></thead>
+            <tbody>
+              <% table[:rows].each do |row| %>
+                <tr><th scope="row"><%= row[:name] %></th>
+                  <% row[:cells].each do |cell| %>
+                    <td>
+                      <% if cell %>
+                        <span class="kbp-val"><%= cell[:value] %><% if cell[:unit].present? %> <span class="kbp-unit"><%= cell[:unit] %></span><% end %></span>
+                        <% if cell[:delta] %><span class="kbp-delta <%= cell[:delta].zero? ? 'is-flat' : (cell[:delta].positive? ? 'is-up' : 'is-down') %>"><%= cell[:delta].zero? ? "same" : format("%+g", cell[:delta]) %></span><% end %>
+                      <% else %>
+                        <span class="kbp-none">–</span>
+                      <% end %>
+                    </td>
+                  <% end %>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+      <% end %>
+
+      <% if runs.empty? %>
+        <p class="kbp-empty">No runs yet. Log one each time you run the protocol, with the conditions and what you measured.</p>
+      <% else %>
+        <p class="kbp-caption">Run log, newest first</p>
+        <ol class="kbp-ledger">
+          <% runs.reverse_each do |run| %>
+            <%= render "kb/projects/run", run: run, project: project, table: table %>
+          <% end %>
+        </ol>
+      <% end %>
+    </section>
+
+    <section class="kbp-block" aria-label="Findings of <%= test.name %>">
+      <h4 class="kbp-subhead kbp-subhead--static">Findings</h4>
+      <%= render "kb/projects/findings", owner: test, placeholder: "What did this test show? Enter to save." %>
+    </section>
+
+    <footer class="kbp-test-foot">
+      <details class="kbp-edit">
+        <summary>Edit objective &amp; protocol</summary>
+        <%= form_with url: kb_project_tests_path, method: :patch, class: "kbp-form" do %>
+          <%= hidden_field_tag :src, @src, id: nil %>
+          <%= hidden_field_tag :path, test.rel, id: nil %>
+          <%= hidden_field_tag :project, project.rel, id: nil %>
+          <label class="kbp-label">Objective</label>
+          <textarea name="objective" rows="2" class="kbp-input"><%= test.objective %></textarea>
+          <label class="kbp-label">Protocol (markdown)</label>
+          <textarea name="protocol" rows="6" class="kbp-input"><%= test.protocol %></textarea>
+          <div class="kbp-actions"><button class="kbp-btn kbp-btn--primary">Save</button></div>
+        <% end %>
+      </details>
+      <%= form_with url: kb_project_tests_path, method: :delete, class: "kbp-test-delete",
+            data: { action: "submit->kb-project#confirmDeleteTest", test_name: test.name, run_count: runs.size } do %>
+        <%= hidden_field_tag :src, @src, id: nil %>
+        <%= hidden_field_tag :path, test.rel, id: nil %>
+        <button class="kbp-link kbp-link--danger" aria-label="Delete test <%= test.name %>">Delete test</button>
+      <% end %>
+    </footer>
+  </div>
 </article>

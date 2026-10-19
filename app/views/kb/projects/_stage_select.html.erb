@@ -1,0 +1,5 @@
+<select name="stage" class="kbp-tag kbp-tag--stage <%= 'is-none' if value.blank? %>" aria-label="<%= label %>"
+        data-controller="select-menu" data-action="change->kb-project#submit">
+  <%= tag.option "No stage", value: "", selected: value.blank? %>
+  <% project.stages.each do |s| %><%= tag.option s, value: s, selected: s == value %><% end %>
+</select>

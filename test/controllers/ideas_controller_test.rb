@@ -11,6 +11,90 @@ class IdeasControllerTest < ActionDispatch::IntegrationTest
     )
   end
 
+  def listed_ids
+    controller.instance_variable_get(:@ideas).map(&:id)
+  end
+
+  test "index sorts by created and title in both directions" do
+    @user.ideas.destroy_all
+    b = @user.ideas.create!(title: "bravo", state: :idea_new, created_at: 3.days.ago)
+    a = @user.ideas.create!(title: "Alpha", state: :idea_new, created_at: 2.days.ago)
+    c = @user.ideas.create!(title: "Charlie", state: :idea_new, created_at: 1.day.ago)
+
+    { "created_desc" => [ c, a, b ], "created_asc" => [ b, a, c ],
+      "title_asc" => [ a, b, c ], "title_desc" => [ c, b, a ] }.each do |sort, expected|
+      get ideas_url, params: { sort: sort }
+      assert_response :success
+      assert_equal expected.map(&:id), listed_ids, sort
+    end
+  end
+
+  test "index falls back to default sort on invalid sort param" do
+    get ideas_url, params: { sort: "title; DROP TABLE ideas" }
+    assert_response :success
+  end
+
+  test "index saves submitted filters, restores them, and resets" do
+    @user.update!(settings: nil)
+    @user.ideas.destroy_all
+    @user.ideas.create!(title: "Old", state: :idea_new, created_at: 2.days.ago)
+    newest = @user.ideas.create!(title: "New", state: :idea_new, created_at: 1.day.ago)
+
+    get ideas_url, params: { filters: 1, sort: "created_asc", search: "ew" }
+    assert_equal "created_asc", @user.reload.settings.dig("ideas", "filters", "sort")
+
+    get ideas_url
+    assert_equal [ newest.id ], listed_ids
+    assert_select "select[name=sort] option[selected][value=created_asc]"
+
+    get ideas_url, params: { reset: 1 }
+    assert_equal 2, listed_ids.size
+    assert_nil @user.reload.settings.dig("ideas", "filters")
+  end
+
+  test "clear link breaks out of the filters frame" do
+    get ideas_url
+    assert_select "a[href=?][data-turbo-frame=_top]", ideas_path(reset: 1), text: "Clear"
+  end
+
+  test "date filter combines with topology and list filters" do
+    @user.update!(settings: nil)
+    @user.ideas.destroy_all
+    topology = @user.topologies.create!(name: "Topo")
+    list = @user.lists.create!(name: "Named", kind: :named)
+    hit = @user.ideas.create!(title: "Hit", state: :idea_new, created_at: 1.day.ago)
+    old = @user.ideas.create!(title: "Old", state: :idea_new, created_at: 10.days.ago)
+    [ hit, old ].each do |i|
+      IdeaTopology.create!(idea: i, topology: topology)
+      IdeaList.create!(idea: i, list: list)
+    end
+
+    get ideas_url, params: { topology_id: topology.id, list_id: list.id,
+                             created_after: 3.days.ago.to_date.to_s, created_before: Date.tomorrow.to_s }
+    assert_response :success
+    assert_equal [ hit.id ], listed_ids
+  end
+
+  test "deep link params do not overwrite saved filters" do
+    @user.update!(settings: { "ideas" => { "filters" => { "sort" => "title_asc" }, "other" => 1 } })
+    get ideas_url, params: { topology_id: "all" }
+    assert_equal({ "sort" => "title_asc" }, @user.reload.settings.dig("ideas", "filters"))
+    assert_equal 1, @user.settings.dig("ideas", "other")
+  end
+
+  test "saving filters keeps sibling settings under ideas" do
+    @user.update!(settings: { "ideas" => { "other" => 1 } })
+    get ideas_url, params: { filters: 1, sort: "title_desc" }
+    assert_equal 1, @user.reload.settings.dig("ideas", "other")
+    assert_equal "title_desc", @user.settings.dig("ideas", "filters", "sort")
+  end
+
+  test "turbo stream pagination does not persist filters" do
+    @user.update!(settings: nil)
+    get ideas_url(filters: 1, sort: "title_asc"), headers: { "Accept" => "text/vnd.turbo-stream.html" }
+    assert_nil @user.reload.settings&.dig("ideas", "filters")
+  end
+
   test "should get index" do
     get ideas_url
     assert_response :success

@@ -3,7 +3,18 @@ class IdeasController < ApplicationController
   before_action :set_idea, only: [ :show, :edit, :update, :destroy, :send_email, :approve_pending_email, :discard_pending_email, :enrich, :enrichment_status, :archive, :restore, :add_to_list, :create_version, :make_primary, :toggle_licensing ]
   before_action :check_cool_off_period, only: [ :edit, :update ]
 
+  IDEA_SORTS = {
+    "score_desc" => [ :computed_score, :desc ], "score_asc" => [ :computed_score, :asc ],
+    "created_desc" => [ :created_at, :desc ], "created_asc" => [ :created_at, :asc ],
+    "updated_desc" => [ :updated_at, :desc ], "updated_asc" => [ :updated_at, :asc ],
+    "title_asc" => [ :title, :asc ], "title_desc" => [ :title, :desc ],
+    "trl_desc" => [ :trl, :desc ], "trl_asc" => [ :trl, :asc ],
+    "state_asc" => [ :state, :asc ], "state_desc" => [ :state, :desc ]
+  }.freeze
+  IDEA_FILTER_KEYS = %i[sort state topology_id list_id trl_min trl_max score_min score_max created_after created_before has_attachments include_archived search].freeze
+
   def index
+    restore_or_save_idea_filters
     @ideas = @user.ideas.non_draft.primary_or_standalone.includes(:lists, :idea_lists, :topologies, :idea_entries)
     @kanban_boards = @user.kanban_boards.ordered.includes(:lists)
     @named_lists = @user.lists.named.ordered
@@ -558,11 +569,11 @@ class IdeasController < ApplicationController
 
     # Filter by date range
     if params[:created_after].present?
-      ideas = ideas.where("created_at >= ?", params[:created_after])
+      ideas = ideas.where("ideas.created_at >= ?", params[:created_after])
     end
 
     if params[:created_before].present?
-      ideas = ideas.where("created_at <= ?", params[:created_before])
+      ideas = ideas.where("ideas.created_at <= ?", params[:created_before])
     end
 
     # Filter by attachments
@@ -591,24 +602,35 @@ class IdeasController < ApplicationController
   end
 
   def apply_sorting(ideas)
-    sort_by = params[:sort_by] || "score"
-    sort_order = params[:sort_order] || "desc"
+    column, direction = IDEA_SORTS.fetch(params[:sort].to_s, IDEA_SORTS["score_desc"])
+    # column/direction come from the IDEA_SORTS whitelist; NULLs last in both directions (sqlite sorts them first on ASC)
+    expr = column == :title ? "LOWER(ideas.title)" : "ideas.#{column}"
+    ideas.order(Arel.sql("#{expr} IS NULL"), Arel.sql("#{expr} #{direction.upcase}"), id: :desc)
+  end
 
-    case sort_by
-    when "title"
-      ideas.order(title: sort_order)
-    when "state"
-      ideas.order(state: sort_order)
-    when "score"
-      ideas.order(computed_score: sort_order)
-    when "trl"
-      ideas.order(trl: sort_order)
-    when "created_at"
-      ideas.order(created_at: sort_order)
-    when "updated_at"
-      ideas.order(updated_at: sort_order)
-    else
-      ideas.order(created_at: sort_order)
+  # Persist last-used filters/sort in user.settings (same store as KB sort).
+  # No filter params => restore saved; ?reset=1 => clear.
+  def restore_or_save_idea_filters
+    saved = (@user.settings || {}).dig("ideas", "filters") || {}
+    if params[:reset].present?
+      persist_idea_filters(nil) if saved.present?
+      return
     end
+
+    submitted = params.permit(*IDEA_FILTER_KEYS).to_h
+    if params[:filters].present?
+      persist_idea_filters(submitted) if submitted != saved && !request.format.turbo_stream?
+    elsif request.query_parameters.keys.intersect?(IDEA_FILTER_KEYS.map(&:to_s))
+      # deep link: apply for this view only, keep saved prefs
+    elsif saved.present?
+      params.merge!(saved)
+    end
+  end
+
+  def persist_idea_filters(filters)
+    settings = (@user.settings || {}).deep_dup
+    (settings["ideas"] ||= {})["filters"] = filters
+    @user.settings = settings
+    @user.save!
   end
 end

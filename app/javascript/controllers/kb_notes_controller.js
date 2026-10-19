@@ -1,4 +1,5 @@
 import { Controller } from "@hotwired/stimulus"
+import { confirmDialog, promptDialog } from "lib/app_dialog"
 
 const STORAGE_PREFIX = "kb_note_"
 const CUSTOM_TABS_KEY = "kb_notes_custom_tabs"
@@ -71,7 +72,7 @@ export default class extends Controller {
 
   async addTab(event) {
     event.stopPropagation()
-    const name = await window.AppDialog?.prompt("Create a focused space for notes you want to keep close at hand.", {
+    const name = await promptDialog("Create a focused space for notes you want to keep close at hand.", {
       title: "Add note tab",
       inputLabel: "Tab name",
       placeholder: "Research, decisions, questions…",
@@ -94,7 +95,7 @@ export default class extends Controller {
     event.stopPropagation()
     const key = event.currentTarget.dataset.closeKey
     const tab = this._customTabs.find(t => t.id === key)
-    const confirmed = await window.AppDialog?.confirm(
+    const confirmed = await confirmDialog(
       `Delete “${tab?.label || "this tab"}” and its saved notes? This cannot be undone.`,
       { title: "Delete note tab?", confirmLabel: "Delete tab", variant: "danger" }
     )

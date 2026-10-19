@@ -1,0 +1,4 @@
+<% count = project.findings.size %>
+<%= render layout: "kb/projects/section", locals: { id: "findings", title: "Findings so far", summary: (count.zero? ? "None yet" : pluralize(count, "finding")), open: open, lead: lead, mode: mode, project: project } do %>
+  <%= render "kb/projects/findings", owner: project, placeholder: "Something you learned. Enter to save." %>
+<% end %>

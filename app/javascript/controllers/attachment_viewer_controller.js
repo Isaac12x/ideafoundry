@@ -1,4 +1,5 @@
 import { Controller } from "@hotwired/stimulus"
+import { alertDialog } from "lib/app_dialog"
 
 export default class extends Controller {
   static targets = ["dialog", "preview", "filenameInput", "fileInput", "deleteBtn", "title", "downloadLink"]
@@ -61,7 +62,7 @@ export default class extends Controller {
   }
 
   _flash(message) {
-    window.AppDialog?.alert(message, { title: "Attachment not saved", confirmLabel: "Got it" })
+    alertDialog(message, { title: "Attachment not saved", confirmLabel: "Got it" })
   }
 
   async confirmDelete() {

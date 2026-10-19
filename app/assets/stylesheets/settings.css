@@ -585,7 +585,8 @@
 }
 
 .export-badge.completed { color: var(--success); }
-.export-badge.processing { color: var(--accent); }
+.export-badge.processing,
+.export-badge.running { color: var(--accent); }
 .export-badge.failed { color: var(--danger); }
 .export-badge.protected { color: var(--text-secondary); }
 
@@ -1201,6 +1202,27 @@
 }
 
 /* ============================================
+   Chrome Capture
+   ============================================ */
+.capture-section-body {
+  padding: 1.25rem 1.5rem;
+}
+
+.capture-page .tab-toggle-section + .tab-toggle-section {
+  margin-top: 1.5rem;
+}
+
+.capture-job-url {
+  flex: 1 1 12rem;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+/* ============================================
    Local Agent
    ============================================ */
 .local-agent-grid {
@@ -1461,4 +1483,112 @@
   .legend-marker:last-child { animation: none; }
   .tab-toggle__track,
   .tab-toggle__thumb { transition: none; }
+}
+
+/* ============================================
+   Settings Index — "Last viewed" pill
+   ============================================ */
+.settings-last-viewed {
+  display: flex;
+  width: fit-content;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0 0 3px;
+  padding: 1px 8px 1px 6px;
+  font-family: var(--font-body);
+  font-style: normal;
+  font-size: 0.64rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  line-height: 1.5;
+  color: var(--accent);
+  background: var(--accent-muted);
+  border: 1px solid var(--accent-emphasis);
+  border-radius: 999px;
+}
+
+.settings-last-viewed::before {
+  content: "";
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+/* ============================================
+   API Keys — separate cards, masked key rows
+   ============================================ */
+.api-card {
+  margin-bottom: 1.25rem;
+  padding: 1.25rem;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+}
+
+.api-card > h3 {
+  margin: 0 0 0.25rem;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 1.15rem;
+  font-weight: 400;
+}
+
+.api-card > .api-card-hint {
+  margin: 0 0 1rem;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.api-key-row--full {
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.api-key-secret {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.4rem;
+}
+
+.api-key-secret code {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  word-break: break-all;
+}
+
+.api-key-copy-once {
+  margin-top: 0.5rem;
+}
+
+.api-key-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  color: var(--text-muted);
+  background: transparent;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.api-key-icon-btn:hover {
+  color: var(--text-primary);
+  background: var(--bg-overlay);
+}
+
+.api-docs h4 {
+  margin: 1.25rem 0 0.4rem;
+  font-size: 0.85rem;
+}
+
+.api-docs ul {
+  margin: 0 0 1rem;
+  padding-left: 1.1rem;
+  font-size: 0.82rem;
 }

@@ -7,6 +7,7 @@ pin "@hotwired/stimulus-loading", to: "stimulus-loading.js", preload: true
 pin_all_from "app/javascript/controllers", under: "controllers"
 pin "lib/idea_draft_store", to: "lib/idea_draft_store.mjs"
 pin "lib/kb_anchor", to: "lib/kb_anchor.mjs"
+pin "lib/app_dialog", to: "lib/app_dialog.mjs"
 pin "lib/excalidraw_loader", to: "lib/excalidraw_loader.mjs"
 pin "lib/periodic_table/elements", to: "lib/periodic_table/elements.mjs"
 pin "lib/periodic_table/electrons", to: "lib/periodic_table/electrons.mjs"
