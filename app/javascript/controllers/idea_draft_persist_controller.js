@@ -1,4 +1,5 @@
 import { Controller } from "@hotwired/stimulus";
+import { confirmDialog, alertDialog } from "lib/app_dialog"
 import {
   collectDraftFields,
   decryptDraft,
@@ -78,7 +79,7 @@ export default class extends Controller {
   }
 
   async discard() {
-    const confirmed = await window.AppDialog?.confirm("Discard the saved idea draft on this device? This cannot be undone.", {
+    const confirmed = await confirmDialog("Discard the saved idea draft on this device? This cannot be undone.", {
       title: "Discard saved draft?",
       confirmLabel: "Discard draft",
       variant: "danger",
@@ -164,7 +165,7 @@ export default class extends Controller {
       this.errorTarget.textContent = message;
       return;
     }
-    window.AppDialog?.alert(message, { title: "Draft couldn’t be protected", confirmLabel: "Got it" });
+    alertDialog(message, { title: "Draft couldn’t be protected", confirmLabel: "Got it" });
   }
 
   cryptoOptions() {

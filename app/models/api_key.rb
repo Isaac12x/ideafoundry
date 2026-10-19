@@ -1,6 +1,9 @@
 class ApiKey < ApplicationRecord
   belongs_to :user
 
+  # Encrypted copy so the owner can reveal the key; authentication still uses token_digest.
+  encrypts :token
+
   validates :name, presence: true
   validates :token_digest, presence: true, uniqueness: true
 
@@ -15,6 +18,7 @@ class ApiKey < ApplicationRecord
       user: user,
       name: name,
       token_digest: Digest::SHA256.hexdigest(raw_token),
+      token: raw_token,
       expires_at: expires_at
     )
     key.raw_token = raw_token

@@ -154,6 +154,13 @@ class KbController < ApplicationController
     # background" (yt-dlp for media, HTTP otherwise). URLs contain "/" so this
     # must run before valid_node_name?, which rejects them.
     if !folder && url?(name)
+      if CaptureJob.extension_url?(name)
+        job = @user.capture_jobs.create(url: name, file_format: "md",
+                                        source_index: params[:src].to_i, dir: params[:dir].to_s)
+        return fs_error(job.errors.full_messages.to_sentence) unless job.persisted?
+
+        return respond_fs(notice: "Sent to the browser extension. It will save the conversation here within about 30 seconds.")
+      end
       KbDownload.enqueue(user: @user, source_index: params[:src].to_i,
                          dir: params[:dir].to_s, url: name, format: params[:format].to_s)
       return respond_fs
@@ -164,6 +171,7 @@ class KbController < ApplicationController
     if name.blank?
       abs = unique_fs_path(File.join(parent, folder ? UNNAMED_FOLDER : UNNAMED_FILE))
       folder ? Dir.mkdir(abs) : File.write(abs, "")
+      move_into_folder(base, abs, Array(params[:move])) if folder
       return respond_fs(editing: abs.delete_prefix("#{base}/"))
     end
 
@@ -228,6 +236,8 @@ class KbController < ApplicationController
 
     File.rename(abs, dest)
     rel = dest.delete_prefix("#{base}/")
+    parent_rel = File.dirname(params[:path].to_s)
+    Kb::Project.at(base, parent_rel)&.rename_material!(File.basename(params[:path].to_s), name) unless parent_rel == "."
     KbEntryPreference.move_subtree!(
       user: @user,
       source_path: base,
@@ -251,7 +261,9 @@ class KbController < ApplicationController
     )
 
     # Inline naming patches the one row it changed, so it wants the new path
-    # back rather than a fresh tree.
+    # back rather than a fresh tree. The cached scan must still be dropped, or
+    # the next tree poll/refresh serves the old name.
+    Kb::TreeBuilder.bust_cache!(@user)
     return render(json: { rel: rel, name: name }) if request.format.json?
 
     if File.file?(dest)
@@ -412,6 +424,31 @@ class KbController < ApplicationController
 
   private
 
+  # "New folder" with several files picked: move them (siblings only) into the fresh folder.
+  def move_into_folder(base, folder, rels)
+    rels.each do |rel|
+      abs = safe_abs(base, rel)
+      next if abs.nil? || !File.file?(abs) || File.dirname(abs) != File.dirname(folder)
+
+      target = File.join(folder, File.basename(abs))
+      next if File.exist?(target)
+
+      FileUtils.mv(abs, target)
+      new_rel = target.delete_prefix("#{base}/")
+      [ KbEntryPreference, IdeaKbLink, KbAnnotation ].each do |model|
+        model.move_subtree!(user: @user, source_path: base, old_relative_path: rel,
+                            new_source_path: base, new_relative_path: new_rel)
+      end
+    end
+  end
+
+  # A failed write (permissions, disk) must tell the user, not 500 into a Turbo no-op.
+  rescue_from SystemCallError do |error|
+    raise error unless action_name.start_with?("fs_")
+
+    fs_error("Couldn't complete that: #{error.message.sub(/ @ .*? - /, " - ")}")
+  end
+
   def fs_error(message)
     return render(json: { error: message }, status: :unprocessable_content) if request.format.json?
 
@@ -421,12 +458,13 @@ class KbController < ApplicationController
   # Renders the tree (and, when the selection changed, the content pane) as a
   # turbo stream so file ops update in place instead of reloading the page.
   # Falls back to a full redirect for non-turbo clients.
-  def respond_fs(file: nil, src: params[:src].to_i, alert: nil, editing: nil)
+  def respond_fs(file: nil, src: params[:src].to_i, alert: nil, notice: nil, editing: nil)
+    Kb::TreeBuilder.bust_cache!(@user) # before any early return: redirects re-render from the cache too
     unless request.format.turbo_stream?
-      return redirect_to kb_path(src: src, file: file || editing), alert: alert
+      return redirect_to kb_path(src: src, file: file || editing), alert: alert, notice: notice
     end
     flash.now[:alert]  = alert if alert
-    Kb::TreeBuilder.bust_cache!(@user)
+    flash.now[:notice] = notice if notice
     @folders = build_folder_tree
     @editing_src = src if editing
     @editing_rel = editing
