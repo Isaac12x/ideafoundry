@@ -1,0 +1,30 @@
+<%# Report: one row per test with its verdict and the most recent result. %>
+<% tests = kb_results_tests(project) %>
+<%= render layout: "kb/projects/section", locals: { id: "results", title: "Tests & results", summary: (tests.empty? ? "No tests" : pluralize(tests.size, "test")), open: open, lead: lead, mode: mode, project: project } do %>
+  <% if tests.empty? %>
+    <p class="kbp-empty">No tests were run. If this project was pure research, the findings and conclusion carry it.</p>
+  <% else %>
+    <div class="kbp-results" role="region" aria-label="Tests and results" tabindex="0">
+      <table>
+        <thead><tr>
+          <th scope="col">Test</th><th scope="col">Stage</th><th scope="col">Verdict</th><th scope="col" class="num">Runs</th><th scope="col">Last run</th><th scope="col">Latest result</th>
+        </tr></thead>
+        <tbody>
+          <% tests.each do |test| %>
+            <% runs = kb_runs(test) %>
+            <% last = runs.last %>
+            <% snippet = last && (last.result.present? ? truncate(last.result.gsub(/[#*_>`\[\]-]/, "").squish, length: 120) : last.measurements.first(3).map { |m| "#{m['name']} #{m['value']}#{m['unit'].presence && " #{m['unit']}"}" }.join(", ")) %>
+            <tr>
+              <th scope="row" data-label="Test"><a href="#<%= kb_test_dom_id(test) %>" data-target="<%= kb_test_dom_id(test) %>" data-action="kb-project#jump"><%= test.name %></a></th>
+              <td data-label="Stage"><%= test.stage.presence || "–" %></td>
+              <td data-label="Verdict"><%= render "kb/projects/verdict", verdict: test.verdict %></td>
+              <td class="num" data-label="Runs"><%= runs.size %></td>
+              <td data-label="Last run"><%= last ? (last.date&.strftime("%d %b %Y") || last.name) : "–" %></td>
+              <td class="snippet" data-label="Latest result"><%= snippet.presence || "–" %></td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  <% end %>
+<% end %>

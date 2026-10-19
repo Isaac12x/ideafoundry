@@ -19,7 +19,8 @@ export default class extends Controller {
     if (this._active) this._settle(this._cancelValue())
     this._queue.splice(0).forEach(({ resolve, type }) => resolve(type === "confirm" ? false : type === "prompt" ? null : true))
 
-    if (window.AppDialog === this._api) window.AppDialog = this._previousApi
+    // Never restore an older API: its <dialog> is detached by now, so calls would throw.
+    if (window.AppDialog === this._api) delete window.AppDialog
     if (this._turboForms?.confirm === this._turboConfirm) {
       this._turboForms.confirm = this._previousTurboConfirm
     }
@@ -58,7 +59,6 @@ export default class extends Controller {
   }
 
   _installApi() {
-    this._previousApi = window.AppDialog
     this._api = {
       alert: (message, options = {}) => this.open("alert", message, options),
       confirm: (message, options = {}) => this.open("confirm", message, options),

@@ -14,7 +14,8 @@
      data-kb-tree-delete-url-value="<%= kb_fs_delete_path %>"
      data-kb-tree-edit-url-value="<%= kb_edit_path %>"
      data-kb-tree-project-convert-url-value="<%= kb_project_convert_path %>"
-     data-kb-tree-project-test-url-value="<%= kb_project_tests_path %>">
+     data-kb-tree-project-test-url-value="<%= kb_project_tests_path %>"
+     data-kb-tree-project-materials-url-value="<%= kb_project_materials_path %>">
   <div class="kb-controller-scope"
        data-controller="kb-icon-picker kb-job"
        data-action="kb-job:open->kb-job#open"
@@ -53,8 +54,16 @@
 
   <%# ── KB panel ──────────────────────────────────────────────── %>
   <div data-tabs-target="panel" data-tab-panel="kb" class="kb-panel-full">
-    <div class="kb-layout">
-      <aside class="kb-sidebar" data-controller="kb-sidebar">
+    <div class="kb-layout" data-controller="kb-sidebar" data-action="keydown.esc->kb-sidebar#closeDrawer">
+      <div class="kb-drawer-bar">
+        <button type="button" class="kb-drawer-toggle" aria-expanded="false" aria-controls="kb-sidebar-panel"
+                data-kb-sidebar-target="toggle" data-action="kb-sidebar#toggleDrawer">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg>
+          Files
+        </button>
+      </div>
+      <button type="button" class="kb-drawer-scrim" aria-label="Close files" tabindex="-1" data-action="kb-sidebar#closeDrawer"></button>
+      <aside class="kb-sidebar" id="kb-sidebar-panel" data-kb-sidebar-target="panel" data-action="click->kb-sidebar#maybeClose">
         <div class="kb-sidebar-inner">
           <%= render "kb/tree" %>
         </div>

@@ -1,8 +1,9 @@
 import { Controller } from "@hotwired/stimulus"
+import { confirmDialog, alertDialog } from "lib/app_dialog"
 
 const MENU_VISIBILITY = {
   newFile: (node) => node.type !== "file",
-  newFolder: (node) => node.type !== "file",
+  newFolder: (node) => node.type !== "file" || node.multi,
   newProject: (node) => node.type !== "file",
   convertProject: (node) => node.type === "dir" && !node.project,
   newTest: (node) => node.type === "dir" && (node.project || node.testsDir),
@@ -32,6 +33,7 @@ export default class extends Controller {
     deleteUrl: String,
     projectConvertUrl: String,
     projectTestUrl: String,
+    projectMaterialsUrl: String,
     editUrl: String
   }
 
@@ -53,6 +55,8 @@ export default class extends Controller {
     this._syncTree()
     this._onBeforeStreamRender = (event) => this._preserveSelectionAcrossStream(event)
     document.addEventListener("turbo:before-stream-render", this._onBeforeStreamRender)
+    this._onFrameLoad = (event) => this._highlightFrameFile(event)
+    document.addEventListener("turbo:frame-load", this._onFrameLoad)
     // After the folder controllers inside restore their saved collapsed state.
     this._revealTimer = window.setTimeout(() => this._revealFromUrl())
   }
@@ -78,11 +82,32 @@ export default class extends Controller {
     this.element.removeEventListener("focusin", this._onTreeFocusin)
     this._unbindDocListeners()
     document.removeEventListener("turbo:before-stream-render", this._onBeforeStreamRender)
+    document.removeEventListener("turbo:frame-load", this._onFrameLoad)
   }
 
   // Optimistically drop the "new download" dot; the server clears opened_at on open.
   markSeen(event) {
     event.currentTarget.closest(".kb-file-row")?.classList.remove("is-new")
+  }
+
+  // The tree is not re-rendered when the pane changes, so is-active would stay on
+  // the file selected at page load. Whatever opens a file in kb-content (tree,
+  // project pages, downloads) lands here and moves the highlight.
+  _highlightFrameFile(event) {
+    if (event.target?.id !== "kb-content") return
+    let params
+    try { params = new URL(event.target.src).searchParams } catch (_error) { return }
+    const src = params.get("src")
+    const file = params.get("file")
+    if (src === null || !file) return
+    const row = Array.from(this.element.querySelectorAll(".kb-file-row")).find((el) =>
+      String(el.dataset.kbTreeSrcParam) === src && String(el.dataset.kbTreeRelParam) === file
+    )
+    if (!row) return
+    this.element.querySelectorAll(".kb-file-row.is-active, .kb-file-link.is-active").forEach((el) => el.classList.remove("is-active"))
+    row.classList.add("is-active")
+    row.querySelector(".kb-file-link")?.classList.add("is-active")
+    this._queueSync()
   }
 
   show(event) {
@@ -93,9 +118,11 @@ export default class extends Controller {
 
   _open(params, clientX, clientY, invoker) {
     this._invoker = invoker || null
+    const multi = !!invoker?.classList?.contains("is-multi") && this._multiRows().length > 1
     this._node = {
+      multi,
       type: params.type,
-      rel: params.rel ?? "",
+      rel: String(params.rel ?? ""), // Stimulus casts "2024" to a Number
       src: params.src,
       extractable: !!params.extractable,
       editable: !!params.editable,
@@ -109,7 +136,8 @@ export default class extends Controller {
     this.promptTarget.hidden = true
     this.itemTargets.forEach((element) => {
       const visible = MENU_VISIBILITY[element.dataset.menuItem]
-      element.hidden = visible ? !visible(this._node) : false
+      // With several files picked, only "New folder" (wraps them) applies.
+      element.hidden = this._node.multi ? element.dataset.menuItem !== "newFolder" : visible ? !visible(this._node) : false
     })
 
     const menu = this.menuTarget
@@ -158,6 +186,7 @@ export default class extends Controller {
 
     if (event.key === "ContextMenu" || (event.key === "F10" && event.shiftKey)) {
       event.preventDefault()
+      if (row.matches(".kb-role-header")) return // virtual project group: no menu
       const box = row.getBoundingClientRect()
       this._open(this._paramsFor(row), box.left + 16, box.bottom, row)
       return
@@ -284,6 +313,23 @@ export default class extends Controller {
     this._create("folder")
   }
 
+  // Ctrl/Cmd-click picks files to act on together; a plain click clears the pick.
+  toggleMulti(event) {
+    const row = event.currentTarget.closest(".kb-file-row")
+    if (!row) return
+    if (!(event.ctrlKey || event.metaKey)) {
+      this._multiRows().forEach((el) => el.classList.remove("is-multi"))
+      return
+    }
+    event.preventDefault()
+    event.stopImmediatePropagation()
+    row.classList.toggle("is-multi")
+  }
+
+  _multiRows() {
+    return Array.from(this.element.querySelectorAll(".kb-file-row.is-multi"))
+  }
+
   newProject(event) {
     event.stopPropagation()
     this._create("project")
@@ -315,11 +361,16 @@ export default class extends Controller {
 
   _create(kind) {
     const node = this._node
-    this._submitForm(this.createUrlValue, "post", {
-      src: node.src,
-      dir: this._targetDir(node),
-      kind
-    })
+    const fields = { src: node.src, dir: this._targetDir(node), kind }
+    if (node.multi) {
+      // Wrap the picked files in a new folder next to them (same source only).
+      const rows = this._multiRows().filter((el) => String(el.dataset.kbTreeSrcParam) === String(node.src))
+      const parents = new Set(rows.map((el) => String(el.dataset.kbTreeRelParam).split("/").slice(0, -1).join("/")))
+      if (parents.size !== 1) return this._alert("Select files from the same folder.")
+      fields.dir = [...parents][0]
+      fields["move[]"] = rows.map((el) => String(el.dataset.kbTreeRelParam))
+    }
+    this._submitForm(this.createUrlValue, "post", fields)
   }
 
   // ── Inline naming ────────────────────────────────────────────────────
@@ -488,7 +539,7 @@ export default class extends Controller {
     })
     if (!response.ok) {
       const result = await response.json().catch(() => ({}))
-      await window.AppDialog?.alert(result.error || "Finder could not open this entry.", {
+      await alertDialog(result.error || "Finder could not open this entry.", {
         title: "Couldn’t open Finder",
         confirmLabel: "Got it",
       })
@@ -537,7 +588,7 @@ export default class extends Controller {
       ? `Delete folder "${name}" and everything inside it?`
       : `Delete "${name}"?`
     this._hide()
-    const confirmed = await window.AppDialog?.confirm(message, {
+    const confirmed = await confirmDialog(message, {
       title: node.type === "dir" ? "Delete folder?" : "Delete file?",
       confirmLabel: "Delete",
       variant: "danger",
@@ -548,15 +599,18 @@ export default class extends Controller {
 
   dragStart(event) {
     const params = event.params
-    this._drag = { type: params.type, rel: params.rel, src: params.src }
+    this._drag = { type: params.type, rel: String(params.rel), src: params.src }
     event.dataTransfer.effectAllowed = "move"
     event.dataTransfer.setData("text/plain", params.rel)
     event.currentTarget.classList.add("is-dragging")
+    // Empty role shelves appear as drop targets (next tick, so the drag image is already captured).
+    setTimeout(() => { if (this._drag) this.element.classList.add("is-role-dragging") }, 0)
   }
 
   dragEnd(event) {
     this._drag = null
     event.currentTarget.classList.remove("is-dragging")
+    this.element.classList.remove("is-role-dragging")
     this.element.querySelectorAll(".is-drop-target").forEach((element) => element.classList.remove("is-drop-target"))
   }
 
@@ -593,6 +647,42 @@ export default class extends Controller {
       dest_src: destination.src,
       dest_dir: destination.type === "root" ? "" : destination.rel
     })
+  }
+
+  // Dropping a project's direct child on a role shelf header re-roles it
+  // (Inbox = no role). Only the same project's own children qualify.
+  roleOver(event) {
+    if (!this._canRole(event.params)) return
+
+    event.preventDefault()
+    event.dataTransfer.dropEffect = "move"
+    event.currentTarget.classList.add("is-drop-target")
+  }
+
+  roleDrop(event) {
+    const destination = event.params
+    event.currentTarget.classList.remove("is-drop-target")
+    if (!this._canRole(destination)) return
+
+    event.preventDefault()
+    const drag = this._drag
+    this._drag = null
+    this.element.classList.remove("is-role-dragging")
+    this._submitForm(this.projectMaterialsUrlValue, "patch", {
+      src: drag.src,
+      path: destination.projectRel,
+      name: drag.rel.split("/").pop(),
+      role: destination.role,
+      tree_only: "1"
+    })
+  }
+
+  _canRole(destination) {
+    const drag = this._drag
+    if (!drag || String(drag.src) !== String(destination.src)) return false
+
+    const parts = drag.rel.split("/")
+    return parts.slice(0, -1).join("/") === destination.projectRel && parts.at(-1) !== "Tests"
   }
 
   _canDrop(destination) {
@@ -838,7 +928,7 @@ export default class extends Controller {
   }
 
   _alert(message) {
-    window.AppDialog?.alert(message, { title: "That didn’t work", confirmLabel: "Got it" })
+    alertDialog(message, { title: "That didn’t work", confirmLabel: "Got it" })
   }
 
   _csrfToken() {

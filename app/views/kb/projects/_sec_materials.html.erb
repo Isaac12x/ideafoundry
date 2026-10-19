@@ -1,0 +1,73 @@
+<%# Materials: arrangement is metadata. Files never move; role + stage live in .kb-project.yml. %>
+<% groups = [
+  [nil, "Inbox", "Unsorted. Give each file a role so you know how to use it."],
+  ["working", "Working", "Files you are acting on"],
+  ["reference", "Reference", "Consult only"],
+  ["output", "Output", "Results and deliverables"]
+] %>
+<% counts = groups.to_h { |role, label, _| [label, @entries.count { |e| e[:role].presence == role }] } %>
+<% inbox = counts["Inbox"] %>
+<% summary = if @entries.empty?
+     "Empty"
+   elsif mode == "frame"
+     inbox.positive? ? safe_join([ content_tag(:strong, inbox.to_s, class: "kbp-sum-alert"), " to sort" ]) : pluralize(@entries.size, "file")
+   else
+     parts = [ pluralize(@entries.size, "file") ]
+     parts << safe_join([ content_tag(:strong, inbox.to_s, class: "kbp-sum-alert"), " to sort" ]) if inbox.positive?
+     parts += counts.except("Inbox").select { |_, n| n.positive? }.map { |label, n| "#{n} #{label.downcase}" }
+     safe_join(parts, " · ")
+   end %>
+<%= render layout: "kb/projects/section", locals: { id: "materials", title: "Materials", summary: summary, open: open, lead: lead, mode: mode, project: project } do %>
+  <% if @entries.empty? %>
+    <div class="kbp-empty kbp-empty--roles">
+      <p>Nothing here yet. Drop files into this project's folder and they land in an Inbox to sort. Each file gets a role:</p>
+      <dl>
+        <% groups.drop(1).each do |_role, label, hint| %><div><dt><%= label %></dt><dd><%= hint %></dd></div><% end %>
+      </dl>
+    </div>
+  <% else %>
+    <div class="kbp-toolbar">
+      <div class="kbp-chips" role="group" aria-label="Filter materials by stage">
+        <button type="button" class="kbp-chip is-on" aria-pressed="true" data-filter="all"
+                data-kb-materials-target="chip" data-action="kb-materials#pick">All</button>
+        <% project.stages.each do |s| %>
+          <button type="button" class="kbp-chip" aria-pressed="false" data-filter="<%= s %>"
+                  data-kb-materials-target="chip" data-action="kb-materials#pick"><%= s %></button>
+        <% end %>
+        <button type="button" class="kbp-chip" aria-pressed="false" data-filter="__none__"
+                data-kb-materials-target="chip" data-action="kb-materials#pick">No stage</button>
+      </div>
+      <input type="search" class="kbp-input kbp-find" placeholder="Filter by name or note" aria-label="Filter materials"
+             autocomplete="off" data-kb-materials-target="query" data-action="input->kb-materials#apply">
+    </div>
+    <% groups.each do |role, label, hint| %>
+      <% rows = @entries.select { |e| e[:role].presence == role } %>
+      <% next if rows.empty? && role.nil? %>
+      <% group_open = role.nil? || (role == "working" && rows.any?) %>
+      <% gid = "kbp-group-#{role || 'inbox'}" %>
+      <div class="kbp-group<%= ' kbp-group--inbox' if role.nil? %>" data-kb-materials-target="group"
+           data-controller="kb-collapse" data-kb-collapse-key-value="kbp:<%= @src %>:<%= project.rel %>:group:<%= role || 'inbox' %>"
+           data-kb-collapse-open-value="<%= group_open %>" data-action="kb-collapse:open->kb-collapse#show">
+        <button type="button" class="kbp-group-head" aria-expanded="<%= group_open %>" aria-controls="<%= gid %>"
+                data-kb-collapse-target="toggle" data-action="kb-collapse#toggle">
+          <span class="kbp-chev" aria-hidden="true"></span>
+          <span class="kbp-group-label"><%= label %></span>
+          <span class="kbp-group-hint"><%= hint %></span>
+          <span class="kbp-group-count" data-count><%= rows.size %></span>
+        </button>
+        <div id="<%= gid %>" data-kb-collapse-target="body" <%= 'hidden' unless group_open %>>
+          <% if rows.empty? %>
+            <p class="kbp-empty kbp-group-empty"><%= label %> is empty. Set a file's role to <%= label.downcase %> and it moves here.</p>
+          <% else %>
+            <ul class="kbp-mats">
+              <% rows.each do |entry| %>
+                <%= render "kb/projects/material_row", entry: entry, project: project, ids: ids %>
+              <% end %>
+            </ul>
+          <% end %>
+        </div>
+      </div>
+    <% end %>
+    <p class="kbp-empty" hidden data-kb-materials-target="none">Nothing matches this filter.</p>
+  <% end %>
+<% end %>

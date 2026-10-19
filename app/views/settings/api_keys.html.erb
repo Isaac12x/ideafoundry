@@ -9,16 +9,18 @@
   </div>
 
   <% if flash[:api_token].present? %>
-    <div class="alert alert-success">
+    <div class="alert alert-success" data-controller="key-reveal" data-key-reveal-text-value="<%= flash[:api_token] %>">
       <strong>New API key created.</strong> Copy this token now — it won't be shown again:
       <div class="token-display">
         <code><%= flash[:api_token] %></code>
       </div>
+      <button type="button" class="btn btn-sm api-key-copy-once" data-action="key-reveal#copy" data-key-reveal-target="copyLabel">Copy</button>
     </div>
   <% end %>
 
-  <div class="settings-section">
-    <h3>Create New Key</h3>
+  <section class="api-card" aria-labelledby="api-create-title">
+    <h3 id="api-create-title">Create</h3>
+    <p class="api-card-hint">Name the integration that will use this key.</p>
     <%= form_with url: settings_api_keys_path, method: :post, class: "api-key-form" do |form| %>
       <div class="form-row">
         <div class="form-group">
@@ -28,14 +30,15 @@
         <%= form.submit "Create Key", class: "btn btn-primary" %>
       </div>
     <% end %>
-  </div>
+  </section>
 
-  <div class="settings-section">
-    <h3>Existing Keys</h3>
+  <section class="api-card" aria-labelledby="api-keys-title">
+    <h3 id="api-keys-title">Your keys</h3>
+    <p class="api-card-hint">Each key grants full API access to your account (submissions and Chrome capture). Keys are stored encrypted and fetched only when you reveal them.</p>
     <% if @api_keys.any? %>
       <div class="api-keys-list">
         <% @api_keys.each do |key| %>
-          <div class="api-key-row">
+          <div class="api-key-row api-key-row--full" data-controller="key-reveal" data-key-reveal-url-value="<%= settings_api_key_reveal_path(key) %>">
             <div class="api-key-info">
               <span class="api-key-name"><%= key.name %></span>
               <span class="api-key-meta">
@@ -45,10 +48,23 @@
                 <% else %>
                   &middot; Never used
                 <% end %>
-                <% unless key.active? %>
+                <% if key.expires_at.present? %>
+                  &middot; Expires <%= l(key.expires_at.to_date) %>
+                <% end %>
+                <% unless key.active? && (key.expires_at.nil? || key.expires_at > Time.current) %>
                   &middot; <span style="color: var(--danger);">Inactive</span>
                 <% end %>
               </span>
+              <span class="api-key-meta">Scope: full API access (submissions, capture)</span>
+              <div class="api-key-secret">
+                <code data-key-reveal-target="masked">••••••••••••••••••••••••</code>
+                <code data-key-reveal-target="revealed" hidden></code>
+                <button type="button" class="api-key-icon-btn" data-action="key-reveal#toggle" data-key-reveal-target="button" aria-pressed="false" aria-label="Show key details for <%= key.name %>" title="Show / hide">
+                  <span data-key-reveal-target="eye"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></span>
+                  <span data-key-reveal-target="eyeOff" hidden><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19M14.12 14.12a3 3 0 11-4.24-4.24M1 1l22 22"/></svg></span>
+                </button>
+                <button type="button" class="btn btn-sm" data-action="key-reveal#copy" data-key-reveal-target="copyLabel" hidden>Copy</button>
+              </div>
             </div>
             <%= button_to settings_api_key_destroy_path(key), method: :delete,
                 class: "btn btn-sm btn-danger",
@@ -63,10 +79,12 @@
         <p>No API keys yet. Create one to start sending submissions programmatically.</p>
       </div>
     <% end %>
-  </div>
+  </section>
 
-  <div class="settings-section">
-    <h3>Usage</h3>
+  <section class="api-card api-docs" aria-labelledby="api-docs-title">
+    <h3 id="api-docs-title">Docs</h3>
+    <p class="api-card-hint">Send the key as <code>Authorization: Bearer YOUR_API_KEY</code>.</p>
+    <h4>Submissions</h4>
     <div class="raw-data-viewer">
       <pre><code>curl -X POST <%= request.base_url %>/api/v1/submissions \
   -H "Authorization: Bearer YOUR_API_KEY" \
@@ -98,5 +116,14 @@
     "source": "openclaw_gateway"
   }'</code></pre>
     </div>
-  </div>
+    <h4>Chrome capture</h4>
+    <p>Used by the browser extension; see <%= link_to "Chrome Capture", settings_capture_path %>. Base path <code><%= request.base_url %>/api/v1/capture</code>:</p>
+    <ul>
+      <li><code>GET /health</code> &mdash; liveness check</li>
+      <li><code>POST /jobs</code> &mdash; queue a URL (<code>url</code>, optional <code>format</code>)</li>
+      <li><code>POST /jobs/claim</code> &mdash; claim the next queued job (204 if none)</li>
+      <li><code>GET /jobs/:id</code> &mdash; job status</li>
+      <li><code>POST /jobs/:id/complete</code> &mdash; report <code>state</code> (<code>completed</code> or <code>failed</code>)</li>
+    </ul>
+  </section>
 </div>

@@ -85,5 +85,7 @@ async function loadController() {
     .replace(/^import .*$/gm, "")
     .replace("export default class extends Controller", "return class KbNotesController extends Controller")
 
-  return new Function("Controller", runnableSource)(class {})
+  const { confirmDialog, promptDialog } = await import("../../app/javascript/lib/app_dialog.mjs")
+
+  return new Function("Controller", "confirmDialog", "promptDialog", runnableSource)(class {}, confirmDialog, promptDialog)
 }

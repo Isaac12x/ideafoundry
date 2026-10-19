@@ -1,0 +1,52 @@
+<% name = entry[:name] %>
+<% glyph = entry[:dir] ? "dir" : case entry[:ext]
+     when "md", "txt", "doc", "docx", "rtf", "odt" then "doc"
+     when "pdf" then "pdf"
+     when "png", "jpg", "jpeg", "gif", "webp", "svg", "heic", "avif" then "img"
+     when "mp4", "mov", "webm", "mkv", "mp3", "wav", "m4a", "ogg" then "av"
+     when "csv", "tsv", "json", "xls", "xlsx", "yml", "yaml", "xml" then "data"
+     else "file" end %>
+<li class="kbp-mat" data-kb-materials-target="item" data-stage="<%= entry[:stage] %>"
+    data-search="<%= "#{name} #{entry[:note]}".downcase %>">
+  <%= form_with url: kb_project_materials_path, method: :patch, class: "kbp-mat-form" do %>
+    <%= ids %>
+    <%= hidden_field_tag :name, name, id: nil %>
+    <span class="kbp-glyph kbp-glyph--<%= glyph %>" aria-hidden="true"><%= glyph == "dir" ? "/" : (entry[:ext].presence || "·")[0, 4] %></span>
+    <div class="kbp-mat-main">
+      <% if entry[:dir] %>
+        <span class="kbp-mat-name kbp-mat-name--dir"><%= name %>/</span>
+      <% else %>
+        <%= link_to name, kb_file_path(src: @src, file: entry[:rel]), class: "kbp-mat-name", data: { turbo_frame: "kb-content" } %>
+      <% end %>
+      <span class="kbp-mat-meta">
+        <% if entry[:dir] %><%= entry[:count].to_i.zero? ? "empty" : pluralize(entry[:count].to_i, "item") %><% else %><%= entry[:ext].presence || "file" %><span class="kbp-mat-size"> · <%= number_to_human_size(entry[:size].to_i) %></span><% end %>
+        · <time datetime="<%= entry[:mtime].iso8601 %>" title="<%= entry[:mtime].strftime('%d %b %Y %H:%M') %>"><%= kb_short_age(entry[:mtime]) %></time>
+      </span>
+      <% if entry[:note].present? %><span class="kbp-mat-note" data-note-text><%= entry[:note] %></span><% end %>
+      <input type="text" name="note" value="<%= entry[:note] %>" maxlength="280" hidden autocomplete="off"
+             class="kbp-input kbp-mat-note-input" placeholder="Why does this file matter?" aria-label="Note for <%= name %>"
+             data-action="change->kb-project#submit keydown.esc->kb-project#closeNote">
+    </div>
+    <div class="kbp-mat-tools">
+      <% if entry[:role].blank? %>
+        <span class="kbp-triage" role="group" aria-label="Sort <%= name %>">
+          <% Kb::Project::ROLES.each do |role| %>
+            <button type="submit" name="role" value="<%= role %>" class="kbp-triage-btn"><%= role.capitalize %></button>
+          <% end %>
+        </span>
+      <% else %>
+        <select name="role" class="kbp-tag kbp-tag--role" aria-label="Role of <%= name %>" data-controller="select-menu" data-action="change->kb-project#submit">
+          <% Kb::Project::ROLES.each do |role| %><%= tag.option role.capitalize, value: role, selected: role == entry[:role] %><% end %>
+          <%= tag.option "Unsort", value: "" %>
+        </select>
+      <% end %>
+      <% if entry[:role].present? %><%# Inbox files get a stage after they are sorted. %>
+        <%= render "kb/projects/stage_select", project: project, value: entry[:stage], label: "Stage of #{name}" %>
+      <% end %>
+      <% note_label = entry[:note].present? ? "Edit note" : "Add note" %>
+      <button type="button" class="kbp-icon-btn<%= ' has-note' if entry[:note].present? %>" aria-label="<%= note_label %> for <%= name %>" title="<%= note_label %>" data-action="kb-project#openNote">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg>
+      </button>
+    </div>
+  <% end %>
+</li>

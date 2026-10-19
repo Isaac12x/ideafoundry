@@ -1,0 +1,18 @@
+<%# Collapsible page section. Server renders the per-mode default; kb-collapse applies the remembered state. %>
+<% key = "kbp:#{@src}:#{project.rel}:#{mode}:#{id}" %>
+<section class="kbp-sec kbp-sec--<%= id %><%= ' kbp-sec--lead' if lead %><%= ' is-open' if open %>" id="kbp-sec-<%= id %>"
+         data-controller="kb-collapse" data-kb-collapse-key-value="<%= key %>" data-kb-collapse-open-value="<%= open %>"
+         data-action="kb-collapse:open->kb-collapse#show">
+  <header class="kbp-sec-head">
+    <h2 class="kbp-sec-title">
+      <button type="button" class="kbp-sec-toggle" aria-expanded="<%= open %>" aria-controls="kbp-body-<%= id %>"
+              data-kb-collapse-target="toggle" data-action="kb-collapse#toggle">
+        <span class="kbp-chev" aria-hidden="true"></span><span class="kbp-sec-name"><%= title %></span>
+        <% if local_assigns[:summary].present? %><span class="kbp-sec-sum"><%= summary %></span><% end %>
+      </button>
+    </h2>
+  </header>
+  <div class="kbp-sec-body" id="kbp-body-<%= id %>" data-kb-collapse-target="body" <%= 'hidden' unless open %>>
+    <%= yield %>
+  </div>
+</section>

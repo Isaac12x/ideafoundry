@@ -9,10 +9,10 @@ const MAX = 560
 const STEP = 16
 
 export default class extends Controller {
-  static targets = ["handle"]
+  static targets = ["handle", "panel", "toggle"]
 
   connect() {
-    this.apply(this.stored() ?? this.element.offsetWidth)
+    this.apply(this.stored() ?? this.panelTarget.offsetWidth)
 
     this._onMove = (event) => this.move(event)
     this._onUp = () => this.stop()
@@ -24,7 +24,7 @@ export default class extends Controller {
 
   start(event) {
     event.preventDefault()
-    this.element.classList.add("is-resizing")
+    this.panelTarget.classList.add("is-resizing")
     document.body.classList.add("kb-resizing")
     window.addEventListener("pointermove", this._onMove)
     window.addEventListener("pointerup", this._onUp)
@@ -32,11 +32,11 @@ export default class extends Controller {
   }
 
   move(event) {
-    this.apply(event.clientX - this.element.getBoundingClientRect().left)
+    this.apply(event.clientX - this.panelTarget.getBoundingClientRect().left)
   }
 
   stop() {
-    this.element.classList.remove("is-resizing")
+    this.panelTarget.classList.remove("is-resizing")
     document.body.classList.remove("kb-resizing")
     window.removeEventListener("pointermove", this._onMove)
     window.removeEventListener("pointerup", this._onUp)
@@ -48,12 +48,31 @@ export default class extends Controller {
     if (delta === undefined) return
 
     event.preventDefault()
-    this.apply(this.element.offsetWidth + delta)
+    this.apply(this.panelTarget.offsetWidth + delta)
+  }
+
+  // Narrow screens: the sidebar is an off-canvas drawer (CSS); this flips it.
+  toggleDrawer() {
+    this.setDrawer(!this.element.classList.contains("is-drawer-open"))
+  }
+
+  closeDrawer() {
+    this.setDrawer(false)
+  }
+
+  // Picking something in the tree closes the drawer so the content shows.
+  maybeClose(event) {
+    if (event.target.closest("a, .kb-file-row")) this.setDrawer(false)
+  }
+
+  setDrawer(open) {
+    this.element.classList.toggle("is-drawer-open", open)
+    if (this.hasToggleTarget) this.toggleTarget.setAttribute("aria-expanded", String(open))
   }
 
   apply(width) {
     const clamped = Math.round(Math.min(MAX, Math.max(MIN, width)))
-    this.element.style.setProperty("--kb-sidebar-width", `${clamped}px`)
+    this.panelTarget.style.setProperty("--kb-sidebar-width", `${clamped}px`)
     if (this.hasHandleTarget) this.handleTarget.setAttribute("aria-valuenow", clamped)
 
     try {

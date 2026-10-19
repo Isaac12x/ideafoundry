@@ -1,0 +1,12 @@
+<% links = @backlinks.to_a %>
+<%= render layout: "kb/projects/section", locals: { id: "links", title: "Linked from ideas", summary: (links.empty? ? "None" : links.size.to_s), open: open, lead: lead, mode: mode, project: project } do %>
+  <% if links.empty? %>
+    <p class="kbp-empty">No idea links here yet. Link a project from an idea's page.</p>
+  <% else %>
+    <ul class="kbp-entries">
+      <% links.each do |link| %>
+        <li><%= link_to link.idea.title.presence || "Untitled idea", idea_path(link.idea), class: "kbp-entry", data: { turbo_frame: "_top" } %></li>
+      <% end %>
+    </ul>
+  <% end %>
+<% end %>

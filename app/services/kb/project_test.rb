@@ -1,8 +1,11 @@
 module Kb
   # A real-world experiment inside <project>/Tests/<name>/, run repeatedly.
   class ProjectTest < YamlNode
+    include Findings
+
     META_FILE = ".kb-test.yml".freeze
-    FIELDS = %w[objective protocol].freeze
+    FIELDS = %w[objective protocol stage verdict].freeze
+    VERDICTS = %w[open supported refuted inconclusive].freeze
     DATE_NAME = /\A\d{4}-\d{2}-\d{2}/
 
     attr_reader :project
@@ -14,6 +17,18 @@ module Kb
 
     def objective = meta["objective"].to_s
     def protocol = meta["protocol"].to_s
+    def stage = project && project.stages.include?(meta["stage"]) ? meta["stage"] : ""
+
+    def verdict = VERDICTS.include?(meta["verdict"]) ? meta["verdict"] : "open"
+
+    def update!(attrs)
+      attrs = attrs.to_h.stringify_keys
+      stage = attrs["stage"]
+      raise ArgumentError, "Invalid verdict." if attrs.key?("verdict") && !VERDICTS.include?(attrs["verdict"].to_s)
+      raise ArgumentError, "Invalid stage." if stage.present? && !(project&.stages || []).include?(stage)
+
+      super
+    end
 
     # Date-named folders (or any folder with a run marker), oldest first.
     def runs

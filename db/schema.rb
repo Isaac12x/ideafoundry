@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_10_13_100000) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_18_100000) do
   create_table "action_mailbox_inbound_emails", force: :cascade do |t|
     t.integer "status", default: 0, null: false
     t.string "message_id", null: false
@@ -138,6 +138,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_13_100000) do
     t.boolean "active", default: true, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.text "token"
     t.index ["token_digest"], name: "index_api_keys_on_token_digest", unique: true
     t.index ["user_id"], name: "index_api_keys_on_user_id"
   end
@@ -157,6 +158,25 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_13_100000) do
     t.index ["user_id", "pinned", "position"], name: "index_build_items_on_user_id_and_pinned_and_position"
     t.index ["user_id", "position"], name: "index_build_items_on_user_id_and_position"
     t.index ["user_id"], name: "index_build_items_on_user_id"
+  end
+
+  create_table "capture_jobs", force: :cascade do |t|
+    t.integer "user_id", null: false
+    t.string "public_id", null: false
+    t.string "url", null: false
+    t.string "file_format", default: "md", null: false
+    t.string "state", default: "queued", null: false
+    t.datetime "claimed_at"
+    t.datetime "finished_at"
+    t.string "filename"
+    t.text "error"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.integer "source_index"
+    t.string "dir"
+    t.index ["public_id"], name: "index_capture_jobs_on_public_id", unique: true
+    t.index ["user_id", "state", "created_at"], name: "index_capture_jobs_on_user_id_and_state_and_created_at"
+    t.index ["user_id"], name: "index_capture_jobs_on_user_id"
   end
 
   create_table "drawings", force: :cascade do |t|
@@ -657,6 +677,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_13_100000) do
   add_foreign_key "agent_runs", "users"
   add_foreign_key "api_keys", "users"
   add_foreign_key "build_items", "users"
+  add_foreign_key "capture_jobs", "users"
   add_foreign_key "drawings", "ideas"
   add_foreign_key "export_jobs", "users"
   add_foreign_key "github_repositories", "ideas"

@@ -16,8 +16,22 @@ module KbProjects
 
   def project_update
     project_action(exact: true) do |_base, project|
-      project.update!(params.permit(:goal, :status, :private, :conclusion).to_h)
+      project.update!(params.permit(:goal, :status, :private, :conclusion, :brief, :stage, :stages).to_h)
       redirect_to kb_project_path(src: params[:src], path: project.rel)
+    end
+  end
+
+  # Only role/stage/note of one top-level child; the name is validated in the model.
+  def project_material_update
+    project_action(exact: true) do |base, project|
+      name = params[:name].to_s
+      current = project.material(name)
+      # Fields not sent keep their value (a tree drop sends only the role).
+      project.update_material!(name, role: params.fetch(:role, current["role"]), stage: params.fetch(:stage, current["stage"]),
+                                     note: params.fetch(:note, current["note"]))
+      next respond_fs if params[:tree_only].present?
+
+      respond_project(base, project)
     end
   end
 
@@ -54,7 +68,7 @@ module KbProjects
   def project_test_update
     project_action do |base, project|
       test = project_test(base, project, params[:path].to_s) or next head(:not_found)
-      test.update!(params.permit(:objective, :protocol).to_h)
+      test.update!(params.permit(:objective, :protocol, :stage, :verdict).to_h)
       redirect_to kb_project_path(src: params[:src], path: project.rel)
     end
   end
@@ -73,6 +87,19 @@ module KbProjects
       IdeaKbLink.delete_subtree!(user: @user, source_path: base, relative_path: rel)
       respond_project(base, project)
     end
+  end
+
+  # path = the project folder or one of its tests; findings live on that owner.
+  def project_finding_create
+    project_finding_action { |owner| owner.add_finding!(params[:text]) }
+  end
+
+  def project_finding_update
+    project_finding_action { |owner| owner.update_finding!(params[:id], params[:text]) }
+  end
+
+  def project_finding_destroy
+    project_finding_action { |owner| owner.remove_finding!(params[:id]) }
   end
 
   def project_run_create
@@ -97,7 +124,7 @@ module KbProjects
   # that logged any measurement. delta = change vs the previous numeric value.
   def measurement_table(runs)
     logged = runs.select { |run| run.measurements.any? }
-    names = logged.flat_map { |run| run.measurements.map { |m| m["name"] }.uniq }.tally.select { |_, n| n >= 2 }.keys
+    names = logged.flat_map { |run| run.measurements.map { |m| m["name"] }.uniq }.tally.select { |_, n| n >= 1 }.keys
     return nil if names.empty?
 
     rows = names.map do |name|
@@ -135,6 +162,17 @@ module KbProjects
     redirect_to(project ? kb_project_path(src: params[:src], path: project.rel) : kb_path)
   end
 
+  def project_finding_action
+    project_action do |base, project|
+      rel = params[:path].to_s.sub(%r{/+\z}, "")
+      owner = rel == project.rel ? project : project_test(base, project, rel)
+      next head(:not_found) unless owner
+
+      yield owner
+      respond_project(base, project)
+    end
+  end
+
   def render_project_page(base, project)
     @project = project
     @src = params[:src].to_i
@@ -145,6 +183,7 @@ module KbProjects
 
   # Tests/Run folders change the tree, so those answers refresh it too.
   def respond_project(base, project)
+    Kb::TreeBuilder.bust_cache!(@user)
     return redirect_to(kb_project_path(src: params[:src], path: project.rel)) unless request.format.turbo_stream?
 
     @folders = build_folder_tree
@@ -155,10 +194,20 @@ module KbProjects
     render "kb/project_stream"
   end
 
-  # Non-Tests, non-dot children of the project folder.
+  # Non-Tests, non-dot children of the project folder, with their materials metadata.
   def project_entries(project)
     Dir.children(project.abs).reject { |c| c.start_with?(".") || c == Kb::Project::TESTS_DIR || File.symlink?(File.join(project.abs, c)) }
-       .sort.map { |c| { name: c, rel: File.join(project.rel, c), dir: File.directory?(File.join(project.abs, c)) } }
+       .sort.map do |c|
+      path = File.join(project.abs, c)
+      dir = File.directory?(path)
+      stat = File.stat(path)
+      meta = project.material(c)
+      { name: c, rel: File.join(project.rel, c), dir: dir,
+        ext: dir ? "" : File.extname(c).delete_prefix(".").downcase,
+        size: dir ? nil : stat.size,
+        count: dir ? Dir.children(path).count { |x| !x.start_with?(".") } : nil,
+        mtime: stat.mtime, role: meta["role"], stage: meta["stage"], note: meta["note"] }
+    end
   end
 
   def project_test(base, project, rel)

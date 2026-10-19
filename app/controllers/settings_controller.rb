@@ -600,12 +600,25 @@ class SettingsController < ApplicationController
     @api_keys = @user.api_keys.order(created_at: :desc)
   end
 
+  def capture
+    CaptureJob.expire_stale!
+    @capture_jobs = @user.capture_jobs.recent.limit(10)
+  end
+
   def create_api_key
     key = ApiKey.generate(user: @user, name: params[:name])
     flash[:api_token] = key.raw_token
     redirect_to settings_api_keys_path, notice: "API key created."
   rescue => e
     redirect_to settings_api_keys_path, alert: "Failed to create key: #{e.message}"
+  end
+
+  def reveal_api_key
+    key = @user.api_keys.find(params[:id])
+    response.headers["Cache-Control"] = "no-store"
+    render json: { token: key.token }
+  rescue ActiveRecord::Encryption::Errors::Decryption
+    render json: { token: nil, message: "This key can't be revealed. Create a new key to view it." }
   end
 
   def destroy_api_key
