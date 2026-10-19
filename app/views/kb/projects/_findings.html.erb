@@ -1,0 +1,41 @@
+<%# Discrete findings of one owner (project or test): date, edit in place, delete, one-line add. %>
+<% items = owner.findings %>
+<% unless items.empty? %>
+  <ul class="kbp-findings">
+    <% items.each do |item| %>
+      <li class="kbp-finding" id="finding-<%= item['id'] %>">
+        <time class="kbp-finding-date" datetime="<%= item['at'] %>"><%= (Date.iso8601(item["at"]).strftime("%d %b") rescue item["at"]) %></time>
+        <div class="kbp-finding-main">
+          <p class="kbp-finding-text"><%= item["text"] %></p>
+          <%= form_with url: kb_project_findings_path, method: :patch, class: "kbp-finding-edit", data: { cancelable: "1" } do %>
+            <%= hidden_field_tag :src, @src, id: nil %>
+            <%= hidden_field_tag :path, owner.rel, id: nil %>
+            <%= hidden_field_tag :id, item["id"], id: nil %>
+            <textarea name="text" rows="2" maxlength="2000" class="kbp-input kbp-grow kbp-grow--edit" aria-label="Edit finding"
+                      data-action="keydown->kb-project#findingKey"><%= item["text"] %></textarea>
+            <div class="kbp-actions">
+              <button class="kbp-btn kbp-btn--primary">Save</button>
+              <button type="button" class="kbp-btn" data-action="kb-project#closeFinding">Cancel</button>
+            </div>
+          <% end %>
+        </div>
+        <div class="kbp-finding-tools">
+          <button type="button" class="kbp-link" aria-label="Edit finding" data-action="kb-project#openFinding">Edit</button>
+          <%= form_with url: kb_project_findings_path, method: :delete, class: "kbp-inline", data: { action: "submit->kb-project#confirmDeleteFinding" } do %>
+            <%= hidden_field_tag :src, @src, id: nil %>
+            <%= hidden_field_tag :path, owner.rel, id: nil %>
+            <%= hidden_field_tag :id, item["id"], id: nil %>
+            <button class="kbp-link kbp-link--danger" aria-label="Delete finding">Delete</button>
+          <% end %>
+        </div>
+      </li>
+    <% end %>
+  </ul>
+<% end %>
+<%= form_with url: kb_project_findings_path, method: :post, class: "kbp-finding-add kbp-input", data: { refocus: "f-#{owner.rel}" } do %>
+  <%= hidden_field_tag :src, @src, id: nil %>
+  <%= hidden_field_tag :path, owner.rel, id: nil %>
+  <input type="text" name="text" maxlength="2000" class="kbp-add-field" aria-label="Add a finding" autocomplete="off"
+         placeholder="<%= placeholder %>">
+  <button class="kbp-btn">Add</button>
+<% end %>

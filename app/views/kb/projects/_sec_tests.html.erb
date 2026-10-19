@@ -1,0 +1,42 @@
+<% tests = kb_attention_tests(project) %>
+<% open_rels = mode == "test" ? kb_open_test_rels(tests) : [] %>
+<% runs_total = tests.sum { |t| kb_runs(t).size } %>
+<% verdicts = tests.map(&:verdict).tally %>
+<% summary = if tests.empty?
+     "None yet"
+   else
+     parts = [ pluralize(tests.size, "test"), pluralize(runs_total, "run") ]
+     parts += Kb::ProjectTest::VERDICTS.reject { |v| v == "open" }.select { |v| verdicts[v] }.map { |v| "#{verdicts[v]} #{v}" }
+     parts << "#{verdicts['open']} open" if verdicts["open"]
+     parts.join(" · ")
+   end %>
+<%= render layout: "kb/projects/section", locals: { id: "tests", title: "Tests", summary: summary, open: open, lead: lead, mode: mode, project: project } do %>
+  <% if mode == "test" && tests.any? %>
+    <ul class="kbp-strip" aria-label="Tests at a glance">
+      <% tests.each do |test| %>
+        <li><a href="#<%= kb_test_dom_id(test) %>" class="kbp-strip-item" data-target="<%= kb_test_dom_id(test) %>" data-action="kb-project#jump">
+          <span class="kbp-strip-name"><%= test.name %></span>
+          <span class="kbp-strip-meta" data-tone="<%= kb_verdict_tone(test.verdict) %>"><%= test.verdict.capitalize %> · <%= pluralize(kb_runs(test).size, "run") %></span>
+        </a></li>
+      <% end %>
+    </ul>
+  <% end %>
+  <details class="kbp-edit kbp-edit--inline">
+    <summary>+ New test</summary>
+    <%= form_with url: kb_project_tests_path, method: :post, class: "kbp-form" do %>
+      <%= hidden_field_tag :src, @src, id: nil %>
+      <%= hidden_field_tag :dir, project.rel, id: nil %>
+      <input type="text" name="name" required class="kbp-input" placeholder="Test name, e.g. Survival at 4°C" aria-label="Test name" autocomplete="off">
+      <textarea name="objective" rows="2" class="kbp-input" placeholder="Objective / hypothesis" aria-label="Objective"></textarea>
+      <div class="kbp-actions"><button class="kbp-btn kbp-btn--primary">Add test</button></div>
+    <% end %>
+  </details>
+  <% if tests.empty? %>
+    <p class="kbp-empty">No tests yet. A test is something you do in the real world, repeatedly, and compare. Give it a hypothesis, log each run, then set a verdict.</p>
+  <% end %>
+  <div class="kbp-cards">
+    <% tests.each do |test| %>
+      <%= render "kb/projects/test", test: test, project: project, mode: mode, open: open_rels.include?(test.rel) %>
+    <% end %>
+  </div>
+<% end %>

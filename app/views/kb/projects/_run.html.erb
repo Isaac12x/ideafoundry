@@ -10,7 +10,7 @@
         <div class="kb-markdown rich-text-content kbp-prose"><%= render_markdown(run.result) %></div>
       </div>
     <% end %>
-    <% if run.measurements.any? %>
+    <% if run.measurements.any? && !local_assigns[:table] %>
       <dl class="kbp-measures">
         <% run.measurements.each do |m| %>
           <div><dt><%= m["name"] %></dt><dd><%= m["value"] %><% if m["unit"].present? %> <span class="kbp-unit"><%= m["unit"] %></span><% end %></dd></div>

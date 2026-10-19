@@ -16,6 +16,84 @@ class SettingsControllerTest < ActionDispatch::IntegrationTest
     assert_select "textarea[name=?]", "display_settings[quote]", count: 0
   end
 
+  test "GET settings renders Chrome Capture link" do
+    get settings_path
+    assert_select "a[href=?]", settings_capture_path
+  end
+
+  test "GET settings/capture lists recent jobs" do
+    @user.capture_jobs.create!(url: "https://example.com/listed")
+    get settings_capture_path
+    assert_response :success
+    assert_select ".capture-job-url", text: "https://example.com/listed"
+  end
+
+  test "api keys page has no capture section" do
+    get settings_api_keys_path
+    assert_response :success
+    assert_no_match "Capture via Chrome extension", response.body
+  end
+
+  test "api keys page renders create, keys and docs cards with masked key" do
+    key = ApiKey.generate(user: @user, name: "Zapier")
+    get settings_api_keys_path
+    assert_response :success
+    assert_select "section.api-card", 3
+    assert_select "#api-create-title", "Create"
+    assert_select "#api-keys-title", "Your keys"
+    assert_select "#api-docs-title", "Docs"
+    assert_select "[data-controller='key-reveal'] [data-key-reveal-target='masked']"
+    assert_select "button[data-action='key-reveal#toggle'][aria-pressed='false']"
+    assert_select "form[action=?]", settings_api_key_destroy_path(key)
+    assert_no_match key.raw_token, response.body
+    assert_match "/api/v1/capture", response.body
+  end
+
+  test "api key creation stores token encrypted and reveal returns it to owner" do
+    key = ApiKey.generate(user: @user, name: "Reveal")
+    raw = ApiKey.connection.select_value("SELECT token FROM api_keys WHERE id = #{key.id}")
+    assert_not_equal key.raw_token, raw
+    assert_not_includes raw.to_s, key.raw_token
+
+    get settings_api_key_reveal_path(key)
+    assert_response :success
+    assert_equal "no-store", response.headers["Cache-Control"]
+    assert_equal key.raw_token, response.parsed_body["token"]
+    assert_equal key, ApiKey.authenticate(key.raw_token)
+  end
+
+  test "reveal with undecryptable token responds like legacy" do
+    key = ApiKey.generate(user: @user, name: "Broken")
+    raw = ApiKey.connection.select_value("SELECT token FROM api_keys WHERE id = #{key.id}")
+    payload = JSON.parse(raw)
+    payload["p"] = Base64.strict_encode64("x" * 64) # breaks the auth tag
+    ApiKey.connection.execute(ApiKey.sanitize_sql_array([ "UPDATE api_keys SET token = ? WHERE id = ?", payload.to_json, key.id ]))
+    get settings_api_key_reveal_path(key)
+    assert_response :success
+    assert_nil response.parsed_body["token"]
+    assert response.parsed_body["message"].present?
+  end
+
+  test "reveal 404s for another user's key" do
+    other = User.create!(email: "other-#{SecureRandom.hex(3)}@example.com", name: "Other")
+    key = ApiKey.generate(user: other, name: "Theirs")
+    get settings_api_key_reveal_path(key)
+    assert_response :not_found
+  end
+
+  test "reveal for legacy key without stored token returns null" do
+    key = ApiKey.generate(user: @user, name: "Legacy")
+    key.update_column(:token, nil)
+    get settings_api_key_reveal_path(key)
+    assert_response :success
+    assert_nil response.parsed_body["token"]
+  end
+
+  test "settings index wires scroll/last-viewed controller" do
+    get settings_path
+    assert_select ".settings-container[data-controller='settings-index']"
+  end
+
   test "GET settings renders Display link" do
     get settings_path
     assert_response :success

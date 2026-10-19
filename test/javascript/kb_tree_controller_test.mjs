@@ -32,6 +32,20 @@ test("drop routes external files to upload and internal nodes to move", async ()
   assert.equal(uploaded.destination.rel, "research")
 })
 
+test("new folder with several picked files sends them to the server from their common parent", async () => {
+  const Controller = await loadController()
+  const controller = new Controller()
+  const row = (rel) => ({ dataset: { kbTreeSrcParam: "1", kbTreeRelParam: rel } })
+  controller._multiRows = () => [row("a/x.md"), row("a/y.md")]
+  controller._node = { type: "file", rel: "a/x.md", src: 1, multi: true }
+  let sent
+  controller._submitForm = (url, method, fields) => { sent = fields }
+
+  controller._create("folder")
+
+  assert.deepEqual(sent, { src: 1, dir: "a", kind: "folder", "move[]": ["a/x.md", "a/y.md"] })
+})
+
 test("AI jobs target folders directly and files through their parent", async () => {
   const Controller = await loadController()
   const controller = new Controller()
@@ -218,14 +232,131 @@ test("tree arrow keys move between visible items and collapse/expand folders", a
   assert.equal(focused, folder)
 })
 
+test("deleting a folder named like a number submits its path (Stimulus casts the param to Number)", async () => {
+  const KbTreeController = await loadController()
+  const controller = new KbTreeController()
+  const submitted = []
+  controller.menuTarget = { classList: { remove() {} } }
+  controller.hasMenuTarget = true
+  controller._unbindDocListeners = () => {}
+  controller._submitForm = (...args) => submitted.push(args)
+  controller.deleteUrlValue = "/knowledge-base/fs"
+  controller._node = null
+  controller.itemsTarget = {}
+  controller.promptTarget = {}
+  controller.itemTargets = []
+  controller.menuTarget = {
+    classList: { add() {}, remove() {} },
+    style: {},
+    getBoundingClientRect: () => ({ left: 0, top: 0 }),
+    offsetWidth: 0,
+    offsetHeight: 0
+  }
+  controller._onDocMousedown = controller._onDocKeydown = () => {}
+  globalThis.document = { addEventListener() {}, removeEventListener() {} }
+  globalThis.window = { innerWidth: 100, innerHeight: 100, AppDialog: { confirm: async () => true } }
+
+  controller._open({ type: "dir", rel: 2024, src: 1 }, 0, 0, null)
+  await controller.destroy({ stopPropagation() {} })
+
+  assert.deepEqual(submitted, [["/knowledge-base/fs", "delete", { src: 1, path: "2024" }]])
+})
+
+test("delete falls back to window.confirm when the app dialog is missing", async () => {
+  const KbTreeController = await loadController()
+  const controller = new KbTreeController()
+  const submitted = []
+  controller._hide = () => {}
+  controller._submitForm = (...args) => submitted.push(args)
+  controller.deleteUrlValue = "/knowledge-base/fs"
+  controller._node = { type: "file", rel: "notes/a.md", src: 0 }
+  const asked = []
+  globalThis.window = { confirm: (message) => { asked.push(message); return true } }
+
+  await controller.destroy({ stopPropagation() {} })
+
+  assert.deepEqual(asked, ['Delete "a.md"?'])
+  assert.deepEqual(submitted, [["/knowledge-base/fs", "delete", { src: 0, path: "notes/a.md" }]])
+
+  globalThis.window = { confirm: () => false }
+  await controller.destroy({ stopPropagation() {} })
+  assert.equal(submitted.length, 1)
+})
+
 async function loadController() {
   const source = await readFile(
     new URL("../../app/javascript/controllers/kb_tree_controller.js", import.meta.url),
     "utf8"
   )
   const runnableSource = source
-    .replace(/import \{ Controller \} from "@hotwired\/stimulus"\n\n/, "")
+    .replace(/^import .*$/gm, "")
     .replace("export default class extends Controller", "return class KbTreeController extends Controller")
+  const { confirmDialog, alertDialog } = await import("../../app/javascript/lib/app_dialog.mjs")
 
-  return new Function("Controller", runnableSource)(class {})
+  return new Function("Controller", "confirmDialog", "alertDialog", runnableSource)(class {}, confirmDialog, alertDialog)
 }
+
+test("a file loaded into kb-content from any link moves the active highlight", async () => {
+  const Controller = await loadController()
+  const controller = new Controller()
+  const mk = (on, src, rel) => {
+    const set = new Set(on ? ["is-active"] : [])
+    const link = { set, classList: { add: (c) => set.add(c) } }
+    return {
+      dataset: { kbTreeSrcParam: src, kbTreeRelParam: rel }, set,
+      classList: { add: (c) => set.add(c), remove: (c) => set.delete(c), contains: (c) => set.has(c) },
+      querySelector: () => link, link
+    }
+  }
+  const oldRow = mk(true, 0, "a.md")
+  const newRow = mk(false, 1, "b/c.md")
+  controller._queueSync = () => {}
+  controller.element = {
+    querySelectorAll: (sel) => sel === ".kb-file-row" ? [oldRow, newRow] : [oldRow, newRow],
+  }
+  const load = (src) => controller._highlightFrameFile({ target: { id: "kb-content", src } })
+
+  load("http://x/knowledge-base/file?src=1&file=b%2Fc.md")
+  assert.equal(oldRow.set.has("is-active"), false)
+  assert.equal(newRow.set.has("is-active"), true)
+  assert.equal(newRow.link.set.has("is-active"), true)
+
+  load("http://x/knowledge-base/projects/3") // not a file URL: unchanged
+  assert.equal(newRow.set.has("is-active"), true)
+})
+
+test("dropping a project child on a role shelf sends only its role, scoped to that project", async () => {
+  const Controller = await loadController()
+  const controller = new Controller()
+  controller.projectMaterialsUrlValue = "/materials"
+  controller.element = { classList: { remove() {}, add() {} } }
+  let sent
+  controller._submitForm = (url, method, fields) => { sent = { url, method, fields } }
+  const shelf = (role, projectRel = "Lab", src = 0) => ({
+    params: { role, projectRel, src },
+    currentTarget: { classList: { remove() {}, add() {} } },
+    dataTransfer: {},
+    preventDefault() { sent = sent || "prevented" }
+  })
+
+  controller._drag = { type: "file", rel: "Lab/a.txt", src: 0 }
+  controller.roleDrop(shelf("output"))
+  assert.deepEqual(sent, { url: "/materials", method: "patch", fields: { src: 0, path: "Lab", name: "a.txt", role: "output", tree_only: "1" } })
+
+  sent = undefined
+  controller._drag = { type: "dir", rel: "Lab/raw", src: 0 }
+  controller.roleDrop(shelf("")) // Inbox = blank role
+  assert.equal(sent.fields.role, "")
+
+  for (const drag of [
+    { type: "file", rel: "Other/a.txt", src: 0 },     // another project's file
+    { type: "file", rel: "Lab/Tests/x.md", src: 0 },  // nested, not a direct child
+    { type: "dir", rel: "Lab/Tests", src: 0 },        // the Tests dir is not a material
+    { type: "file", rel: "Lab/a.txt", src: 1 }        // another source
+  ]) {
+    sent = undefined
+    controller._drag = drag
+    controller.roleDrop(shelf("working"))
+    assert.equal(sent, undefined, `${drag.rel} must not be re-roled`)
+  }
+})

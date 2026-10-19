@@ -64,4 +64,157 @@ class Kb::ProjectFoundationTest < ActiveSupport::TestCase
   ensure
     FileUtils.rm_rf(outside)
   end
+
+  def project_with_files
+    project = Kb::Project.create!(base: @base, parent_rel: "", name: "P")
+    FileUtils.mkdir_p(File.join(@base, "P/Tests/T"))
+    FileUtils.mkdir_p(File.join(@base, "P/dir"))
+    File.write(File.join(@base, "P/a.md"), "x")
+    File.write(File.join(@base, "P/.hidden"), "x")
+    project
+  end
+
+  test "stages default, normalize, validate" do
+    project = project_with_files
+    assert_equal %w[Frame Research Test Conclude], project.stages
+    assert_equal "Frame", project.stage
+
+    project.update!(stages: " A \n\na\nB\n" + "x" * 41 + "\nC")
+    assert_equal %w[A B C], project.stages
+    project.update!(stages: %w[One Two Three Four Five Six Seven Eight Nine])
+    assert_equal 8, project.stages.size
+    assert_raises(ArgumentError) { project.update!(stages: " \n ") }
+    assert_raises(ArgumentError) { project.update!(stages: []) }
+    assert_equal 8, Kb::Project.at(@base, "P").stages.size
+  end
+
+  test "stage validated and reset when removed" do
+    project = project_with_files
+    project.update!(stage: "Test")
+    assert_equal "Test", Kb::Project.at(@base, "P").stage
+    assert_raises(ArgumentError) { project.update!(stage: "Nope") }
+    project.update!(stages: "Frame\nShip")
+    assert_equal "Frame", project.stage
+    project.update!(stage: "Ship")
+    project.update!(stages: "Ship\nMore")
+    assert_equal "Ship", project.stage
+    project.update!(stages: "Only", stage: "Bogus")
+    assert_equal "Only", project.stage
+  end
+
+  test "update_material! validates and persists" do
+    project = project_with_files
+    assert_equal({ "role" => nil, "stage" => "", "note" => "" }, project.material("a.md"))
+    project.update_material!("a.md", role: "reference", stage: "Research", note: "n" * 300)
+    reloaded = Kb::Project.at(@base, "P").material("a.md")
+    assert_equal "reference", reloaded["role"]
+    assert_equal "Research", reloaded["stage"]
+    assert_equal 280, reloaded["note"].size
+    project.update_material!("dir", role: "output", stage: "", note: "")
+    assert_equal "output", project.material("dir")["role"]
+
+    assert_raises(ArgumentError) { project.update_material!("a.md", role: "bogus") }
+    assert_raises(ArgumentError) { project.update_material!("a.md", role: "working", stage: "Nope") }
+    %w[Tests .hidden missing ../x a/b].each do |bad|
+      assert_raises(ArgumentError, bad) { project.update_material!(bad, role: "working") }
+    end
+    File.symlink(File.join(@base, "P/a.md"), File.join(@base, "P/link"))
+    assert_raises(ArgumentError) { project.update_material!("link", role: "working") }
+  end
+
+  test "update_material! all blank deletes the key; generic update! cannot write materials" do
+    project = project_with_files
+    project.update_material!("a.md", role: "working")
+    project.update_material!("a.md", role: "", stage: "", note: "  ")
+    assert_not YAML.load_file(File.join(@base, "P/.kb-project.yml"), permitted_classes: [ Time ])["materials"].key?("a.md")
+    project.update!(materials: { "evil" => { "role" => "working" } })
+    assert_empty YAML.load_file(File.join(@base, "P/.kb-project.yml"), permitted_classes: [ Time ])["materials"]
+  end
+
+  test "rename_material! moves the key and ignores absent" do
+    project = project_with_files
+    project.update_material!("a.md", role: "working", note: "hi")
+    project.rename_material!("a.md", "b.md")
+    assert_equal "hi", project.material("b.md")["note"]
+    assert_nil project.material("a.md")["role"]
+    assert_nothing_raised { project.rename_material!("zzz", "y") }
+  end
+
+  test "test stage is validated against project stages" do
+    project = project_with_files
+    test = project.create_test!(name: "Cold")
+    assert_equal "", test.stage
+    test.update!(stage: "Test")
+    assert_equal "Test", Kb::ProjectTest.new(@base, test.rel, project).stage
+    test.update!(stage: "")
+    assert_raises(ArgumentError) { test.update!(stage: "Nope") }
+  end
+
+  test "stage_mode maps names by keyword then falls back by position" do
+    project = Kb::Project.create!(base: @base, parent_rel: "", name: "P")
+    assert_equal %w[frame research test conclude], project.stages.map { |st| project.stage_mode(st) }
+    project.update!(stages: "Alpha\nBeta\nGamma")
+    assert_equal %w[frame research conclude], %w[Alpha Beta Gamma].map { |st| project.stage_mode(st) }
+    assert_equal "frame", project.stage_mode
+    project.update!(stages: "Solo")
+    assert_equal "frame", project.stage_mode
+    project.update!(stages: "Experiments\nShip it")
+    assert_equal %w[test conclude], project.stages.map { |st| project.stage_mode(st) }
+  end
+
+  test "brief and concluded_on follow status" do
+    project = Kb::Project.create!(base: @base, parent_rel: "", name: "P")
+    project.update!(brief: "## Question")
+    assert_equal "## Question", project.brief
+    assert_nil project.concluded_on
+    project.update!(status: "concluded")
+    assert_equal Date.current, project.concluded_on
+    File.write(File.join(project.abs, ".kb-project.yml"), YAML.dump(project.send(:meta).merge("concluded_on" => "2026-01-02")))
+    project = Kb::Project.at(@base, "P")
+    project.update!(status: "concluded", goal: "x")
+    assert_equal Date.new(2026, 1, 2), Kb::Project.at(@base, "P").concluded_on
+    project.update!(status: "paused")
+    assert_nil Kb::Project.at(@base, "P").concluded_on
+  end
+
+  test "test verdict defaults to open and rejects unknown values" do
+    project = Kb::Project.create!(base: @base, parent_rel: "", name: "P")
+    test = project.create_test!(name: "T")
+    assert_equal "open", test.verdict
+    test.update!(verdict: "supported")
+    assert_equal "supported", project.tests.first.verdict
+    assert_raises(ArgumentError) { test.update!(verdict: "maybe") }
+  end
+
+  test "findings add, update, remove and aggregate across owners" do
+    project = Kb::Project.create!(base: @base, parent_rel: "", name: "P")
+    test = project.create_test!(name: "T")
+    assert_empty project.all_findings
+
+    first = project.add_finding!("  Yeast likes 4C  ")
+    assert_equal "Yeast likes 4C", first["text"]
+    assert_equal Date.current.iso8601, first["at"]
+    assert_match(/\A\h{8}\z/, first["id"])
+    other = test.add_finding!("pH drops")
+
+    assert_equal "Changed", project.update_finding!(first["id"], "Changed")["text"]
+    assert_equal [ "Changed" ], Kb::Project.at(@base, "P").findings.map { |f| f["text"] }
+    assert_equal [ project.rel, test.rel ], project.all_findings.map { |g| g[:owner].rel }
+    assert_equal [ other ], project.all_findings.last[:items]
+
+    assert_raises(ArgumentError) { project.add_finding!("  ") }
+    assert_raises(ArgumentError) { project.update_finding!("nope", "x") }
+    assert_raises(ArgumentError) { project.remove_finding!("nope") }
+    assert_equal 2000, project.add_finding!("a" * 3000)["text"].length
+
+    test.remove_finding!(other["id"])
+    assert_empty test.findings
+    assert_equal [ project.rel ], project.all_findings.map { |g| g[:owner].rel }
+  end
+
+  test "malformed findings are dropped" do
+    project = Kb::Project.create!(base: @base, parent_rel: "", name: "P")
+    File.write(File.join(project.abs, ".kb-project.yml"), "findings:\n  - nope\n  - {id: a, text: ' '}\n  - {id: b, text: ok, at: 2026-01-01}\n")
+    assert_equal [ { "id" => "b", "text" => "ok", "at" => "2026-01-01" } ], Kb::Project.at(@base, "P").findings
+  end
 end

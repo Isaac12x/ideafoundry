@@ -1,9 +1,23 @@
 <% project = @project %>
+<%# The stage drives the page: order, which sections start open, and which one leads. %>
+<% mode = project.stage_mode %>
+<% plan = {
+  "frame"    => { order: %w[brief materials tests findings conclusion links], open: %w[brief],
+                  hint: "Pin down the question before collecting anything." },
+  "research" => { order: %w[materials findings brief tests conclusion links], open: %w[materials findings],
+                  hint: "Collect and sort what you read. Write findings down as you go." },
+  "test"     => { order: %w[tests findings materials brief conclusion links], open: %w[tests findings],
+                  hint: "Run the tests, log every run, then set a verdict on each." },
+  "conclude" => { order: %w[conclusion summary results materials tests brief findings links], open: %w[conclusion summary results],
+                  hint: "Write the answer to the goal, then close the project." }
+}[mode] %>
 <%# Every form posts src+path so the server re-resolves inside the source. %>
 <% ids = capture do %><%= hidden_field_tag :src, @src, id: nil %><%= hidden_field_tag :path, project.rel, id: nil %><% end %>
-<div class="kbp" data-controller="kb-project">
+<% status_tones = { "active" => "success", "paused" => "warning", "concluded" => "muted" } %>
+<div class="kbp kbp--<%= mode %>" data-controller="kb-project kb-materials" data-kb-materials-key-value="<%= project.rel %>"
+     data-kb-project-key-value="<%= @src %>:<%= project.rel %>" data-action="submit->kb-project#remember">
   <header class="kbp-head">
-    <p class="kbp-eyebrow">Project
+    <div class="kbp-eyebrow"><span><%= mode == "conclude" ? "Project report" : "Project" %></span>
       <span class="kbp-eyebrow-sep" aria-hidden="true"></span>
       <%= form_with url: kb_project_path, method: :patch, class: "kbp-inline" do %>
         <%= ids %>
@@ -18,14 +32,23 @@
       <% end %>
       <%= form_with url: kb_project_path, method: :patch, class: "kbp-inline" do %>
         <%= ids %>
-        <select name="status" class="kbp-status kbp-status--<%= project.status %>" aria-label="Status"
-                data-action="change->kb-project#submit">
+        <select name="status" class="kbp-pill kbp-status" aria-label="Status" data-tone="<%= status_tones[project.status] %>"
+                data-controller="select-menu" data-action="change->kb-project#submit">
           <% Kb::Project::STATUSES.each do |status| %>
-            <%= tag.option status.capitalize, value: status, selected: status == project.status %>
+            <%= tag.option status.capitalize, value: status, selected: status == project.status, data: { tone: status_tones[status] } %>
           <% end %>
         </select>
       <% end %>
-    </p>
+      <% if project.status == "concluded" && project.concluded_on %>
+        <span class="kbp-concluded">Concluded <time datetime="<%= project.concluded_on.iso8601 %>"><%= project.concluded_on.strftime("%-d %B %Y") %></time></span>
+      <% end %>
+      <% if mode == "conclude" %>
+        <span class="kbp-tools">
+          <button type="button" class="kbp-link" data-action="kb-project#copyReport" data-markdown="<%= kb_report_markdown(project) %>" aria-live="polite">Copy as markdown</button>
+          <button type="button" class="kbp-link" data-action="kb-project#print">Print</button>
+        </span>
+      <% end %>
+    </div>
     <h1 class="kbp-title"><%= project.name %></h1>
     <%= form_with url: kb_project_path, method: :patch, class: "kbp-goal-form" do %>
       <%= ids %>
@@ -33,75 +56,31 @@
              placeholder="Goal: what am I trying to find out?" aria-label="Goal"
              data-action="change->kb-project#submit">
     <% end %>
+    <% todo = kb_project_next(project, @entries, mode) %>
+    <% unsettled = mode == "conclude" ? kb_unsettled_tests(project) : [] %>
+    <% todo = [] if project.status == "concluded" %>
+    <% if todo.any? || unsettled.any? %>
+      <p class="kbp-todo">
+        <% if todo.any? %><span class="kbp-todo-label">Next</span>
+          <% todo.each do |item| %><a href="#<%= item[:target] %>" class="kbp-todo-item" data-target="<%= item[:target] %>" data-action="kb-project#jump"><%= item[:label] %></a><% end %><% end %>
+        <% if unsettled.any? %><span class="kbp-todo-warn"><a href="#kbp-sec-results" class="kbp-todo-item" data-target="kbp-sec-results" data-action="kb-project#jump"><%= pluralize(unsettled.size, "test") %> without a verdict</a> will show as open in the report.</span><% end %>
+      </p>
+    <% end %>
+    <%= render "kb/projects/stage_rail", project: project, ids: ids, hint: plan[:hint] %>
   </header>
 
-  <section class="kbp-section" aria-labelledby="kbp-findings">
-    <h2 id="kbp-findings" class="kbp-h2">Findings</h2>
-    <% if project.conclusion.present? %>
-      <article class="kb-markdown rich-text-content kbp-prose"><%= render_markdown(project.conclusion) %></article>
-    <% else %>
-      <p class="kbp-empty">What did you get out of this project? Write it here when you know.</p>
-    <% end %>
-    <details class="kbp-edit">
-      <summary><%= project.conclusion.present? ? "Edit findings" : "Write findings" %></summary>
-      <%= form_with url: kb_project_path, method: :patch, class: "kbp-form" do %>
-        <%= ids %>
-        <textarea name="conclusion" rows="8" class="kbp-input" aria-label="Findings (markdown)"><%= project.conclusion %></textarea>
-        <div class="kbp-actions"><button class="kbp-btn kbp-btn--primary">Save findings</button></div>
-      <% end %>
-    </details>
-  </section>
 
-  <section class="kbp-section" aria-labelledby="kbp-tests">
-    <div class="kbp-h2-row">
-      <h2 id="kbp-tests" class="kbp-h2">Tests</h2>
-      <details class="kbp-edit kbp-edit--inline">
-        <summary>New test</summary>
-        <%= form_with url: kb_project_tests_path, method: :post, class: "kbp-form" do %>
-          <%= hidden_field_tag :src, @src, id: nil %>
-          <%= hidden_field_tag :dir, project.rel, id: nil %>
-          <input type="text" name="name" required class="kbp-input" placeholder="Test name, e.g. Survival at 4°C" aria-label="Test name" autocomplete="off">
-          <textarea name="objective" rows="2" class="kbp-input" placeholder="Objective / hypothesis" aria-label="Objective"></textarea>
-          <div class="kbp-actions"><button class="kbp-btn kbp-btn--primary">Add test</button></div>
-        <% end %>
-      </details>
-    </div>
-    <% tests = project.tests %>
-    <% if tests.empty? %>
-      <p class="kbp-empty">No tests yet. A test is something you do in the real world, repeatedly, and compare.</p>
-    <% end %>
-    <% tests.each do |test| %>
-      <%= render "kb/projects/test", test: test, project: project %>
-    <% end %>
-  </section>
-
-  <% if @entries.any? %>
-    <section class="kbp-section" aria-labelledby="kbp-entries">
-      <h2 id="kbp-entries" class="kbp-h2">Other entries</h2>
-      <ul class="kbp-entries">
-        <% @entries.each do |entry| %>
-          <li>
-            <% if entry[:dir] %>
-              <span class="kbp-entry kbp-entry--dir"><%= entry[:name] %>/</span>
-            <% else %>
-              <%= link_to entry[:name], kb_file_path(src: @src, file: entry[:rel]), class: "kbp-entry", data: { turbo_frame: "kb-content" } %>
-            <% end %>
-          </li>
-        <% end %>
-      </ul>
-    </section>
+  <% plan[:order].each_with_index do |id, i| %>
+    <% if mode == "conclude" && id == "materials" %><p class="kbp-appendix">Appendix</p><% end %>
+    <%= render "kb/projects/sec_#{id}", project: project, ids: ids, mode: mode, lead: i.zero?, open: plan[:open].include?(id) %>
   <% end %>
 
-  <section class="kbp-section" aria-labelledby="kbp-links">
-    <h2 id="kbp-links" class="kbp-h2">Linked from ideas</h2>
-    <% if @backlinks.empty? %>
-      <p class="kbp-empty">No idea links here yet. Link a project from an idea's page.</p>
-    <% else %>
-      <ul class="kbp-entries">
-        <% @backlinks.each do |link| %>
-          <li><%= link_to link.idea.title.presence || "Untitled idea", idea_path(link.idea), class: "kbp-entry", data: { turbo_frame: "_top" } %></li>
-        <% end %>
-      </ul>
-    <% end %>
-  </section>
+  <% if mode == "conclude" %>
+    <footer class="kbp-colophon">
+      <span class="kbp-end" aria-hidden="true"></span>
+      <% tests = project.tests %>
+      <p><%= project.status == "concluded" ? "End of report." : "Draft report." %>
+        <%= pluralize(tests.size, "test") %>, <%= pluralize(tests.sum { |t| t.runs.size }, "run") %>, <%= pluralize(project.all_findings.sum { |g| g[:items].size }, "finding") %>.</p>
+    </footer>
+  <% end %>
 </div>
