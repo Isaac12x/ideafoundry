@@ -138,6 +138,29 @@ class KbControllerTest < ActionDispatch::IntegrationTest
     assert_equal "audio", dl.format
   end
 
+  test "ChatGPT and Claude URLs queue a capture job instead of a download" do
+    use_isolated_kb_folder
+    FileUtils.mkdir_p(File.join(@kb_dir, "chats"))
+    { "https://chatgpt.com/c/abc" => "chats", "https://claude.ai/chat/xyz" => "" }.each do |url, dir|
+      assert_no_difference -> { KbDownload.count } do
+        assert_difference -> { @user.capture_jobs.count }, 1 do
+          post kb_fs_create_path, params: { src: 0, dir: dir, kind: "file", name: url }
+        end
+      end
+      job = @user.capture_jobs.order(:id).last
+      assert_equal [ url, "md", 0, dir ], [ job.url, job.file_format, job.source_index, job.dir ]
+      assert_match(/browser extension/, flash[:notice])
+    end
+  end
+
+  test "ordinary URLs still create a download, not a capture job" do
+    assert_no_difference -> { CaptureJob.count } do
+      assert_difference -> { KbDownload.count }, 1 do
+        post kb_fs_create_path, params: { src: 0, dir: "", kind: "file", name: "https://example.com/a.pdf" }
+      end
+    end
+  end
+
   test "turbo file op refreshes the tree and content in place instead of reloading" do
     use_isolated_kb_folder
 

@@ -1,0 +1,32 @@
+<%# Project children shelved by material role; rows keep their real rel. Tests stays a real dir node. %>
+<%
+  tests, materials = node[:children].partition { |child, c| c[:type] == :dir && child == Kb::Project::TESTS_DIR }
+  shelves = materials.group_by { |child, _| project[:roles][child] || "inbox" }
+  shared = { folder_index: folder_index, selected_file: selected_file, selected_folder_index: selected_folder_index,
+             default_folder_preference: default_folder_preference, editing_src: editing_src, editing_rel: editing_rel }
+%>
+<% [ [ "working", "Working", true ], [ "inbox", "Inbox", true ], [ "output", "Output", false ], [ "reference", "Reference", false ] ].each do |role, label, open| %>
+  <% items = shelves[role] || [] %>
+  <% count = items.count { |_, c| %i[file dir].include?(c[:type]) } %>
+  <%# Empty shelves stay hidden until a drag starts, so a file can be dropped onto any role. %>
+  <div class="kb-dir-group kb-role-group kb-role-group--<%= role %><%= ' is-empty' if items.empty? %>" role="none" data-controller="kb-folder"
+       data-kb-folder-key-value="<%= folder_index %>:<%= node[:rel] %>#<%= role %>"
+       data-kb-folder-default-open-value="<%= open %>">
+    <div class="kb-node kb-dir-header kb-role-header" role="treeitem" tabindex="-1" aria-expanded="<%= open %>"
+         aria-label="<%= label %>, <%= count %>"
+         data-action="click->kb-folder#toggle dragover->kb-tree#roleOver dragleave->kb-tree#dragLeave drop->kb-tree#roleDrop"
+         data-kb-tree-role-param="<%= role == 'inbox' ? '' : role %>"
+         data-kb-tree-project-rel-param="<%= node[:rel] %>"
+         data-kb-tree-src-param="<%= folder_index %>">
+      <button type="button" class="kb-node-twisty kb-dir-toggle" tabindex="-1" aria-hidden="true">
+        <svg class="kb-folder-chevron" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <span class="kb-role-label"><%= label %></span>
+      <span class="kb-role-count"><%= count %></span>
+    </div>
+    <div class="kb-node-children kb-dir-children" role="group" data-kb-folder-target="files">
+      <%= render "kb/tree_node", tree: items.to_h, **shared %>
+    </div>
+  </div>
+<% end %>
+<%= render "kb/tree_node", tree: tests.to_h, parent_project: true, **shared %>

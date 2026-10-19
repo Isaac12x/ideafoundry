@@ -94,6 +94,16 @@ class KbFsOpsTest < ActionDispatch::IntegrationTest
     FileUtils.rm_f(outside)
   end
 
+  test "deletes a file via the tree's turbo-stream form post" do
+    File.write(File.join(@kb_dir, "a.md"), "hi")
+
+    post kb_fs_delete_path, params: { _method: "delete", src: @src, path: "a.md", sel_src: @src, sel_file: "a.md" },
+                            as: :turbo_stream
+
+    assert_response :success
+    refute File.exist?(File.join(@kb_dir, "a.md"))
+  end
+
   test "edits and saves markdown content" do
     File.write(File.join(@kb_dir, "a.md"), "before")
 
@@ -105,6 +115,18 @@ class KbFsOpsTest < ActionDispatch::IntegrationTest
     patch kb_fs_save_path, params: { src: @src, file: "a.md", content: "after" }
     assert_redirected_to kb_file_path(src: @src, file: "a.md")
     assert_equal "after", File.read(File.join(@kb_dir, "a.md"))
+  end
+
+  test "new folder with picked files moves them into the placeholder folder" do
+    File.write(File.join(@kb_dir, "a.md"), "a")
+    File.write(File.join(@kb_dir, "b.md"), "b")
+
+    post kb_fs_create_path, params: { src: @src, dir: "", kind: "folder", move: [ "a.md", "b.md", "../x" ] }, as: :turbo_stream
+
+    assert_response :success
+    assert File.file?(File.join(@kb_dir, "Untitled folder", "a.md"))
+    assert File.file?(File.join(@kb_dir, "Untitled folder", "b.md"))
+    assert_not File.exist?(File.join(@kb_dir, "a.md"))
   end
 
   test "creating without a name makes a placeholder and flags it for inline naming" do
@@ -176,5 +198,61 @@ class KbFsOpsTest < ActionDispatch::IntegrationTest
     post kb_fs_create_path, params: { src: @src, dir: "", name: "x", kind: "file" }
 
     assert_equal "Folder is not available.", flash[:alert]
+  end
+
+  test "inline JSON rename busts the tree cache so the next tree render shows the new name" do
+    original_cache = Rails.cache
+    Rails.cache = ActiveSupport::Cache::MemoryStore.new
+    Dir.mkdir(File.join(@kb_dir, "Untitled project"))
+    get kb_tree_path, as: :turbo_stream
+    assert_includes response.body, "Untitled project"
+
+    patch kb_fs_rename_path, params: { src: @src, path: "Untitled project", name: "Alpha" }, as: :json
+    assert_response :success
+
+    get kb_tree_path, as: :turbo_stream
+    assert_includes response.body, "Alpha"
+    refute_includes response.body, "Untitled project"
+  ensure
+    Rails.cache = original_cache
+  end
+
+  test "non-turbo create still busts the tree cache" do
+    original_cache = Rails.cache
+    Rails.cache = ActiveSupport::Cache::MemoryStore.new
+    get kb_tree_path, as: :turbo_stream
+    post kb_fs_create_path, params: { src: @src, dir: "", name: "fresh", kind: "folder" }
+    assert_response :redirect
+
+    get kb_tree_path, as: :turbo_stream
+    assert_includes response.body, "fresh"
+  ensure
+    Rails.cache = original_cache
+  end
+
+  test "bust_cache! increments the generation, seeding it when missing" do
+    original_cache = Rails.cache
+    Rails.cache = ActiveSupport::Cache::MemoryStore.new
+    assert_equal 0, Kb::TreeBuilder.cache_generation(@user.id)
+    Kb::TreeBuilder.bust_cache!(@user)
+    assert_equal 1, Kb::TreeBuilder.cache_generation(@user.id)
+    Kb::TreeBuilder.bust_cache!(@user)
+    assert_equal 2, Kb::TreeBuilder.cache_generation(@user.id)
+  ensure
+    Rails.cache = original_cache
+  end
+
+  test "a failed delete (permissions) reports an alert instead of a bare 500" do
+    FileUtils.mkdir_p(File.join(@kb_dir, "locked"))
+    File.write(File.join(@kb_dir, "locked", "a.md"), "hi")
+    File.chmod(0o555, File.join(@kb_dir, "locked"))
+    skip "root can delete anything" if Process.uid.zero?
+
+    delete kb_fs_delete_path, params: { src: @src, path: "locked/a.md" }, as: :turbo_stream
+
+    assert_response :success
+    assert_includes response.body, "Couldn&#39;t complete that"
+  ensure
+    File.chmod(0o755, File.join(@kb_dir, "locked"))
   end
 end

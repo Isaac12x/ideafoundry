@@ -2,13 +2,16 @@
   extractable_exts = %w[.pdf .png .jpg .jpeg .webp .tif .tiff]
   editing_src = local_assigns[:editing_src]
   editing_rel = local_assigns[:editing_rel]
+  parent_project = local_assigns[:parent_project]
 %>
 <% tree.each do |name, node| %>
   <% if node[:type] == :dir %>
     <% favorite = node[:preference]&.favorite? %>
     <% editing = editing_rel.present? && editing_src == folder_index && editing_rel == node[:rel] %>
     <% project = node[:project] %>
-    <div class="kb-dir-group <%= 'kb-project-group' if project %>" role="none" data-controller="kb-folder">
+    <% tests_dir = parent_project && name == Kb::Project::TESTS_DIR %>
+    <div class="kb-dir-group <%= 'kb-project-group' if project %>" role="none" data-controller="kb-folder"
+         <%= 'data-kb-folder-default-open-value=false'.html_safe if tests_dir %>>
       <div class="kb-node kb-dir-header <%= 'kb-project-row' if project %>" draggable="true"
            role="treeitem" tabindex="-1" aria-expanded="true" aria-label="<%= name %>"
            data-action="contextmenu->kb-tree#show
@@ -43,11 +46,14 @@
           <% if project %>
             <%= link_to name, kb_project_path(src: folder_index, path: node[:rel]),
                   draggable: "false", class: "kb-dir-label kb-project-link",
+                  title: "Stage: #{project[:stage]} · #{project[:status].to_s.capitalize}",
                   data: { turbo_frame: "kb-content" } %>
             <span class="kb-project-marks" aria-hidden="true">
               <% if project[:private] %><svg class="kb-project-lock" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg><% end %>
               <span class="kb-project-status kb-project-status--<%= project[:status] %>" title="<%= project[:status] %>"></span>
             </span>
+            <%# Progress mark: one dot per stage, passed dimmer, current filled, last = square. %>
+            <span class="kb-project-stage" aria-hidden="true"><% project[:stage_count].to_i.times do |i| %><i class="kb-stage-dot<%= ' is-passed' if i < project[:stage_index].to_i %><%= ' is-current' if i == project[:stage_index].to_i %><%= ' is-end' if project[:stage_count].to_i > 1 && i == project[:stage_count].to_i - 1 %>"></i><% end %></span>
           <% else %>
             <button type="button" class="kb-dir-label" data-action="click->kb-folder#toggle"><%= name %></button>
           <% end %>
@@ -73,14 +79,13 @@
         </button>
       </div>
       <div class="kb-node-children kb-dir-children" role="group" data-kb-folder-target="files">
-        <%= render "kb/tree_node",
-              tree: node[:children],
-              folder_index: folder_index,
-              selected_file: selected_file,
-              selected_folder_index: selected_folder_index,
-              default_folder_preference: default_folder_preference,
-              editing_src: editing_src,
-              editing_rel: editing_rel %>
+        <% shared = { folder_index: folder_index, selected_file: selected_file, selected_folder_index: selected_folder_index,
+                      default_folder_preference: default_folder_preference, editing_src: editing_src, editing_rel: editing_rel } %>
+        <% if project %>
+          <%= render "kb/tree_project_children", node: node, project: project, **shared %>
+        <% else %>
+          <%= render "kb/tree_node", tree: node[:children], **shared %>
+        <% end %>
       </div>
     </div>
   <% elsif node[:type] == :file %>
@@ -111,7 +116,7 @@
               draggable: "false",
               data: {
                 turbo_frame: "kb-content",
-                action: "click->kb-notes#trackFile click->kb-tree#markSeen",
+                action: "click->kb-tree#toggleMulti click->kb-notes#trackFile click->kb-tree#markSeen",
                 "kb-notes-file-param": node[:rel],
                 "kb-notes-src-param": folder_index,
               },

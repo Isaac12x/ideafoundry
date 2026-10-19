@@ -1,0 +1,34 @@
+<%# Protocol timeline. Passed stages fill the track; the last stage is a terminal (squared, double-ringed, "END"). %>
+<% stages = project.stages %>
+<% current = stages.index(project.stage) || 0 %>
+<% last = stages.size > 1 ? stages.size - 1 : nil %>
+<nav class="kbp-rail" aria-label="Project stage">
+  <%= form_with url: kb_project_path, method: :patch, class: "kbp-rail-form" do %>
+    <%= ids %>
+    <ol class="kbp-stages">
+      <% stages.each_with_index do |stage, i| %>
+        <% terminal = i == last %>
+        <% done = terminal && i == current && project.status == "concluded" %>
+        <li class="kbp-stage <%= i < current ? 'is-passed' : (i == current ? 'is-current' : 'is-upcoming') %><%= ' is-terminal' if terminal %><%= ' is-complete' if done %>">
+          <button type="submit" name="stage" value="<%= stage %>" class="kbp-stage-btn"
+                  <%= 'aria-current="step"'.html_safe if i == current %>
+                  aria-label="<%= i == current ? "Current stage: #{stage}" : "Move project to #{stage}" %>">
+            <span class="kbp-stage-no" aria-hidden="true"><%= terminal ? "END" : format("%02d", i + 1) %></span>
+            <span class="kbp-stage-name"><%= stage %></span>
+            <% if terminal && i == current %><span class="kbp-stage-note"><%= done ? "Complete" : "Final stage" %></span><% end %>
+          </button>
+        </li>
+      <% end %>
+    </ol>
+  <% end %>
+  <p class="kbp-next"><%= hint %></p>
+  <details class="kbp-edit kbp-rail-edit">
+    <summary>Edit stages</summary>
+    <%= form_with url: kb_project_path, method: :patch, class: "kbp-form" do %>
+      <%= ids %>
+      <label class="kbp-label" for="kbp-stages-text">One stage per line, in order (1 to 8)</label>
+      <textarea id="kbp-stages-text" name="stages" rows="<%= [stages.size + 1, 3].max %>" class="kbp-input"><%= stages.join("\n") %></textarea>
+      <div class="kbp-actions"><button class="kbp-btn kbp-btn--primary">Save stages</button></div>
+    <% end %>
+  </details>
+</nav>
