@@ -6,7 +6,6 @@ class SqlcipherDatabaseMigratorTest < ActiveSupport::TestCase
     FileUtils.rm_rf(@root)
     FileUtils.mkdir_p(@root)
     @database_path = @root.join("production.sqlite3")
-    @backup_dir = @root.join("backups")
 
     db = SQLite3::Database.new(@database_path.to_s)
     db.execute("CREATE TABLE ideas (id integer primary key, title text)")
@@ -18,17 +17,16 @@ class SqlcipherDatabaseMigratorTest < ActiveSupport::TestCase
     FileUtils.rm_rf(@root) if @root&.exist?
   end
 
-  test "migrates a plaintext SQLite database to SQLCipher with backup" do
-    result = SqlcipherDatabaseMigrator.new(
-      key_hex: RecoverySecret.sqlcipher_key_hex,
-      backup_dir: @backup_dir,
-      timestamp: "20260518123045"
-    ).migrate!(@database_path)
+  def migrator = SqlcipherDatabaseMigrator.new(key_hex: RecoverySecret.sqlcipher_key_hex, timestamp: "20260518123045")
+  def files_under_root = Dir.glob(@root.join("**/*").to_s, File::FNM_DOTMATCH).select { |f| File.file?(f) }.map { |f| File.basename(f) }.sort
+
+  test "migrates a plaintext SQLite database to SQLCipher without ever writing a plaintext copy" do
+    result = migrator.migrate!(@database_path)
 
     assert_equal :encrypted, result.status
     assert_equal @database_path.to_s, result.path
-    assert_nil result.backup_path, "Plaintext backup must be deleted after encryption"
-    refute File.exist?(@backup_dir.join("production.sqlite3.20260518123045.plaintext")), "Plaintext backup file must not remain on disk"
+    assert_equal [ "production.sqlite3" ], files_under_root, "no plaintext backup or temp file may exist"
+    assert_not_respond_to result, :backup_path
     refute_equal "SQLite format 3\0", File.binread(@database_path, 16)
 
     encrypted = SQLite3::Database.new(@database_path.to_s)
@@ -38,12 +36,29 @@ class SqlcipherDatabaseMigratorTest < ActiveSupport::TestCase
     encrypted&.close
   end
 
+  test "the original stays untouched when verification of the encrypted copy fails" do
+    before = File.binread(@database_path)
+    m = migrator
+    m.stub(:verify_encrypted_database!, ->(*) { raise SqlcipherDatabaseMigrator::Error, "boom" }) do
+      assert_raises(SqlcipherDatabaseMigrator::Error) { m.migrate!(@database_path) }
+    end
+
+    assert_equal before, File.binread(@database_path)
+    assert_equal [ "production.sqlite3" ], files_under_root
+  end
+
+  test "the original stays untouched when the final rename fails" do
+    before = File.binread(@database_path)
+    File.stub(:rename, ->(*) { raise Errno::EACCES }) do
+      assert_raises(Errno::EACCES) { migrator.migrate!(@database_path) }
+    end
+
+    assert_equal before, File.binread(@database_path)
+    assert_equal [ "production.sqlite3" ], files_under_root
+  end
+
   test "reports database encryption status before migrating from the UI" do
-    migrator = SqlcipherDatabaseMigrator.new(
-      key_hex: RecoverySecret.sqlcipher_key_hex,
-      backup_dir: @backup_dir,
-      timestamp: "20260518123045"
-    )
+    migrator = self.migrator
 
     assert_equal :plaintext, migrator.status_for(@database_path).status
     assert_equal :missing, migrator.status_for(@root.join("missing.sqlite3")).status

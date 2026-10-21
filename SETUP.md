@@ -235,13 +235,11 @@ Start Compose without a recovery passphrase environment variable; the passphrase
 docker compose up --build
 ```
 
-If you already have plaintext production SQLite files, open `/settings/security`, enter and confirm a strong database recovery passphrase, and confirm you saved that passphrase in two separate places before starting the Database Encryption action. When no explicit path is configured, the app writes the passphrase to `storage/recovery_passphrase.key`, then encrypts the SQLCipher-configured databases from `config/database.yml`, verifies the encrypted copies, replaces the plaintext files, and keeps plaintext backups outside the checkout by default in `../idea-app-sqlcipher-backups`.
+If you already have plaintext production SQLite files, open `/settings/security`, enter and confirm a strong database recovery passphrase, and confirm you saved that passphrase in two separate places before starting the Database Encryption action. When no explicit path is configured, the app writes the passphrase to `storage/recovery_passphrase.key`, then encrypts the SQLCipher-configured databases from `config/database.yml`, verifies the encrypted copies, and atomically replaces the plaintext files. No plaintext backup copy is ever written: the original stays untouched until the verified encrypted copy is renamed over it, and any failure before that leaves it as it was.
 
 Use the same recovery passphrase when moving the encrypted database to another computer. Without it, the app cannot open the SQLCipher database and cannot decrypt protected security templates.
 
 For advanced deployments that need the app to read/write the passphrase at a specific path, set `IDEA_FOUNDRY_RECOVERY_PASSPHRASE_FILE=/path/outside/idea-foundry-recovery-passphrase.txt` in the Rails process environment before using `/settings/security`; do not add a required interpolation to `docker-compose.yml`, because Podman Compose evaluates it even when the Rails app profile is not selected.
-
-Set `IDEA_FOUNDRY_SQLCIPHER_BACKUP_DIR=/path/outside/app` before starting the app to choose a different backup location. After you have verified your encrypted database, move long-term plaintext backups to secure offline storage or delete them according to your backup policy.
 
 > ⚠️ **Backlog Markdown backup is plaintext.** The Backlog feature continuously mirrors items to a human-editable Markdown file (default `storage/backlog.md`) and re-imports external edits to that file on load. This file is **not** SQLCipher-encrypted, so it exposes backlog titles, notes, and links in plaintext on disk. `storage/` is gitignored, but treat this file like any other plaintext export. Override the location with `config.x.backlog_backup_path` (e.g. point it at an offline/synced folder), or delete the file to disable round-tripping until the next mutation recreates it.
 
