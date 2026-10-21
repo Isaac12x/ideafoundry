@@ -8,9 +8,10 @@ cd "$(dirname "$0")/.."
 
 fail() { echo "bin/prepare FAILED at: $1. Not starting a half-prepared app." >&2; exit 1; }
 
+# yarn check --integrity is Yarn Classic (1.x) only; a Berry migration must change this line.
 # ponytail: yarn's own integrity check is ~0.1s; build is ~2s, so always rebuild rather than track sources.
 yarn check --integrity >/dev/null 2>&1 || yarn install --frozen-lockfile || fail "yarn install"
 log="$(mktemp)"
-yarn build >"$log" 2>&1 || { cat "$log"; fail "yarn build"; }
+yarn build --dev >"$log" 2>&1 || { cat "$log"; fail "yarn build"; }
 rm -f "$log"
 bin/rails db:prepare_if_unlocked || fail "db:prepare"
