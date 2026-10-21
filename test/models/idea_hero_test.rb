@@ -52,4 +52,31 @@ class IdeaHeroTest < ActiveSupport::TestCase
     assert_not @idea.hero_media?
     assert_equal 1, @idea.hero_items.size
   end
+
+  test "update with hero_images and a validation failure attaches and uploads nothing" do
+    blobs_before = ActiveStorage::Blob.count
+    assert_not @idea.update(trl: 99, hero_images: [ png("a.png") ])
+    assert_equal 0, @idea.reload.hero_images.count
+    assert_equal blobs_before, ActiveStorage::Blob.count
+  end
+
+  test "a bad signed id adds a model error instead of raising" do
+    assert_not @idea.update(hero_images: [ "bogus" ])
+    assert @idea.errors[:hero_images].any?
+    assert_equal 0, @idea.reload.hero_images.count
+  end
+
+  test "restoring a version drops hero_order drawing keys that have no restored counterpart" do
+    d = draw("kept")
+    @idea.hero_images.attach(png("a.png"))
+    image_key = "image:#{@idea.hero_images.first.blob_id}"
+    @idea.update!(hero_order: [ "drawing:#{d.id}", image_key ])
+    version = @idea.create_version("v")
+    snapshot = version.snapshot_data
+    snapshot["media"]["hero_order"] = [ "drawing:999999", image_key ] # stale: that drawing is not in the snapshot
+    version.update_columns(snapshot_data: snapshot)
+
+    version.restore_to_idea!
+    assert_equal [ image_key ], @idea.reload.hero_order
+  end
 end

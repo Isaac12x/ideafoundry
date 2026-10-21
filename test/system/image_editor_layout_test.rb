@@ -15,7 +15,9 @@ class ImageEditorLayoutTest < ApplicationSystemTestCase
   test "image editor is centered in the viewport with visible actions" do
     visit edit_idea_path(@idea)
 
-    attach_file("idea_hero_images", Rails.root.join("public/icon.png"), make_visible: true)
+    # The attachments dropzone routes images through the editor (the hero dropzone adds them as-is).
+    page.execute_script("document.querySelector('[data-dropzone-upload-url-value] input[type=file]').style.display = 'block'")
+    find("[data-dropzone-upload-url-value] input[type=file]").set(Rails.root.join("public/icon.png").to_s)
     assert_selector ".image-editor", visible: true
 
     geometry = page.evaluate_script(<<~JS)

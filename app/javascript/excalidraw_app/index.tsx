@@ -4,6 +4,9 @@ import { Excalidraw, exportToBlob, CaptureUpdateAction } from "@excalidraw/excal
 import type { ExcalidrawImperativeAPI } from "@excalidraw/excalidraw/types";
 import "@excalidraw/excalidraw/index.css";
 
+// Fonts live in public/excalidraw-assets (esbuild.config.mjs); never let Excalidraw reach a CDN.
+(window as any).EXCALIDRAW_ASSET_PATH = "/excalidraw-assets/";
+
 const LOCAL_ONLY_UI_OPTIONS = {
   canvasActions: {
     export: false,
@@ -344,7 +347,7 @@ function readSession(container: HTMLElement, nonce: number): Session {
   };
 }
 
-function Root({ container, initial, host }: { container: HTMLElement; initial: Session; host: { current: Host | null } }) {
+function HostRoot({ container, initial, host }: { container: HTMLElement; initial: Session; host: { current: Host | null } }) {
   const [session, setSession] = useState(initial);
   const flushRef = useRef<() => Promise<void>>(async () => {});
   useEffect(() => {
@@ -372,7 +375,7 @@ function mount(container: HTMLElement) {
   const host: Host = { root, setSession: () => {}, flush: async () => {}, nonce: 0 };
   ref.current = host;
   hosts.set(container, host);
-  root.render(<Root container={container} initial={readSession(container, 0)} host={ref} />);
+  root.render(<HostRoot container={container} initial={readSession(container, 0)} host={ref} />);
 }
 
 function unmount(container: HTMLElement) {
