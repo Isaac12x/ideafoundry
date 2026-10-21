@@ -103,7 +103,7 @@ bin/rails test test/models/idea_test.rb:42  # Specific test by line
 ```bash
 bin/rails db:migrate             # Run pending migrations
 bin/rails db:seed                # Load sample data
-# Agents never run destructive db tasks (hook blocks them in every env); Rails refuses them for any DB that is not the test suite's. Tests reset themselves (bin/rails test, db:test:prepare)
+# Destructive db tasks (reset, drop, schema:load...) are blocked everywhere; tests reset themselves (bin/rails test)
 bin/rails console                # Interactive Rails console
 ```
 

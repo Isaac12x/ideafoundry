@@ -166,6 +166,59 @@ class GuardDbHookTest < ActiveSupport::TestCase
     echo x | ruby
     echo x | node -
     echo x | sudo sh
+    git commit -m x # <<'EOF'\nrm -rf storage\nEOF
+    git commit -m x # <<'EOF'\nbin/rails db:drop\nEOF
+    echo "git commit <<'EOF'"\nrm -rf storage\nEOF
+    git commit -m "a <<'EOF'"\nrm -rf storage\nEOF
+    git log --grep='git commit <<"EOF"'\nrm -rf storage\nEOF
+    git commit -m "$(cat <<'EOF'\nprose\nEOF\n)" && rm -rf storage
+    sqlite3 storage/development.sqlite3 'select count(*) from ideas'
+    sqlite3 storage/development.sqlite3 'select * from updates'
+    sqlite3 storage/development.sqlite3 'select 1; delete from ideas'
+    sqlite3 storage/development.sqlite3 'select 1;\ndelete from ideas'
+    sqlite3 storage/production.sqlite3 .dump
+    sqlite3 -readonly storage/development.sqlite3 '.shell rm -rf storage'
+    sqlite3 -readonly storage/development.sqlite3 '.system touch x'
+    sqlite3 -readonly storage/development.sqlite3 '.output storage/x.sqlite3'
+    sqlite3 -readonly storage/development.sqlite3 '.once x'
+    sqlite3 -readonly storage/development.sqlite3 '.cd /'
+    sqlite3 -readonly storage/development.sqlite3 '.log x'
+    nice -n 10 rm -rf storage
+    nice rm -rf storage
+    timeout 5 rm -rf storage
+    timeout -s KILL 5 rm -rf storage
+    stdbuf -oL rm -rf storage
+    arch -arm64 rm -rf storage
+    caffeinate -i rm -rf storage
+    ionice -c 2 rm -rf storage
+    sudo -u root rm -rf storage
+    sudo -n rm -rf storage
+    find tmp -exec sh -c 'rm -rf storage' \;
+    find tmp -name x -exec env rm -rf storage \;
+    find tmp -exec ruby -e x {} \;
+    find tmp -exec python3 x {} \;
+    rm -rf tmp/../storage
+    rm -rf ./tmp/../storage/*
+    rm -rf a/b/../../storage
+    mv tmp/../storage x
+    cp x tmp/../storage/a.bin
+    python3 -c "import subprocess; subprocess.run(['rm', '-rf', 'storage'])"
+    python3 -c "import os; os.system('rm -rf storage')"
+    python3 -c "os.popen('rm -rf storage')"
+    ruby -e 'system("rm -rf storage")'
+    ruby -e 'spawn("rm -rf storage")'
+    ruby -e 'exec("rm -rf storage")'
+    node -e 'require("child_process").exec("rm -rf storage")'
+    fish -c 'rm -rf storage'
+    osascript -e 'do shell script "rm -rf storage"'
+    rm -rf $HOME/work
+    rm -rf $HOME/work/projects
+    rm -rf /Users/someone/work
+    rm -rf ~/work/projects
+    gzip storage/development.sqlite3
+    xz storage/production.sqlite3
+    bzip2 -f storage/development.sqlite3
+    zstd --rm storage/development.sqlite3
   CASES
 
   ALLOWED = cases(<<~'CASES')
@@ -174,9 +227,11 @@ class GuardDbHookTest < ActiveSupport::TestCase
     RAILS_ENV=test bin/rails db:test:prepare
     bin/rails db:migrate:status
     DATABASE_URL=x bin/rails server
-    sqlite3 storage/development.sqlite3 'select count(*) from ideas'
-    sqlite3 storage/development.sqlite3 'select * from updates'
+    sqlite3 -readonly storage/development.sqlite3 'select count(*) from ideas'
+    sqlite3 -readonly storage/development.sqlite3 'select * from updates'
     sqlite3 -readonly storage/development.sqlite3 .dump
+    sqlite3 --version
+    sqlite3 :memory: 'select 1'
     sqlite3 -readonly storage/development.sqlite3 < x.sql
     sqlite3 storage/test.sqlite3 'delete from t'
     sqlite3 storage/test.sqlite3 < x.sql
@@ -235,6 +290,17 @@ class GuardDbHookTest < ActiveSupport::TestCase
     ls | perl -pe 's/a/b/'
     rg x | xargs -n1 echo
     echo x | bash -c 'echo hi'
+    gzip -c storage/development.sqlite3 > /tmp/dev.gz
+    gzip -k storage/development.sqlite3
+    xz --keep storage/production.sqlite3
+    zstd --stdout storage/development.sqlite3 > /tmp/dev.zst
+    bzip2 -ck storage/development.sqlite3 > /tmp/dev.bz2
+    nice -n 10 ls storage
+    timeout 5 ls storage
+    sudo -u root ls storage
+    find tmp -exec ls {} \;
+    git log --grep='rm -rf storage'
+    git commit -m x # just a comment
   CASES
 
   BLOCKED.each_with_index do |cmd, i|
@@ -265,18 +331,51 @@ class GuardDbHookTest < ActiveSupport::TestCase
     Open3.capture3(env, *FILE_HOOK, stdin_data: %({"tool_input":{"file_path":"#{path}"}}))[2].exitstatus
   end
 
-  test "file-edit mode blocks db files and the project's storage/" do
+  test "file-edit mode blocks db files, any storage/ dir (even another checkout's) and lexical ../ tricks" do
     root = Rails.root.to_s
     [ "/r/storage/development.sqlite3", "/r/x/production.sqlite3-wal", "/r/x/x.sqlite3-shm", "/r/x/dev.sqlite3-journal",
-      "storage/x.txt", "#{root}/storage/notes.txt" ].each do |p|
+      "storage/x.txt", "#{root}/storage/notes.txt", "/Users/someone/other-checkout/storage/x.txt", "/r/lib/storage/helper.rb",
+      "tmp/../storage/x.txt", "/r/app/../storage/x.txt", "./storage/x.txt", "/r/config/recovery_passphrase.key",
+      "storage/recovery_passphrase.key", "/r/x/../x/../storage" ].each do |p|
       assert_equal 2, file_status(p, root), p
+    end
+  end
+
+  test "file-edit mode blocks edits to the guards themselves (owner-edited only)" do
+    root = Rails.root.to_s
+    [ ".claude/hooks/guard_db.sh", "#{root}/.claude/hooks/guard_db.sh", ".claude/settings.json", "#{root}/.claude/settings.json",
+      "config/initializers/db_wipe_guard.rb", "#{root}/lib/tasks/db_guard.rake", "lib/tasks/db_guard.rake",
+      ".claude/hooks/../settings.json", "app/../config/initializers/db_wipe_guard.rb" ].each do |p|
+      stdout, stderr, st = Open3.capture3(*FILE_HOOK, stdin_data: %({"tool_input":{"file_path":"#{p}"}}))
+      assert_equal 2, st.exitstatus, p
+      assert_match(/owner-edited only/, stderr, p)
     end
   end
 
   test "file-edit mode allows config/storage.yml and similar" do
     root = Rails.root.to_s
-    %w[/r/config/storage.yml /r/app/models/storage_item.rb config/storage.yml /r/lib/storage/helper.rb /r/app/models/idea.rb].each do |p|
+    %w[/r/config/storage.yml /r/app/models/storage_item.rb config/storage.yml /r/app/models/idea.rb
+       app/../config/storage.yml /r/lib/tasks/other.rake .claude/hooks/other.sh .claude/settings.local.json].each do |p|
       assert_equal 0, file_status(p, root), p
+    end
+  end
+
+  test "settings.json is valid JSON and wraps both guard hooks so a missing or broken script still blocks" do
+    settings = JSON.parse(File.read(Rails.root.join(".claude/settings.json")))
+    guards = settings.dig("hooks", "PreToolUse").flat_map { |g| g["hooks"] }.map { |h| h["command"] }.select { |c| c.include?("guard_db.sh") }
+    assert_equal 2, guards.size
+    guards.each { |c| assert c.end_with?("|| exit 2"), c }
+  end
+
+  test "the wrapped hook command exits 2 when the script is missing (127) or not executable (126)" do
+    command = JSON.parse(File.read(Rails.root.join(".claude/settings.json"))).dig("hooks", "PreToolUse", 0, "hooks", 0, "command")
+    Dir.mktmpdir do |dir|
+      assert_equal 2, Open3.capture3({ "CLAUDE_PROJECT_DIR" => dir }, "/bin/sh", "-c", command)[2].exitstatus, "missing"
+      FileUtils.mkdir_p(File.join(dir, ".claude/hooks"))
+      File.write(File.join(dir, ".claude/hooks/guard_db.sh"), "#!/bin/sh\nexit 0\n", perm: 0o644)
+      assert_equal 2, Open3.capture3({ "CLAUDE_PROJECT_DIR" => dir }, "/bin/sh", "-c", command)[2].exitstatus, "not executable"
+      File.chmod(0o755, File.join(dir, ".claude/hooks/guard_db.sh"))
+      assert_equal 0, Open3.capture3({ "CLAUDE_PROJECT_DIR" => dir }, "/bin/sh", "-c", command)[2].exitstatus, "executable and allowing"
     end
   end
 
