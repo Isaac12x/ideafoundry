@@ -1118,6 +1118,15 @@ body.typing-lock-page .app-quote-banner {
     display: flex;
     flex-direction: column;
     gap: 16px;
+    /* Sticky + taller than viewport clips the bottom until the page end; cap and scroll on its own. */
+    max-height: calc(100vh - 76px - 16px);
+    max-height: calc(100dvh - 76px - 16px);
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+.form-sidebar > * {
+    flex-shrink: 0;
 }
 
 /* ---- Template Selector ---- */
@@ -1531,6 +1540,10 @@ select.form-control {
     margin-bottom: 0;
     animation: slideUp 0.25s ease;
 }
+/* Opaque + stacked: the translucent row let the form show through and squeezed the text beside 4 buttons. */
+.idea-draft-resume .btn[hidden] { display: none; }
+.idea-draft-resume--toast { flex-direction: column; background: var(--bg-elevated); }
+.idea-draft-resume--toast .idea-draft-resume__actions { display: flex; flex-wrap: wrap; gap: 6px; }
 
 @keyframes slideUp {
     from {
@@ -2803,6 +2816,9 @@ details.form-panel:not([open]) > summary.form-panel-title {
 
     .form-sidebar {
         position: static;
+        max-height: none;
+        overflow-y: visible;
+        padding-right: 0;
     }
 
     .form-section-draggable .drag-handle {
@@ -4211,3 +4227,42 @@ body.shortcuts-hints-active {
         scroll-behavior: auto !important;
     }
 }
+
+/* Dark-forge checkbox: native boxes render bright white on the dark forms. Shared by the
+   topology picker, attach panel, media editor and checkbox-item rows (kb-refs has its own copy in kb.css). */
+.topology-node__label input[type="checkbox"],
+.kb-idea-attach__hero input[type="checkbox"],
+.kb-media-editor__check input[type="checkbox"],
+.checkbox-item input[type="checkbox"] {
+    appearance: none;
+    flex: none;
+    width: 15px;
+    height: 15px;
+    margin: 0;
+    border: 1px solid var(--border-emphasis);
+    border-radius: 3px;
+    background: var(--bg-input);
+    cursor: pointer;
+    transition: background-color 140ms ease-out, border-color 140ms ease-out;
+}
+.topology-node__label input[type="checkbox"]:hover,
+.kb-idea-attach__hero input[type="checkbox"]:hover,
+.kb-media-editor__check input[type="checkbox"]:hover,
+.checkbox-item input[type="checkbox"]:hover { border-color: var(--accent); }
+.topology-node__label input[type="checkbox"]:checked,
+.kb-idea-attach__hero input[type="checkbox"]:checked,
+.kb-media-editor__check input[type="checkbox"]:checked,
+.checkbox-item input[type="checkbox"]:checked {
+    border-color: var(--accent);
+    background: var(--accent) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3.5 8.5l3 3 6-7' fill='none' stroke='%230c0c0f' stroke-width='2.2'/%3E%3C/svg%3E") center / 80% no-repeat;
+}
+.topology-node__label input[type="checkbox"]:indeterminate,
+.kb-idea-attach__hero input[type="checkbox"]:indeterminate,
+.kb-media-editor__check input[type="checkbox"]:indeterminate,
+.checkbox-item input[type="checkbox"]:indeterminate {
+    border-color: var(--accent);
+    background: var(--accent) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 8h8' stroke='%230c0c0f' stroke-width='2.2'/%3E%3C/svg%3E") center / 80% no-repeat;
+}
+.kb-idea-attach__hero input[type="checkbox"]:focus-visible,
+.kb-media-editor__check input[type="checkbox"]:focus-visible,
+.checkbox-item input[type="checkbox"]:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }

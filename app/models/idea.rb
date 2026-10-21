@@ -9,6 +9,8 @@ class Idea < ApplicationRecord
   has_many :topologies, through: :idea_topologies,
                          after_add: :track_github_repository_after_topology_change,
                          after_remove: :track_github_repository_after_topology_change
+  has_many :idea_themes, dependent: :destroy
+  has_many :themes, through: :idea_themes
   has_many :idea_lists, dependent: :destroy
   has_many :lists, through: :idea_lists
   has_many :versions, -> { order(created_at: :desc) }, dependent: :destroy
@@ -786,13 +788,24 @@ has_many :kb_links, class_name: "IdeaKbLink", dependent: :destroy
     values = scoring_values_for(system["id"])
     criteria = system["criteria"]
 
-    criterion_scores = criteria.each_with_object({}) do |criterion, scores|
-      raw_value = values[criterion["key"]]
-      scores[criterion["key"]] = normalized_scorecard_value(raw_value, scale_min, scale_max)
+    criterion_scores = {}
+    criterion_points = {}
+    total = 0.0
+    max_total = 0.0
+    criteria.each do |criterion|
+      max = (criterion["scale_max"] || scale_max).to_i
+      weight = criterion.fetch("weight", 1).to_f
+      lower_better = criterion["direction"] == "lower_better"
+      raw_value = normalized_scorecard_value(values[criterion["key"]], scale_min, max, lower_better)
+      criterion_scores[criterion["key"]] = raw_value
+      # Lower-is-better criteria (costs) are flipped so a cheap rating earns more points.
+      criterion_points[criterion["key"]] = lower_better ? scale_min + max - raw_value : raw_value
+      total += criterion_points[criterion["key"]] * weight
+      max_total += max * weight
     end
 
-    total = criterion_scores.values.sum
-    max_total = criteria.size * scale_max
+    total = trim_score_number(total)
+    max_total = trim_score_number(max_total)
     normalized = max_total.zero? ? 0.0 : (total.to_f / max_total * 10).round(2)
     threshold = system.fetch("work_threshold_total", 0).to_f
 
@@ -802,6 +815,7 @@ has_many :kb_links, class_name: "IdeaKbLink", dependent: :destroy
       kind: system["kind"],
       criteria: criteria,
       values: criterion_scores,
+      points: criterion_points,
       total: total,
       max_total: max_total,
       normalized: normalized,
@@ -814,8 +828,8 @@ has_many :kb_links, class_name: "IdeaKbLink", dependent: :destroy
     }
   end
 
-  def normalized_scorecard_value(raw_value, scale_min, scale_max)
-    value = raw_value.presence || scale_min
+  def normalized_scorecard_value(raw_value, scale_min, scale_max, lower_better = false)
+    value = raw_value.presence || (lower_better ? scale_max : scale_min)
     value.to_i.clamp(scale_min, scale_max)
   end
 

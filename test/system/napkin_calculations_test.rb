@@ -2,7 +2,8 @@ require "application_system_test_case"
 
 class NapkinCalculationsTest < ApplicationSystemTestCase
   setup do
-    @user = users(:one)
+    # The app is single-user and signs in as User.first, so own the idea as that user.
+    @user = User.first
     @idea = @user.ideas.create!(title: "Sys napkin", state: :idea_new, attempt_count: 0)
   end
 
@@ -20,6 +21,7 @@ class NapkinCalculationsTest < ApplicationSystemTestCase
     enter_cell("B3", "=B1*B2")
 
     click_button "Update Idea"
+    assert_current_path idea_path(@idea), ignore_query: true # wait for the save redirect
 
     @idea.reload
     assert_equal "1000", @idea.napkin_calculations["cells"]["B1"]["raw"]

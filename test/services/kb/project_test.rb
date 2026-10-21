@@ -217,4 +217,69 @@ class Kb::ProjectFoundationTest < ActiveSupport::TestCase
     File.write(File.join(project.abs, ".kb-project.yml"), "findings:\n  - nope\n  - {id: a, text: ' '}\n  - {id: b, text: ok, at: 2026-01-01}\n")
     assert_equal [ { "id" => "b", "text" => "ok", "at" => "2026-01-01" } ], Kb::Project.at(@base, "P").findings
   end
+
+  test "research is the default kind and rejects a checklist" do
+    project = Kb::Project.create!(base: @base, parent_rel: "", name: "R")
+    assert_equal "research", project.kind
+    assert_not project.build?
+    assert_not File.read(File.join(project.abs, ".kb-project.yml")).include?("kind:")
+    assert_raises(ArgumentError) { project.update!(items: []) }
+  end
+
+  test "build plan keeps a validated ordered checklist" do
+    FileUtils.mkdir_p(File.join(@base, "Reading"))
+    File.write(File.join(@base, "Reading/knives.md"), "x")
+    plan = Kb::Project.create!(base: @base, parent_rel: "", name: "Cabin", kind: "build")
+    assert plan.build?
+    assert_equal [ 0, 0 ], plan.progress
+
+    plan.update!(items: [ { "title" => " Joinery ", "status" => "learning", "links" => "Reading/knives.md\nReading/knives.md" },
+                          { "title" => "", "status" => "todo" },
+                          { "title" => "Roofing", "note" => "n" } ])
+    plan = Kb::Project.at(@base, "Cabin")
+    assert_equal [ "Joinery", "Roofing" ], plan.items.map { |i| i["title"] }
+    assert_equal [ "Reading/knives.md" ], plan.items.first["links"]
+    assert_equal "todo", plan.items.last["status"]
+    ids = plan.items.map { |i| i["id"] }
+    assert ids.all?(&:present?) && ids.uniq.size == 2
+
+    plan.update!(items: plan.items.reverse.map { |i| i.merge("status" => "known") }.to_json)
+    plan = Kb::Project.at(@base, "Cabin")
+    assert_equal [ "Roofing", "Joinery" ], plan.items.map { |i| i["title"] }
+    assert_equal [ 2, 2 ], plan.progress
+    assert_equal ids.sort, plan.items.map { |i| i["id"] }.sort
+    assert_empty plan.tests
+  end
+
+  test "build plan rejects bad items" do
+    plan = Kb::Project.create!(base: @base, parent_rel: "", name: "Cabin", kind: "build")
+    [ [ { "title" => "x", "status" => "done" } ],
+      [ { "title" => "x" * 121 } ],
+      [ { "title" => "x", "note" => "n" * 281 } ],
+      [ { "title" => "x", "links" => "../outside.md" } ],
+      [ { "title" => "x", "links" => "/etc/passwd" } ],
+      [ { "title" => "x", "links" => "a/.hidden" } ],
+      [ { "title" => "x", "links" => (1..21).map { |n| "f#{n}" } } ],
+      Array.new(101) { { "title" => "x" } },
+      [ "nope" ] ].each do |bad|
+      assert_raises(ArgumentError, bad.inspect[0, 60]) { plan.update!(items: bad) }
+    end
+    assert_raises(ArgumentError) { plan.update!(items: "{not json") }
+    assert_empty Kb::Project.at(@base, "Cabin").items
+  end
+
+  test "build plan links cannot escape through a symlink" do
+    outside = Dir.mktmpdir
+    File.symlink(outside, File.join(@base, "escape"))
+    plan = Kb::Project.create!(base: @base, parent_rel: "", name: "Cabin", kind: "build")
+    assert_raises(ArgumentError) { plan.update!(items: [ { "title" => "x", "links" => "escape/secret.txt" } ]) }
+  ensure
+    FileUtils.rm_rf(outside)
+  end
+
+  test "convert! can mark a folder as a build plan" do
+    FileUtils.mkdir_p(File.join(@base, "old"))
+    assert Kb::Project.convert!(base: @base, rel: "old", kind: "build").build?
+    assert Kb::Project.at(@base, "old").build?
+  end
 end

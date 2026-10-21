@@ -6,6 +6,8 @@ import { Controller } from "@hotwired/stimulus"
 // only when a PDF is viewed. Each page gets pdf.js' invisible text layer on
 // top of the canvas so text can be selected and copied. Each rendered text
 // layer is announced as "kb-pdf:page-text" so kb-annotate can paint marks.
+// Bookmarks panel hooks: emits "kb-pdf:outline" ([{ label, page, depth }]) and "kb-pdf:page"
+// ({ page, pages }); accepts a "kb-pdf:goto" event (detail = page number) or goToPage(n).
 // ponytail: no in-page search or zoom controls; add if they turn out to matter.
 const PDFJS_VERSION = "4.10.38"
 const PDFJS_URL = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${PDFJS_VERSION}/build/pdf.min.mjs`
@@ -30,6 +32,8 @@ export default class extends Controller {
 
   async connect() {
     this._key = `kb-resume:${this.keyValue}`
+    this._onGoto = (event) => this.goToPage(event.detail)
+    this.element.addEventListener("kb-pdf:goto", this._onGoto)
     this.element.classList.add("is-loading")
 
     const pdfjs = await loadPdfjs()
@@ -51,9 +55,10 @@ export default class extends Controller {
   }
 
   disconnect() {
+    this.element.removeEventListener("kb-pdf:goto", this._onGoto)
     this._observer?.disconnect()
     this._resizeObserver?.disconnect()
-    this._scroller?.removeEventListener("scroll", this._onScroll)
+    this._scroller?.removeEventListener("scroll", this._onScroll, true)
     clearTimeout(this._scrollTimer)
     this._task?.destroy()
   }
@@ -92,6 +97,39 @@ export default class extends Controller {
       this._holders[savedPage - 1].scrollIntoView({ block: "start" })
     }
     this._trackCurrentPage()
+    this._emitOutline()
+  }
+
+  goToPage(page) {
+    const n = Math.min(Math.max(parseInt(page, 10) || 1, 1), this._holders?.length || 1)
+    this._holders?.[n - 1]?.scrollIntoView({ block: "start" })
+  }
+
+  // The document's own outline, flattened with depth and resolved to page numbers.
+  async _emitOutline() {
+    let tree
+    try { tree = await this._pdf.getOutline() } catch { return }
+    const items = []
+    const walk = async (nodes, depth) => {
+      for (const node of nodes) {
+        if (items.length >= 2000) return
+        const page = await this._pageOf(node.dest)
+        if (page) items.push({ label: node.title?.trim() || "Untitled", page, depth })
+        if (node.items?.length) await walk(node.items, depth + 1)
+      }
+    }
+    if (tree?.length) await walk(tree, 0)
+    if (items.length && this.element.isConnected) this.dispatch("outline", { detail: items })
+  }
+
+  async _pageOf(dest) {
+    try {
+      const target = typeof dest === "string" ? await this._pdf.getDestination(dest) : dest
+      if (!Array.isArray(target)) return null
+      return Number.isInteger(target[0]) ? target[0] + 1 : (await this._pdf.getPageIndex(target[0])) + 1
+    } catch {
+      return null
+    }
   }
 
   _renderHolder(holder) {
@@ -143,18 +181,33 @@ export default class extends Controller {
     }
   }
 
-  _trackCurrentPage() {
-    this._scroller = this.element.closest("[data-pdf-scroller], .kb-content-area")
-    if (!this._scroller) return
+  // Nearest ancestor that really scrolls (the tracked scroller may only contain it).
+  _scrollBox() {
+    for (let el = this.element.parentElement; el && el !== document.body; el = el.parentElement) {
+      if (/(auto|scroll)/.test(getComputedStyle(el).overflowY) && el.scrollHeight > el.clientHeight) return el
+    }
+    return this._scroller
+  }
 
+  _trackCurrentPage() {
+    // Standalone file page has no KB scroller: the document itself scrolls.
+    this._scroller = this.element.closest("[data-pdf-scroller], .kb-content-area") || window
+
+    const emit = () => {
+      // First page whose bottom is below the actual scrolling box's top edge (notes/headers above don't count).
+      const box = this._scroller === window ? null : this._scrollBox()
+      const top = box ? box.getBoundingClientRect().top : 0
+      const current = this._holders.find((h) => h.getBoundingClientRect().bottom > top + 40)
+      if (!current) return
+      localStorage.setItem(this._key, current.dataset.page)
+      this.dispatch("page", { detail: { page: parseInt(current.dataset.page, 10), pages: this._holders.length } })
+    }
     this._onScroll = () => {
       clearTimeout(this._scrollTimer)
-      this._scrollTimer = setTimeout(() => {
-        const top = this._scroller.getBoundingClientRect().top
-        const current = this._holders.find((h) => h.getBoundingClientRect().bottom > top + 40)
-        if (current) localStorage.setItem(this._key, current.dataset.page)
-      }, 300)
+      this._scrollTimer = setTimeout(emit, 300)
     }
-    this._scroller.addEventListener("scroll", this._onScroll)
+    // Capture: the scrolling box may be a descendant of the observed scroller (scroll doesn't bubble).
+    this._scroller.addEventListener("scroll", this._onScroll, true)
+    emit()
   }
 }

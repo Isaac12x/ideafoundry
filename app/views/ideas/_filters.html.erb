@@ -3,6 +3,8 @@
     params[:state].present? && params[:state] != 'all',
     params[:topology_id].present? && params[:topology_id] != 'all',
     params[:list_id].present? && params[:list_id] != 'all',
+    params[:theme_id].present? && params[:theme_id] != 'all',
+    params[:group] == 'theme',
     params[:trl_min].present?,
     params[:trl_max].present?,
     params[:score_min].present?,
@@ -46,6 +48,27 @@
                 [['All Topologies', 'all']] + @user.topologies.ordered.map { |t| [t.full_path, t.id] },
                 params[:topology_id]
               ),
+              {},
+              class: "form-control",
+              data: { action: "change->auto-filter#submit" } %>
+        </div>
+
+        <div class="filter-group">
+          <%= form.label :theme_id, "Theme" %>
+          <%= form.select :theme_id,
+              options_for_select(
+                [['All Themes', 'all']] + @user.themes.ordered.map { |t| [t.name, t.id] } + [['No theme', 'none']],
+                params[:theme_id]
+              ),
+              {},
+              class: "form-control",
+              data: { action: "change->auto-filter#submit" } %>
+        </div>
+
+        <div class="filter-group">
+          <%= form.label :group, "Group by" %>
+          <%= form.select :group,
+              options_for_select([['None', ''], ['Theme', 'theme']], params[:group]),
               {},
               class: "form-control",
               data: { action: "change->auto-filter#submit" } %>

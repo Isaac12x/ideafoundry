@@ -1,0 +1,95 @@
+<%# Build plan: goal + ordered checklist of methods to learn. No stages, tests or conclusion. %>
+<% project = @project %>
+<% known, total = project.progress %>
+<% tones = { "todo" => "muted", "learning" => "warning", "known" => "success" } %>
+<% labels = { "todo" => "To learn", "learning" => "Learning", "known" => "Known" } %>
+<% ids = capture do %><%= hidden_field_tag :src, @src, id: nil %><%= hidden_field_tag :path, project.rel, id: nil %><% end %>
+<div class="kbp kbp--build" data-controller="kb-project" data-kb-project-key-value="<%= @src %>:<%= project.rel %>"
+     data-action="submit->kb-project#remember">
+  <header class="kbp-head">
+    <div class="kbp-eyebrow"><span>Build plan</span>
+      <span class="kbp-eyebrow-sep" aria-hidden="true"></span>
+      <%= render "kb/projects/pills", project: project, ids: ids %>
+      <% if project.status == "concluded" && project.concluded_on %>
+        <span class="kbp-concluded">Concluded <time datetime="<%= project.concluded_on.iso8601 %>"><%= project.concluded_on.strftime("%-d %B %Y") %></time></span>
+      <% end %>
+    </div>
+    <h1 class="kbp-title"><%= project.name %></h1>
+    <%= form_with url: kb_project_path, method: :patch, class: "kbp-goal-form" do %>
+      <%= ids %>
+      <input type="text" name="goal" value="<%= project.goal %>" class="kbp-goal" autocomplete="off"
+             placeholder="Goal: what do I want to build?" aria-label="Goal"
+             data-action="change->kb-project#submit">
+    <% end %>
+    <%= render "kb/projects/lockpanel", project: project, ids: ids %>
+  </header>
+
+  <section class="kbb" aria-labelledby="kbb-heading">
+    <div class="kbb-head">
+      <h2 class="kbb-heading" id="kbb-heading">Methods and skills</h2>
+      <% if total.positive? %>
+        <span class="kbb-count"><%= known %> of <%= total %> known</span>
+        <progress class="kbb-meter" max="<%= total %>" value="<%= known %>" aria-label="<%= known %> of <%= total %> known"></progress>
+      <% end %>
+    </div>
+    <%# One form for the whole list: kb-build serializes the rows into `items` on every submit. %>
+    <%= form_with url: kb_project_path, method: :patch, class: "kbb-form",
+                  data: { controller: "kb-build", action: "submit->kb-build#sync change->kb-build#save click->kb-build#click" } do %>
+      <%= ids %>
+      <%= hidden_field_tag :items, "", id: nil, data: { kb_build_target: "field" } %>
+      <% if project.items.empty? %><p class="kbp-empty">Nothing yet. Add the first method or skill you need to learn.</p><% end %>
+      <ol class="kbb-list" data-kb-build-target="list">
+        <% project.items.each do |item| %>
+          <% links = item["links"].map { |rel| [ rel, kb_build_link_kind(project, rel) ] } %>
+          <li class="kbb-item" data-kb-build-target="row" data-id="<%= item["id"] %>" data-status="<%= item["status"] %>">
+            <select class="kbp-pill kbb-status" data-field="status" data-tone="<%= tones[item["status"]] %>" aria-label="Status of <%= item["title"] %>">
+              <% Kb::Project::ITEM_STATUSES.each do |status| %><%= tag.option labels[status], value: status, selected: status == item["status"] %><% end %>
+            </select>
+            <div class="kbb-main">
+              <input type="text" class="kbb-title" data-field="title" value="<%= item["title"] %>" maxlength="<%= Kb::Project::MAX_ITEM_TITLE %>"
+                     autocomplete="off" aria-label="Method or skill">
+              <% if item["note"].present? %><p class="kbb-note"><%= item["note"] %></p><% end %>
+              <% if links.any? %>
+                <ul class="kbb-links" aria-label="Linked KB entries">
+                  <% links.each do |rel, kind| %>
+                    <li>
+                      <% label = File.basename(rel) %>
+                      <% if kind == :file %>
+                        <%= link_to label, kb_file_path(file: rel, src: @src), class: "kbp-entry", title: rel, data: { turbo_frame: "kb-content" } %>
+                      <% elsif kind == :project %>
+                        <%= link_to label, kb_project_path(src: @src, path: rel), class: "kbp-entry kbp-entry--dir", title: rel, data: { turbo_frame: "kb-content" } %>
+                      <% else %>
+                        <span class="kbb-link-off" title="<%= kind == :missing ? "Not found in the KB: #{rel}" : rel %>"><%= label %><%= " (missing)" if kind == :missing %></span>
+                      <% end %>
+                    </li>
+                  <% end %>
+                </ul>
+              <% end %>
+              <details class="kbb-more">
+                <summary>Note and links</summary>
+                <label class="kbb-label">Note
+                  <input type="text" class="kbp-input" data-field="note" value="<%= item["note"] %>" maxlength="<%= Kb::Project::MAX_NOTE %>" autocomplete="off">
+                </label>
+                <label class="kbb-label">KB paths, one per line
+                  <textarea class="kbp-input kbb-links-field" data-field="links" rows="2" spellcheck="false" placeholder="Reading/knife-skills.md"><%= item["links"].join("\n") %></textarea>
+                </label>
+              </details>
+            </div>
+            <div class="kbb-tools">
+              <button type="button" class="kbp-link" data-move="-1" aria-label="Move up: <%= item["title"] %>">Up</button>
+              <button type="button" class="kbp-link" data-move="1" aria-label="Move down: <%= item["title"] %>">Down</button>
+              <button type="button" class="kbp-link" data-remove aria-label="Remove: <%= item["title"] %>">Remove</button>
+            </div>
+          </li>
+        <% end %>
+      </ol>
+      <div class="kbp-finding-add kbp-input kbb-add">
+        <input type="text" class="kbp-add-field" data-kb-build-target="add" autocomplete="off" maxlength="<%= Kb::Project::MAX_ITEM_TITLE %>"
+               placeholder="Add a method or skill to learn" aria-label="New method or skill">
+        <button type="submit" class="kbp-btn kbp-btn--primary">Add</button>
+      </div>
+    <% end %>
+  </section>
+
+  <%= render "kb/projects/sec_links", project: project, ids: ids, mode: "build", lead: false, open: false %>
+</div>

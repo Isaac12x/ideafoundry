@@ -59,3 +59,16 @@ async function loadController() {
     class {}, undefined, undefined, undefined
   )
 }
+
+test("goToPage clamps to the document and scrolls that page into view", async () => {
+  const KbPdfController = await loadController()
+  const controller = new KbPdfController()
+  const seen = []
+  controller._holders = [1, 2, 3].map((n) => ({ scrollIntoView: () => seen.push(n) }))
+
+  controller.goToPage(2)
+  controller.goToPage(99)
+  controller.goToPage("junk")
+
+  assert.deepEqual(seen, [2, 3, 1])
+})

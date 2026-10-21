@@ -10,6 +10,20 @@
 </section>
 
 <section class="kb-media-editor__panel">
+  <h3>Cut out</h3>
+  <p class="kb-media-editor__hint">Mark the part to remove; cuts are dropped on save (frame-accurate, re-encoded).</p>
+  <div class="kb-media-editor__cut-track" data-kb-media-editor-target="cutTrack" aria-hidden="true"></div>
+  <div class="kb-media-editor__two-up">
+    <button type="button" class="btn btn-sm" title="Start a cut at the playhead (I)" aria-keyshortcuts="I" data-action="kb-media-editor#cutIn">Cut from here <kbd>I</kbd></button>
+    <button type="button" class="btn btn-sm" title="End the cut at the playhead (O)" aria-keyshortcuts="O" data-action="kb-media-editor#cutOut">Cut to here <kbd>O</kbd></button>
+  </div>
+  <output class="kb-media-editor__hint" data-kb-media-editor-target="cutPending" aria-live="polite"></output>
+  <ul class="kb-media-editor__cuts" data-kb-media-editor-target="cutList"></ul>
+  <input type="hidden" name="operations[cuts]" data-kb-media-editor-target="cutsField">
+  <label class="kb-media-editor__check"><input name="operations[save_as_copy]" type="checkbox" value="1" checked data-kb-media-editor-target="saveAsCopy"> Save as a new file (keeps the original)</label>
+</section>
+
+<section class="kb-media-editor__panel">
   <h3>Timing & sound</h3>
   <label class="kb-media-editor__range"><span>Speed <output data-kb-media-editor-target="speedOutput">1×</output></span><input name="operations[speed]" type="range" min="0.5" max="2" step="0.05" value="1" data-kb-media-editor-target="speed"></label>
   <label class="kb-media-editor__range"><span>Volume <output data-kb-media-editor-target="volumeOutput">100%</output></span><input name="operations[volume]" type="range" min="0" max="2" step="0.05" value="1" data-kb-media-editor-target="volume"></label>

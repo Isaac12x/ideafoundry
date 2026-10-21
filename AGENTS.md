@@ -15,12 +15,12 @@ Rules:
 
 Recurring monthly task — see "Excalidraw upkeep" in CLAUDE.md. If its "Last updated" date is >30 days old, do it as part of your change.
 
-## Audio service (not built yet)
+## Audio service (built: local whisper + sidecar .vtt)
 
-- When building it, also make videos dropped straight into the KB trackable: they have no `kb_downloads` row (`url` NOT NULL + http(s) validation; `media_digests.kb_download_id` NOT NULL).
-- Relax `url` or add a local-path column, create rows on discovery, run them through the same `transcript_status` flow.
-- Pick up rows with `transcript_status "awaiting_audio"` (no captions / direct video files).
-- Files: `app/models/kb_download.rb`, `app/models/media_digest.rb` (see comment), `app/jobs/kb_transcript_job.rb`, `app/services/kb/video_transcript.rb`.
+- `Kb::Transcript` + `KbTranscribeJob`: local `whisper` CLI (`WHISPER_BIN`, `WHISPER_MODEL` default `base`, downloads on first use) writes `<media>.vtt` next to any KB audio/video. The sidecar is the source of truth: it works for files dropped straight into the KB (no `kb_downloads` row needed), shows in the tree/Finder, and survives DB loss. `kb_downloads.transcript` (captions, `MM:SS - text`) is only the fallback.
+- UI: `KbTranscriptsController` (GET cues/status, POST "Transcribe") + `kb_transcript_controller.js` panel under the player.
+- `KbTranscriptJob.sweep` hands `transcript_status "awaiting_audio"` rows to whisper (2 per run, `transcribing` -> `done`); an existing sidecar is adopted instead.
+- Still open: `media_digests.kb_download_id` is NOT NULL, so digests for dropped-in videos need a `kb_downloads` row (relax `url` or add a local-path column, create on discovery) -- feed the digest pipeline from the sidecar `.vtt`. Files: `app/models/kb_download.rb`, `app/models/media_digest.rb`.
 
 <!-- code-review-graph MCP tools -->
 ## MCP Tools: code-review-graph

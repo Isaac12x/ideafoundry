@@ -1,0 +1,43 @@
+<%= render 'settings/upgrade_bar' %>
+<div class="settings-container">
+  <div class="page-header">
+    <h2>Themes</h2>
+    <div class="header-actions">
+      <%= link_to settings_path, class: "btn btn-sm" do %>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        Back to Settings
+      <% end %>
+      <%= link_to "Group ideas by theme", ideas_path(group: "theme"), class: "btn btn-sm" %>
+    </div>
+  </div>
+
+  <div class="config-section">
+    <p class="config-description">Rename or recolor themes here. Deleting one never deletes its ideas.</p>
+    <% if @themes.empty? %>
+      <p class="config-description">No themes yet. A theme says what an idea is for, like <em>Productizing</em> or <em>Health</em>. Type one into the Themes field on any idea, then use <strong>Group ideas by theme</strong> above to see them side by side.</p>
+    <% else %>
+      <ul class="theme-manage">
+        <% @themes.each do |theme| %>
+          <li class="theme-manage__row" id="theme_<%= theme.id %>">
+            <%= form_with model: theme, url: theme_path(theme), method: :patch, class: "theme-manage__form" do |f| %>
+              <%= f.text_field :name, class: "form-control theme-manage__name", maxlength: 60, required: true, "aria-label": "Theme name" %>
+              <fieldset class="theme-swatches">
+                <legend class="sr-only">Color</legend>
+                <% Theme::PALETTE_NAMES.each do |hex, color_name| %>
+                  <label class="theme-swatch" style="--swatch: <%= hex %>" title="<%= color_name %>">
+                    <%= f.radio_button :color, hex, checked: theme.color == hex, "aria-label": color_name %>
+                  </label>
+                <% end %>
+              </fieldset>
+              <span class="theme-manage__count"><%= pluralize(theme.ideas_count, "idea") %></span>
+              <%= f.submit "Save", class: "btn btn-sm" %>
+            <% end %>
+            <%= button_to "Delete", theme_path(theme), method: :delete, class: "btn btn-sm btn-danger",
+                  form: { class: "theme-manage__delete", data: { turbo_confirm: "Delete the theme “#{theme.name}”? Its #{pluralize(theme.ideas_count, 'idea')} stay, just ungrouped." } },
+                  "aria-label": "Delete #{theme.name}" %>
+          </li>
+        <% end %>
+      </ul>
+    <% end %>
+  </div>
+</div>

@@ -1,12 +1,16 @@
 import { Controller } from "@hotwired/stimulus"
 import { confirmDialog, alertDialog } from "lib/app_dialog"
+import { dropZone, insertNear, shift } from "lib/kb_order"
+import { embeddedUrl, clipFromUrl, formatClip } from "lib/kb_clip_time"
 
 const MENU_VISIBILITY = {
   newFile: (node) => node.type !== "file",
   newFolder: (node) => node.type !== "file" || node.multi,
   newProject: (node) => node.type !== "file",
   convertProject: (node) => node.type === "dir" && !node.project,
-  newTest: (node) => node.type === "dir" && (node.project || node.testsDir),
+  newBuildPlan: (node) => node.type !== "file",
+  convertBuildPlan: (node) => node.type === "dir" && !node.project,
+  newTest: (node) => node.type === "dir" && ((node.project && !node.build) || node.testsDir),
   download: (node) => node.type !== "file",
   edit: (node) => node.type === "file" && node.editable,
   rename: (node) => node.type !== "root",
@@ -14,6 +18,13 @@ const MENU_VISIBILITY = {
   job: (node) => (node.type === "file" || node.type === "dir") && !node.private,
   divider: (node) => node.type !== "root",
   delete: (node) => node.type !== "root",
+  aliasStart: (node) => node.type === "file",
+  aliasOpen: (node) => node.type === "alias" && !node.broken,
+  aliasReveal: (node) => node.type === "alias" && !node.broken,
+  aliasRemove: (node) => node.type === "alias",
+  aliasHere: (node) => node.aliasPending && (node.type === "dir" || node.type === "root"),
+  sortDivider: (node) => node.type === "dir" || node.type === "root",
+  sortFolder: (node) => node.type === "dir" || node.type === "root",
   finderDivider: () => true,
   openFinder: () => true
 }
@@ -21,13 +32,16 @@ const MENU_VISIBILITY = {
 const TREEITEM = '[role="treeitem"]'
 
 export default class extends Controller {
-  static targets = ["menu", "items", "item", "prompt", "promptInput", "format"]
+  static targets = ["menu", "items", "item", "prompt", "promptInput", "format", "clip", "clipStart", "clipEnd", "note", "noteInput"]
   static values = {
     extractUrl: String,
     createUrl: String,
     uploadUrl: String,
     renameUrl: String,
     moveUrl: String,
+    orderUrl: String,
+    aliasUrl: String,
+    sortUrl: String,
     preferenceUrl: String,
     openUrl: String,
     deleteUrl: String,
@@ -129,15 +143,27 @@ export default class extends Controller {
       favorite: !!params.favorite,
       private: !!params.private,
       project: !!params.project,
-      testsDir: !!params.testsDir
+      testsDir: !!params.testsDir,
+      build: !!params.build,
+      sort: params.sort ? String(params.sort) : "",
+      linkId: params.linkId,
+      broken: !!params.broken,
+      targetSrc: params.targetSrc,
+      targetRel: String(params.targetRel ?? ""),
+      aliasPending: !!this._aliasSource
     }
 
     this.itemsTarget.hidden = false
     this.promptTarget.hidden = true
+    this._markSort(this.menuTarget.querySelector("[data-sort-menu]"), this._node.sort)
+    this.menuTarget.querySelector("[data-sort-panel]").hidden = true
+    this.menuTarget.querySelector('[data-menu-item="sortFolder"]').setAttribute("aria-expanded", "false")
     this.itemTargets.forEach((element) => {
       const visible = MENU_VISIBILITY[element.dataset.menuItem]
       // With several files picked, only "New folder" (wraps them) applies.
-      element.hidden = this._node.multi ? element.dataset.menuItem !== "newFolder" : visible ? !visible(this._node) : false
+      element.hidden = this._node.multi ? element.dataset.menuItem !== "newFolder"
+        : this._node.type === "alias" ? !visible?.(this._node) || !element.dataset.menuItem.startsWith("alias")
+        : visible ? !visible(this._node) : false
     })
 
     const menu = this.menuTarget
@@ -156,7 +182,7 @@ export default class extends Controller {
   }
 
   _menuItems() {
-    return this.itemTargets.filter((el) => el.matches?.('[role="menuitem"]') && !el.hidden)
+    return [...this.menuTarget.querySelectorAll('[role^="menuitem"]')].filter((el) => !el.closest("[hidden]") && !el.disabled)
   }
 
   _menuKeydown(event) {
@@ -189,6 +215,11 @@ export default class extends Controller {
       if (row.matches(".kb-role-header")) return // virtual project group: no menu
       const box = row.getBoundingClientRect()
       this._open(this._paramsFor(row), box.left + 16, box.bottom, row)
+      return
+    }
+    if (event.altKey && !event.ctrlKey && !event.metaKey && (event.key === "ArrowUp" || event.key === "ArrowDown")) {
+      event.preventDefault()
+      this._moveSibling(row, event.key === "ArrowUp" ? -1 : 1)
       return
     }
     if (event.altKey || event.ctrlKey || event.metaKey) return
@@ -335,10 +366,21 @@ export default class extends Controller {
     this._create("project")
   }
 
+  // A build plan: goal + checklist of methods to learn, no tests.
+  newBuildPlan(event) {
+    event.stopPropagation()
+    this._create("project", { project_kind: "build" })
+  }
+
   // Marks an existing folder as a project in place; nothing moves.
   convertProject(event) {
     event.stopPropagation()
     this._submitForm(this.projectConvertUrlValue, "post", { src: this._node.src, path: this._node.rel })
+  }
+
+  convertBuildPlan(event) {
+    event.stopPropagation()
+    this._submitForm(this.projectConvertUrlValue, "post", { src: this._node.src, path: this._node.rel, project_kind: "build" })
   }
 
   // Server answers with a placeholder test folder, then inline naming kicks in.
@@ -359,9 +401,9 @@ export default class extends Controller {
     if (row) this._startNaming(row)
   }
 
-  _create(kind) {
+  _create(kind, extra = {}) {
     const node = this._node
-    const fields = { src: node.src, dir: this._targetDir(node), kind }
+    const fields = { src: node.src, dir: this._targetDir(node), kind, ...extra }
     if (node.multi) {
       // Wrap the picked files in a new folder next to them (same source only).
       const rows = this._multiRows().filter((el) => String(el.dataset.kbTreeSrcParam) === String(node.src))
@@ -483,7 +525,18 @@ export default class extends Controller {
 
   promptInputChanged() {
     if (!this.hasFormatTarget) return
-    this.formatTarget.hidden = !/^https?:\/\/\S+$/i.test(this.promptInputTarget.value.trim())
+    const url = embeddedUrl(this.promptInputTarget.value)
+    this.formatTarget.hidden = !url
+    if (this.hasNoteTarget) this.noteTarget.hidden = !url
+    if (this.hasClipTarget) {
+      this.clipTarget.hidden = !url
+      // Show what the server will lift from the link (t=/start=/end=); typing in the chips overrides it.
+      if (url && this.hasClipStartTarget) {
+        const [from, to] = clipFromUrl(url)
+        this.clipStartTarget.value = from == null ? "" : formatClip(from)
+        this.clipEndTarget.value = to == null ? "" : formatClip(to)
+      }
+    }
     this._keepMenuOnScreen()
   }
 
@@ -496,6 +549,14 @@ export default class extends Controller {
     const fields = { src: node.src, dir: this._targetDir(node), name, kind: "file" }
     if (this.hasFormatTarget && !this.formatTarget.hidden) {
       fields.format = this.formatTarget.querySelector("input:checked")?.value || "auto"
+      if (this.hasClipStartTarget) {
+        fields.clip_start = this.clipStartTarget.value.trim()
+        fields.clip_end = this.clipEndTarget.value.trim()
+      }
+      if (this.hasNoteInputTarget) {
+        fields.note = this.noteInputTarget.value.trim()
+        this.noteInputTarget.value = ""
+      }
     }
     this._submitForm(this.createUrlValue, "post", fields)
   }
@@ -600,7 +661,7 @@ export default class extends Controller {
   dragStart(event) {
     const params = event.params
     this._drag = { type: params.type, rel: String(params.rel), src: params.src }
-    event.dataTransfer.effectAllowed = "move"
+    event.dataTransfer.effectAllowed = "all" // Alt-drop = alias ("link")
     event.dataTransfer.setData("text/plain", params.rel)
     event.currentTarget.classList.add("is-dragging")
     // Empty role shelves appear as drop targets (next tick, so the drag image is already captured).
@@ -611,25 +672,28 @@ export default class extends Controller {
     this._drag = null
     event.currentTarget.classList.remove("is-dragging")
     this.element.classList.remove("is-role-dragging")
-    this.element.querySelectorAll(".is-drop-target").forEach((element) => element.classList.remove("is-drop-target"))
+    this.element.querySelectorAll(".is-drop-target, .is-drop-before, .is-drop-after").forEach((element) => element.classList.remove("is-drop-target", "is-drop-before", "is-drop-after"))
   }
 
   dragOver(event) {
     const externalFiles = this._hasExternalFiles(event)
-    if (!externalFiles && !this._canDrop(event.params)) return
+    const zone = externalFiles ? "into" : this._zone(event)
+    if (externalFiles ? event.params.type === "file" : !this._canDrop(event.params, zone)) return
 
     event.preventDefault()
-    event.dataTransfer.dropEffect = externalFiles ? "copy" : "move"
-    event.currentTarget.classList.add("is-drop-target")
+    event.dataTransfer.dropEffect = externalFiles ? "copy" : this._aliasDrop(event) ? "link" : "move"
+    this._paintZone(event.currentTarget, zone)
   }
 
   dragLeave(event) {
-    event.currentTarget.classList.remove("is-drop-target")
+    this._paintZone(event.currentTarget, null)
   }
 
   drop(event) {
     const destination = event.params
-    event.currentTarget.classList.remove("is-drop-target")
+    const zone = this._hasExternalFiles(event) ? "into" : this._zone(event)
+    const siblings = zone === "into" ? [] : this._siblingNames(event.currentTarget)
+    this._paintZone(event.currentTarget, null)
 
     if (this._hasExternalFiles(event)) {
       event.preventDefault()
@@ -637,16 +701,158 @@ export default class extends Controller {
       return
     }
 
-    if (!this._canDrop(destination)) return
+    if (!this._canDrop(destination, zone)) return
     event.preventDefault()
     const drag = this._drag
     this._drag = null
-    this._submitForm(this.moveUrlValue, "patch", {
-      src: drag.src,
-      path: drag.rel,
-      dest_src: destination.src,
-      dest_dir: destination.type === "root" ? "" : destination.rel
+    if (this._aliasDrop(event, drag)) {
+      const holder = zone === "into" ? (destination.type === "root" ? "" : String(destination.rel)) : this._parentRel(String(destination.rel))
+      this._submitForm(this.aliasUrlValue, "post", { src: drag.src, path: drag.rel, dest_src: destination.src, dest_dir: holder })
+      return
+    }
+    if (zone === "into") {
+      this._submitForm(this.moveUrlValue, "patch", {
+        src: drag.src,
+        path: drag.rel,
+        dest_src: destination.src,
+        dest_dir: destination.type === "root" ? "" : destination.rel
+      })
+      return
+    }
+
+    const dir = this._parentRel(String(destination.rel))
+    const names = insertNear(siblings, this._base(drag.rel), this._base(String(destination.rel)), zone)
+    if (String(drag.src) === String(destination.src) && this._parentRel(drag.rel) === dir) {
+      this._submitForm(this.orderUrlValue, "patch", { src: drag.src, dir, names })
+    } else {
+      this._submitForm(this.moveUrlValue, "patch", { src: drag.src, path: drag.rel, dest_src: destination.src, dest_dir: dir, names })
+    }
+  }
+
+  // Alt/Option-drag of a file places an alias ("also in") instead of moving it.
+  _aliasDrop(event, drag = this._drag) {
+    return !!event.altKey && drag?.type === "file"
+  }
+
+  // Menu path to the same thing: mark a file, then "Place alias here" on a folder.
+  aliasStart(event) {
+    event.stopPropagation()
+    this._aliasSource = { src: this._node.src, rel: this._node.rel }
+    this._hide()
+  }
+
+  aliasHere(event) {
+    event.stopPropagation()
+    const source = this._aliasSource
+    const node = this._node
+    this._aliasSource = null
+    if (!source) return
+    this._submitForm(this.aliasUrlValue, "post", {
+      src: source.src, path: source.rel, dest_src: node.src, dest_dir: node.type === "root" ? "" : node.rel
     })
+  }
+
+  aliasOpen(event) {
+    event.stopPropagation()
+    const { targetSrc, targetRel } = this._node
+    const frame = document.getElementById("kb-content")
+    if (frame) frame.src = `/knowledge-base/file?${new URLSearchParams({ src: targetSrc, file: targetRel })}`
+    this._hide()
+  }
+
+  // Expands the original's folders, scrolls to it and flashes the row.
+  aliasReveal(event) {
+    event.stopPropagation()
+    const { targetSrc, targetRel } = this._node
+    this._hide()
+    const row = [...this.element.querySelectorAll('.kb-file-row[data-kb-tree-type-param="file"]')]
+      .find((el) => String(el.dataset.kbTreeSrcParam) === String(targetSrc) && el.dataset.kbTreeRelParam === targetRel)
+    if (!row) return
+    for (let parent = this._parentItem(row); parent; parent = this._parentItem(parent)) {
+      if (this._collapsed(parent)) this._toggle(parent)
+    }
+    row.scrollIntoView({ block: "center" })
+    this._focusItem(row)
+    row.classList.add("is-revealed")
+    setTimeout(() => row.classList.remove("is-revealed"), 1800)
+  }
+
+  aliasRemove(event) {
+    event.stopPropagation()
+    this._submitForm(`${this.aliasUrlValue}/${this._node.linkId}`, "delete", {})
+  }
+
+  _base(rel) { return rel.split("/").pop() }
+  _parentRel(rel) { return rel.split("/").slice(0, -1).join("/") }
+
+  // before/after/into for the pointer over a row; roots only accept "into".
+  _zone(event) {
+    const type = event.params.type
+    if (type === "root") return "into"
+    const box = event.currentTarget.getBoundingClientRect()
+    return dropZone(event.clientY - box.top, box.height, type === "dir")
+  }
+
+  _paintZone(row, zone) {
+    row.classList.remove("is-drop-before", "is-drop-after", "is-drop-target")
+    if (zone === "into") row.classList.add("is-drop-target")
+    else if (zone) row.classList.add(`is-drop-${zone}`)
+  }
+
+  // Names of a row's siblings in displayed order (files and folders only).
+  _siblingNames(row) {
+    const container = row.matches(".kb-dir-header, .kb-folder-header") ? row.parentElement.parentElement : row.parentElement
+    return Array.from(container?.children ?? [])
+      .map((child) => child.matches(".kb-dir-group") ? child.querySelector(":scope > .kb-dir-header") : child)
+      .filter((el) => el?.matches?.(".kb-dir-header:not(.kb-role-header), .kb-file-row"))
+      .map((el) => this._base(String(el.dataset.kbTreeRelParam)))
+  }
+
+  // Alt+↑/↓: move the focused row one step among its siblings (switches the folder to manual order).
+  _moveSibling(row, delta) {
+    if (row.matches(".kb-folder-header, .kb-role-header")) return
+    const rel = String(row.dataset.kbTreeRelParam)
+    const names = shift(this._siblingNames(row), this._base(rel), delta)
+    if (!names) return
+    this._submitForm(this.orderUrlValue, "patch", { src: row.dataset.kbTreeSrcParam, dir: this._parentRel(rel), names })
+  }
+
+  _markSort(menu, sort) {
+    const [field, dir] = String(sort ?? "").split("_")
+    menu.dataset.sort = sort ?? ""
+    menu.querySelectorAll("[data-sort-field]").forEach((el) => {
+      const on = !!field && el.dataset.sortField === field
+      el.classList.toggle("is-active", on)
+      if (el.dataset.sortField) el.setAttribute("aria-checked", String(on))
+      const mark = el.querySelector("[data-sort-mark]")
+      if (mark) mark.textContent = on ? "✓" : ""
+    })
+    const flip = menu.querySelector("[data-sort-flip]")
+    flip.disabled = !field
+    flip.querySelector("[data-sort-dir]").textContent = dir === "desc" ? "↓ Descending" : "↑ Ascending"
+  }
+
+  toggleSort(event) {
+    event.stopPropagation()
+    const panel = this.menuTarget.querySelector("[data-sort-panel]")
+    panel.hidden = !panel.hidden
+    event.currentTarget.setAttribute("aria-expanded", String(!panel.hidden))
+    if (!panel.hidden) this._menuItems().find((el) => panel.contains(el))?.focus()
+  }
+
+  // Shared by the header popover (global default) and the context menu (one folder).
+  // A field keeps the current direction; the direction row flips it; blank field = back to default.
+  sortPick(event) {
+    event.stopPropagation()
+    const button = event.currentTarget
+    const menu = button.closest("[data-sort-menu]")
+    const folder = menu.dataset.sortMenu === "folder"
+    let [field, dir] = String(menu.dataset.sort ?? "").split("_")
+    if ("sortFlip" in button.dataset) dir = dir === "asc" ? "desc" : "asc"
+    else field = button.dataset.sortField
+    const mode = field ? `${field}_${dir || "asc"}` : ""
+    const scope = folder ? { src: this._node.src, path: this._node.type === "root" ? "" : this._node.rel } : {}
+    this._submitForm(this.sortUrlValue, "patch", { ...scope, mode })
   }
 
   // Dropping a project's direct child on a role shelf header re-roles it
@@ -685,15 +891,22 @@ export default class extends Controller {
     return parts.slice(0, -1).join("/") === destination.projectRel && parts.at(-1) !== "Tests"
   }
 
-  _canDrop(destination) {
+  _canDrop(destination, zone = "into") {
     const drag = this._drag
     if (!drag) return false
 
-    const destinationRelative = destination.type === "root" ? "" : destination.rel
-    if (drag.src === destination.src) {
+    const sameSource = String(drag.src) === String(destination.src)
+    const destinationRelative = destination.type === "root" ? "" : String(destination.rel)
+    if (zone !== "into") {
+      // Between siblings: the folder that would hold the drop is the target's parent.
+      const holder = this._parentRel(destinationRelative)
+      if (!sameSource) return true
+      if (destinationRelative === drag.rel) return false
+      return !(drag.type === "dir" && (holder === drag.rel || holder.startsWith(`${drag.rel}/`)))
+    }
+    if (sameSource) {
       if (drag.type === "dir" && (destinationRelative === drag.rel || destinationRelative.startsWith(`${drag.rel}/`))) return false
-      const parent = drag.rel.split("/").slice(0, -1).join("/")
-      if (parent === destinationRelative) return false
+      if (this._parentRel(drag.rel) === destinationRelative) return false
     }
     return true
   }
@@ -782,7 +995,10 @@ export default class extends Controller {
     if (csrf) this._appendHidden(form, "authenticity_token", csrf)
     if (method !== "post") this._appendHidden(form, "_method", method)
     this._appendSelection(form)
-    Object.entries(fields).forEach(([name, value]) => this._appendHidden(form, name, value))
+    Object.entries(fields).forEach(([name, value]) => {
+      if (Array.isArray(value)) value.forEach((item) => this._appendHidden(form, name.endsWith("[]") ? name : `${name}[]`, item))
+      else this._appendHidden(form, name, value)
+    })
 
     document.body.appendChild(form)
     form.addEventListener("turbo:submit-end", () => form.remove())
