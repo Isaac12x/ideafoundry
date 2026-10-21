@@ -6,9 +6,14 @@ class IdeaHeroSystemTest < ApplicationSystemTestCase
     @idea.update!(user: User.first)
   end
 
-  def add_image
-    attach_file("idea_hero_images", Rails.root.join("public/icon.png"), make_visible: true)
-    click_on "Add Image"
+  # Several files at once: they become pending tiles in one step, no per-file editor.
+  def add_images(count)
+    paths = Array.new(count) { Rails.root.join("public/icon.png").to_s }
+    attach_file("idea_hero_images", paths, make_visible: true)
+  end
+
+  def font_errors
+    page.driver.browser.logs.get(:browser).map(&:message).grep(/font|OTS/i)
   end
 
   def draw_rectangle
@@ -20,9 +25,11 @@ class IdeaHeroSystemTest < ApplicationSystemTestCase
   test "mix images and a drawing, reorder, save, and see the composed hero" do
     visit edit_idea_path(@idea)
 
-    add_image
-    add_image
-    assert_selector ".dropzone__preview-grid .dropzone__thumb", count: 2 # second drop did not replace the first
+    add_images(2)
+    assert_selector ".dropzone__preview-grid .dropzone__thumb", count: 2
+    assert_no_selector ".image-editor", visible: true
+    add_images(1)
+    assert_selector ".dropzone__preview-grid .dropzone__thumb", count: 3 # a later drop adds, it does not replace
 
     click_on "Add drawing"
     # The modal must be on screen: <main> has a CSS filter that used to push fixed children off-view.
@@ -44,9 +51,16 @@ class IdeaHeroSystemTest < ApplicationSystemTestCase
     first_key = page.evaluate_script("document.querySelector('.hero-set__list .hero-item').dataset.heroKey")
     assert_match(/\Adrawing:/, first_key)
 
-    click_on "Save", match: :first rescue find("input[type=submit], button[type=submit]", match: :first).click
-    assert_selector ".idea-hero-cap--mosaic[data-count='3']", wait: 10
+    find("input[type=submit][value*='Update'], input[type=submit][value*='Save'], button[type=submit]", match: :first).click
+    assert_selector ".idea-hero-cap--mosaic[data-cells='4']", wait: 10
     assert_equal first_key, @idea.reload.hero_items.first.key
+    assert_equal 4, @idea.hero_items.size
+
+    # A second save with nothing new adds nothing.
+    visit edit_idea_path(@idea)
+    find("input[type=submit][value*='Update'], input[type=submit][value*='Save'], button[type=submit]", match: :first).click
+    assert_selector ".idea-hero-cap--mosaic[data-cells='4']", wait: 10
+    assert_equal 4, @idea.reload.hero_items.size
   end
 
   test "editor open and close latency, and re-open keeps one editor" do
@@ -66,7 +80,7 @@ class IdeaHeroSystemTest < ApplicationSystemTestCase
     timings = page.evaluate_script("window.__drawingTimings")
     puts "\nTIMINGS #{timings.inspect}"
     assert_equal 1, page.evaluate_script("document.querySelectorAll('.idea-drawings__modal .excalidraw').length")
-    assert_equal 0, @idea.drawings.hero.count - 1 # opening/closing untouched drawings created nothing extra
+    assert_equal 1, @idea.drawings.hero.count, "opening and closing an untouched drawing creates nothing"
   end
 
   test "standalone drawing page mounts and saves" do
@@ -76,5 +90,26 @@ class IdeaHeroSystemTest < ApplicationSystemTestCase
     find(".excalidraw-topbar button", text: "Save").click
     assert_text "Saved", wait: 10
     assert_equal 1, @idea.drawings.count
+    assert_empty font_errors, "Excalidraw fonts must load from the local asset path"
+  end
+
+  test "editor still opens after a Turbo back/forward round trip" do
+    visit edit_idea_path(@idea)
+    click_on "Add drawing"
+    assert_selector ".excalidraw canvas.interactive"
+    click_on "Done"
+
+    click_on "Ideas", match: :first # leave via Turbo, cached snapshot is taken
+    assert_current_path ideas_path, ignore_query: true
+    page.go_back
+    assert_selector ".hero-set"
+    assert_selector ".idea-drawings__modal.hidden", visible: :all # controller reconnected and portaled the modal
+    # The restored snapshot carries no React DOM from the previous visit...
+    assert_equal 0, page.evaluate_script("document.querySelectorAll('.excalidraw').length")
+    # ...and a fresh open works.
+    click_on "Add drawing"
+    assert_selector ".idea-drawings__modal-dialog", visible: true
+    assert_selector ".excalidraw canvas.interactive"
+    assert_equal 1, page.evaluate_script("document.querySelectorAll('.excalidraw').length")
   end
 end

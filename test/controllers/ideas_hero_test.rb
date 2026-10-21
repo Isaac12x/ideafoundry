@@ -29,7 +29,7 @@ class IdeasHeroTest < ActionDispatch::IntegrationTest
   test "show renders a mosaic for several hero items" do
     patch idea_path(@idea), params: { idea: { title: "Hero", hero_images: [ upload("a.png"), upload("b.png") ] } }
     get idea_path(@idea)
-    assert_select ".idea-hero-cap--mosaic[data-count='2'] .idea-hero-cap__tile", 2
+    assert_select ".idea-hero-cap--mosaic[data-cells='2'] .idea-hero-cap__tile", 2
   end
 
   test "show renders a single full-bleed cap for one item" do
@@ -45,5 +45,42 @@ class IdeasHeroTest < ActionDispatch::IntegrationTest
     get new_idea_path
     follow_redirect!
     assert_select ".hero-set__actions button:not([disabled])", text: /Add drawing/
+  end
+
+  test "foreign blob and drawing ids in hero_order and remove_hero_image_ids are ignored" do
+    patch idea_path(@idea), params: { idea: { title: "Hero", hero_images: [ upload("a.png") ] } }
+    other = User.first.ideas.create!(title: "Other", state: :idea_new)
+    other.hero_images.attach(io: File.open(file_fixture("ocr_sample.png")), filename: "theirs.png", content_type: "image/png")
+    theirs = other.hero_images.first.blob_id
+    foreign_drawing = Drawing.create!(idea: other, title: "x", role: :hero, content: { "elements" => [] })
+    mine = @idea.reload.hero_images.first.blob_id
+
+    patch idea_path(@idea), params: { idea: { title: "Hero", remove_hero_image_ids: [ theirs.to_s ],
+                                              hero_order: [ "image:#{theirs}", "drawing:#{foreign_drawing.id}", "image:#{mine}" ] } }
+
+    assert_equal [ "image:#{mine}" ], @idea.reload.hero_items.map(&:key)
+    assert_equal 1, other.reload.hero_images.count
+    assert_equal [ "image:#{theirs}", "drawing:#{foreign_drawing.id}", "image:#{mine}" ], @idea.hero_order # stale keys are stored but never rendered
+  end
+
+  test "saving again with no uploads adds nothing" do
+    patch idea_path(@idea), params: { idea: { title: "Hero", hero_images: [ upload("a.png") ] } }
+    2.times { patch idea_path(@idea), params: { idea: { title: "Hero again" } } }
+    assert_equal 1, @idea.reload.hero_images.count
+  end
+
+  test "a bad signed id is a form error, not a 500, and the idea is unchanged" do
+    patch idea_path(@idea), params: { idea: { title: "Changed", hero_images: [ "not-a-signed-id" ] } }
+
+    assert_response :unprocessable_content
+    assert_select ".alert-error", /hero images/i
+    assert_equal "Hero", @idea.reload.title
+    assert_equal 0, @idea.hero_images.count
+  end
+
+  test "non-image uploads are rejected with a form error" do
+    patch idea_path(@idea), params: { idea: { title: "Hero", hero_images: [ fixture_file_upload("sample.pdf", "application/pdf") ] } }
+    assert_response :unprocessable_content
+    assert_equal 0, @idea.reload.hero_images.count
   end
 end

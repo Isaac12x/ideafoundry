@@ -53,7 +53,14 @@ export default class extends Controller {
       this.boundDrawingReady = () => this._measure("open", "drawing-open", "drawing-ready");
       this.modal.addEventListener("drawing:ready", this.boundDrawingReady);
       document.body.appendChild(this.modal);
-      this.boundBeforeCache = () => this.element.appendChild(this.modal);
+      // Snapshots must not carry React DOM or an open modal: unmount, empty, hide, and put the modal back.
+      this.boundBeforeCache = () => {
+        this._unmount();
+        this.mount.replaceChildren();
+        this.modal.classList.add("hidden");
+        document.body.classList.remove("modal-open");
+        this.element.appendChild(this.modal);
+      };
       document.addEventListener("turbo:before-cache", this.boundBeforeCache);
     }
     this._idlePrefetch();
@@ -68,7 +75,9 @@ export default class extends Controller {
       this.modal.removeEventListener("click", this.boundModalClick);
       this.modal.removeEventListener("drawing:saved", this.boundSaved);
       this.modal.removeEventListener("drawing:ready", this.boundDrawingReady);
-      this.modal.remove();
+      // Turbo clones the snapshot a tick after before-cache, i.e. after we disconnect: only take the
+      // modal out of <body>; if before-cache already returned it to our element, leave it for the snapshot.
+      if (this.modal.parentElement === document.body) this.modal.remove();
       document.body.classList.remove("modal-open");
     }
     this._unmount();
@@ -83,7 +92,7 @@ export default class extends Controller {
       this._preload("modulepreload", this.bundleUrlValue);
       if (this.stylesheetUrlValue) this._preload("preload", this.stylesheetUrlValue, "style");
     };
-    this._idleHandle = window.requestIdleCallback ? window.requestIdleCallback(run, { timeout: 4000 }) : setTimeout(run, 2000);
+    this._idleHandle = window.requestIdleCallback ? window.requestIdleCallback(run, { timeout: 1000 }) : setTimeout(run, 2000);
   }
 
   _preload(rel, href, as) {

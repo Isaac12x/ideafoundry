@@ -474,9 +474,16 @@ class Version < ApplicationRecord
     # Older snapshots stored a single "hero_image".
     Array(media["hero_images"] || media["hero_image"]).each { |data| attach_blob(idea.hero_images, data) }
     # Restored drawings get new ids; keep the saved interleaving by remapping their keys.
-    order = Array(media["hero_order"]).map do |key|
-      kind, id = key.split(":")
-      kind == "drawing" ? "drawing:#{(@drawing_id_map || {})[id.to_i]}" : key
+    # A drawing key with no counterpart in the restore is dropped on purpose.
+    drawing_ids = @drawing_id_map || {}
+    order = Array(media["hero_order"]).filter_map do |key|
+      kind, id = key.to_s.split(":")
+      if kind == "drawing"
+        new_id = drawing_ids[id.to_i]
+        "drawing:#{new_id}" if new_id
+      else
+        key
+      end
     end
     idea.update_columns(hero_order: order.grep(Idea::HERO_KEY))
 

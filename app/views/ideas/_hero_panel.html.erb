@@ -1,6 +1,6 @@
 <%# Hero = ordered mix of uploaded images and drawings. Order is the DOM order of the hidden hero_order inputs. %>
 <% items = idea.persisted? ? idea.hero_items : [] %>
-<details class="form-panel" open>
+<details class="form-panel" id="hero" open>
   <summary class="form-panel-title">Hero</summary>
   <div class="hero-set"
        data-controller="hero-set idea-drawings"
@@ -25,7 +25,7 @@
       <%= render "ideas/hero_item", item: nil %>
     </template>
 
-    <div data-controller="dropzone" data-dropzone-multiple-value="true" data-dropzone-accept-value="image/*" data-dropzone-image-editor-outlet=".image-editor">
+    <div data-controller="dropzone" data-dropzone-multiple-value="true" data-dropzone-accept-value="image/*">
       <div class="dropzone" data-dropzone-target="zone" data-action="click->dropzone#click dragover->dropzone#dragover dragenter->dropzone#dragenter dragleave->dropzone#dragleave drop->dropzone#drop">
         <div class="dropzone__label" data-dropzone-target="placeholder">
           <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>

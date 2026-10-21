@@ -81,12 +81,40 @@ function findExcalidrawConnectorEnvChunks() {
   return chunks;
 }
 
+// Fonts are served from public/ (not the digesting asset pipeline): Excalidraw resolves
+// "fonts/<Family>/<file>" against window.EXCALIDRAW_ASSET_PATH, and its own fallback is a CDN.
+const EXCALIDRAW_PUBLIC_DIR = "public/excalidraw-assets";
+const EXCALIDRAW_PUBLIC_URL = "/excalidraw-assets";
+
+function copyExcalidrawFonts() {
+  fs.rmSync(EXCALIDRAW_PUBLIC_DIR, { recursive: true, force: true });
+  fs.mkdirSync(EXCALIDRAW_PUBLIC_DIR, { recursive: true });
+  fs.cpSync(
+    path.join("node_modules", "@excalidraw", "excalidraw", "dist", "prod", "fonts"),
+    path.join(EXCALIDRAW_PUBLIC_DIR, "fonts"),
+    { recursive: true }
+  );
+  // The UI font referenced by index.css is emitted next to the bundle; mirror it.
+  const out = "app/assets/builds/excalidraw_app";
+  for (const f of fs.existsSync(out) ? fs.readdirSync(out) : []) {
+    if (f.endsWith(".woff2")) fs.copyFileSync(path.join(out, f), path.join(EXCALIDRAW_PUBLIC_DIR, f));
+  }
+}
+
 function excalidrawLocalOnlyPlugin() {
   const connectorEnvChunks = findExcalidrawConnectorEnvChunks();
 
   return {
     name: "excalidraw-local-only",
     setup(build) {
+      // Point Excalidraw's built-in CDN font fallback (esm.sh) at our own origin (it sits inside a template literal): local-only, no remote.
+      build.onLoad({ filter: /node_modules\/@excalidraw\/excalidraw\/dist\/.*\.js$/ }, (args) => {
+        const source = fs.readFileSync(args.path, "utf8");
+        if (!source.includes("https://esm.sh/")) return undefined;
+        return { contents: source.replaceAll("https://esm.sh/", "${window.location.origin}" + `${EXCALIDRAW_PUBLIC_URL}/-/`), loader: "js" };
+      });
+      build.onEnd(copyExcalidrawFonts);
+
       build.onResolve({ filter: /^(?:\.{1,2}\/)+chunk-.*\.js$/ }, (args) => {
         if (
           args.importer.includes("node_modules/@excalidraw/excalidraw/dist/") &&
@@ -116,6 +144,7 @@ const builds = [
     ...common,
     entryPoints: ["app/javascript/excalidraw_app/index.tsx"],
     outdir: "app/assets/builds/excalidraw_app",
+    publicPath: EXCALIDRAW_PUBLIC_URL,
     minify: !watch,
     splitting: false,
     plugins: [excalidrawLocalOnlyPlugin()],

@@ -6,6 +6,7 @@ const filesToScan = ["index.js", "index.js.map", "index.css", "index.css.map"];
 
 const forbiddenPatterns = [
   ["Google API key", /AIza[0-9A-Za-z_-]{35}/],
+  ["esm.sh CDN font fallback", /esm\.sh/],
   ["Excalidraw Firebase project", /excalidraw-room-persistence/],
   ["Firebase host", /firebase(?:app|io)?\.com/],
   ["Excalidraw collaboration backend", /oss-collab\.excalidraw\.com/],
