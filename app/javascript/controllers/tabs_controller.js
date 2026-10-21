@@ -10,7 +10,7 @@ export default class extends Controller {
   connect() {
     const hash = window.location.hash?.slice(1)
     const validTab = hash && this.panelTargets.some(p => p.dataset.tabPanel === hash)
-    this.showTab(validTab ? hash : this.defaultTabValue, true)
+    this.showTab(validTab ? hash : this.defaultTabValue)
   }
 
   switch(event) {
@@ -19,7 +19,7 @@ export default class extends Controller {
     this.showTab(tabName);
   }
 
-  showTab(tabName, replace = false) {
+  showTab(tabName) {
     // Hide all panels
     this.panelTargets.forEach((panel) => {
       panel.classList.add("hidden");
@@ -47,10 +47,10 @@ export default class extends Controller {
       selectedTab.classList.add("active");
     }
 
-    // Update URL hash without scrolling
-    if (history.pushState) {
-      // replace on initial connect so Back doesn't stack duplicate entries
-      history[replace ? "replaceState" : "pushState"](null, null, `#${tabName}`);
-    }
+    // Update URL hash without scrolling. Keep Turbo's history.state: a null
+    // state makes Turbo ignore Back to this entry (URL changes, page doesn't).
+    // Replace, not push: nothing listens for hash changes, so a pushed tab entry
+    // would only make Back change the URL without switching the tab.
+    history.replaceState(history.state, "", `#${tabName}`);
   }
 }

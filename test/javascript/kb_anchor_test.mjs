@@ -1,6 +1,6 @@
 import test from "node:test"
 import assert from "node:assert/strict"
-import { locate, wrap } from "../../app/javascript/lib/kb_anchor.mjs"
+import { locate, rootText, wrap } from "../../app/javascript/lib/kb_anchor.mjs"
 
 const mark = (text, quote, nth = 0, ctx = 8) => {
   let start = -1
@@ -33,11 +33,19 @@ test("wrap paints inline spaces but leaves whitespace between table rows alone",
   assert.equal(made.map((el) => el.firstChild.data).join("|"), "ab| |cd")
 })
 
+test("rendered diagram chrome is not document text, so marks never land in the svg", () => {
+  const { root, doc, el, Text } = fakeTree()
+  root.appendChild(Object.assign(el("DIV", el("TEXT", new Text("label"))), { className: "kb-diagram-out" }))
+  assert.equal(rootText(root), "ab \ncd")
+  assert.deepEqual(wrap(root, 0, 99, () => doc.createElement("mark")).map((el) => el.firstChild.data), ["ab", " ", "cd"])
+})
+
 // Minimal DOM: <div><span>ab</span><span> </span><tbody>\n</tbody><span>cd</span></div>
 function fakeTree() {
   class Node {
     constructor(nodeName) { this.nodeName = nodeName; this.childNodes = []; this.parentNode = null }
     get firstChild() { return this.childNodes[0] }
+    closest(sel) { return sel.split(", ").includes(`.${this.className}`) ? this : this.parentNode?.closest?.(sel) ?? null }
     appendChild(child) { child.parentNode?.removeChild(child); child.parentNode = this; this.childNodes.push(child); return child }
     insertBefore(child, ref) { child.parentNode?.removeChild(child); child.parentNode = this; this.childNodes.splice(this.childNodes.indexOf(ref), 0, child); return child }
     removeChild(child) { this.childNodes.splice(this.childNodes.indexOf(child), 1); child.parentNode = null }
@@ -58,5 +66,5 @@ function fakeTree() {
   }
   const el = (name, ...kids) => { const n = new Node(name); n.ownerDocument = doc; kids.forEach((k) => n.appendChild(k)); return n }
   const root = el("DIV", el("SPAN", new Text("ab")), el("SPAN", new Text(" ")), el("TBODY", new Text("\n")), el("SPAN", new Text("cd")))
-  return { root, doc }
+  return { root, doc, el, Text }
 }
