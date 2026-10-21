@@ -44,46 +44,20 @@ if ! command -v brew &>/dev/null; then
   eval "$(/opt/homebrew/bin/brew shellenv 2>/dev/null || /usr/local/bin/brew shellenv)"
 fi
 
-# --- rbenv ---
-if ! command -v rbenv &>/dev/null; then
-  echo "==> Installing rbenv + ruby-build..."
-  brew install rbenv ruby-build
-fi
-eval "$(rbenv init - zsh)"
+# --- System dependencies (Brewfile is the source of truth) ---
+echo "==> Installing system dependencies from Brewfile..."
+brew bundle --no-upgrade --file="$APP_DIR/Brewfile" || echo "WARNING: some Brewfile entries failed to install; features needing them show as unavailable. Rerun: brew bundle --file=\"$APP_DIR/Brewfile\"" >&2
+for tool in rbenv node caddy; do
+  command -v "$tool" &>/dev/null || { echo "ERROR: $tool missing after brew bundle (required). Fix: brew bundle --file=\"$APP_DIR/Brewfile\"" >&2; exit 1; }
+done
 
 # --- Ruby ---
+eval "$(rbenv init - zsh)"
 if ! rbenv versions --bare | grep -qx "$RUBY_VERSION"; then
   echo "==> Installing Ruby $RUBY_VERSION (this takes a few minutes)..."
   rbenv install "$RUBY_VERSION"
 fi
 rbenv local "$RUBY_VERSION"
-
-# --- Node.js (for esbuild/JS bundle) ---
-if ! command -v node &>/dev/null; then
-  echo "==> Installing Node.js..."
-  brew install node
-fi
-
-# --- Local media editing toolchain ---
-typeset -A MEDIA_PACKAGES=(
-  ffmpeg ffmpeg
-  magick imagemagick
-  gs ghostscript
-  pdftk pdftk-java
-  pdfinfo poppler
-)
-for command package in ${(kv)MEDIA_PACKAGES}; do
-  if ! command -v "$command" &>/dev/null; then
-    echo "==> Installing media editor dependency: $package..."
-    brew install "$package"
-  fi
-done
-
-# --- Caddy ---
-if ! command -v caddy &>/dev/null; then
-  echo "==> Installing Caddy..."
-  brew install caddy
-fi
 
 # --- Disable macOS built-in Apache httpd ---
 if launchctl list 2>/dev/null | grep -q "org.apache.httpd"; then

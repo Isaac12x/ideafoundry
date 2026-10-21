@@ -48,10 +48,14 @@ RUN SECRET_KEY_BASE_DUMMY=1 ./bin/rails assets:precompile
 # Final stage for app image
 FROM base
 
-# Install packages needed for deployment
+# Install packages needed for deployment. Debian equivalents of the Brewfile (keep in sync).
+# Left out on purpose (heavy or stale in apt): calibre (ebook-convert), openai-whisper, yt-dlp,
+# chromium (reader PDFs). The app shows those features as "tool not installed"; set
+# EBOOK_CONVERT_BIN / WHISPER_BIN / YT_DLP_BIN / CHROME_BIN if you add them in a derived image.
 RUN apt-get update -qq && \
     apt-get install --no-install-recommends -y curl libsqlcipher1 sqlcipher libvips pandoc \
-      ffmpeg ghostscript imagemagick poppler-utils pdftk-java && \
+      ffmpeg ghostscript imagemagick poppler-utils pdftk-java \
+      tesseract-ocr tesseract-ocr-eng djvulibre-bin 7zip && \
     rm -rf /var/lib/apt/lists /var/cache/apt/archives
 
 # Copy built artifacts: gems, application
