@@ -46,3 +46,13 @@ class StartupPrepareTest < ActiveSupport::TestCase
     end
   end
 end
+
+class DevAssetResolutionTest < ActiveSupport::TestCase
+  # A public/assets manifest left by bin/start's production precompile must not shadow live assets in dev.
+  test "development resolves assets from the environment only" do
+    out, status = Open3.capture2e({ "RAILS_ENV" => "development" }, Rails.root.join("bin/rails").to_s, "runner",
+                                  "p Rails.application.config.assets.resolve_with", chdir: Rails.root.to_s)
+    assert status.success?, out
+    assert_equal "[:environment]", out.lines.last.strip
+  end
+end
