@@ -209,7 +209,9 @@ export default class extends Controller {
     // Request every static chunk in parallel up front, instead of discovering them level by level
     // while the entry module graph loads (each level costs a round trip).
     if (this.bundleUrlValue && !window.IdeaApp?.mountExcalidraw) this._preloadAll();
-    return this.bundleUrlValue ? loadExcalidrawAssets(this.bundleUrlValue, this.stylesheetUrlValue) : Promise.resolve();
+    return this.bundleUrlValue
+      ? loadExcalidrawAssets(this.bundleUrlValue, this.stylesheetUrlValue)
+      : Promise.reject(new Error("Excalidraw build missing")); // surfaces as the error notice
   }
 
   // The modal shell appears synchronously on click, with a quiet notice if the editor isn't loaded yet.

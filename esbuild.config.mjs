@@ -82,9 +82,10 @@ function findExcalidrawConnectorEnvChunks() {
   return chunks;
 }
 
-// Fonts are served from public/ (not the digesting asset pipeline): Excalidraw resolves
-// "fonts/<Family>/<file>" against window.EXCALIDRAW_ASSET_PATH, and its own fallback is a CDN.
-// Versioned so the long public cache busts when @excalidraw/excalidraw is upgraded.
+// The whole editor build (code-split JS/CSS, precompressed siblings, manifest and fonts) is served from
+// public/, not the digesting asset pipeline: relative chunk imports must resolve, and Excalidraw resolves
+// "fonts/<Family>/<file>" against window.EXCALIDRAW_ASSET_PATH (its own fallback is a CDN).
+// The directory is versioned so the long public cache busts when @excalidraw/excalidraw is upgraded.
 const EXCALIDRAW_VERSION = JSON.parse(
   fs.readFileSync(path.join("node_modules", "@excalidraw", "excalidraw", "package.json"), "utf8")
 ).version;

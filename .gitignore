@@ -7,7 +7,7 @@
 # Ignore precompiled and bundled assets
 /public/assets
 
-# Excalidraw fonts copied from node_modules by esbuild.config.mjs
+# Excalidraw editor build (code-split JS/CSS, .br/.gz, manifest, fonts) emitted by esbuild.config.mjs
 /public/excalidraw-assets
 
 # Ignore SQLite databases
