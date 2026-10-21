@@ -64,6 +64,17 @@ test("editor clock retains millisecond precision for trim work", async () => {
   assert.equal(controller.formatTime(125.678), "02:05.678")
 })
 
+test("overlapping cuts merge into disjoint ranges", async () => {
+  const Controller = await loadController()
+  const controller = new Controller()
+  controller.cuts = []
+  controller.addCut(5, 8)
+  controller.addCut(1, 2)
+  controller.addCut(7, 10)
+
+  assert.deepEqual(controller.cuts, [[1, 2], [5, 10]])
+})
+
 async function loadController() {
   const source = await readFile(
     new URL("../../app/javascript/controllers/kb_media_editor_controller.js", import.meta.url),

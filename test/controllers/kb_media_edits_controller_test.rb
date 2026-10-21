@@ -14,6 +14,19 @@ class KbMediaEditsControllerTest < ActionDispatch::IntegrationTest
     FileUtils.rm_rf(@kb_dir)
   end
 
+  test "no media edits into a project that is locking" do
+    FileUtils.mkdir_p(File.join(@kb_dir, "Proj"))
+    File.binwrite(File.join(@kb_dir, "Proj", "pic.png"), "image-bytes")
+    Kb::ProjectLock::STATE[File.join(File.realpath(@kb_dir), "Proj")] = { op: :lock }
+    Kb::ProjectLock::STATE[File.join(@kb_dir, "Proj")] = { op: :lock }
+    assert_no_difference -> { KbMediaEdit.count } do
+      post kb_media_edits_path, params: { src: 0, file: "Proj/pic.png", operations: { brightness: "1.1" } }
+    end
+    assert_response :conflict
+  ensure
+    Kb::ProjectLock::STATE.clear
+  end
+
   test "view mode only exposes an edit button and loads the image studio on click route" do
     File.binwrite(File.join(@kb_dir, "evidence.png"), "image-bytes")
 
@@ -146,5 +159,58 @@ class KbMediaEditsControllerTest < ActionDispatch::IntegrationTest
 
     assert_response :conflict
     assert_equal 1, @user.kb_media_edits.where(relative_path: "clip.mp4").count
+  end
+
+  test "status returns the copy path explicitly, not the source" do
+    edit = @user.kb_media_edits.create!(source_index: 0, source_path: @kb_dir, relative_path: "clip.mp4", media_kind: "video",
+                                        operations: {}, status: "done", result_relative_path: "clip (edited).mp4")
+
+    get kb_media_edit_path(edit), as: :json
+
+    body = response.parsed_body
+    assert_equal "clip (edited).mp4", body["result_path"]
+    assert_includes body["file_url"], CGI.escape("clip (edited).mp4")
+  end
+
+  test "screenshot saves an exact-frame png beside the video" do
+    skip "ffmpeg unavailable" unless system("ffmpeg -version", out: File::NULL, err: File::NULL)
+    video = File.join(@kb_dir, "clip.mp4")
+    system("ffmpeg", "-y", "-loglevel", "error", "-f", "lavfi", "-i", "testsrc=duration=2:size=64x64:rate=10",
+           "-c:v", "libx264", video, exception: true)
+
+    post kb_screenshot_path, params: { src: 0, file: "clip.mp4", time: "1.5" }, as: :json
+
+    assert_response :created
+    body = response.parsed_body
+    assert_equal "clip \u2014 00m01s.png", body["name"]
+    assert_equal "\x89PNG".b, File.binread(File.join(@kb_dir, body["file"]), 4)
+
+    post kb_screenshot_path, params: { src: 0, file: "clip.mp4", time: "1.5" }, as: :json
+    assert_equal "clip \u2014 00m01s 2.png", response.parsed_body["name"]
+  end
+
+  test "screenshot rejects non-video files and bad timestamps" do
+    File.binwrite(File.join(@kb_dir, "evidence.png"), "x")
+    File.binwrite(File.join(@kb_dir, "clip.mp4"), "x")
+
+    post kb_screenshot_path, params: { src: 0, file: "evidence.png", time: "1" }, as: :json
+    assert_response :unprocessable_content
+    post kb_screenshot_path, params: { src: 0, file: "clip.mp4", time: "-3" }, as: :json
+    assert_response :unprocessable_content
+  end
+
+  test "edited images are served under a version param that changes with the file" do
+    path = File.join(@kb_dir, "evidence.png")
+    File.binwrite(path, "one")
+    get kb_file_path(src: 0, file: "evidence.png")
+    first = css_select("img.kb-image-preview").first["src"]
+    File.binwrite(path, "two")
+    File.utime(Time.now + 5, Time.now + 5, path)
+
+    get kb_file_path(src: 0, file: "evidence.png")
+    second = css_select("img.kb-image-preview").first["src"]
+
+    assert_match(/[?&]v=\d+/, first)
+    refute_equal first, second
   end
 end

@@ -1,0 +1,17 @@
+<%# Idea form: pick KB projects/folders/files to link; created with the idea on save. %>
+<div class="kb-link-picks" data-controller="kb-link-combobox kb-link-picks"
+     data-kb-link-combobox-search-url-value="<%= ideas_kb_link_search_path %>"
+     data-action="kb-link-combobox:pick->kb-link-picks#add idea-draft:restore@window->kb-link-picks#restore">
+  <% if idea.persisted? && idea.kb_links.any? %>
+    <p class="kb-link-picks__existing">Already linked: <%= idea.kb_links.map { |l| File.basename(l.relative_path) }.to_sentence %></p>
+  <% end %>
+  <div class="kb-link-picks__chips" data-kb-link-picks-target="chips"></div>
+  <div class="idea-kb-links__combo">
+    <input type="text" class="idea-kb-links__input form-control" placeholder="Link a KB project, folder or file…"
+           role="combobox" aria-expanded="false" aria-autocomplete="list" aria-controls="kb_pick_options"
+           autocomplete="off" aria-label="Search the knowledge base to link"
+           data-kb-link-combobox-target="input"
+           data-action="focus->kb-link-combobox#search input->kb-link-combobox#search keydown->kb-link-combobox#keydown blur->kb-link-combobox#close">
+    <ul id="kb_pick_options" role="listbox" class="idea-kb-links__options" hidden data-kb-link-combobox-target="list"></ul>
+  </div>
+</div>

@@ -33,6 +33,13 @@ class KbDownloadJob < ApplicationJob
     target = resolve_dir(base, dl.dir)
     return fail!(dl, "Target folder not found.") if target.nil?
 
+    case Kb::ProjectLock.write_block(base, dl.dir)
+    when :busy # locking/unlocking right now: try again shortly
+      return self.class.set(wait: 30.seconds).perform_later(dl.id)
+    when :locked
+      return fail!(dl, "Project is locked. Unlock it, then retry.")
+    end
+
     dl.update!(status: "running")
 
     path = fetch(dl, target)
@@ -42,6 +49,9 @@ class KbDownloadJob < ApplicationJob
       return fail!(dl, "Download produced no file.")
     end
 
+    # ponytail: yt-dlp and cut_clip (direct media) cut clips; articles come whole, so don't claim a clip.
+    dl.assign_attributes(clip_start: nil, clip_end: nil) unless @clipped
+    save_note(dl, path)
     dl.update!(status: "done", filename: File.basename(path), error: nil)
     dl.queue_transcript
   rescue => e
@@ -50,6 +60,16 @@ class KbDownloadJob < ApplicationJob
   end
 
   private
+
+  # "Why are you saving this?" -> the file's .note.md sidecar. The sidecar is the source of truth, so the row's copy goes.
+  def save_note(dl, path)
+    return if dl.note.blank?
+
+    Kb::Note.write!(path, dl.note) if Kb::Note.eligible?(path)
+    dl.note = nil
+  rescue SystemCallError, ArgumentError => e
+    Rails.logger.warn("KbDownloadJob #{dl.id}: note not saved: #{e.message}")
+  end
 
   def fetch(dl, dir)
     if direct_file?(dl.url)
@@ -140,8 +160,23 @@ class KbDownloadJob < ApplicationJob
     bin = yt_dlp_bin
     return fail!(dl, "yt-dlp is not installed.") if bin.nil?
 
+    out, status = capture(self.class.yt_dlp_args(bin, dl, dir, kind))
+    return nil unless status&.success?
+    @clipped = dl.clip?
+    out.to_s.lines.map(&:strip).reject(&:empty?).last
+  end
+
+  # Clips (a start and/or end) go through --download-sections, cut on keyframe
+  # boundaries re-encoded so the cut is exact, and are named in the file.
+  def self.yt_dlp_args(bin, dl, dir, kind = nil)
+    name = "%(title)s"
+    if dl.clip?
+      from = Kb::ClipTime.slug(dl.clip_start || 0)
+      name += " [clip #{dl.clip_end ? "#{from}-#{Kb::ClipTime.slug(dl.clip_end)}" : "from #{from}"}]"
+    end
     args = [ bin, "--no-playlist", "--no-overwrites", "--no-simulate",
-            "--print", "after_move:filepath", "-P", dir, "-o", "%(title)s.%(ext)s" ]
+            "--print", "after_move:filepath", "-P", dir, "-o", "#{name}.%(ext)s" ]
+    args += [ "--download-sections", Kb::ClipTime.section(dl.clip_start, dl.clip_end), "--force-keyframes-at-cuts" ] if dl.clip?
     case dl.format
     when "audio" then args += [ "-t", "mp3" ]
     when "video" then args += [ "-t", "mp4" ]
@@ -150,11 +185,7 @@ class KbDownloadJob < ApplicationJob
       # ponytail: merge only, no remux -- some sites (archive.org .ogv) can't convert to mp4.
       args += [ "--merge-output-format", "mp4" ] if kind == :video
     end
-    args << self.class.media_url(dl.url)
-
-    out, status = capture(args)
-    return nil unless status&.success?
-    out.to_s.lines.map(&:strip).reject(&:empty?).last
+    args << media_url(dl.url)
   end
 
   def http_download(dl, dir)
@@ -163,9 +194,35 @@ class KbDownloadJob < ApplicationJob
     URI.parse(dl.url).open("rb") do |io|
       File.open(dest, "wb") { |f| IO.copy_stream(io, f) }
     end
-    dest
+    dl.clip? && Kb::MediaTypes.kind_for(dest).in?(%i[video audio]) ? cut_clip(dl, dest) : dest
   rescue OpenURI::HTTPError, SocketError, Errno::ECONNREFUSED, RuntimeError => e
     fail!(dl, "Download failed: #{e.message}")
+    nil
+  end
+
+  # Accurate (decoded, re-encoded) cut of a downloaded media file to the clip,
+  # named like yt-dlp's clips. The whole download is dropped once the cut lands;
+  # a failed cut fails the job rather than silently keeping the full file.
+  def cut_clip(dl, path)
+    ext = File.extname(path)
+    from = dl.clip_start || 0
+    span = dl.clip_end ? [ "-t", (dl.clip_end - from).to_s ] : []
+    suffix = dl.clip_end ? "#{Kb::ClipTime.slug(from)}-#{Kb::ClipTime.slug(dl.clip_end)}" : "from #{Kb::ClipTime.slug(from)}"
+    dest = unique_path(File.join(File.dirname(path), "#{File.basename(path, ext)} [clip #{suffix}]#{ext}"))
+    table = Kb::MediaTypes.kind_for(path) == :audio ? Kb::MediaEditProcessor::AUDIO_CODECS : Kb::MediaEditProcessor::VIDEO_CODECS
+    codecs = table.fetch(ext.downcase, [])
+    _out, err, status = Open3.capture3("ffmpeg", "-y", "-hide_banner", "-loglevel", "error", "-i", path,
+                                       "-ss", from.to_s, *span, "-map_metadata", "0", *codecs, dest)
+    unless status.success? && File.size?(dest)
+      FileUtils.rm_f(dest)
+      fail!(dl, "Could not cut the clip: #{err.to_s.lines.last.to_s.strip.presence || 'ffmpeg failed'}")
+      return nil
+    end
+    FileUtils.rm_f(path)
+    @clipped = true
+    dest
+  rescue Errno::ENOENT
+    fail!(dl, "Could not cut the clip: ffmpeg is not installed.")
     nil
   end
 

@@ -1,0 +1,6 @@
+<%# Broadcast on save: never a modal, so it can't swallow clicks on whatever page the user moved on to. %>
+<div id="<%= dom_id(download, :references) %>" class="kb-toast" role="status" data-controller="flash" data-flash-delay-value="20000">
+  <p class="kb-toast__text"><strong><%= download.title.presence || download.label %></strong> cites <%= pluralize(download.reference_list.size, "source") %>.</p>
+  <%= link_to "Pick references", kb_download_references_path(download), class: "kb-toast__action", data: { turbo_stream: true } %>
+  <button type="button" class="kb-toast__close" data-action="flash#dismiss" aria-label="Dismiss">&times;</button>
+</div>
