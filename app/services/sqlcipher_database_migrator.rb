@@ -6,7 +6,7 @@ class SqlcipherDatabaseMigrator
   SQLITE_HEADER = "SQLite format 3\0".b.freeze
   SIDECAR_SUFFIXES = [ "-wal", "-shm" ].freeze
 
-  Result = Struct.new(:path, :status, :backup_path, :error, keyword_init: true)
+  Result = Struct.new(:path, :status, :error, keyword_init: true)
 
   class Error < StandardError; end
 
@@ -97,9 +97,8 @@ class SqlcipherDatabaseMigrator
     File.file?(path) && File.binread(path, SQLITE_HEADER.bytesize) == SQLITE_HEADER
   end
 
-  def initialize(key_hex:, backup_dir: nil, timestamp: Time.now.utc.strftime("%Y%m%d%H%M%S"))
+  def initialize(key_hex:, timestamp: Time.now.utc.strftime("%Y%m%d%H%M%S"))
     @key_hex = key_hex.to_s
-    @backup_dir = Pathname.new((backup_dir.presence || default_backup_dir).to_s)
     @timestamp = timestamp
 
     validate_key!
@@ -140,25 +139,17 @@ class SqlcipherDatabaseMigrator
       raise Error, "#{path} is neither plaintext SQLite nor an openable SQLCipher database"
     end
 
-    temp_path = nil
-    backup_path = nil
-
+    # No plaintext copy is ever made. The original is not modified until the encrypted copy is fully
+    # written and verified; only then does an atomic rename replace it. Any failure before that leaves
+    # the original untouched (the half-written temp file is discarded).
     temp_path = temporary_path(path)
     export_plaintext_to_sqlcipher!(path, temp_path)
     verify_encrypted_database!(temp_path)
-
-    backup_path = backup_plaintext_database!(path)
     replace_database!(path, temp_path)
 
-    # Replacement succeeded — remove plaintext backup and clear pointer so ensure skips.
-    delete_plaintext_backup!(path, backup_path)
-    backup_path = nil
-
-    Result.new(path: path.to_s, status: :encrypted, backup_path: nil)
+    Result.new(path: path.to_s, status: :encrypted)
   ensure
     FileUtils.rm_f(temp_path) if temp_path&.exist?
-    # Guard: replacement succeeded but backup deletion was interrupted (e.g. SIGTERM).
-    delete_plaintext_backup!(path, backup_path) if backup_path
   end
 
   def rekey!(database, new_key_hex:)
@@ -177,10 +168,6 @@ class SqlcipherDatabaseMigrator
   end
 
   private
-
-  def default_backup_dir
-    Rails.root.dirname.join("#{Rails.root.basename}-sqlcipher-backups")
-  end
 
   def validate_key!
     return if @key_hex.match?(/\A[0-9a-f]{64}\z/i)
@@ -225,35 +212,15 @@ class SqlcipherDatabaseMigrator
 
     source = SQLite3::Database.new(source_path.to_s)
     source.busy_timeout = 10_000
-    source.execute("PRAGMA wal_checkpoint(TRUNCATE)") rescue nil
+    # replace_database! drops the original's -wal/-shm, so they must be empty (fully checkpointed) first.
+    busy, = source.get_first_row("PRAGMA wal_checkpoint(TRUNCATE)")
+    raise Error, "#{source_path} has unflushed WAL data (database busy); refusing to replace it" if busy.to_i != 0
+
     source.execute("ATTACH DATABASE #{sql_string(encrypted_path.to_s)} AS encrypted KEY #{key_literal}")
     source.execute("SELECT sqlcipher_export('encrypted')")
     source.execute("DETACH DATABASE encrypted")
   ensure
     source&.close
-  end
-
-  def delete_plaintext_backup!(original_path, backup_path)
-    FileUtils.rm_f(backup_path)
-    sidecar_paths(original_path).each do |sidecar|
-      FileUtils.rm_f(@backup_dir.join("#{sidecar.basename}.#{@timestamp}.plaintext"))
-    end
-  end
-
-  def backup_plaintext_database!(path)
-    FileUtils.mkdir_p(@backup_dir)
-
-    backup_path = @backup_dir.join("#{path.basename}.#{@timestamp}.plaintext")
-    raise Error, "Backup already exists: #{backup_path}" if backup_path.exist?
-
-    FileUtils.cp(path, backup_path, preserve: true)
-    sidecar_paths(path).each do |sidecar|
-      next unless sidecar.exist?
-
-      FileUtils.cp(sidecar, @backup_dir.join("#{sidecar.basename}.#{@timestamp}.plaintext"), preserve: true)
-    end
-
-    backup_path
   end
 
   def replace_database!(path, encrypted_path)

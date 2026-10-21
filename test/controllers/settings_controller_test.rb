@@ -387,22 +387,19 @@ class SettingsControllerTest < ActionDispatch::IntegrationTest
   test "POST settings/security/encrypt-database encrypts configured plaintext SQLite with the UI passphrase" do
     root = Rails.root.join("tmp/settings_sqlcipher_controller_test_#{SecureRandom.hex(6)}")
     database_path = root.join("production.sqlite3")
-    backup_dir = root.join("backups")
     FileUtils.mkdir_p(root)
     create_plaintext_sqlite_database(database_path)
 
     with_recovery_passphrase_file(root.join("recovery_passphrase.key")) do
-      with_sqlcipher_backup_dir(backup_dir) do
-        SqlcipherDatabaseMigrator.stub(:configured_database_paths, [ database_path.to_s ]) do
-          post settings_security_encrypt_database_path, params: {
-            database_encryption: {
-              passphrase: "correct horse battery staple",
-              passphrase_confirmation: "correct horse battery staple",
-              saved_primary: "1",
-              saved_secondary: "1"
-            }
+      SqlcipherDatabaseMigrator.stub(:configured_database_paths, [ database_path.to_s ]) do
+        post settings_security_encrypt_database_path, params: {
+          database_encryption: {
+            passphrase: "correct horse battery staple",
+            passphrase_confirmation: "correct horse battery staple",
+            saved_primary: "1",
+            saved_secondary: "1"
           }
-        end
+        }
       end
     end
 
@@ -410,7 +407,8 @@ class SettingsControllerTest < ActionDispatch::IntegrationTest
     assert_match(/Encrypted 1 SQLite database/, flash[:notice])
     assert_equal "correct horse battery staple", JSON.parse(File.read(root.join("recovery_passphrase.key")))["passphrase"]
     refute_equal "SQLite format 3\0", File.binread(database_path, 16)
-    assert_nil Dir[backup_dir.join("production.sqlite3.*.plaintext").to_s].first, "plaintext backup must be deleted after successful migration"
+    assert_empty Dir[root.join("**/*.plaintext").to_s], "no plaintext backup may ever be written"
+    assert_no_match(/backup/i, flash[:notice])
   ensure
     FileUtils.rm_rf(root) if root&.exist?
   end
@@ -887,18 +885,6 @@ class SettingsControllerTest < ActionDispatch::IntegrationTest
     db.execute("INSERT INTO ideas (title) VALUES (?)", [ "Encrypted from settings" ])
   ensure
     db&.close
-  end
-
-  def with_sqlcipher_backup_dir(path)
-    original = ENV["IDEA_FOUNDRY_SQLCIPHER_BACKUP_DIR"]
-    ENV["IDEA_FOUNDRY_SQLCIPHER_BACKUP_DIR"] = path.to_s
-    yield
-  ensure
-    if original.nil?
-      ENV.delete("IDEA_FOUNDRY_SQLCIPHER_BACKUP_DIR")
-    else
-      ENV["IDEA_FOUNDRY_SQLCIPHER_BACKUP_DIR"] = original
-    end
   end
 
   def with_recovery_passphrase_file(path)
