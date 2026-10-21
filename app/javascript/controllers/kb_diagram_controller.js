@@ -6,6 +6,7 @@ import { Controller } from "@hotwired/stimulus"
 let loading = null
 let queue = Promise.resolve()
 let seq = 0
+const KEYWORD = /^(graph|flowchart|stateDiagram|classDiagram|sequenceDiagram|erDiagram|gantt|pie|journey|mindmap|timeline)\b/i
 
 function loadMermaid(url) {
   if (window.IdeaApp?.mermaid) return Promise.resolve(window.IdeaApp.mermaid)
@@ -33,22 +34,27 @@ export default class extends Controller {
   static values = { url: String, keyword: String }
 
   async connect() {
+    // Turbo snapshots before disconnect(), so a restored page still carries the last render.
+    this.element.querySelectorAll(":scope > .kb-diagram-out, :scope > .kb-diagram-bar, :scope > .kb-diagram-error").forEach((el) => el.remove())
     this.source = (this.element.querySelector("code")?.textContent || "").trim()
-    this.pre = this.element.querySelector("pre")
-    this.out = document.createElement("div")
-    this.out.className = "kb-diagram-out"
-    this.out.setAttribute("role", "img")
-    this.element.prepend(this.out)
+    this.pre = this.element.querySelector(":scope > pre")
+    const out = this.out = document.createElement("div")
+    out.className = "kb-diagram-out"
+    out.setAttribute("role", "img")
+    out.setAttribute("aria-label", "Diagram")
+    this.element.prepend(out)
     this.pre.hidden = true
     this.addToolbar()
 
     try {
       const mermaid = await loadMermaid(this.urlValue)
       const svg = await this.enqueue(mermaid)
-      if (!this.out.isConnected) return
-      this.out.innerHTML = svg
+      if (!out.isConnected) return
+      out.innerHTML = svg
+      const title = out.querySelector("svg > title")?.textContent.trim()
+      if (title) out.setAttribute("aria-label", title)
     } catch (error) {
-      this.fail(error)
+      if (out.isConnected) this.fail(error, out)
     }
   }
 
@@ -62,7 +68,8 @@ export default class extends Controller {
   // mermaid.render shares global state; serialise renders.
   enqueue(mermaid) {
     const run = async () => {
-      mermaid.initialize({ startOnLoad: false, securityLevel: "strict", theme: appTheme(), themeVariables: themeVariables() })
+      // suppressErrorRendering: on a parse error mermaid otherwise leaves its "Syntax error" bomb SVG in <body>.
+      mermaid.initialize({ startOnLoad: false, securityLevel: "strict", suppressErrorRendering: true, theme: appTheme(), themeVariables: themeVariables() })
       const { svg } = await mermaid.render(`kb-diagram-${++seq}`, this.mermaidSource())
       return svg
     }
@@ -74,13 +81,13 @@ export default class extends Controller {
   // Alias fences may omit the diagram keyword (```flowchart / A --> B).
   mermaidSource() {
     const kw = this.keywordValue
-    if (!kw || this.source.toLowerCase().startsWith(kw.toLowerCase())) return this.source
+    if (!kw || KEYWORD.test(this.source)) return this.source
     const dir = /^(TB|TD|BT|RL|LR)\b/.test(this.source)
     return kw === "flowchart" && !dir ? `${kw} TD\n${this.source}` : `${kw}${dir ? " " : "\n"}${this.source}`
   }
 
-  fail(error) {
-    this.out.remove()
+  fail(error, out) {
+    out.remove()
     this.error = document.createElement("div")
     this.error.className = "kb-diagram-error"
     this.error.setAttribute("role", "alert")
@@ -97,17 +104,18 @@ export default class extends Controller {
   addToolbar() {
     this.bar = document.createElement("div")
     this.bar.className = "kb-diagram-bar"
+    this.bar.setAttribute("aria-live", "polite")
     this.toggle = this.button("Source", () => {
       this.pre.hidden = !this.pre.hidden
       this.toggle.setAttribute("aria-pressed", String(!this.pre.hidden))
     })
     this.toggle.setAttribute("aria-pressed", "false")
-    const copy = this.button("Copy source", async () => {
+    const copy = this.button("Copy", async () => {
       try {
         await navigator.clipboard.writeText(this.source)
         copy.textContent = "Copied"
       } catch { copy.textContent = "Copy failed" }
-      setTimeout(() => { copy.textContent = "Copy source" }, 1500)
+      setTimeout(() => { copy.textContent = "Copy" }, 1500)
     })
     this.bar.append(this.toggle, copy)
     this.element.append(this.bar)
