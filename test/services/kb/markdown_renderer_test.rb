@@ -29,9 +29,18 @@ class Kb::MarkdownRendererTest < ActiveSupport::TestCase
     assert_no_match(/→/, out)
   end
 
+  test "diagram hosts survive blockquotes, tilde fences and uppercase languages" do
+    out = html("> ```mermaid\n> A-->B\n> ```\n\n~~~mermaid\nC-->D\n~~~\n\n```MERMAID\nE-->F\n```")
+    assert_equal 3, out.scan('data-controller="kb-diagram"').size
+    assert_match(%r{<blockquote>\s*<div class="kb-diagram"}, out)
+    assert_includes out, "C--&gt;D"
+    assert_no_match(/kbdiagram/, out)
+  end
+
   test "graphviz and plantuml show source with a note, other fences are stock" do
     out = html("```dot\ndigraph{a->b}\n```\n\n```ruby\nx\n```")
     assert_includes out, "kb-diagram-unsupported"
+    assert_includes out, "dot diagram not rendered: drawing it would need an outside service"
     assert_includes out, "a-&gt;b"
     assert_includes out, "<pre><code class=\"ruby\">x\n</code></pre>"
   end
