@@ -1,10 +1,13 @@
 require "fileutils"
+require "open3"
 require "pathname"
 require "sqlite3"
 
 class SqlcipherDatabaseMigrator
   SQLITE_HEADER = "SQLite format 3\0".b.freeze
   SIDECAR_SUFFIXES = [ "-wal", "-shm" ].freeze
+  LOCK_MUTEX = Mutex.new
+  RETAINED_LOCKS = []
 
   Result = Struct.new(:path, :status, :error, keyword_init: true)
 
@@ -88,9 +91,37 @@ class SqlcipherDatabaseMigrator
   end
 
   def self.rekey_configured!(env:, old_key_hex:, new_key_hex:)
-    configured_database_paths(env: env).each do |path|
-      new(key_hex: old_key_hex).rekey!(path, new_key_hex: new_key_hex)
-    end
+    paths = configured_database_paths(env: env)
+    ensure_no_other_openers!(paths) # all or nothing: never rekey some files and then refuse the rest
+    paths.each { |path| new(key_hex: old_key_hex).rekey!(path, new_key_hex: new_key_hex) }
+  end
+
+  # Concurrency design. A re-encrypt replaces the file (new inode); a process still holding the old inode would keep
+  # writing into the unlinked file and those writes would be lost. So:
+  #  1. Refuse unless no OTHER process has the database (or its -wal/-shm) open. lsof proves it, and a missing lsof
+  #     refuses too. Run it offline: stop puma + bin/jobs, then `bin/rails db:encrypt_sqlite`.
+  #  2. Take the write lock (BEGIN IMMEDIATE, busy timeout) before exporting and hold it through the rename.
+  #  3. Never release it: the lock connection is retained until this process exits, so even a stale handle inside
+  #     this process gets SQLITE_BUSY instead of writing to the old inode.
+  def self.ensure_no_other_openers!(paths)
+    files = Array(paths).flat_map { |p| [ p.to_s, "#{p}-wal", "#{p}-shm" ] }
+    out, _err, status = Open3.capture3("lsof", "-t", "--", *files)
+    raise Error, "lsof failed (exit #{status.exitstatus}); cannot prove the database is not in use" if status.exitstatus > 1
+
+    pids = out.split.map(&:to_i).uniq - [ Process.pid ]
+    return if pids.empty?
+
+    raise Error, "Database is in use by process #{pids.to_sentence}. Stop the app (puma and bin/jobs) and run `bin/rails db:encrypt_sqlite` offline."
+  rescue Errno::ENOENT
+    raise Error, "lsof is required to prove no other process has the database open; install it and retry"
+  end
+
+  def self.retain_lock(connection)
+    LOCK_MUTEX.synchronize { RETAINED_LOCKS << connection }
+  end
+
+  def self.release_retained_locks! # tests only; production holds them until the process exits
+    LOCK_MUTEX.synchronize { RETAINED_LOCKS.shift.close until RETAINED_LOCKS.empty? }
   end
 
   def self.plaintext_sqlite_database?(path)
@@ -139,19 +170,11 @@ class SqlcipherDatabaseMigrator
       raise Error, "#{path} is neither plaintext SQLite nor an openable SQLCipher database"
     end
 
-    # No plaintext copy is ever made. The original is not modified until the encrypted copy is fully
-    # written and verified; only then does an atomic rename replace it. Any failure before that leaves
-    # the original untouched (the half-written temp file is discarded).
-    temp_path = temporary_path(path)
-    export_plaintext_to_sqlcipher!(path, temp_path)
-    verify_encrypted_database!(temp_path)
-    replace_database!(path, temp_path)
-
+    reencrypt!(path, from_key_hex: nil, to_key_hex: @key_hex)
     Result.new(path: path.to_s, status: :encrypted)
-  ensure
-    FileUtils.rm_f(temp_path) if temp_path&.exist?
   end
 
+  # Same safe path as migrate!: export under the write lock, verify, atomic rename.
   def rekey!(database, new_key_hex:)
     raise Error, "New key must be a 64-character hex string" unless new_key_hex.to_s.match?(/\A[0-9a-f]{64}\z/i)
 
@@ -159,15 +182,59 @@ class SqlcipherDatabaseMigrator
     path = Rails.root.join(path) unless path.absolute?
     return unless path.exist? && !plaintext_sqlite_database?(path)
 
-    new_literal = %("x'#{new_key_hex}'")
-    db = SQLite3::Database.new(path.to_s)
-    db.execute(%(PRAGMA key = #{key_literal}))
-    db.execute(%(PRAGMA rekey = #{new_literal}))
+    reencrypt!(path, from_key_hex: @key_hex, to_key_hex: new_key_hex)
+  end
+
+  private
+
+  # No plaintext copy is ever made. The original is untouched until the encrypted copy is fully written and
+  # verified (integrity, per-table row counts), all under the write lock; only then does an atomic rename replace
+  # it. Any failure before that leaves the original as it was (our own half-written temp file is discarded).
+  def reencrypt!(path, from_key_hex:, to_key_hex:)
+    self.class.ensure_no_other_openers!([ path ])
+    temp_path = temporary_path(path)
+    create_temp_exclusively!(temp_path)
+    created = true
+
+    checkpoint_wal!(path, from_key_hex)
+    locker = open_database(path, from_key_hex)
+    locker.execute("BEGIN IMMEDIATE") # blocks every other writer from here through the rename and beyond
+    # Any frame written between the checkpoint and the lock would be lost with the sidecars if the rename failed.
+    raise Error, "#{path} changed while the migration took its lock; nothing was modified, retry" if File.size?("#{path}-wal")
+
+    export_encrypted_copy!(path, temp_path, from_key_hex, to_key_hex)
+    verify_encrypted_database!(temp_path, to_key_hex)
+    verify_same_row_counts!(locker, temp_path, to_key_hex)
+    replace_database!(path, temp_path)
+    created = false
+    self.class.retain_lock(locker)
+    locker = nil
+  ensure
+    locker&.close # rolls back the (empty) transaction; the original is untouched
+    FileUtils.rm_f(temp_path) if created
+  end
+
+  # replace_database! drops the old -wal/-shm, so they must hold nothing: flush the WAL into the main file first.
+  def checkpoint_wal!(path, key_hex)
+    db = open_database(path, key_hex)
+    busy, = db.get_first_row("PRAGMA wal_checkpoint(TRUNCATE)")
+    raise Error, "#{path} has readers or writers that block flushing its WAL; nothing was modified" if busy.to_i != 0
   ensure
     db&.close
   end
 
-  private
+  def create_temp_exclusively!(temp_path)
+    File.open(temp_path, File::WRONLY | File::CREAT | File::EXCL, 0o600) { }
+  rescue Errno::EEXIST
+    raise Error, "Stale temporary file #{temp_path} exists; refusing to overwrite it. Remove it by hand if no migration is running."
+  end
+
+  def open_database(path, key_hex = nil)
+    db = SQLite3::Database.new(path.to_s)
+    db.busy_timeout = 10_000
+    db.execute(%(PRAGMA key = #{key_literal(key_hex)})) if key_hex
+    db
+  end
 
   def validate_key!
     return if @key_hex.match?(/\A[0-9a-f]{64}\z/i)
@@ -192,9 +259,9 @@ class SqlcipherDatabaseMigrator
     false
   end
 
-  def verify_encrypted_database!(path)
+  def verify_encrypted_database!(path, key_hex = @key_hex)
     db = SQLite3::Database.new(path.to_s)
-    db.execute(%(PRAGMA key = #{key_literal}))
+    db.execute(%(PRAGMA key = #{key_literal(key_hex)}))
     db.get_first_value("SELECT count(*) FROM sqlite_master")
 
     integrity = db.get_first_value("PRAGMA integrity_check")
@@ -207,27 +274,34 @@ class SqlcipherDatabaseMigrator
     self.class.plaintext_sqlite_database?(path)
   end
 
-  def export_plaintext_to_sqlcipher!(source_path, encrypted_path)
-    FileUtils.rm_f(encrypted_path)
-
-    source = SQLite3::Database.new(source_path.to_s)
-    source.busy_timeout = 10_000
-    # replace_database! drops the original's -wal/-shm, so they must be empty (fully checkpointed) first.
-    busy, = source.get_first_row("PRAGMA wal_checkpoint(TRUNCATE)")
-    raise Error, "#{source_path} has unflushed WAL data (database busy); refusing to replace it" if busy.to_i != 0
-
-    source.execute("ATTACH DATABASE #{sql_string(encrypted_path.to_s)} AS encrypted KEY #{key_literal}")
+  # Reads through its own connection (WAL contents included); the caller's lock connection already blocks writers.
+  def export_encrypted_copy!(source_path, encrypted_path, from_key_hex, to_key_hex)
+    source = open_database(source_path, from_key_hex)
+    source.execute("ATTACH DATABASE #{sql_string(encrypted_path.to_s)} AS encrypted KEY #{key_literal(to_key_hex)}")
     source.execute("SELECT sqlcipher_export('encrypted')")
     source.execute("DETACH DATABASE encrypted")
   ensure
     source&.close
   end
 
+  def verify_same_row_counts!(source, encrypted_path, to_key_hex)
+    encrypted = open_database(encrypted_path, to_key_hex)
+    tables = source.execute("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'").flatten
+    tables.each do |table|
+      count_sql = %(SELECT count(*) FROM "#{table.gsub('"', '""')}")
+      next if source.get_first_value(count_sql) == encrypted.get_first_value(count_sql)
+
+      raise Error, "Row count mismatch in #{table}; refusing to replace the database"
+    end
+  ensure
+    encrypted&.close
+  end
+
   def replace_database!(path, encrypted_path)
-    mode = File.stat(path).mode & 0o7777
+    File.chmod(File.stat(path).mode & 0o7777, encrypted_path)
+    # Stale -wal/-shm of the old file must not pair with the new one; our lock connection holds the old inode.
     sidecar_paths(path).each { |sidecar| FileUtils.rm_f(sidecar) }
     File.rename(encrypted_path, path)
-    File.chmod(mode, path)
   end
 
   def temporary_path(path)
@@ -242,7 +316,7 @@ class SqlcipherDatabaseMigrator
     "'#{value.to_s.gsub("'", "''")}'"
   end
 
-  def key_literal
-    %("x'#{@key_hex}'")
+  def key_literal(key_hex = @key_hex)
+    %("x'#{key_hex}'")
   end
 end

@@ -1,5 +1,5 @@
 namespace :db do
-  desc "Encrypt configured plaintext SQLite databases with SQLCipher"
+  desc "Encrypt configured plaintext SQLite databases with SQLCipher (run offline: stop puma and bin/jobs first)"
   task encrypt_sqlite: :environment do
     env = ENV["DB_ENV"].presence || Rails.env
 
