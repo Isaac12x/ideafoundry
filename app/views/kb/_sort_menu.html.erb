@@ -1,0 +1,19 @@
+<%# One sort picker for both the tree header (scope "global", mode = current) and the folder context menu (scope "folder", marks filled by kb_tree_controller). %>
+<% field, dir = mode.to_s.split("_") %>
+<% labels = [ %w[name Name], %w[type Type], %w[date Modified], %w[added Added], %w[size Size], %w[manual Manual] ] %>
+<div class="kb-sort-menu__body" data-sort-menu="<%= scope %>" data-sort="<%= mode %>" role="group" aria-label="Sort by">
+  <% labels.each do |value, label| %>
+    <button type="button" role="menuitemradio" class="kb-sort-option<%= ' is-active' if value == field %>" aria-checked="<%= (value == field).to_s %>"
+            data-sort-field="<%= value %>" data-action="click->kb-tree#sortPick">
+      <span><%= label %><% if value == "manual" %> <kbd class="kb-kbd" title="Move the focused row with Alt+Up / Alt+Down">Alt ↑↓</kbd><% end %></span><span class="kb-sort-mark" data-sort-mark aria-hidden="true"><%= "✓" if value == field %></span>
+    </button>
+  <% end %>
+  <div class="kb-sort-menu__rule" role="separator"></div>
+  <button type="button" role="menuitem" class="kb-sort-option" data-sort-flip data-action="click->kb-tree#sortPick"
+          <%= "disabled" if scope == "global" ? false : field.blank? %>>
+    Direction<span class="kb-sort-mark" data-sort-dir aria-hidden="true"><%= dir == "desc" ? "↓ Descending" : "↑ Ascending" %></span>
+  </button>
+  <% if scope == "folder" %>
+    <button type="button" role="menuitem" class="kb-sort-option" data-sort-field="" data-action="click->kb-tree#sortPick">Use default</button>
+  <% end %>
+</div>

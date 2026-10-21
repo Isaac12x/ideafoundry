@@ -2,12 +2,17 @@ require "application_system_test_case"
 
 class DragAndDropTest < ApplicationSystemTestCase
   setup do
-    @user = users(:one)
+    # The app is single-user and signs in as User.first, so own the fixtures as that user.
+    @user = User.first
     @list1 = lists(:one)
     @list2 = lists(:two)
     @idea1 = ideas(:one)
     @idea2 = ideas(:two)
     @idea3 = ideas(:three)
+
+    board = @user.kanban_boards.create!(name: "Main Board", position: 99)
+    [ @list1, @list2 ].each { |list| list.update_columns(user_id: @user.id, kanban_board_id: board.id) }
+    [ @idea1, @idea2, @idea3 ].each { |idea| idea.update_columns(user_id: @user.id) }
 
     # Fixtures already set up the associations
     # @idea1 is in @list1 at position 1
@@ -30,7 +35,7 @@ class DragAndDropTest < ApplicationSystemTestCase
 
     assert_selector ".drop-zone[data-list-id='#{@list1.id}']"
     assert_selector ".drop-zone[data-list-id='#{@list2.id}']"
-    assert_selector "[data-controller='drag']"
+    assert_selector "[data-controller~='drag']"
   end
 
   test "idea cards display correct information" do
@@ -77,7 +82,7 @@ class DragAndDropTest < ApplicationSystemTestCase
   test "multiple lists are displayed correctly" do
     visit lists_path
 
-    assert_selector ".list-container", count: 2
+    assert_selector ".list-container", minimum: 2 # plus the other fixture list now owned by the signed-in user
     assert_text @list1.name
     assert_text @list2.name
   end
@@ -85,7 +90,7 @@ class DragAndDropTest < ApplicationSystemTestCase
   test "drag controller is connected to the page" do
     visit lists_path
 
-    assert_selector "[data-controller='drag']"
+    assert_selector "[data-controller~='drag']"
     assert_selector "[data-drag-url-value]"
   end
 
@@ -96,7 +101,7 @@ class DragAndDropTest < ApplicationSystemTestCase
 
     within ".draggable-item[data-idea-id='#{@idea1.id}']" do
       assert_selector ".idea-state.validated"
-      assert_text "Validated"
+      assert_text(/validated/i) # rendered uppercase
     end
   end
 
@@ -108,7 +113,7 @@ class DragAndDropTest < ApplicationSystemTestCase
 
     within ".draggable-item[data-idea-id='#{@idea1.id}']" do
       assert_selector ".idea-score"
-      assert_text "Score:"
+      assert_selector ".idea-score", text: /\d+\.\d/
     end
   end
 
@@ -135,8 +140,8 @@ class DragAndDropTest < ApplicationSystemTestCase
     visit lists_path
 
     assert_selector ".page-header"
-    assert_link "All Ideas"
-    assert_link "New List"
+    assert_text "Planning"
+    assert_text "New Column"
   end
 
   test "idea cards link to idea detail page" do
@@ -159,7 +164,7 @@ class DragAndDropTest < ApplicationSystemTestCase
   test "drag controller has correct URL value" do
     visit lists_path
 
-    drag_container = find("[data-controller='drag']")
+    drag_container = find("[data-controller~='drag']")
     assert_equal update_idea_position_lists_path, drag_container["data-drag-url-value"]
   end
 

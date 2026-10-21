@@ -3,12 +3,13 @@
     <strong>Finish your unsaved idea?</strong>
     <p data-idea-draft-persist-target="idleMessage">No rush — when you are ready to come back, your unfinished ideas are in one place.</p>
     <p data-idea-draft-persist-target="storedMessage" hidden>A protected draft was saved on this device <span data-idea-draft-persist-target="savedAt">recently</span>. Restore it so the idea is not lost, or discard it.</p>
+    <p data-idea-draft-persist-target="restoredMessage" hidden>Draft restored. Check its topologies, themes and links before saving, or discard it to start clean.</p>
     <p class="idea-draft-resume__error" data-idea-draft-persist-target="error"></p>
   </div>
   <div class="idea-draft-resume__actions">
     <%= link_to "View Uncompleted", uncompleted_ideas_path, class: "btn btn-primary btn-sm", data: { turbo_frame: "_top" } %>
     <span data-idea-draft-persist-target="storedActions" hidden>
-      <button type="button" class="btn btn-sm" data-action="idea-draft-persist#restore">Restore Draft</button>
+      <button type="button" class="btn btn-sm" data-idea-draft-persist-target="restoreButton" data-action="idea-draft-persist#restore">Restore Draft</button>
       <button type="button" class="btn btn-sm" data-action="idea-draft-persist#discard">Discard</button>
     </span>
     <button type="button" class="btn btn-sm" data-action="idea-draft-persist#dismiss">Keep Writing</button>
@@ -89,27 +90,38 @@
         <summary class="form-panel-title">Basics</summary>
         <div class="form-group">
           <label>Topology</label>
-          <% if topologies.any? %>
-            <% children_by_parent = topologies.group_by(&:parent_id) %>
-            <% template_ids_by_topology = templates.each_with_object({}) { |t, h| h[t.topology_id] ||= t.id if t.topology_id.present? } %>
-            <div class="topology-picker" data-controller="topology-picker">
-              <div class="topology-picker__search-wrap">
-                <svg class="topology-picker__search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
-                <input type="search" class="topology-picker__search"
-                       placeholder="Search topologies…" aria-label="Search topologies"
-                       data-topology-picker-target="search"
-                       data-action="input->topology-picker#filter">
-              </div>
-              <div class="topology-tree" role="tree" data-topology-picker-target="tree">
-                <%= render partial: "ideas/topology_node",
-                      collection: (children_by_parent[nil] || []), as: :topology,
-                      locals: { idea: idea, children_by_parent: children_by_parent, template_ids_by_topology: template_ids_by_topology } %>
-              </div>
-              <p class="topology-picker__empty" data-topology-picker-target="empty" hidden>No topologies match.</p>
+          <% children_by_parent = topologies.group_by(&:parent_id) %>
+          <% template_ids_by_topology = templates.each_with_object({}) { |t, h| h[t.topology_id] ||= t.id if t.topology_id.present? } %>
+          <div class="topology-picker" data-controller="topology-picker"
+               data-topology-picker-create-url-value="<%= topologies_path(format: :json, picker: 1) %>">
+            <div class="topology-picker__search-wrap">
+              <svg class="topology-picker__search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+              <input type="search" class="topology-picker__search"
+                     placeholder="Search topologies…" aria-label="Search topologies"
+                     data-topology-picker-target="search"
+                     data-action="input->topology-picker#filter keydown.enter->topology-picker#preventSubmit">
             </div>
-          <% else %>
-            <p class="text-muted" style="font-size: 0.85rem;">No topologies yet. <%= link_to "Create one", new_topology_path %>.</p>
-          <% end %>
+            <div class="topology-tree" role="tree" data-topology-picker-target="tree">
+              <%= render partial: "ideas/topology_node",
+                    collection: (children_by_parent[nil] || []), as: :topology,
+                    locals: { idea: idea, children_by_parent: children_by_parent, template_ids_by_topology: template_ids_by_topology } %>
+            </div>
+            <p class="topology-picker__empty" data-topology-picker-target="empty" <%= "hidden" if topologies.any? %>><%= topologies.any? ? "No topologies match." : "No topologies yet. Add one below to file this idea under it." %></p>
+            <div class="topology-picker__new">
+              <button type="button" class="topology-picker__new-toggle" aria-expanded="false"
+                      data-topology-picker-target="newToggle" data-action="topology-picker#toggleNew">+ New topology</button>
+              <div class="topology-picker__new-panel" data-topology-picker-target="newPanel" data-action="keydown->topology-picker#collapseNew" hidden>
+                <input type="text" class="form-control" placeholder="Name" aria-label="New topology name" maxlength="80"
+                       data-topology-picker-target="newName" data-action="keydown->topology-picker#newKeydown">
+                <select class="form-control" aria-label="Parent topology (optional)" data-topology-picker-target="newParent">
+                  <option value="">No parent</option>
+                  <% topologies.each do |t| %><option value="<%= t.id %>"><%= t.full_path %></option><% end %>
+                </select>
+                <button type="button" class="btn btn-sm btn-primary" data-action="topology-picker#createTopology">Add</button>
+                <p class="topology-picker__error" role="alert" data-topology-picker-target="newError" hidden></p>
+              </div>
+            </div>
+          </div>
         </div>
         <div class="form-group">
           <%= form.label :title %>
@@ -118,6 +130,14 @@
         <div class="form-group">
           <%= form.label :tldr, "TL;DR" %>
           <%= form.text_field :tldr, class: "form-control", placeholder: "One sentence: what is this idea and why it matters?" %>
+        </div>
+        <div class="form-group">
+          <label>Themes</label>
+          <%= render "ideas/theme_picker", idea: idea, themes: (@themes || []), auto_submit: false %>
+        </div>
+        <div class="form-group">
+          <label>Linked KB projects</label>
+          <%= render "ideas/kb_link_picker", idea: idea %>
         </div>
       </details>
 
@@ -597,6 +617,10 @@
 
         <% scorecard_systems.each do |system| %>
           <% breakdown = idea.scoring_breakdown_for(system) %>
+          <p class="scorecard-form-hint" data-template-switch-target="scoringHint" data-scoring-system-id="<%= system['id'] %>"
+             <%= "hidden" if active_scoring_system_ids.include?(system['id']) %>>
+            <%= system['name'] %> is not enabled for this idea. <%= link_to "Enable it in a template", templates_path %>
+          </p>
           <div class="scorecard-form-system"
                data-template-switch-target="scoringSystem"
                data-scoring-system-id="<%= system['id'] %>"
@@ -611,11 +635,15 @@
             </div>
             <div class="scorecard-form-grid">
               <% system['criteria'].each do |criterion| %>
-                <% value = idea.scorecard_value_for(system['id'], criterion['key']).presence || system['scale_min'] %>
+                <% value = breakdown[:values][criterion['key']] %>
+                <% max = (criterion['scale_max'] || system['scale_max']).to_i %>
                 <label class="scorecard-form-field" for="idea_scoring_<%= system['id'] %>_<%= criterion['key'] %>">
-                  <span><%= criterion['label'] %></span>
+                  <span class="scorecard-form-field__text">
+                    <%= criterion['label'] %><%= " (lower is better)" if criterion['direction'] == 'lower_better' %>
+                    <% if criterion['description'].present? %><small class="scorecard-form-field__hint"><%= criterion['description'] %></small><% end %>
+                  </span>
                   <%= select_tag "idea[metadata][#{Idea::SCORE_METADATA_KEY}][#{system['id']}][#{criterion['key']}]",
-                      options_for_select((system['scale_min'].to_i..system['scale_max'].to_i).map { |score| [score, score] }, value.to_i),
+                      options_for_select((system['scale_min'].to_i..max).map { |score| [score, score] }, value.to_i),
                       id: "idea_scoring_#{system['id']}_#{criterion['key']}",
                       class: "form-control form-control--sm" %>
                 </label>
@@ -625,7 +653,7 @@
         <% end %>
 
         <div class="computed-score-display">
-          <div class="computed-score-label">Computed Score</div>
+          <div class="computed-score-label">Weighted score</div>
           <div class="computed-score-value" data-score-target="computedScore">
             <%= number_with_precision(idea.computed_score || 0, precision: 2) %>
           </div>

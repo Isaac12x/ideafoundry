@@ -7,13 +7,13 @@ export default class extends Controller {
 
   disconnect() { clearTimeout(this.timer) }
 
+  // Blank query lists the KB projects, so they show up on focus.
   search() {
     clearTimeout(this.timer)
     const q = this.inputTarget.value.trim()
-    if (!q) return this.close()
     this.timer = setTimeout(async () => {
       const response = await fetch(`${this.searchUrlValue}?q=${encodeURIComponent(q)}`, { headers: { Accept: "application/json" } })
-      if (!response.ok || this.inputTarget.value.trim() !== q) return
+      if (!response.ok || this.inputTarget.value.trim() !== q || document.activeElement !== this.inputTarget) return
       this.render((await response.json()).results)
     }, 150)
   }
@@ -38,7 +38,7 @@ export default class extends Controller {
     if (!results.length) {
       const li = document.createElement("li")
       li.className = "idea-kb-links__option is-empty"
-      li.textContent = "No matches"
+      li.textContent = this.inputTarget.value.trim() ? "No matches" : "No KB projects yet"
       this.listTarget.replaceChildren(li)
     }
     this.listTarget.hidden = false
@@ -47,6 +47,7 @@ export default class extends Controller {
   }
 
   keydown(event) {
+    if (event.key === "Enter") event.preventDefault() // never submit an enclosing idea form
     if (this.listTarget.hidden || !this.results?.length) return
     if (event.key === "ArrowDown" || event.key === "ArrowUp") {
       event.preventDefault()
@@ -74,6 +75,11 @@ export default class extends Controller {
 
   async pick(index) {
     const r = this.results[index]
+    if (!this.createUrlValue) { // picker mode (idea form): hand the pick to the page, link on save
+      this.dispatch("pick", { detail: r })
+      this.inputTarget.value = ""
+      return this.close()
+    }
     const body = new URLSearchParams({ src: r.src, path: r.path })
     const response = await fetch(this.createUrlValue, {
       method: "POST",

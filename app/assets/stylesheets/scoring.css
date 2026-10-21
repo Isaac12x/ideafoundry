@@ -543,6 +543,14 @@
   font-weight: 700;
 }
 
+.scorecard-form-hint {
+  margin: 0.75rem 0 0;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
+.scorecard-form-hint[hidden] { display: none; }
+
 .scorecard-form-grid {
   display: grid;
   gap: 0.65rem;
@@ -647,4 +655,31 @@
   .score-item { padding: 1rem; }
 
   .score-controls { flex-direction: column; }
+}
+
+/* ---- Criterion guidance + custom scorecard editor ---- */
+.scorecard-form-field__text { display: grid; gap: 0.2rem; min-width: 0; }
+.scorecard-form-field__hint,
+.metric-card-hint,
+.scorecard-criterion__hint {
+  display: block;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 400;
+  line-height: 1.4;
+}
+
+.custom-scorecard { display: grid; gap: 0.75rem; padding: 1rem; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); background: var(--bg-surface); }
+.custom-scorecard__head { display: grid; grid-template-columns: minmax(0, 2fr) 5rem 6rem auto; gap: 0.5rem; align-items: end; }
+.custom-scorecard__head label,
+.custom-criterion label { display: grid; gap: 0.2rem; color: var(--text-muted); font-size: 0.72rem; font-weight: 600; }
+.custom-scorecard input[type="text"],
+.custom-scorecard input[type="number"],
+.custom-scorecard select { width: 100%; min-width: 0; padding: 0.35rem 0.5rem; }
+.custom-criterion { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 3fr) 4rem 4rem 8rem auto; gap: 0.5rem; align-items: end; padding-top: 0.5rem; border-top: 1px solid var(--border-subtle); }
+.custom-scorecard__actions { display: flex; gap: 0.5rem; justify-content: space-between; flex-wrap: wrap; }
+
+@media (max-width: 768px) {
+  .custom-scorecard__head,
+  .custom-criterion { grid-template-columns: 1fr 1fr; }
 }
