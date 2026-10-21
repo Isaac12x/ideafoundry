@@ -553,6 +553,38 @@
   object-fit: cover;
 }
 
+/* Several hero items: the first leads on the left, the rest stack beside it, divided by hairlines. */
+.idea-hero-cap--mosaic {
+  display: grid;
+  height: 340px;
+  gap: 1px;
+  background: var(--border-default); /* shows through the 1px gaps as hairlines */
+  grid-template-columns: 3fr 2fr;
+  grid-auto-rows: 1fr;
+}
+.idea-hero-cap--mosaic .idea-hero-cap__tile {
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+  background: var(--bg-base);
+}
+.idea-hero-cap--mosaic .idea-hero-cap__tile:first-child { grid-row: 1 / -1; }
+.idea-hero-cap--mosaic .idea-hero-cap__img { height: 100%; max-height: none; }
+/* 5+ items: the trailing tiles fill two narrow columns beside the lead. */
+.idea-hero-cap--mosaic[data-count="5"],
+.idea-hero-cap--mosaic[data-count="6"],
+.idea-hero-cap--mosaic[data-count="7"],
+.idea-hero-cap--mosaic[data-count="8"],
+.idea-hero-cap--mosaic[data-count="9"] { grid-template-columns: 2fr 1fr 1fr; }
+@media (max-width: 640px) {
+  .idea-hero-cap--mosaic { height: auto; grid-template-columns: 1fr 1fr; grid-auto-rows: 160px; }
+  .idea-hero-cap--mosaic .idea-hero-cap__tile:first-child { grid-column: 1 / -1; grid-row: auto; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .idea-hero-cap__tile .idea-hero-cap__img { transition: transform 0.4s ease; }
+  .idea-hero-cap--mosaic .idea-hero-cap__tile:hover .idea-hero-cap__img { transform: scale(1.02); }
+}
+
 .detail-hero-image {
   width: 100%;
   height: 100%;
