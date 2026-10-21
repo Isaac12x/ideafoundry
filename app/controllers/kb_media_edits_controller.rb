@@ -64,7 +64,7 @@ class KbMediaEditsController < ApplicationController
     }
   end
 
-  # Exact-frame PNG next to the video (shows up in the tree, linkable like any
+  # Exact-frame PNG in a folder named like the video (shows up in the tree, linkable like any
   # KB image). ffmpeg runs inline: one decoded frame is sub-second.
   def screenshot
     source_index = params[:src].to_i
@@ -80,7 +80,7 @@ class KbMediaEditsController < ApplicationController
     seconds = Float(params[:time].to_s, exception: false)
     return render_error("Invalid timestamp.") unless seconds&.finite? && seconds >= 0
 
-    target = screenshot_path(absolute, seconds)
+    target = Kb::VideoShots.next_path(absolute, seconds)
     _out, err, status = Open3.capture3("ffmpeg", "-y", "-hide_banner", "-loglevel", "error", "-ss", format("%.3f", seconds),
                                        "-i", absolute, "-frames:v", "1", target)
     unless status.success? && File.size?(target)
@@ -93,23 +93,16 @@ class KbMediaEditsController < ApplicationController
     render json: {
       file: rel, name: File.basename(target),
       url: kb_file_path(src: source_index, file: rel),
-      serve_url: kb_serve_path(src: source_index, file: rel)
+      serve_url: kb_serve_path(src: source_index, file: rel),
+      time: Kb::VideoShots.time_of(File.basename(target))
     }, status: :created
+  rescue Kb::VideoShots::Blocked => error
+    render_error(error.message)
   rescue Errno::ENOENT
     render_error("ffmpeg is not installed.")
   end
 
   private
-
-  def screenshot_path(video, seconds)
-    extension = File.extname(video)
-    stamp = format("%02dm%02ds", seconds / 60, seconds % 60)
-    base = File.join(File.dirname(video), "#{File.basename(video, extension)} \u2014 #{stamp}")
-    path = "#{base}.png"
-    number = 1
-    path = "#{base} #{number += 1}.png" while File.exist?(path)
-    path
-  end
 
   def replacement_upload(absolute)
     upload = params[:rendered_file] || params[:replacement_file]
