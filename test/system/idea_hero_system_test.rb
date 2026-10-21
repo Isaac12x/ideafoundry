@@ -112,4 +112,20 @@ class IdeaHeroSystemTest < ApplicationSystemTestCase
     assert_selector ".excalidraw canvas.interactive"
     assert_equal 1, page.evaluate_script("document.querySelectorAll('.excalidraw').length")
   end
+
+  test "navigating away mid-edit, inside the debounce window, still persists the drawing" do
+    visit edit_idea_path(@idea)
+    click_on "Add drawing"
+    assert_selector ".excalidraw canvas.interactive"
+    draw_rectangle
+    assert_equal 0, @idea.drawings.count # not auto-saved yet (2s debounce)
+
+    page.execute_script("Turbo.visit('#{ideas_path}')") # modal still open, nothing flushed by the user
+    assert_current_path ideas_path, ignore_query: true
+    Timeout.timeout(10) { sleep 0.2 until @idea.drawings.hero.count == 1 && @idea.drawings.hero.first.rendered_png.attached? }
+
+    visit edit_idea_path(@idea)
+    assert_selector ".hero-item[data-drawing-id] img"
+    assert_equal 1, @idea.drawings.hero.first.content["elements"].count { |e| e["type"] == "rectangle" }
+  end
 end

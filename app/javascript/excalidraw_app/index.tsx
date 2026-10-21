@@ -4,8 +4,9 @@ import { Excalidraw, exportToBlob, CaptureUpdateAction } from "@excalidraw/excal
 import type { ExcalidrawImperativeAPI } from "@excalidraw/excalidraw/types";
 import "@excalidraw/excalidraw/index.css";
 
-// Fonts live in public/excalidraw-assets (esbuild.config.mjs); never let Excalidraw reach a CDN.
-(window as any).EXCALIDRAW_ASSET_PATH = "/excalidraw-assets/";
+// Fonts live in public/excalidraw-assets/<version> (esbuild.config.mjs); never let Excalidraw reach a CDN.
+declare const __EXCALIDRAW_ASSET_PATH__: string;
+(window as any).EXCALIDRAW_ASSET_PATH = __EXCALIDRAW_ASSET_PATH__;
 
 const LOCAL_ONLY_UI_OPTIONS = {
   canvasActions: {
