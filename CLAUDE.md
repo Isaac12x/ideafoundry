@@ -78,7 +78,8 @@ gives you structural context (callers, dependents, test coverage) that file sear
 4. Use `query_graph_tool` pattern="tests_for" to check coverage.
 <!-- /code-review-graph MCP tools -->
 
-## Dev databases
+## Databases (never wipe)
 
-- Agents never run destructive db tasks against the shared checkout's `storage/`; use a worktree. Wrapped tasks: see `lib/tasks/db_guard.rake`.
-- `DATABASE_URL` only overrides primary (queue/cache still hit real files), so the guard hard-aborts in development whenever it is set, even with `ALLOW_DEV_DB_WIPE=1` (that opt-in is for throwaway files without `DATABASE_URL`).
+- Never delete, drop, reset, truncate, overwrite or `schema:load` any database, in any env, no opt-in. Agents never run destructive db tasks (even `RAILS_ENV=test`); never `rm`/`mv`/redirect over `storage/`.
+- Guards: `lib/tasks/db_guard.rake`, `config/initializers/db_wipe_guard.rb`, `.claude/hooks/guard_db.sh` (Bash + file-edit hooks; best effort, the rake/initializer guards are the hard stop). Code and `test/lib/` are the inventory.
+- Instead: tests reset themselves (`bin/rails test`, `db:test:prepare`); forward `db:migrate`/`db:prepare` are fine; scratch work in a separate worktree.
