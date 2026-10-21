@@ -79,6 +79,9 @@ class IdeaHeroSystemTest < ApplicationSystemTestCase
     end
     timings = page.evaluate_script("window.__drawingTimings")
     puts "\nTIMINGS #{timings.inspect}"
+    shells = timings.select { |t| t["label"] == "shell" }.map { |t| t["ms"] }
+    assert_equal 4, shells.size
+    assert shells.all? { |ms| ms < 50 }, "the modal shell must appear on click without waiting for the editor: #{shells}"
     assert_equal 1, page.evaluate_script("document.querySelectorAll('.idea-drawings__modal .excalidraw').length")
     assert_equal 1, @idea.drawings.hero.count, "opening and closing an untouched drawing creates nothing"
   end
