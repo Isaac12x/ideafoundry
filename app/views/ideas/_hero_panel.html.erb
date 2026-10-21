@@ -1,0 +1,66 @@
+<%# Hero = ordered mix of uploaded images and drawings. Order is the DOM order of the hidden hero_order inputs. %>
+<% items = idea.persisted? ? idea.hero_items : [] %>
+<details class="form-panel" open>
+  <summary class="form-panel-title">Hero</summary>
+  <div class="hero-set"
+       data-controller="hero-set idea-drawings"
+       <%= tag.attributes(data: idea_drawings_loader_values.merge(
+         idea_drawings_role_value: "hero",
+         idea_drawings_create_url_value: (idea.persisted? ? idea_drawings_path(idea) : ""),
+         idea_drawings_show_url_pattern_value: "/ideas/#{idea.id}/drawings/__ID__",
+         idea_drawings_thumbnail_mode_value: "list"
+       )) %>
+       data-action="keydown@window->idea-drawings#closeOnEsc">
+    <%= hidden_field_tag "idea[hero_order][]", "", id: nil %>
+    <p class="hero-set__hint">Add any mix of images and drawings. Drag tiles, or use the arrows, to set their order; the first one leads.</p>
+
+    <ol class="hero-set__list" data-hero-set-target="list" data-idea-drawings-target="list">
+      <% items.each do |item| %>
+        <%= render "ideas/hero_item", item: item %>
+      <% end %>
+    </ol>
+    <p class="hero-set__empty <%= 'hidden' if items.any? %>" data-hero-set-target="empty">Nothing in the hero yet.</p>
+
+    <template data-idea-drawings-target="itemTemplate">
+      <%= render "ideas/hero_item", item: nil %>
+    </template>
+
+    <div data-controller="dropzone" data-dropzone-multiple-value="true" data-dropzone-accept-value="image/*" data-dropzone-image-editor-outlet=".image-editor">
+      <div class="dropzone" data-dropzone-target="zone" data-action="click->dropzone#click dragover->dropzone#dragover dragenter->dropzone#dragenter dragleave->dropzone#dragleave drop->dropzone#drop">
+        <div class="dropzone__label" data-dropzone-target="placeholder">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+          <span>Drag & drop images or <strong>browse</strong></span>
+          <small>Added when you save. Drop more to keep adding.</small>
+        </div>
+        <div class="dropzone__preview-grid" data-dropzone-target="preview"></div>
+      </div>
+      <%= form.file_field :hero_images, multiple: true, accept: "image/*", class: "form-control", style: "display:none", include_hidden: false, data: { dropzone_target: "input" } %>
+    </div>
+
+    <div class="hero-set__actions">
+      <% if idea.persisted? %>
+        <button type="button" class="btn btn-sm btn-primary" data-action="click->idea-drawings#open mouseenter->idea-drawings#prefetch focus->idea-drawings#prefetch">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+          Add drawing
+        </button>
+      <% else %>
+        <button type="button" class="btn btn-sm" disabled aria-describedby="hero-draw-hint">Add drawing</button>
+        <span class="hero-set__hint" id="hero-draw-hint">Save the idea first, then you can add drawings to the hero.</span>
+      <% end %>
+    </div>
+
+    <div class="idea-drawings__modal hidden"
+         data-idea-drawings-target="modal"
+         data-action="click->idea-drawings#closeOnBackdrop">
+      <div class="idea-drawings__modal-dialog" role="dialog" aria-modal="true" aria-label="Hero drawing">
+        <div class="idea-drawings__modal-header">
+          <span class="idea-drawings__modal-title">Hero drawing</span>
+          <button type="button" class="btn btn-sm" data-modal-close>Done</button>
+        </div>
+        <div class="idea-drawings__modal-body">
+          <div class="excalidraw-mount" data-idea-drawings-target="mount" data-standalone="false"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</details>

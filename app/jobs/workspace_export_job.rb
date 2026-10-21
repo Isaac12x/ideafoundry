@@ -97,7 +97,7 @@ class WorkspaceExportJob < ApplicationJob
   end
 
   def ideas_data(user)
-    user.ideas.includes(:template, :versions, :topologies, hero_image_attachment: :blob, attachments_attachments: :blob).map do |idea|
+    user.ideas.includes(:template, :versions, :topologies, hero_images_attachments: :blob, attachments_attachments: :blob).map do |idea|
       {
         id: idea.id,
         title: idea.title,
@@ -114,7 +114,7 @@ class WorkspaceExportJob < ApplicationJob
         metadata: idea.metadata,
         template_id: idea.template_id,
         description: idea.description.to_plain_text,
-        hero_image: attachment_data(idea.hero_image),
+        hero_images: idea.hero_images.map { |attachment| attachment_data(attachment) },
         attachments: idea.attachments.map { |attachment| attachment_data(attachment) },
         created_at: idea.created_at.iso8601,
         updated_at: idea.updated_at.iso8601,
