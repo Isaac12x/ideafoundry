@@ -33,6 +33,7 @@ export default class extends Controller {
     thumbnailMode: { type: String, default: "list" },
     bundleUrl: String,
     stylesheetUrl: String,
+    preloadUrls: { type: Array, default: [] }, // entry + the chunks it imports statically (build manifest)
   };
 
   connect() {
@@ -50,7 +51,10 @@ export default class extends Controller {
       };
       this.modal.addEventListener("click", this.boundModalClick);
       this.modal.addEventListener("drawing:saved", this.boundSaved); // the mount lives in <body> now
-      this.boundDrawingReady = () => this._measure("open", "drawing-open", "drawing-ready");
+      this.boundDrawingReady = () => {
+        this._clearNotice();
+        this._measure("open", "drawing-open", "drawing-ready");
+      };
       this.modal.addEventListener("drawing:ready", this.boundDrawingReady);
       document.body.appendChild(this.modal);
       // Snapshots must not carry React DOM or an open modal: unmount, empty, hide, and put the modal back.
@@ -87,14 +91,18 @@ export default class extends Controller {
 
   // ---- Prefetch ----
 
-  // Idle: let the browser download + compile the 9MB bundle (modulepreload doesn't execute it).
+  // Idle: let the browser download + compile the entry and its static chunks (modulepreload doesn't execute).
   _idlePrefetch() {
     if (!this.bundleUrlValue || window.IdeaApp?.mountExcalidraw) return;
-    const run = () => {
-      this._preload("modulepreload", this.bundleUrlValue);
-      if (this.stylesheetUrlValue) this._preload("preload", this.stylesheetUrlValue, "style");
-    };
-    this._idleHandle = window.requestIdleCallback ? window.requestIdleCallback(run, { timeout: 1000 }) : setTimeout(run, 2000);
+    this._idleHandle = window.requestIdleCallback
+      ? window.requestIdleCallback(() => this._preloadAll(), { timeout: 1000 })
+      : setTimeout(() => this._preloadAll(), 2000);
+  }
+
+  _preloadAll() {
+    const urls = this.preloadUrlsValue.length ? this.preloadUrlsValue : [this.bundleUrlValue];
+    urls.forEach((url) => this._preload("modulepreload", url));
+    if (this.stylesheetUrlValue) this._preload("preload", this.stylesheetUrlValue, "style");
   }
 
   _preload(rel, href, as) {
@@ -106,9 +114,11 @@ export default class extends Controller {
     document.head.appendChild(link);
   }
 
-  // Hover/focus intent on the open button: evaluate the bundle now so the click only mounts.
+  // Hover/focus intent on the open button: fetch everything and evaluate the entry now, so the click only mounts.
   prefetch() {
-    if (this.bundleUrlValue) loadExcalidrawAssets(this.bundleUrlValue, this.stylesheetUrlValue).catch(() => {});
+    if (!this.bundleUrlValue) return;
+    this._preloadAll();
+    loadExcalidrawAssets(this.bundleUrlValue, this.stylesheetUrlValue).catch(() => {});
   }
 
   // ---- Modal lifecycle ----
@@ -116,12 +126,14 @@ export default class extends Controller {
   open(event) {
     if (event) event.preventDefault();
     performance.mark("drawing-open");
+    this._showShell();
     this._openMount({});
   }
 
   async edit(event) {
     if (event) event.preventDefault();
     performance.mark("drawing-open");
+    this._showShell();
     const btn = event.currentTarget;
     const id = btn.dataset.drawingId;
     const url = this.showUrlPatternValue.replace("__ID__", id);
@@ -129,6 +141,7 @@ export default class extends Controller {
     let content = "{}";
     // Fetch the scene while the bundle loads (a no-op wait when it is already evaluated).
     const assets = this._assets();
+    assets.catch(() => {});
     try {
       const res = await fetch(url, { headers: { "Accept": "application/json" } });
       if (res.ok) {
@@ -139,7 +152,7 @@ export default class extends Controller {
     } catch (e) {
       console.warn("Failed to load drawing for edit:", e);
     }
-    await assets;
+    await assets.catch(() => {}); // _openMount reports a failed load
     this._openMount({
       drawingId: id,
       drawingTitle: title,
@@ -193,11 +206,44 @@ export default class extends Controller {
   // ---- Internals ----
 
   _assets() {
+    // Request every static chunk in parallel up front, instead of discovering them level by level
+    // while the entry module graph loads (each level costs a round trip).
+    if (this.bundleUrlValue && !window.IdeaApp?.mountExcalidraw) this._preloadAll();
     return this.bundleUrlValue ? loadExcalidrawAssets(this.bundleUrlValue, this.stylesheetUrlValue) : Promise.resolve();
   }
 
+  // The modal shell appears synchronously on click, with a quiet notice if the editor isn't loaded yet.
+  _showShell() {
+    this.modal.classList.remove("hidden");
+    document.body.classList.add("modal-open");
+    if (!window.IdeaApp?.mountExcalidraw) this._setNotice("Loading the editor…");
+    this._measure("shell", "drawing-open", "drawing-shell");
+  }
+
+  _setNotice(message, error = false) {
+    if (!this.notice) {
+      this.notice = document.createElement("p");
+      this.notice.setAttribute("role", "status");
+      this.mount.parentElement.appendChild(this.notice);
+    }
+    this.notice.className = `kb-viewer-notice idea-drawings__notice${error ? " kb-viewer-notice--error" : ""}`;
+    this.notice.textContent = message;
+  }
+
+  _clearNotice() {
+    this.notice?.remove();
+    this.notice = null;
+  }
+
   async _openMount(opts) {
-    await this._assets();
+    try {
+      await this._assets();
+    } catch (e) {
+      console.warn("Excalidraw failed to load:", e);
+      this._setNotice("The drawing editor could not be loaded. Close this and try again.", true);
+      return;
+    }
+    if (this.modal.classList.contains("hidden")) return; // closed while loading
 
     const mount = this.mount;
     if (opts.drawingId) {
@@ -214,8 +260,6 @@ export default class extends Controller {
     mount.dataset.showUrlPattern = this.showUrlPatternValue;
     mount.dataset.standalone = "false";
 
-    this.modal.classList.remove("hidden");
-    document.body.classList.add("modal-open");
     this._mountPending = true;
     this._mountIfPending();
   }
@@ -231,6 +275,7 @@ export default class extends Controller {
   _closeMount() {
     if (!this.modal || this.modal.classList.contains("hidden")) return;
     performance.mark("drawing-close");
+    this._clearNotice();
     this.modal.classList.add("hidden");
     document.body.classList.remove("modal-open");
     this._mountPending = false;

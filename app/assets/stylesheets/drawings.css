@@ -269,6 +269,9 @@
   min-height: 0;
 }
 
+.idea-drawings__modal-body { position: relative; }
+.idea-drawings__notice { position: absolute; inset: 0; margin: 0; max-width: none; place-content: center; justify-items: center; }
+
 .idea-drawings__modal-body .excalidraw-mount {
   flex: 1;
   height: 100%;

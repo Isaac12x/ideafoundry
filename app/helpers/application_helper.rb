@@ -1,15 +1,40 @@
 module ApplicationHelper
+  EXCALIDRAW_MANIFEST_GLOB = "public/excalidraw-assets/*/manifest.json".freeze
+  @excalidraw_assets = {}
+
+  class << self
+    attr_reader :excalidraw_assets
+  end
+
+  # Entry, stylesheet and critical chunk URLs of the code-split editor build (esbuild.config.mjs writes
+  # the manifest next to the hashed files in public/excalidraw-assets/<version>/). Re-read if rebuilt.
+  def excalidraw_assets
+    file = Dir[Rails.root.join(EXCALIDRAW_MANIFEST_GLOB)].first
+    return { js: "", css: "", preload: [] } unless file
+
+    cache = ApplicationHelper.excalidraw_assets
+    mtime = File.mtime(file)
+    return cache[:data] if cache[:file] == file && cache[:mtime] == mtime
+
+    base = "/excalidraw-assets/#{File.basename(File.dirname(file))}"
+    manifest = JSON.parse(File.read(file))
+    data = { js: "#{base}/#{manifest['js']}", css: "#{base}/#{manifest['css']}", preload: manifest["preload"].map { |f| "#{base}/#{f}" } }
+    cache.replace(file: file, mtime: mtime, data: data)
+    data
+  end
+
   def excalidraw_stimulus_values
     {
-      excalidraw_bundle_url_value: asset_path("excalidraw_app/index.js"),
-      excalidraw_stylesheet_url_value: asset_path("excalidraw_app/index.css")
+      excalidraw_bundle_url_value: excalidraw_assets[:js],
+      excalidraw_stylesheet_url_value: excalidraw_assets[:css]
     }
   end
 
   def idea_drawings_loader_values
     {
-      idea_drawings_bundle_url_value: asset_path("excalidraw_app/index.js"),
-      idea_drawings_stylesheet_url_value: asset_path("excalidraw_app/index.css")
+      idea_drawings_bundle_url_value: excalidraw_assets[:js],
+      idea_drawings_stylesheet_url_value: excalidraw_assets[:css],
+      idea_drawings_preload_urls_value: excalidraw_assets[:preload]
     }
   end
 
