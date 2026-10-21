@@ -73,6 +73,12 @@ Rails.application.configure do
   # Suppress logger output for asset requests.
   config.assets.quiet = true
 
+  # The local production server precompiles into public/assets. There, the
+  # manifest resolver and ActionDispatch::Static would serve that stale build
+  # instead of live app/assets, so dev uses its own prefix (public/dev-assets
+  # never exists).
+  config.assets.prefix = "/dev-assets"
+
   # Highlight code that triggered redirect in logs.
   config.action_dispatch.verbose_redirect_logs = true
 
