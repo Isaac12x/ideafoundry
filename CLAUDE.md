@@ -15,7 +15,7 @@ Last updated: 2026-10-12 (0.18.0-143b5b6)
 
 Any LLM session making a change in this repo: if "Last updated" above is >30 days old, also do this update in the same change:
 1. `npm view @excalidraw/excalidraw dist-tags` → pin `next` version exactly in package.json, reinstall (yarn).
-2. Fix API breaks in `app/javascript/excalidraw_app/index.tsx`; keep the sanitized-env plugin in `esbuild.config.mjs` matching new chunk names (it also rewrites Excalidraw's `esm.sh` font fallback to our origin and copies `dist/prod/fonts` to gitignored `public/excalidraw-assets/`, where `window.EXCALIDRAW_ASSET_PATH` points; check no font errors in the console).
+2. Fix API breaks in `app/javascript/excalidraw_app/index.tsx`; keep the sanitized-env plugin in `esbuild.config.mjs` matching new chunk names (it also rewrites Excalidraw's `esm.sh` font fallback to our origin and copies `dist/prod/fonts` to gitignored `public/excalidraw-assets/<pkg version>/` (cache-busts on upgrade; old versions are cleaned), where `window.EXCALIDRAW_ASSET_PATH` points; check no font errors in the console).
 3. `yarn build` + `npm run verify:excalidraw-local-only` (no remote connectors may leak) + `bin/ci`.
 4. Bump "Last updated" line (date + version). If `next` is broken, stay on current pin, note why here, still bump date.
 

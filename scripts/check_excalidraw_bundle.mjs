@@ -18,6 +18,21 @@ const forbiddenPatterns = [
 
 let failed = false;
 
+// The font asset path baked into the bundle must be the versioned dir that the build produced.
+const version = JSON.parse(
+  fs.readFileSync(path.join(process.cwd(), "node_modules/@excalidraw/excalidraw/package.json"), "utf8")
+).version;
+const assetPath = `/excalidraw-assets/${version}/`;
+const bundlePath = path.join(bundleDir, "index.js");
+if (fs.existsSync(bundlePath) && !fs.readFileSync(bundlePath, "utf8").includes(assetPath)) {
+  failed = true;
+  console.error(`index.js does not reference ${assetPath}; rebuild.`);
+}
+if (!fs.existsSync(path.join(process.cwd(), "public", assetPath, "fonts"))) {
+  failed = true;
+  console.error(`public${assetPath}fonts is missing; rebuild.`);
+}
+
 for (const fileName of filesToScan) {
   const filePath = path.join(bundleDir, fileName);
   if (!fs.existsSync(filePath)) continue;

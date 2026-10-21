@@ -55,6 +55,8 @@ export default class extends Controller {
       document.body.appendChild(this.modal);
       // Snapshots must not carry React DOM or an open modal: unmount, empty, hide, and put the modal back.
       this.boundBeforeCache = () => {
+        // Queue the pending save first (it runs from refs, so it survives the unmount below).
+        window.IdeaApp?.flushExcalidraw?.(this.mount);
         this._unmount();
         this.mount.replaceChildren();
         this.modal.classList.add("hidden");

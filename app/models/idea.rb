@@ -946,7 +946,7 @@ has_many :kb_links, class_name: "IdeaKbLink", dependent: :destroy
     (@pending_hero_blobs ||= []).concat(files.map { |file| hero_blob_for(file) })
   rescue StandardError => e
     Rails.logger.warn("hero image upload failed: #{e.class}: #{e.message}")
-    errors.add(:hero_images, "could not be added (#{e.class == ActiveSupport::MessageVerifier::InvalidSignature ? 'unknown file reference' : e.message.truncate(80)})")
+    errors.add(:hero_images, "could not be added. Check they are image files and try again.")
   end
 
   def hero_blob_for(file)

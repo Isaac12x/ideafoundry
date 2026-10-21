@@ -83,11 +83,16 @@ function findExcalidrawConnectorEnvChunks() {
 
 // Fonts are served from public/ (not the digesting asset pipeline): Excalidraw resolves
 // "fonts/<Family>/<file>" against window.EXCALIDRAW_ASSET_PATH, and its own fallback is a CDN.
-const EXCALIDRAW_PUBLIC_DIR = "public/excalidraw-assets";
-const EXCALIDRAW_PUBLIC_URL = "/excalidraw-assets";
+// Versioned so the long public cache busts when @excalidraw/excalidraw is upgraded.
+const EXCALIDRAW_VERSION = JSON.parse(
+  fs.readFileSync(path.join("node_modules", "@excalidraw", "excalidraw", "package.json"), "utf8")
+).version;
+const EXCALIDRAW_PUBLIC_ROOT = "public/excalidraw-assets";
+const EXCALIDRAW_PUBLIC_DIR = `${EXCALIDRAW_PUBLIC_ROOT}/${EXCALIDRAW_VERSION}`;
+const EXCALIDRAW_PUBLIC_URL = `/excalidraw-assets/${EXCALIDRAW_VERSION}`;
 
 function copyExcalidrawFonts() {
-  fs.rmSync(EXCALIDRAW_PUBLIC_DIR, { recursive: true, force: true });
+  fs.rmSync(EXCALIDRAW_PUBLIC_ROOT, { recursive: true, force: true }); // drops older version dirs too
   fs.mkdirSync(EXCALIDRAW_PUBLIC_DIR, { recursive: true });
   fs.cpSync(
     path.join("node_modules", "@excalidraw", "excalidraw", "dist", "prod", "fonts"),
@@ -145,6 +150,10 @@ const builds = [
     entryPoints: ["app/javascript/excalidraw_app/index.tsx"],
     outdir: "app/assets/builds/excalidraw_app",
     publicPath: EXCALIDRAW_PUBLIC_URL,
+    // publicPath would also rewrite the sourceMappingURL to a path that 404s, and the map is 23MB:
+    // no map in builds, inline while watching.
+    sourcemap: watch ? "inline" : false,
+    define: { ...common.define, __EXCALIDRAW_ASSET_PATH__: JSON.stringify(`${EXCALIDRAW_PUBLIC_URL}/`) },
     minify: !watch,
     splitting: false,
     plugins: [excalidrawLocalOnlyPlugin()],
@@ -183,6 +192,9 @@ fs.copyFileSync(
   path.join("node_modules", "occt-import-js", "dist", "occt-import-js.wasm"),
   "app/assets/builds/kb_viewers/occt-import-js.wasm"
 );
+
+// Stale maps from earlier builds would be served for no reason.
+for (const f of ["index.js.map", "index.css.map"]) fs.rmSync(`app/assets/builds/excalidraw_app/${f}`, { force: true });
 
 if (watch) {
   for (const cfg of builds) {
