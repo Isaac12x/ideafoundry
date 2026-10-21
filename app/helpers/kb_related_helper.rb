@@ -14,4 +14,10 @@ module KbRelatedHelper
       RelatedPeer.new(link: link, rel: peer_rel, src: peer_src, kind: kind)
     end
   end
+
+  # Parent folder name shown muted after a chip's name, to tell same-named files apart.
+  def kb_related_where(rel)
+    dir = File.dirname(rel)
+    File.basename(dir) unless dir == "."
+  end
 end

@@ -30,7 +30,7 @@ class KbController < ApplicationController
   KbContent = Struct.new(
     :kind, :html, :raw_url, :serve_url, :rel, :src, :filename,
     :created_at, :modified_at,
-    :extraction, :output_rel, :mime_type, :captions_url, :private_project,
+    :extraction, :output_rel, :mime_type, :captions_url, :private_project, :shots,
     keyword_init: true
   )
 
@@ -257,6 +257,7 @@ class KbController < ApplicationController
     File.rename(abs, dest)
     FileUtils.mv(side, Kb::Transcript.sidecar(dest)) if side && !File.exist?(Kb::Transcript.sidecar(dest)) # captions follow their media
     Kb::Note.carry!(note, dest)
+    Kb::VideoShots.carry!(abs, dest) if Kb::MediaTypes.kind_for(dest) == :video
     rel = dest.delete_prefix("#{base}/")
     parent_rel = File.dirname(params[:path].to_s)
     Kb::Project.at(base, parent_rel)&.rename_material!(File.basename(params[:path].to_s), name) unless parent_rel == "."
@@ -337,6 +338,7 @@ class KbController < ApplicationController
     FileUtils.mv(abs, target)
     FileUtils.mv(side, Kb::Transcript.sidecar(target)) if side && !File.exist?(Kb::Transcript.sidecar(target))
     Kb::Note.carry!(note, target)
+    Kb::VideoShots.carry!(abs, target) if Kb::MediaTypes.kind_for(target) == :video
     reorder_child(base, params[:path])
     KbEntryPreference.move_subtree!(
       user: @user,
@@ -577,6 +579,7 @@ class KbController < ApplicationController
       note = Kb::Note.sidecar_for(abs)
       FileUtils.mv(abs, target)
       Kb::Note.carry!(note, target)
+      Kb::VideoShots.carry!(abs, target) if Kb::MediaTypes.kind_for(target) == :video
       new_rel = target.delete_prefix("#{base}/")
       [ KbEntryPreference, IdeaKbLink, KbLink, KbAnnotation, KbBookmark ].each do |model|
         model.move_subtree!(user: @user, source_path: base, old_relative_path: rel,
@@ -776,7 +779,8 @@ class KbController < ApplicationController
         kind: :video,
         serve_url: versioned_serve_path(abs, folder_index, rel_path),
         mime_type: MIME_TYPES[ext],
-        captions_url: (side = Kb::Transcript.sidecar_for(abs)) && versioned_serve_path(side, folder_index, Kb::Transcript.sidecar(rel_path))
+        captions_url: (side = Kb::Transcript.sidecar_for(abs)) && versioned_serve_path(side, folder_index, Kb::Transcript.sidecar(rel_path)),
+        shots: video_shots(abs, folder_index, rel_path)
       )
     elsif AUDIO_EXTENSIONS.include?(ext)
       KbContent.new(
@@ -799,6 +803,15 @@ class KbController < ApplicationController
         serve_url: versioned_serve_path(abs, folder_index, rel_path),
         mime_type: "application/octet-stream"
       )
+    end
+  end
+
+  # Captured frames in the video's sibling folder: [{ name:, time:, rel:, serve_url: }].
+  def video_shots(abs, folder_index, rel_path)
+    folder = Kb::VideoShots.dir(rel_path).delete_prefix("./")
+    Kb::VideoShots.list(abs).map do |name, time|
+      rel = File.join(folder, name)
+      { name: name, time: time, rel: rel, serve_url: kb_serve_path(src: folder_index, file: rel) }
     end
   end
 

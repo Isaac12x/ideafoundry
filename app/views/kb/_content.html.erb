@@ -120,7 +120,7 @@
                  tabindex="0"
                  title="Select, then press Ctrl/Cmd+C to copy"
                  data-kb-transcript-target="media"
-                 data-action="click->kb-media-copy#select keydown->kb-media-copy#copyFromShortcut timeupdate->kb-transcript#highlight seeked->kb-transcript#highlight"
+                 data-action="click->kb-media-copy#select keydown->kb-media-copy#copyFromShortcut timeupdate->kb-transcript#highlight seeked->kb-transcript#highlight timeupdate->kb-video-shot#track seeked->kb-video-shot#track"
                  data-controller="kb-resume"
                  data-kb-resume-key-value="<%= content.src %>:<%= content.rel %>">
             <source src="<%= content.serve_url %>" type="<%= content.mime_type %>">
@@ -131,6 +131,12 @@
             <button type="button" class="btn btn-sm" data-action="kb-video-shot#capture" title="Save current frame as PNG (S)" aria-keyshortcuts="S">Screenshot <kbd>S</kbd></button>
             <div class="kb-video-shot-toast" data-kb-video-shot-target="toast" role="status" aria-live="polite" hidden></div>
             <%= render "kb/idea_attach" unless content.private_project %>
+          </div>
+          <div class="kb-shots" data-kb-video-shot-target="strip" data-action="wheel->kb-video-shot#touched:passive pointerdown->kb-video-shot#touched touchstart->kb-video-shot#touched:passive keydown->kb-video-shot#stripKey">
+            <ul class="kb-shots__list" aria-label="Captured frames">
+              <% content.shots.each do |shot| %><%= render "kb/video_shot", src: content.src, **shot %><% end %>
+            </ul>
+            <template data-kb-video-shot-target="shotTemplate"><%= render "kb/video_shot", src: content.src, name: "", time: 0.0, rel: "", serve_url: "" %></template>
           </div>
           <%= render "kb/transcript_panel" %>
         </div>
