@@ -172,7 +172,7 @@ class KbMediaEditsControllerTest < ActionDispatch::IntegrationTest
     assert_includes body["file_url"], CGI.escape("clip (edited).mp4")
   end
 
-  test "screenshot saves an exact-frame png beside the video" do
+  test "screenshot saves an exact-frame png in a folder named like the video" do
     skip "ffmpeg unavailable" unless system("ffmpeg -version", out: File::NULL, err: File::NULL)
     video = File.join(@kb_dir, "clip.mp4")
     system("ffmpeg", "-y", "-loglevel", "error", "-f", "lavfi", "-i", "testsrc=duration=2:size=64x64:rate=10",
@@ -182,11 +182,40 @@ class KbMediaEditsControllerTest < ActionDispatch::IntegrationTest
 
     assert_response :created
     body = response.parsed_body
-    assert_equal "clip \u2014 00m01s.png", body["name"]
+    assert_equal "clip \u2014 00m01.5s.png", body["name"]
+    assert_equal "clip/clip \u2014 00m01.5s.png", body["file"]
+    assert_equal 1.5, body["time"]
     assert_equal "\x89PNG".b, File.binread(File.join(@kb_dir, body["file"]), 4)
 
-    post kb_screenshot_path, params: { src: 0, file: "clip.mp4", time: "1.5" }, as: :json
-    assert_equal "clip \u2014 00m01s 2.png", response.parsed_body["name"]
+    post kb_screenshot_path, params: { src: 0, file: "clip.mp4", time: "1" }, as: :json
+    assert_equal "clip \u2014 00m01.0s.png", response.parsed_body["name"]
+    assert_equal 1.0, response.parsed_body["time"]
+
+    post kb_screenshot_path, params: { src: 0, file: "clip.mp4", time: "1.54" }, as: :json
+    assert_equal "clip \u2014 00m01.5s 2.png", response.parsed_body["name"]
+
+    get kb_file_path(src: 0, file: "clip.mp4")
+    assert_select ".kb-shots__list .kb-shot[data-time='1.5']", 2
+    assert_select ".kb-shot[data-time='1.0'] .kb-shot__time", text: "0:01"
+    assert_select ".kb-shot[data-time='1.5'] .kb-shot__time", text: "0:01.5"
+  end
+
+  test "screenshot errors clearly when a file blocks the folder name" do
+    File.binwrite(File.join(@kb_dir, "clip.mp4"), "x")
+    File.binwrite(File.join(@kb_dir, "clip"), "x")
+
+    post kb_screenshot_path, params: { src: 0, file: "clip.mp4", time: "1" }, as: :json
+
+    assert_response :unprocessable_content
+    assert_match(/blocks the screenshots folder/, response.parsed_body["error"])
+  end
+
+  test "old whole-second frame names still list" do
+    File.binwrite(File.join(@kb_dir, "clip.mp4"), "x")
+    FileUtils.mkdir_p(File.join(@kb_dir, "clip"))
+    File.binwrite(File.join(@kb_dir, "clip", "clip \u2014 01m23s.png"), "p")
+    get kb_file_path(src: 0, file: "clip.mp4")
+    assert_select ".kb-shot[data-time='83.0'] .kb-shot__time", text: "1:23"
   end
 
   test "screenshot rejects non-video files and bad timestamps" do

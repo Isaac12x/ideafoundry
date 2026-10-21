@@ -290,4 +290,40 @@ class KbFsOpsTest < ActionDispatch::IntegrationTest
     delete kb_fs_delete_path, params: { src: @src, path: "sub/talk.mp4" }
     assert_empty Dir.children(File.join(@kb_dir, "sub"))
   end
+
+  test "screenshot frames folder follows its video on rename and move, never clobbering" do
+    FileUtils.mkdir_p([ File.join(@kb_dir, "sub"), File.join(@kb_dir, "clip") ])
+    File.binwrite(File.join(@kb_dir, "clip.mp4"), "x")
+    File.binwrite(File.join(@kb_dir, "clip", "clip \u2014 00m01.5s.png"), "p")
+    File.binwrite(File.join(@kb_dir, "clip", "clip \u2014 00m02s.png"), "p")
+
+    patch kb_fs_rename_path, params: { src: @src, path: "clip.mp4", name: "talk" }
+    refute Dir.exist?(File.join(@kb_dir, "clip"))
+    assert_equal [ "talk \u2014 00m01.5s.png", "talk \u2014 00m02s.png" ], Dir.children(File.join(@kb_dir, "talk")).sort
+    assert_equal [ [ "talk \u2014 00m01.5s.png", 1.5 ], [ "talk \u2014 00m02s.png", 2.0 ] ], Kb::VideoShots.list(File.join(@kb_dir, "talk.mp4"))
+
+    patch kb_fs_move_path, params: { src: @src, path: "talk.mp4", dest_dir: "sub" }
+    assert File.file?(File.join(@kb_dir, "sub", "talk", "talk \u2014 00m01.5s.png"))
+    refute Dir.exist?(File.join(@kb_dir, "talk"))
+
+    # an existing destination folder is merged into: renamed, numbered on collision, nothing overwritten
+    FileUtils.mkdir_p(File.join(@kb_dir, "sub", "keep"))
+    File.binwrite(File.join(@kb_dir, "sub", "keep", "mine.txt"), "m")
+    File.binwrite(File.join(@kb_dir, "sub", "keep", "keep \u2014 00m01.5s.png"), "old")
+    File.binwrite(File.join(@kb_dir, "sub", "talk", "extra.png"), "p")
+    patch kb_fs_rename_path, params: { src: @src, path: "sub/talk.mp4", name: "keep" }
+    keep = File.join(@kb_dir, "sub", "keep")
+    assert_equal [ "extra.png", "keep \u2014 00m01.5s 2.png", "keep \u2014 00m01.5s.png", "keep \u2014 00m02s.png", "mine.txt" ], Dir.children(keep).sort
+    assert_equal "old", File.read(File.join(keep, "keep \u2014 00m01.5s.png"))
+    refute Dir.exist?(File.join(@kb_dir, "sub", "talk"))
+  end
+
+  test "deleting a video keeps its screenshots folder (hard delete, user images)" do
+    FileUtils.mkdir_p(File.join(@kb_dir, "clip"))
+    File.binwrite(File.join(@kb_dir, "clip.mp4"), "x")
+    File.binwrite(File.join(@kb_dir, "clip", "clip \u2014 00m01s.png"), "p")
+    delete kb_fs_delete_path, params: { src: @src, path: "clip.mp4" }
+    refute File.exist?(File.join(@kb_dir, "clip.mp4"))
+    assert File.file?(File.join(@kb_dir, "clip", "clip \u2014 00m01s.png"))
+  end
 end

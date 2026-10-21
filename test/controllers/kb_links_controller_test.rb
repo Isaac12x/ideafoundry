@@ -103,13 +103,14 @@ class KbLinksControllerTest < ActionDispatch::IntegrationTest
     assert_response :unprocessable_content
 
     get kb_file_path(src: @src, file: "a/note.md")
-    assert_select ".kb-related__item a", text: "b/other.md"
+    assert_select ".kb-related__item a", text: "other.md"
+    assert_select ".kb-related__item .kb-related__where", text: "· b"
     get kb_file_path(src: @src, file: "b/other.md")
-    assert_select ".kb-related__item a", text: "a/note.md"
+    assert_select ".kb-related__item a", text: "note.md"
 
     patch kb_fs_rename_path, params: { src: @src, path: "b/other.md", name: "moved.md" }
     get kb_file_path(src: @src, file: "a/note.md")
-    assert_select ".kb-related__item a", text: "b/moved.md"
+    assert_select ".kb-related__item a", text: "moved.md"
 
     delete kb_related_link_path(@user.kb_links.related.first), as: :turbo_stream
     assert_equal 0, @user.kb_links.count
