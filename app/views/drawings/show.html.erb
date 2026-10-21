@@ -11,6 +11,9 @@
         form: { data: { turbo_confirm: "Delete this drawing?" } } %>
 </div>
 
+<% if excalidraw_assets[:js].blank? %>
+  <p class="kb-viewer-notice kb-viewer-notice--error" role="status">The drawing editor could not be loaded. Close this and try again.</p>
+<% else %>
 <div
   id="excalidraw-root-<%= @drawing.id %>"
   class="excalidraw-mount"
@@ -25,4 +28,4 @@
   data-create-url="<%= idea_drawings_path(@idea) %>"
   data-show-url-pattern="/ideas/<%= @idea.id %>/drawings/__ID__"
 ></div>
-
+<% end %>

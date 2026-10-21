@@ -1,11 +1,19 @@
 import fs from "node:fs";
 import path from "node:path";
 
-const bundleDir = path.join(process.cwd(), "app/assets/builds/excalidraw_app");
-const filesToScan = ["index.js", "index.js.map", "index.css", "index.css.map"];
+const version = JSON.parse(
+  fs.readFileSync(path.join(process.cwd(), "node_modules/@excalidraw/excalidraw/package.json"), "utf8")
+).version;
+const assetPath = `/excalidraw-assets/${version}/`;
+const bundleDir = path.join(process.cwd(), "public", assetPath);
+// Every emitted chunk (not just the entry) must stay local-only; compressed siblings are copies.
+const filesToScan = fs.existsSync(bundleDir)
+  ? fs.readdirSync(bundleDir).filter((f) => /\.(js|css)$/.test(f))
+  : [];
 
 const forbiddenPatterns = [
   ["Google API key", /AIza[0-9A-Za-z_-]{35}/],
+  ["esm.sh CDN font fallback", /esm\.sh/],
   ["Excalidraw Firebase project", /excalidraw-room-persistence/],
   ["Firebase host", /firebase(?:app|io)?\.com/],
   ["Excalidraw collaboration backend", /oss-collab\.excalidraw\.com/],
@@ -16,6 +24,22 @@ const forbiddenPatterns = [
 ];
 
 let failed = false;
+
+// The font asset path baked into the bundle must be the versioned dir that the build produced.
+if (!filesToScan.length) {
+  failed = true;
+  console.error(`No Excalidraw build in public${assetPath}; run yarn build.`);
+}
+if (!filesToScan.some((f) => /\.js$/.test(f) && fs.readFileSync(path.join(bundleDir, f), "utf8").includes(assetPath))) {
+  failed = true;
+  console.error(`No emitted chunk references ${assetPath}; rebuild.`);
+}
+for (const required of ["fonts", "manifest.json"]) {
+  if (!fs.existsSync(path.join(bundleDir, required))) {
+    failed = true;
+    console.error(`public${assetPath}${required} is missing; rebuild.`);
+  }
+}
 
 for (const fileName of filesToScan) {
   const filePath = path.join(bundleDir, fileName);

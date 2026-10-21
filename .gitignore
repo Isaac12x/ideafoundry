@@ -7,6 +7,9 @@
 # Ignore precompiled and bundled assets
 /public/assets
 
+# Excalidraw editor build (code-split JS/CSS, .br/.gz, manifest, fonts) emitted by esbuild.config.mjs
+/public/excalidraw-assets
+
 # Ignore SQLite databases
 /db/*.sqlite3
 /db/*.sqlite3-*
