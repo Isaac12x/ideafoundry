@@ -20,7 +20,7 @@ class RecoverySecretsController < ApplicationController
     reset_recovery_secret_database_connections! if database_recovery_unlock_required?
     RecoverySecret.with(passphrase, override_configured: true) { verify_recovery_secret! }
     RecoverySecret.persist_user_passphrase!(passphrase)
-    RecoverySecret.rekey!(passphrase, env: Rails.env) if RecoverySecret.rekey_needed?
+    rekey_if_needed!(passphrase)
     session.delete(RECOVERY_SECRET_SESSION_KEY)
     redirect_to @return_to
   rescue ActiveRecord::StatementInvalid, ActiveSupport::MessageEncryptor::InvalidMessage, SQLite3::Exception => e
@@ -37,6 +37,14 @@ class RecoverySecretsController < ApplicationController
   end
 
   private
+
+  # The rekey replaces the database files, so it refuses while another process (bin/jobs) has them open.
+  # The unlock still succeeds; the rekey is retried on a later unlock, or offline.
+  def rekey_if_needed!(passphrase)
+    RecoverySecret.rekey!(passphrase, env: Rails.env) if RecoverySecret.rekey_needed?
+  rescue SqlcipherDatabaseMigrator::Error => e
+    Rails.logger.warn "Database rekey deferred: #{e.message}"
+  end
 
   def verify_recovery_secret!
     User.first&.security_lock_enabled?
