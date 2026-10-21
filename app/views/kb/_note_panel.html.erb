@@ -1,0 +1,24 @@
+<%# "Why I saved this": sidecar "<file>.note.md" (Kb::Note); driven by kb_note_controller.js. %>
+<section class="kb-note" aria-label="Why I saved this" hidden
+         data-controller="kb-note"
+         data-kb-note-url-value="<%= kb_note_path(src: content.src, file: content.rel) %>">
+  <div class="kb-note__bar">
+    <h3 class="kb-note__title">Why I saved this</h3>
+    <span class="kb-note__status" role="status" aria-live="polite" data-kb-note-target="status"></span>
+    <button type="button" class="btn btn-sm" hidden data-kb-note-target="edit" data-action="kb-note#edit">Edit</button>
+  </div>
+  <div class="kb-note__body rich-text-content" hidden data-kb-note-target="view"></div>
+  <button type="button" class="kb-note__more" hidden aria-expanded="false" data-kb-note-target="more" data-action="kb-note#toggleMore">more</button>
+  <button type="button" class="kb-note__empty" hidden data-kb-note-target="empty" data-action="kb-note#edit">
+    Add a note: why are you keeping this?
+  </button>
+  <form class="kb-note__form" hidden data-kb-note-target="form" data-action="submit->kb-note#save keydown->kb-note#key">
+    <textarea class="kb-note__input" rows="4" name="text" aria-label="Why I saved this (markdown)"
+              placeholder="The reason, the angle, what to look for…" data-kb-note-target="input"></textarea>
+    <div class="kb-note__actions">
+      <button type="submit" class="btn btn-primary btn-sm">Save</button>
+      <button type="button" class="btn btn-sm" data-action="kb-note#cancel">Cancel</button>
+      <span class="kb-note__hint">Markdown. <kbd>Ctrl/Cmd</kbd>+<kbd>Enter</kbd> saves, <kbd>Esc</kbd> cancels.</span>
+    </div>
+  </form>
+</section>

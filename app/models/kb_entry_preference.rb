@@ -12,6 +12,7 @@ class KbEntryPreference < ApplicationRecord
   validates :relative_path, presence: true, unless: :root_or_default?
   validates :entry_type, inclusion: { in: ENTRY_TYPES }
   validates :icon_kind, inclusion: { in: ICON_KINDS }
+  validates :sort_mode, inclusion: { in: ->(_) { Kb::TreeBuilder::SORT_MODES } }, allow_blank: true
   validates :emoji, length: { maximum: 24 }, allow_blank: true
   validates :relative_path,
             uniqueness: { scope: [ :user_id, :source_path, :entry_type ] }
@@ -55,6 +56,21 @@ class KbEntryPreference < ApplicationRecord
       end
     end
 
+    # Folder row that owns a directory's sort override + manual order ("" = source root).
+    def folder_pref(user, source_path, dir_rel)
+      rel = normalize_relative_path(dir_rel)
+      find_or_initialize_entry(user: user, source_path: source_path, relative_path: rel,
+                               entry_type: rel.empty? ? "root" : "folder")
+    end
+
+    # Edits a folder's manual order in place (rename/move/delete upkeep); no-op without one.
+    def edit_order!(user, source_path, dir_rel)
+      pref = folder_pref(user, source_path, dir_rel)
+      return unless pref.persisted? && pref.order_names.any?
+
+      pref.set_order!(yield(pref.order_names))
+    end
+
     def delete_subtree!(user:, source_path:, relative_path:)
       matching_subtree(user, normalize_source_path(source_path), normalize_relative_path(relative_path)).destroy_all
     end
@@ -76,6 +92,25 @@ class KbEntryPreference < ApplicationRecord
       user.kb_entry_preferences.where(source_path: source_path)
           .where("relative_path = ? OR relative_path LIKE ?", relative_path, "#{escaped}/%")
     end
+  end
+
+  def order_names
+    list = JSON.parse(manual_order.presence || "[]")
+    list.is_a?(Array) ? list.grep(String) : []
+  rescue JSON::ParserError
+    []
+  end
+
+  # Persists names (manual order) and drops the row once nothing is customised.
+  def set_order!(names)
+    self.manual_order = names.uniq.to_json
+    self.manual_order = nil if names.empty?
+    save!
+    destroy! if blank_preference?
+  end
+
+  def blank_preference?
+    !favorite? && icon_kind == "default" && !icon_image.attached? && sort_mode.blank? && manual_order.blank?
   end
 
   def default_folder?

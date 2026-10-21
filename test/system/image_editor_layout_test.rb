@@ -2,7 +2,9 @@ require "application_system_test_case"
 
 class ImageEditorLayoutTest < ApplicationSystemTestCase
   setup do
+    # The app is single-user and signs in as User.first, so own the idea as that user.
     @idea = ideas(:one)
+    @idea.update!(user: User.first)
     page.driver.browser.manage.window.resize_to(900, 640)
   end
 

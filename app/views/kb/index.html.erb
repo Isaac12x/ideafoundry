@@ -9,6 +9,9 @@
      data-kb-tree-upload-url-value="<%= kb_fs_upload_path %>"
      data-kb-tree-rename-url-value="<%= kb_fs_rename_path %>"
      data-kb-tree-move-url-value="<%= kb_fs_move_path %>"
+     data-kb-tree-order-url-value="<%= kb_order_path %>"
+     data-kb-tree-sort-url-value="<%= kb_sort_path %>"
+     data-kb-tree-alias-url-value="<%= kb_aliases_path %>"
      data-kb-tree-preference-url-value="<%= kb_fs_preference_path %>"
      data-kb-tree-open-url-value="<%= kb_fs_open_path %>"
      data-kb-tree-delete-url-value="<%= kb_fs_delete_path %>"
@@ -23,8 +26,9 @@
        data-kb-job-create-url-value="<%= kb_fs_jobs_path %>">
 
   <%= turbo_stream_from @user, "kb_tree" %>
-  <div id="kb-references-prompts">
-    <% @user.kb_downloads.references_pending.each do |download| %>
+  <div id="kb-references-prompts" class="kb-toasts">
+    <%# Only the file open right now may interrupt; other offers surface as a toast when they land, or via the file header. %>
+    <% @user.kb_downloads.references_pending.for_file(@selected_folder_index, @selected_file).each do |download| %>
       <%= render "kb_references/picker", download: download %>
     <% end %>
   </div>
@@ -64,6 +68,9 @@
       </div>
       <button type="button" class="kb-drawer-scrim" aria-label="Close files" tabindex="-1" data-action="kb-sidebar#closeDrawer"></button>
       <aside class="kb-sidebar" id="kb-sidebar-panel" data-kb-sidebar-target="panel" data-action="click->kb-sidebar#maybeClose">
+        <div class="kb-tree-head">
+          <%= render "kb/sort", mode: Kb::TreeBuilder.sort_mode_for(@user) %>
+        </div>
         <div class="kb-sidebar-inner">
           <%= render "kb/tree" %>
         </div>
@@ -81,7 +88,6 @@
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Add folder
           <% end %>
-          <%= render "kb/sort", mode: Kb::TreeBuilder.sort_mode_for(@user) %>
         </div>
       </aside>
 
@@ -173,12 +179,22 @@
       <button type="button" role="menuitem" class="kb-context-menu-item" data-kb-tree-target="item" data-menu-item="newProject"
               data-action="click->kb-tree#newProject">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3h6"/><path d="M10 3v6L4.5 19a1.5 1.5 0 001.3 2.2h12.4a1.5 1.5 0 001.3-2.2L14 9V3"/><line x1="7.5" y1="14" x2="16.5" y2="14"/></svg>
-        New project
+        New research project
       </button>
       <button type="button" role="menuitem" class="kb-context-menu-item" data-kb-tree-target="item" data-menu-item="convertProject"
               data-action="click->kb-tree#convertProject">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3h6"/><path d="M10 3v6L4.5 19a1.5 1.5 0 001.3 2.2h12.4a1.5 1.5 0 001.3-2.2L14 9V3"/><line x1="7.5" y1="14" x2="16.5" y2="14"/></svg>
-        Convert to project
+        Convert to research project
+      </button>
+      <button type="button" role="menuitem" class="kb-context-menu-item" data-kb-tree-target="item" data-menu-item="newBuildPlan"
+              data-action="click->kb-tree#newBuildPlan">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 5l2 2 3.5-3.5"/><path d="M3 13l2 2 3.5-3.5"/><line x1="12" y1="6" x2="21" y2="6"/><line x1="12" y1="14" x2="21" y2="14"/><line x1="12" y1="20" x2="21" y2="20"/></svg>
+        New build plan
+      </button>
+      <button type="button" role="menuitem" class="kb-context-menu-item" data-kb-tree-target="item" data-menu-item="convertBuildPlan"
+              data-action="click->kb-tree#convertBuildPlan">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 5l2 2 3.5-3.5"/><path d="M3 13l2 2 3.5-3.5"/><line x1="12" y1="6" x2="21" y2="6"/><line x1="12" y1="14" x2="21" y2="14"/><line x1="12" y1="20" x2="21" y2="20"/></svg>
+        Convert to build plan
       </button>
       <button type="button" role="menuitem" class="kb-context-menu-item" data-kb-tree-target="item" data-menu-item="newTest"
               data-action="click->kb-tree#newTest">
@@ -216,6 +232,38 @@
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
         Delete
       </button>
+      <button type="button" role="menuitem" class="kb-context-menu-item" data-kb-tree-target="item" data-menu-item="aliasOpen"
+              data-action="click->kb-tree#aliasOpen">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M7 17L17 7M8 7h9v9"/></svg>
+        Open original
+      </button>
+      <button type="button" role="menuitem" class="kb-context-menu-item" data-kb-tree-target="item" data-menu-item="aliasReveal"
+              data-action="click->kb-tree#aliasReveal">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/></svg>
+        Reveal original in tree
+      </button>
+      <button type="button" role="menuitem" class="kb-context-menu-item kb-context-menu-item--danger" data-kb-tree-target="item" data-menu-item="aliasRemove"
+              data-action="click->kb-tree#aliasRemove">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        Remove alias
+      </button>
+      <button type="button" role="menuitem" class="kb-context-menu-item" data-kb-tree-target="item" data-menu-item="aliasStart"
+              data-action="click->kb-tree#aliasStart" title="Then choose Place alias here on a folder, or hold Alt while dragging">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M10 13a5 5 0 007 0l3-3a5 5 0 00-7-7l-1 1"/><path d="M14 11a5 5 0 00-7 0l-3 3a5 5 0 007 7l1-1"/></svg>
+        Also in another folder… <kbd class="kb-kbd kb-kbd--end">Alt drag</kbd>
+      </button>
+      <button type="button" role="menuitem" class="kb-context-menu-item" data-kb-tree-target="item" data-menu-item="aliasHere"
+              data-action="click->kb-tree#aliasHere">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+        Place alias here
+      </button>
+      <div class="kb-context-menu-divider" role="separator" data-kb-tree-target="item" data-menu-item="sortDivider"></div>
+      <button type="button" role="menuitem" class="kb-context-menu-item" data-kb-tree-target="item" data-menu-item="sortFolder"
+              aria-expanded="false" data-action="click->kb-tree#toggleSort">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="15" y2="12"/><line x1="4" y1="18" x2="10" y2="18"/></svg>
+        Sort…
+      </button>
+      <div class="kb-sort-menu kb-sort-menu--inline" data-sort-panel hidden><%= render "kb/sort_menu", mode: "", scope: "folder" %></div>
       <div class="kb-context-menu-divider" role="separator" data-kb-tree-target="item" data-menu-item="finderDivider"></div>
       <button type="button" role="menuitem" class="kb-context-menu-item" data-kb-tree-target="item" data-menu-item="openFinder"
               data-action="click->kb-tree#openFinder">
@@ -226,9 +274,13 @@
     <form class="kb-context-menu-prompt" hidden
           data-kb-tree-target="prompt"
           data-action="submit->kb-tree#promptSubmit">
-      <input type="text" class="kb-context-menu-input" autocomplete="off"
-             data-kb-tree-target="promptInput"
-             data-action="input->kb-tree#promptInputChanged" />
+      <div class="kb-prompt-row">
+        <input type="text" class="kb-context-menu-input" autocomplete="off"
+               data-kb-tree-target="promptInput"
+               data-action="input->kb-tree#promptInputChanged" />
+        <%# A real submit button: with several text inputs and none, browsers skip Enter-to-submit. %>
+        <button type="submit" class="kb-prompt-submit">Download</button>
+      </div>
       <%# Auto sniffs the link server-side (article -> PDF, video site -> mp4); chips only override it. %>
       <div class="kb-format-chips" role="radiogroup" aria-label="Save as" data-kb-tree-target="format" hidden>
         <span class="kb-format-chips__label">Save as</span>
@@ -238,6 +290,14 @@
             <span><%= label %></span>
           </label>
         <% end %>
+      </div>
+      <div class="kb-clip-fields" data-kb-tree-target="clip" hidden>
+        <span class="kb-format-chips__label">Clip</span>
+        <input type="text" class="kb-context-menu-input kb-clip-input" name="clip_start" placeholder="Start 5:54" autocomplete="off" aria-label="Clip start (mm:ss, hh:mm:ss or seconds)" data-kb-tree-target="clipStart">
+        <input type="text" class="kb-context-menu-input kb-clip-input" name="clip_end" placeholder="End 7:10" autocomplete="off" aria-label="Clip end (mm:ss, hh:mm:ss or seconds)" data-kb-tree-target="clipEnd">
+      </div>
+      <div class="kb-note-field" data-kb-tree-target="note" hidden>
+        <textarea class="kb-context-menu-input kb-note-field__input" name="note" rows="2" maxlength="10000" placeholder="Why are you saving this? (optional)" aria-label="Why are you saving this? (optional)" data-kb-tree-target="noteInput"></textarea>
       </div>
     </form>
   </div>

@@ -1,0 +1,12 @@
+<%# Lock/unlock runs in the background; the frame re-fetches this page until it finishes. %>
+<div class="kbp kbp--locked" data-controller="extraction-status"
+     data-extraction-status-url-value="<%= kb_project_path(src: @src, path: @project.rel) %>"
+     data-extraction-status-active-value="true" data-extraction-status-interval-value="1500">
+  <header class="kbp-head">
+    <div class="kbp-eyebrow"><span><%= @lock_op == :lock ? "Locking project" : "Unlocking project" %></span></div>
+    <h1 class="kbp-title"><%= @project.name %></h1>
+    <p class="kbp-lock-note kbp-lock-working" role="status" aria-live="polite">
+      <%= @lock_op == :lock ? "Encrypting the files. Editing this project is paused until it finishes." : "Decrypting the files. Editing this project is paused until it finishes." %>
+    </p>
+  </header>
+</div>

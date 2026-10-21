@@ -11,6 +11,15 @@ module KbProjectHelper
 
   def kb_verdict_tone(verdict) = TONES[verdict]
 
+  # :file | :project | :dir | :missing for a build-plan item link (a KB rel path).
+  def kb_build_link_kind(project, rel)
+    abs = Kb::YamlNode.safe_abs(project.base, rel)
+    return :missing unless abs && File.exist?(abs)
+    return :file if File.file?(abs)
+
+    Kb::Project.at(project.base, rel) ? :project : :dir
+  end
+
   # Stable DOM id, so jump links survive reordering.
   def kb_test_dom_id(test) = "kbp-test-#{Digest::MD5.hexdigest(test.rel)[0, 8]}"
 

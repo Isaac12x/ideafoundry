@@ -22,6 +22,8 @@
     </div>
   </dl>
 
+  <%= render "kb/related", src: content.src.to_i, rel: content.rel %>
+
   <div class="kb-file-meta__actions">
     <%= link_to kb_edit_path(src: content.src, file: content.rel),
           data: { turbo_frame: "kb-content" }, class: "kb-content-edit-link",
@@ -30,7 +32,19 @@
         Edit
     <% end %>
 
-    <% if %i[image video].include?(content.kind) %>
+    <% page_download = @user.kb_downloads.for_file(content.src.to_i, content.rel).first %>
+    <% if page_download&.url&.match?(%r{\Ahttps?://}) && !page_download.video? && %i[pdf markdown embed].include?(content.kind) && page_download.references_state != "skip" %>
+      <%= link_to kb_download_references_path(page_download), class: "kb-content-edit-link",
+            data: { turbo_stream: true }, title: "Pull the sources this page cites" do %>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007 0l3-3a5 5 0 00-7-7l-1 1"/><path d="M14 11a5 5 0 00-7 0l-3 3a5 5 0 007 7l1-1"/></svg>
+        References
+      <% end %>
+    <% end %>
+    <% if page_download&.clip? %>
+      <span class="kb-file-meta__clip" title="Only this part of the video was downloaded">clip <%= page_download.clip_label %></span>
+    <% end %>
+
+    <% if %i[image video audio].include?(content.kind) %>
       <button type="button"
               class="kb-media-copy-btn"
               data-action="click->kb-media-copy#copy"

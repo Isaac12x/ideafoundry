@@ -23,7 +23,15 @@ class TopologiesController < ApplicationController
     if @topology.save
       respond_to do |format|
         format.html { redirect_to topologies_path, notice: "Topology created." }
-        format.json { render json: @topology, status: :created }
+        format.json do
+          payload = @topology.as_json.merge("full_path" => @topology.full_path)
+          # Idea-form picker: ready-to-insert tree node.
+          if params[:picker].present?
+            payload["html"] = render_to_string(partial: "ideas/topology_node", formats: [ :html ],
+              locals: { topology: @topology, idea: Idea.new, children_by_parent: {}, template_ids_by_topology: {} })
+          end
+          render json: payload, status: :created
+        end
       end
     else
       @parent_options = @user.topologies.ordered

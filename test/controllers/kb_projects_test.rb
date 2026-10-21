@@ -504,4 +504,161 @@ class KbProjectsTest < ActionDispatch::IntegrationTest
     get kb_project_path(src: 0, path: "Ferment")
     assert_select "button[data-action='kb-project#draft'][data-draft*='## Cold']"
   end
+
+  test "lock, locked page + tree, wrong password, unlock" do
+    skip "7z not installed" unless Kb::ProjectLock.available?
+    make_project
+    File.write(File.join(@kb_dir, "Ferment", "a.md"), "x")
+    post kb_project_lock_path, params: { src: 0, path: "Ferment", password: "hunter22", password_confirmation: "hunter22" }
+    assert_redirected_to kb_project_path(src: 0, path: "Ferment")
+    Kb::ProjectLock.wait_all
+    assert_equal [ ".kb-project.yml", "Ferment.7z" ], Dir.children(File.join(@kb_dir, "Ferment")).sort
+
+    get kb_project_path(src: 0, path: "Ferment")
+    assert_select ".kbp--locked input[name=password]"
+    assert_select ".kbp-title", text: /Ferment/
+    get kb_tree_path
+    assert_select ".kb-project-locked", text: /Locked/
+    patch kb_project_path, params: { src: 0, path: "Ferment", goal: "x" }
+    assert_redirected_to kb_project_path(src: 0, path: "Ferment")
+    assert_equal "Project is locked. Unlock it first.", flash[:alert]
+
+    post kb_project_unlock_path, params: { src: 0, path: "Ferment", password: "wrong-pass" }
+    assert_equal "Wrong password.", flash[:alert]
+    assert Kb::Project.at(@kb_dir, "Ferment").locked?
+
+    post kb_project_unlock_path, params: { src: 0, path: "Ferment", password: "hunter22" }
+    Kb::ProjectLock.wait_all
+    assert_not Kb::Project.at(@kb_dir, "Ferment").locked?
+    assert File.file?(File.join(@kb_dir, "Ferment", "a.md"))
+  end
+
+  test "while a lock runs: progress page, writes blocked, failure shown once" do
+    make_project
+    File.write(File.join(@kb_dir, "Ferment", "a.md"), "keep")
+    gate = Queue.new
+    Kb::ProjectLock.stub(:lock!, ->(*_a, **_k) { gate.pop }) do
+      post kb_project_lock_path, params: { src: 0, path: "Ferment", password: "hunter22", password_confirmation: "hunter22" }
+
+      get kb_project_path(src: 0, path: "Ferment")
+      assert_select ".kbp-lock-working[role=status]", text: /Encrypting/
+      assert_select "[data-controller=extraction-status][data-extraction-status-active-value=true]"
+
+      delete kb_fs_delete_path, params: { src: 0, path: "Ferment/a.md" }
+      post kb_fs_create_path, params: { src: 0, dir: "Ferment", name: "new.md" }
+      post kb_fs_upload_path, params: { src: 0, dir: "Ferment", files: [ fixture_file_upload("test.txt", "text/plain") ] } if File.exist?(Rails.root.join("test/fixtures/files/test.txt"))
+      patch kb_fs_save_path, params: { src: 0, file: "Ferment/a.md", content: "changed" }
+      patch kb_project_path, params: { src: 0, path: "Ferment", goal: "x" }
+      assert_match(/Try again/, flash[:alert])
+      assert_equal "keep", File.read(File.join(@kb_dir, "Ferment", "a.md"))
+      assert_not File.exist?(File.join(@kb_dir, "Ferment", "new.md"))
+
+      gate << 1
+      Kb::ProjectLock.wait_all
+    end
+
+    Kb::ProjectLock.stub(:lock!, ->(*_a, **_k) { raise Kb::ProjectLock::Error, "Could not create the archive." }) do
+      post kb_project_lock_path, params: { src: 0, path: "Ferment", password: "hunter22", password_confirmation: "hunter22" }
+      Kb::ProjectLock.wait_all
+    end
+    get kb_project_path(src: 0, path: "Ferment")
+    assert_select ".kbp-lock-banner", text: /Could not create the archive/
+    get kb_project_path(src: 0, path: "Ferment")
+    assert_select ".kbp-lock-banner", count: 0
+  end
+
+  test "idea knowledge card shows Locked for a locked project, not stub stats" do
+    skip "7z not installed" unless Kb::ProjectLock.available?
+    make_project
+    idea = @user.ideas.create!(title: "Linker")
+    Kb::ProjectLock.lock!(Kb::Project.at(@kb_dir, "Ferment"), "hunter22")
+    IdeaKbLink.create!(idea: idea, source_path: @kb_dir, relative_path: "Ferment", entry_type: "project")
+    get idea_path(idea)
+    assert_select ".idea-kb-links__meta", text: /Locked/
+    assert_select ".idea-kb-links__meta", text: /0 tests/, count: 0
+  end
+
+  def make_locked_project
+    project = make_project
+    File.binwrite(File.join(project.abs, "Ferment.7z"), "x")
+    Kb::ProjectLock.write_stub(project.abs, { "private" => true, "locked" => true, "archive" => "Ferment.7z" })
+    File.write(File.join(@kb_dir, "other.md"), "# other")
+    project
+  end
+
+  test "files inside a locked project open the locked page, never the archive" do
+    make_locked_project
+
+    get kb_file_path(src: 0, file: "Ferment/Ferment.7z")
+    assert_redirected_to kb_project_path(src: 0, path: "Ferment")
+
+    get kb_path
+    assert_select "#kb-content", text: /Ferment\.7z/, count: 0
+    assert_response :success
+  end
+
+  test "index never auto-opens the archive of a locked project" do
+    File.delete(File.join(@kb_dir, "other.md")) if File.exist?(File.join(@kb_dir, "other.md"))
+    make_locked_project
+    File.delete(File.join(@kb_dir, "other.md"))
+    get kb_path
+    assert_response :success
+    assert_no_match(/Download Ferment\.7z/, response.body)
+  end
+
+  test "a locked project row has no chevron and no children" do
+    make_locked_project
+    get kb_path
+    assert_select ".kb-project-row .kb-dir-toggle", count: 0
+    assert_select ".kb-project-row[aria-expanded]", count: 0
+    assert_select ".kb-project-locked"
+    assert_select ".kb-dir-children .kb-file-row", count: 0
+  end
+
+  test "downloads into a locked project are refused" do
+    make_locked_project
+    assert_no_difference -> { @user.kb_downloads.count } do
+      post kb_fs_create_path, params: { src: 0, dir: "Ferment", name: "https://example.com/a.pdf", kind: "file" }
+    end
+  end
+
+  test "creates and converts build plans and renders their checklist page" do
+    post kb_fs_create_path, params: { src: 0, dir: "", kind: "project", project_kind: "build" }
+    assert Kb::Project.at(@kb_dir, "Untitled build plan")&.build?
+
+    FileUtils.mkdir_p(File.join(@kb_dir, "old"))
+    post kb_project_convert_path, params: { src: 0, path: "old", project_kind: "build" }
+    assert Kb::Project.at(@kb_dir, "old").build?
+
+    File.write(File.join(@kb_dir, "guide.md"), "x")
+    items = [ { title: "Joinery", status: "learning", links: "guide.md\nmissing.md" }, { title: "Roofing" } ].to_json
+    patch kb_project_path, params: { src: 0, path: "old", goal: "Build a cabin", items: items }
+    get kb_project_path(src: 0, path: "old")
+    assert_response :success
+    assert_select ".kbp--build"
+    assert_select ".kbb-title[value=Joinery]"
+    assert_select ".kbb-meter[max='2'][value='0']"
+    assert_select ".kbb-links a[title='guide.md']"
+    assert_select ".kbb-link-off", text: /missing/
+    assert_select ".kbp-rail, .kbp-sec--tests", count: 0
+
+    patch kb_project_path, params: { src: 0, path: "old", items: [ { title: "x", links: "../etc/passwd" } ].to_json }
+    assert_equal 2, Kb::Project.at(@kb_dir, "old").items.size
+    assert_match(/not a path inside the KB/, flash[:alert])
+  end
+
+  test "build plans refuse tests and the tree marks them" do
+    post kb_fs_create_path, params: { src: 0, dir: "", name: "Cabin", kind: "project", project_kind: "build" }
+    post kb_project_tests_path, params: { src: 0, dir: "Cabin", name: "T" }
+    assert_empty Kb::Project.at(@kb_dir, "Cabin").tests
+    get kb_path
+    assert_select ".kb-build-group .kb-build-badge", text: "0/0"
+    assert_select ".kb-build-group .kb-project-stage", count: 0
+  end
+
+  test "research projects ignore a checklist" do
+    make_project
+    patch kb_project_path, params: { src: 0, path: "Ferment", items: "[]" }
+    assert_equal "Only build plans have a checklist.", flash[:alert]
+  end
 end

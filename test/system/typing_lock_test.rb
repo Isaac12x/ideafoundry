@@ -2,7 +2,7 @@ require "application_system_test_case"
 
 class TypingLockTest < ApplicationSystemTestCase
   test "failed unlock stays on score page with decoy text" do
-    user = users(:one)
+    user = User.first # single-user app: the browser signs in as User.first
     user.update!(settings: { "typing_lock" => { "enabled" => true } })
 
     unlock_text = TypingTextLibrary.unlock_text("spark-gap")
@@ -25,7 +25,7 @@ class TypingLockTest < ApplicationSystemTestCase
   end
 
   test "unlock prompt keeps words together for wrapping" do
-    user = users(:one)
+    user = User.first # single-user app: the browser signs in as User.first
     user.update!(settings: { "typing_lock" => { "enabled" => true } })
     unlock_text = TypingTextLibrary.unlock_text("spark-gap")
     user.store_typing_fingerprint!(fingerprint_for(unlock_text, hold: 91, flight: 41))

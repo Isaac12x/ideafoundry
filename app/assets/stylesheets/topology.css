@@ -686,6 +686,14 @@
 }
 .topology-node.is-collapsed > .topology-node__children { display: none; }
 
+/* Picker polish: amber checkboxes, flat rows, in-bounds focus ring, no ember halo in the list */
+/* checkbox look: application.css */
+.topology-node__row:has(:focus-visible) { outline: 2px solid var(--accent); outline-offset: -2px; }
+.topology-node__label input:focus-visible { outline: none; }
+.topology-node__label .topology-color-dot::after { display: none; }
+.topology-node__label .topology-color-dot { width: 8px; height: 8px; }
+.topology-node__row { min-width: 0; }
+
 /* ---- Color Picker Enhancement ---- */
 input[type="color"].form-control {
   padding: 3px;
@@ -940,7 +948,6 @@ input[type="color"].form-control::-webkit-color-swatch {
 
 /* ── Keyboard focus + reduced motion ─────────────────────── */
 .topology-node__toggle:focus-visible,
-.topology-node__label:focus-within,
 .topology-graph-search:focus-visible,
 .view-toggle__btn:focus-visible {
   outline: 2px solid var(--accent);
@@ -956,3 +963,23 @@ input[type="color"].form-control::-webkit-color-swatch {
     transition: none !important;
   }
 }
+
+/* Inline "+ New topology" in the idea-form picker */
+.topology-picker__new { border-top: 1px solid var(--border-subtle); padding: 6px; }
+.topology-picker__new-toggle {
+  background: none; border: 0; padding: 6px 8px; font-size: 0.82rem; color: var(--accent); cursor: pointer;
+  border-radius: var(--radius-sm);
+}
+.topology-picker__new-toggle:hover { background: var(--bg-elevated); }
+.topology-picker__new-panel { display: grid; grid-template-columns: 1fr 1fr auto; gap: 6px; padding: 4px 2px 2px; }
+.topology-picker__error { grid-column: 1 / -1; margin: 0; font-size: 0.8rem; color: var(--danger, #e5736b); }
+@media (max-width: 640px) { .topology-picker__new-panel { grid-template-columns: 1fr; } }
+
+/* Picker round 2: "+ New topology" collapsed until asked (the grid rule above beats [hidden]); centred rows; tree guide under parent toggles */
+.topology-picker__new-panel[hidden] { display: none; }
+.form-group label.topology-node__label { display: flex; margin: 0; font-weight: 400; }
+.topology-node__label { line-height: 1.2; min-height: 32px; }
+.topology-node__label input[type="checkbox"] { display: block; align-self: center; width: 14px; height: 14px; }
+.topology-node__name { display: block; }
+.topology-node__toggle { align-self: center; }
+.topology-node__children { margin-left: 10px; padding-left: 0; }

@@ -14,6 +14,28 @@ class KbDownloadJobTest < ActiveJob::TestCase
     assert_match(/not available/i, dl.error)
   end
 
+  test "waits while the target project is locking and fails when it is locked" do
+    original = @user.settings.deep_dup
+    base = File.expand_path(Dir.mktmpdir)
+    project = Kb::Project.create!(base: base, parent_rel: "", name: "Vault")
+    @user.update!(settings: (@user.settings || {}).merge("kb" => { "folders" => [ base ], "hide_native" => true }))
+    dl = @user.kb_downloads.create!(source_index: 0, source_path: base, dir: "Vault", url: "https://x.com/f.pdf", format: "auto", status: "pending")
+
+    Kb::ProjectLock::STATE[project.abs] = { op: :lock }
+    assert_enqueued_with(job: KbDownloadJob) { KbDownloadJob.perform_now(dl.id) }
+    assert_equal "pending", dl.reload.status
+
+    Kb::ProjectLock::STATE.clear
+    Kb::ProjectLock.write_stub(project.abs, { "private" => true, "locked" => true, "archive" => "Vault.7z" })
+    KbDownloadJob.perform_now(dl.id)
+    assert_equal "failed", dl.reload.status
+    assert_match(/locked/i, dl.error)
+  ensure
+    Kb::ProjectLock::STATE.clear
+    @user.update!(settings: original)
+    FileUtils.rm_rf(base)
+  end
+
   test "no-ops when the download was deleted" do
     assert_nothing_raised { KbDownloadJob.perform_now(-1) }
   end
@@ -23,6 +45,33 @@ class KbDownloadJobTest < ActiveJob::TestCase
                                     format: "auto", status: "done", filename: "f.pdf")
     KbDownloadJob.perform_now(dl.id)
     assert_equal "done", dl.reload.status
+  end
+end
+
+class KbDownloadJobClipArgsTest < ActiveSupport::TestCase
+  def args(clip_start:, clip_end:, format: "video")
+    dl = KbDownload.new(url: "https://www.youtube.com/watch?v=ews_k4ikjuy", format: format, clip_start: clip_start, clip_end: clip_end)
+    KbDownloadJob.yt_dlp_args("yt-dlp", dl, "/tmp/d")
+  end
+
+  test "start and end become a keyframe-cut section named in the file" do
+    a = args(clip_start: 354, clip_end: 430)
+    assert_equal [ "--download-sections", "*354-430", "--force-keyframes-at-cuts" ], a.each_cons(3).find { |x, *| x == "--download-sections" }
+    assert_includes a, "%(title)s [clip 5m54s-7m10s].%(ext)s"
+    assert_equal "https://www.youtube.com/watch?v=ews_k4ikjuy", a.last
+  end
+
+  test "start only runs to the end; audio keeps the mp3 preset" do
+    a = args(clip_start: 354, clip_end: nil, format: "audio")
+    assert_includes a, "*354-inf"
+    assert_includes a, "%(title)s [clip from 5m54s].%(ext)s"
+    assert_equal [ "-t", "mp3" ], a.each_cons(2).find { |x, _| x == "-t" }
+  end
+
+  test "no clip leaves the plain argv" do
+    a = args(clip_start: nil, clip_end: nil)
+    refute_includes a, "--download-sections"
+    assert_includes a, "%(title)s.%(ext)s"
   end
 end
 
@@ -197,5 +246,50 @@ class KbDownloadJobReaderTest < ActiveJob::TestCase
     assert_equal "https://player.vimeo.com/video/76979871", KbDownloadJob.media_url("https://vimeo.com/76979871")
     assert_equal "https://player.vimeo.com/video/1?h=abc123", KbDownloadJob.media_url("https://vimeo.com/1/abc123")
     assert_equal "https://example.com/v", KbDownloadJob.media_url("https://example.com/v")
+  end
+end
+
+class KbDownloadJobDirectClipTest < ActiveJob::TestCase
+  setup do
+    skip "ffmpeg unavailable" unless system("ffmpeg -version", out: File::NULL, err: File::NULL)
+    @user = User.first || User.create!(email: "test@example.com", name: "Test")
+    @dir = Rails.root.join("tmp", "kb-clip-test-#{SecureRandom.hex(6)}").to_s
+    FileUtils.mkdir_p(@dir)
+    @path = File.join(@dir, "talk.mp4")
+    system("ffmpeg", "-y", "-loglevel", "error", "-f", "lavfi", "-i", "testsrc=duration=6:size=64x64:rate=10",
+           "-f", "lavfi", "-i", "sine=duration=6", "-c:v", "libx264", "-c:a", "aac", "-shortest", @path, exception: true)
+  end
+
+  teardown { FileUtils.rm_rf(@dir) if @dir }
+
+  def duration(path) = Kb::MediaInspector.new(path).call[:duration].to_f
+
+  test "direct media with start and end is cut to that range and the whole file is dropped" do
+    dl = @user.kb_downloads.create!(source_index: 0, dir: "", url: "https://example.com/talk.mp4#t=1,3", status: "running")
+    job = KbDownloadJob.new
+    out = job.send(:cut_clip, dl, @path)
+
+    assert_equal File.join(@dir, "talk [clip 1s-3s].mp4"), out
+    assert_in_delta 2.0, duration(out), 0.3
+    assert_not File.exist?(@path)
+    assert job.instance_variable_get(:@clipped)
+  end
+
+  test "start-only clip runs to the end and is named from" do
+    dl = @user.kb_downloads.create!(source_index: 0, dir: "", url: "https://example.com/talk.mp4?t=4", status: "running")
+    out = KbDownloadJob.new.send(:cut_clip, dl, @path)
+
+    assert_equal "talk [clip from 4s].mp4", File.basename(out)
+    assert_in_delta 2.0, duration(out), 0.3
+  end
+
+  test "a failed cut fails the download and keeps the file" do
+    File.binwrite(@path, "not media")
+    dl = @user.kb_downloads.create!(source_index: 0, dir: "", url: "https://example.com/talk.mp4#t=1,3", status: "running")
+
+    assert_nil KbDownloadJob.new.send(:cut_clip, dl, @path)
+    assert_equal "failed", dl.reload.status
+    assert_match(/Could not cut the clip/, dl.error)
+    assert File.exist?(@path)
   end
 end

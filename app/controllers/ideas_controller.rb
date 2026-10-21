@@ -1,6 +1,6 @@
 class IdeasController < ApplicationController
   before_action :set_user
-  before_action :set_idea, only: [ :show, :edit, :update, :destroy, :send_email, :approve_pending_email, :discard_pending_email, :enrich, :enrichment_status, :archive, :restore, :add_to_list, :create_version, :make_primary, :toggle_licensing ]
+  before_action :set_idea, only: [ :show, :edit, :update, :destroy, :send_email, :approve_pending_email, :discard_pending_email, :enrich, :enrichment_status, :archive, :restore, :add_to_list, :create_version, :make_primary, :toggle_licensing, :set_themes ]
   before_action :check_cool_off_period, only: [ :edit, :update ]
 
   IDEA_SORTS = {
@@ -11,16 +11,22 @@ class IdeasController < ApplicationController
     "trl_desc" => [ :trl, :desc ], "trl_asc" => [ :trl, :asc ],
     "state_asc" => [ :state, :asc ], "state_desc" => [ :state, :desc ]
   }.freeze
-  IDEA_FILTER_KEYS = %i[sort state topology_id list_id trl_min trl_max score_min score_max created_after created_before has_attachments include_archived search].freeze
+  IDEA_FILTER_KEYS = %i[sort state topology_id list_id theme_id group trl_min trl_max score_min score_max created_after created_before has_attachments include_archived search].freeze
 
   def index
     restore_or_save_idea_filters
-    @ideas = @user.ideas.non_draft.primary_or_standalone.includes(:lists, :idea_lists, :topologies, :idea_entries)
+    @ideas = @user.ideas.non_draft.primary_or_standalone.includes(:lists, :idea_lists, :topologies, :idea_entries, :themes)
     @kanban_boards = @user.kanban_boards.ordered.includes(:lists)
     @named_lists = @user.lists.named.ordered
 
     @ideas = apply_filters(@ideas)
     @ideas = apply_sorting(@ideas)
+    @themes = @user.themes.ordered
+    if params[:group] == "theme"
+      # ponytail: grouped view loads every match (no infinite scroll); paginate per group if lists get huge
+      @theme_groups = group_by_theme(@ideas.to_a, @themes)
+      return render :index
+    end
     @ideas = @ideas.page(params[:page]).per(20)
 
     respond_to do |format|
@@ -51,7 +57,7 @@ class IdeasController < ApplicationController
   def create
     @idea = @user.ideas.build(idea_params)
 
-    if @idea.save
+    if save_with_extras
       @idea.create_version("Initial version")
       @idea.enqueue_attachment_ocr!
 
@@ -71,7 +77,7 @@ class IdeasController < ApplicationController
     attrs = idea_params
     attrs[:draft] = false if was_draft  # Submitting promotes draft → real idea
     respond_to do |format|
-      if @idea.update(attrs)
+      if update_with_extras(attrs)
         if !request.xhr? && !was_draft && kanban_assignment_requested? && selected_kanban_list_requested? && !@idea.kanban_eligible?
           @idea.errors.add(:base, @idea.kanban_ineligibility_message)
           load_form_options
@@ -115,6 +121,12 @@ class IdeasController < ApplicationController
         }
       end
     end
+  end
+
+  # Quick theme assignment from the idea page (theme_ids + new_theme_names, same params as the form).
+  def set_themes
+    apply_form_extras!(@idea)
+    redirect_to idea_path(@idea), notice: "Themes updated."
   end
 
   def send_email
@@ -364,6 +376,7 @@ class IdeasController < ApplicationController
     @lists = @user.lists.kanban.includes(:kanban_board).order(:kanban_board_id, :position)
     @named_lists = @user.lists.named.ordered
     @topologies = @user.topologies.ordered
+    @themes = @user.themes.ordered
     @templates = @user.templates.order(:name)
   end
 
@@ -518,6 +531,42 @@ class IdeasController < ApplicationController
     permitted
   end
 
+  # Themes (ids scoped to the user + create-on-the-fly names) and KB link picks from the idea form.
+  # Runs inside the save transaction so a bad pick leaves no half-created idea.
+  def apply_form_extras!(idea)
+    if params[:idea]&.key?(:theme_ids) || params[:idea]&.key?(:new_theme_names)
+      themes = @user.themes.where(id: Array(params.dig(:idea, :theme_ids)).reject(&:blank?)).to_a
+      Array(params.dig(:idea, :new_theme_names)).each do |name|
+        theme = Theme.for_name(@user, name)
+        themes << theme if theme&.persisted?
+      end
+      idea.themes = themes.uniq
+    end
+    IdeaKbLink.link_picks!(idea, @user, params[:kb_picks]) if params[:kb_picks].present?
+  end
+
+  def save_with_extras
+    Idea.transaction { @idea.save && (apply_form_extras!(@idea) || true) }
+  rescue ActiveRecord::RecordInvalid
+    @idea.errors.add(:base, "A selected KB link is no longer available.")
+    false
+  end
+
+  def update_with_extras(attrs)
+    Idea.transaction { @idea.update(attrs) && (apply_form_extras!(@idea) || true) }
+  rescue ActiveRecord::RecordInvalid
+    @idea.errors.add(:base, "A selected KB link is no longer available.")
+    false
+  end
+
+  # [[theme_or_nil, ideas]] in theme order; ideas in several themes appear in each; "No theme" (nil) last.
+  def group_by_theme(ideas, themes)
+    groups = themes.map { |t| [ t, ideas.select { |i| i.themes.include?(t) } ] }.reject { |_, list| list.empty? }
+    none = ideas.select { |i| i.themes.empty? }
+    groups << [ nil, none ] if none.any?
+    groups
+  end
+
   def parse_napkin_param(raw)
     return nil if raw.blank?
     JSON.parse(raw)
@@ -560,6 +609,12 @@ class IdeasController < ApplicationController
     # Filter by topology
     if params[:topology_id].present? && params[:topology_id] != "all"
       ideas = ideas.joins(:idea_topologies).where(idea_topologies: { topology_id: params[:topology_id] })
+    end
+
+    # Filter by theme ("none" = ideas without any theme)
+    if params[:theme_id].present? && params[:theme_id] != "all"
+      ids = IdeaTheme.where(theme_id: params[:theme_id]).select(:idea_id)
+      ideas = params[:theme_id] == "none" ? ideas.where.not(id: IdeaTheme.select(:idea_id)) : ideas.where(id: ids)
     end
 
     # Filter by list

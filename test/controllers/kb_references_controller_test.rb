@@ -24,10 +24,25 @@ class KbReferencesControllerTest < ActionDispatch::IntegrationTest
     FileUtils.rm_rf(@kb_dir)
   end
 
-  test "kb page pops the reference picker as a dialog, not a tree row" do
-    get kb_path
+  test "kb page pops the reference picker as a dialog only for the file that is open" do
+    get kb_path(src: 1, file: "people/Albert Einstein.pdf")
     assert_select "#kb-references-prompts dialog.kb-refs-dialog input.kb-refs__check", 2
     assert_select ".kb-refs__plan", text: /Albert Einstein-references\//
+  end
+
+  test "an unrelated kb page load never opens the picker" do
+    File.write(File.join(@kb_dir, "people", "other.md"), "# hi")
+    get kb_path(src: 1, file: "people/other.md")
+    assert_response :success
+    assert_select "dialog.kb-refs-dialog", 0
+    get kb_path
+    assert_select "dialog.kb-refs-dialog", 0
+  end
+
+  test "broadcast offers a non-blocking toast, not the modal" do
+    html = ApplicationController.render(partial: "kb_references/toast", locals: { download: @download })
+    assert_includes html, "Pick references"
+    assert_no_match(/<dialog/, html)
   end
 
   test "create moves the page into its own folder and queues chosen references beneath it" do
@@ -68,5 +83,36 @@ class KbReferencesControllerTest < ActionDispatch::IntegrationTest
     foreign = other.kb_downloads.create!(source_index: 0, url: "https://x.test/", status: "done", format: "auto")
     delete kb_download_references_path(foreign), as: :turbo_stream
     assert_response :not_found
+  end
+
+  test "references can be pulled later after dismissal" do
+    delete kb_download_references_path(@download), as: :turbo_stream
+    assert_equal "dismissed", @download.reload.references_state
+
+    get kb_download_references_path(@download), as: :turbo_stream
+    assert_response :success
+    assert_match(/kb-references-prompts/, response.body)
+    assert_match(/gold\.pdf/, response.body)
+
+    assert_enqueued_jobs 1, only: KbDownloadJob do
+      post kb_download_references_path(@download), params: { urls: [ "https://ras.ac.uk/gold.pdf" ] }, as: :turbo_stream
+    end
+    assert_equal "pulled", @download.reload.references_state
+  end
+
+  test "file view offers References for a saved page, and not for skipped ones" do
+    @download.update!(references_state: "dismissed")
+    get kb_file_path(src: 1, file: "people/Albert Einstein.pdf")
+    assert_select "a[href=?]", kb_download_references_path(@download), text: /References/
+    @download.update!(references_state: "skip")
+    get kb_file_path(src: 1, file: "people/Albert Einstein.pdf")
+    assert_select "a[href=?]", kb_download_references_path(@download), count: 0
+  end
+
+  test "download with no stored references and no way to fetch them says so" do
+    @download.update!(reference_list: [], references_state: "dismissed", url: "http://127.0.0.1:9/none")
+    get kb_download_references_path(@download), as: :turbo_stream
+    assert_response :success
+    assert_no_match(/kb-refs-dialog/, response.body)
   end
 end

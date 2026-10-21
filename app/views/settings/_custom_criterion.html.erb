@@ -1,0 +1,21 @@
+<%# locals: criterion (hash), base (field prefix), cidx (string; "__C__" inside the <template>) %>
+<% cbase = "#{base}[criteria][#{cidx}]" %>
+<div class="custom-criterion" data-scorecard-editor-target="criterion">
+  <%= hidden_field_tag "#{cbase}[key]", criterion['key'] %>
+  <label>Criterion
+    <%= text_field_tag "#{cbase}[label]", criterion['label'], maxlength: 60, placeholder: "e.g. Team capacity" %>
+  </label>
+  <label>Guidance (what low vs high means)
+    <%= text_field_tag "#{cbase}[description]", criterion['description'], maxlength: 200 %>
+  </label>
+  <label>Max
+    <%= number_field_tag "#{cbase}[scale_max]", criterion['scale_max'], min: 2, max: 10, step: 1, placeholder: "sys" %>
+  </label>
+  <label>Weight
+    <%= number_field_tag "#{cbase}[weight]", criterion['weight'] || 1, min: 0.1, max: 10, step: 0.1 %>
+  </label>
+  <label>Direction
+    <%= select_tag "#{cbase}[direction]", options_for_select([["Higher is better", "higher_better"], ["Lower is better", "lower_better"]], criterion['direction'] || 'higher_better') %>
+  </label>
+  <button type="button" class="btn btn-sm" aria-label="Remove criterion" data-action="scorecard-editor#removeCriterion">&times;</button>
+</div>

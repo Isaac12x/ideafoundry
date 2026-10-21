@@ -1,0 +1,30 @@
+<%# locals: system (hash), idx (string; "__S__" inside the <template>) %>
+<% base = "custom_scoring_systems[#{idx}]" %>
+<fieldset class="custom-scorecard" data-scorecard-editor-target="system">
+  <%= hidden_field_tag "#{base}[id]", system['id'] %>
+  <div class="custom-scorecard__head">
+    <label>Name
+      <%= text_field_tag "#{base}[name]", system['name'], maxlength: 60, placeholder: "e.g. Launch readiness" %>
+    </label>
+    <label>Max score
+      <%= number_field_tag "#{base}[scale_max]", system['scale_max'] || 5, min: 2, max: 10, step: 1 %>
+    </label>
+    <label>Work threshold
+      <%= number_field_tag "#{base}[work_threshold_total]", system['work_threshold_total'] || 0, min: 0, step: 0.5 %>
+    </label>
+    <button type="button" class="btn btn-sm btn-danger" data-action="scorecard-editor#removeSystem">Delete</button>
+  </div>
+  <label class="form-check">
+    <%= hidden_field_tag "#{base}[blocks_work]", "0" %>
+    <%= check_box_tag "#{base}[blocks_work]", "1", system['blocks_work'] == true %>
+    Ideas below the threshold cannot move into active work
+  </label>
+  <div data-scorecard-editor-target="criteria">
+    <% (system['criteria'] || []).each_with_index do |criterion, i| %>
+      <%= render 'settings/custom_criterion', criterion: criterion, base: base, cidx: i.to_s %>
+    <% end %>
+  </div>
+  <div class="custom-scorecard__actions">
+    <button type="button" class="btn btn-sm" data-action="scorecard-editor#addCriterion">Add criterion</button>
+  </div>
+</fieldset>

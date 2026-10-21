@@ -1,0 +1,20 @@
+<div class="kbp kbp--locked">
+  <header class="kbp-head">
+    <div class="kbp-eyebrow"><span>Locked project</span></div>
+    <h1 class="kbp-title">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg>
+      <%= @project.name %>
+    </h1>
+    <p class="kbp-lock-note">Contents are encrypted on disk (AES-256, names included). Enter the password to extract and edit them. Lock again when done.</p>
+    <% if flash[:alert].present? %><p class="kbp-lock-banner" role="alert"><%= flash[:alert] %></p><% end %>
+    <%= form_with url: kb_project_unlock_path, method: :post, class: "kbp-lockpanel", data: { turbo_frame: "kb-content" } do %>
+      <%= hidden_field_tag :src, @src, id: nil %>
+      <%= hidden_field_tag :path, @project.rel, id: nil %>
+      <div class="kbp-lock-fields">
+        <label class="kbp-lock-label" for="kbp-unlock-pw">Password</label>
+        <input type="password" id="kbp-unlock-pw" name="password" class="kbp-lock-input" autocomplete="current-password" required autofocus>
+      </div>
+      <button type="submit" class="kbp-btn kbp-btn--primary">Unlock</button>
+    <% end %>
+  </header>
+</div>
