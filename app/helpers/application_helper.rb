@@ -4,13 +4,20 @@ module ApplicationHelper
 
   class << self
     attr_reader :excalidraw_assets
+    attr_accessor :excalidraw_missing_logged # warn once per process
   end
 
   # Entry, stylesheet and critical chunk URLs of the code-split editor build (esbuild.config.mjs writes
   # the manifest next to the hashed files in public/excalidraw-assets/<version>/). Re-read if rebuilt.
   def excalidraw_assets
     file = Dir[Rails.root.join(EXCALIDRAW_MANIFEST_GLOB)].first
-    return { js: "", css: "", preload: [] } unless file
+    unless file
+      unless ApplicationHelper.excalidraw_missing_logged
+        ApplicationHelper.excalidraw_missing_logged = true
+        Rails.logger.warn("Excalidraw build missing (no #{EXCALIDRAW_MANIFEST_GLOB}); run `yarn build`. Drawing editors will show an error.")
+      end
+      return { js: "", css: "", preload: [] }
+    end
 
     cache = ApplicationHelper.excalidraw_assets
     mtime = File.mtime(file)
