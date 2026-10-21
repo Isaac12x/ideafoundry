@@ -7,6 +7,9 @@
 # Ignore precompiled and bundled assets
 /public/assets
 
+# Excalidraw fonts copied from node_modules by esbuild.config.mjs
+/public/excalidraw-assets
+
 # Ignore SQLite databases
 /db/*.sqlite3
 /db/*.sqlite3-*
