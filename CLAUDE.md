@@ -77,3 +77,8 @@ gives you structural context (callers, dependents, test coverage) that file sear
 3. Use `get_affected_flows_tool` to understand impact.
 4. Use `query_graph_tool` pattern="tests_for" to check coverage.
 <!-- /code-review-graph MCP tools -->
+
+## Dev databases
+
+- Agents never run destructive db tasks against the shared checkout's `storage/`; use a worktree. Wrapped tasks: see `lib/tasks/db_guard.rake`.
+- `DATABASE_URL` only overrides primary (queue/cache still hit real files), so the guard hard-aborts in development whenever it is set, even with `ALLOW_DEV_DB_WIPE=1` (that opt-in is for throwaway files without `DATABASE_URL`).

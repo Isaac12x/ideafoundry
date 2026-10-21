@@ -775,10 +775,12 @@ turbo-frame#kb-content {
   font-size: 0.85rem;
 }
 
-.kb-diagram-error p {
+.kb-diagram-error pre {
   margin: 0.25rem 0 0;
+  overflow-x: auto;
   font-family: var(--font-mono);
   font-size: 0.78rem;
+  white-space: pre;
 }
 
 .kb-diagram-unsupported figcaption {

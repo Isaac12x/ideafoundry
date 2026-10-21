@@ -18,4 +18,9 @@ class CatchAllRedirectTest < ActionDispatch::IntegrationTest
       "missing asset should not redirect to /"
     assert_includes [ 404, 200 ], response.status
   end
+
+  test "missing /dev-assets path is not redirected to root" do
+    get "/dev-assets/controllers/does_not_exist-deadbeef.js"
+    assert_response :not_found
+  end
 end
