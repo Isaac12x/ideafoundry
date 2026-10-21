@@ -1,6 +1,7 @@
 import * as esbuild from "esbuild";
 import fs from "node:fs";
 import path from "node:path";
+import zlib from "node:zlib";
 
 const watch = process.argv.includes("--watch");
 const nodeEnv =
@@ -91,7 +92,10 @@ const EXCALIDRAW_PUBLIC_ROOT = "public/excalidraw-assets";
 const EXCALIDRAW_PUBLIC_DIR = `${EXCALIDRAW_PUBLIC_ROOT}/${EXCALIDRAW_VERSION}`;
 const EXCALIDRAW_PUBLIC_URL = `/excalidraw-assets/${EXCALIDRAW_VERSION}`;
 
-function copyExcalidrawFonts() {
+// Everything for the editor is emitted straight into the versioned public dir (code-split, so the
+// entry only pulls the chunks it needs), and wiped per build. Chunk and entry names carry content
+// hashes; manifest.json maps the entry for the Rails helper.
+function prepareExcalidrawPublicDir() {
   fs.rmSync(EXCALIDRAW_PUBLIC_ROOT, { recursive: true, force: true }); // drops older version dirs too
   fs.mkdirSync(EXCALIDRAW_PUBLIC_DIR, { recursive: true });
   fs.cpSync(
@@ -99,10 +103,36 @@ function copyExcalidrawFonts() {
     path.join(EXCALIDRAW_PUBLIC_DIR, "fonts"),
     { recursive: true }
   );
-  // The UI font referenced by index.css is emitted next to the bundle; mirror it.
-  const out = "app/assets/builds/excalidraw_app";
-  for (const f of fs.existsSync(out) ? fs.readdirSync(out) : []) {
-    if (f.endsWith(".woff2")) fs.copyFileSync(path.join(out, f), path.join(EXCALIDRAW_PUBLIC_DIR, f));
+  // The old digested output is no longer used.
+  fs.rmSync("app/assets/builds/excalidraw_app", { recursive: true, force: true });
+}
+
+function writeExcalidrawManifest(metafile) {
+  const outputs = metafile.outputs;
+  const entry = Object.keys(outputs).find((o) => outputs[o].entryPoint?.endsWith("excalidraw_app/index.tsx"));
+  // Entry plus every chunk it imports statically: what a click needs, so what to preload.
+  const preload = [];
+  const walk = (out) => {
+    if (preload.includes(out) || !outputs[out]) return;
+    preload.push(out);
+    for (const imp of outputs[out].imports) if (imp.kind === "import-statement") walk(imp.path);
+  };
+  walk(entry);
+  const base = (o) => path.basename(o);
+  fs.writeFileSync(
+    path.join(EXCALIDRAW_PUBLIC_DIR, "manifest.json"),
+    JSON.stringify({ js: base(entry), css: base(outputs[entry].cssBundle), preload: preload.map(base) }, null, 2)
+  );
+}
+
+// Precompressed siblings: ActionDispatch::Static serves .br/.gz when the client accepts them.
+function precompressExcalidrawAssets() {
+  for (const name of fs.readdirSync(EXCALIDRAW_PUBLIC_DIR)) {
+    if (!/\.(js|css)$/.test(name)) continue;
+    const file = path.join(EXCALIDRAW_PUBLIC_DIR, name);
+    const data = fs.readFileSync(file);
+    fs.writeFileSync(`${file}.br`, zlib.brotliCompressSync(data, { params: { [zlib.constants.BROTLI_PARAM_QUALITY]: 9, [zlib.constants.BROTLI_PARAM_SIZE_HINT]: data.length } }));
+    fs.writeFileSync(`${file}.gz`, zlib.gzipSync(data, { level: 9 }));
   }
 }
 
@@ -118,7 +148,11 @@ function excalidrawLocalOnlyPlugin() {
         if (!source.includes("https://esm.sh/")) return undefined;
         return { contents: source.replaceAll("https://esm.sh/", "${window.location.origin}" + `${EXCALIDRAW_PUBLIC_URL}/-/`), loader: "js" };
       });
-      build.onEnd(copyExcalidrawFonts);
+      build.onEnd((result) => {
+        if (!result.metafile) return;
+        writeExcalidrawManifest(result.metafile);
+        if (!watch) precompressExcalidrawAssets();
+      });
 
       build.onResolve({ filter: /^(?:\.{1,2}\/)+chunk-.*\.js$/ }, (args) => {
         if (
@@ -148,14 +182,18 @@ const builds = [
   {
     ...common,
     entryPoints: ["app/javascript/excalidraw_app/index.tsx"],
-    outdir: "app/assets/builds/excalidraw_app",
+    outdir: EXCALIDRAW_PUBLIC_DIR,
+    entryNames: "index-[hash]",
+    chunkNames: "chunk-[hash]",
     publicPath: EXCALIDRAW_PUBLIC_URL,
-    // publicPath would also rewrite the sourceMappingURL to a path that 404s, and the map is 23MB:
-    // no map in builds, inline while watching.
+    metafile: true,
+    // Split: mermaid, locales and other lazy imports become chunks fetched only when used. Served from
+    // public/ (no digest rewriting), so relative chunk imports resolve.
+    splitting: true,
+    // No map: it is huge and publicPath would point its URL at a 404.
     sourcemap: watch ? "inline" : false,
     define: { ...common.define, __EXCALIDRAW_ASSET_PATH__: JSON.stringify(`${EXCALIDRAW_PUBLIC_URL}/`) },
     minify: !watch,
-    splitting: false,
     plugins: [excalidrawLocalOnlyPlugin()],
   },
   {
@@ -193,8 +231,7 @@ fs.copyFileSync(
   "app/assets/builds/kb_viewers/occt-import-js.wasm"
 );
 
-// Stale maps from earlier builds would be served for no reason.
-for (const f of ["index.js.map", "index.css.map"]) fs.rmSync(`app/assets/builds/excalidraw_app/${f}`, { force: true });
+prepareExcalidrawPublicDir();
 
 if (watch) {
   for (const cfg of builds) {
