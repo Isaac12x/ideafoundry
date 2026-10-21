@@ -15,7 +15,7 @@ class ImageEditorLayoutTest < ApplicationSystemTestCase
   test "image editor is centered in the viewport with visible actions" do
     visit edit_idea_path(@idea)
 
-    attach_file("idea_hero_image", Rails.root.join("public/icon.png"), make_visible: true)
+    attach_file("idea_hero_images", Rails.root.join("public/icon.png"), make_visible: true)
     assert_selector ".image-editor", visible: true
 
     geometry = page.evaluate_script(<<~JS)

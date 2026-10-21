@@ -59,15 +59,14 @@ class DrawingTest < ActiveSupport::TestCase
     a = Drawing.create!(idea: @idea, title: "A", content: { "elements" => [] }, role: :attachment)
     assert h.hero?
     assert a.attachment?
-    assert_equal h, @idea.hero_drawing
+    assert_equal [ h ], @idea.drawings.hero.to_a
     assert_includes @idea.attachment_drawings, a
   end
 
-  test "only one hero drawing per idea" do
+  test "an idea can have several hero drawings" do
     Drawing.create!(idea: @idea, title: "H1", content: { "elements" => [] }, role: :hero)
     second = Drawing.new(idea: @idea, title: "H2", content: { "elements" => [] }, role: :hero)
-    assert_not second.valid?
-    assert_includes second.errors[:role].join, "already used"
+    assert second.valid?
   end
 
   test "stores rendered_png when attached" do
