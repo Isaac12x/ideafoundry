@@ -1,4 +1,5 @@
 import { Controller } from "@hotwired/stimulus";
+import { binding, matches } from "lib/shortcut_bindings";
 
 export default class extends Controller {
   static targets = ["lockForm"];
@@ -96,12 +97,7 @@ export default class extends Controller {
   }
 
   isLockShortcut(event) {
-    return !event.defaultPrevented &&
-      !event.repeat &&
-      event.code === "KeyL" &&
-      !event.shiftKey &&
-      !event.altKey &&
-      (event.ctrlKey || event.metaKey);
+    return !event.defaultPrevented && !event.repeat && matches(binding("lock"), event);
   }
 
   manualLock() {

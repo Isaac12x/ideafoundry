@@ -1,4 +1,5 @@
 import { Controller } from "@hotwired/stimulus"
+import { binding, matches } from "lib/shortcut_bindings"
 
 export default class extends Controller {
   static values = { searchUrl: String }
@@ -18,8 +19,7 @@ export default class extends Controller {
   }
 
   _globalKeydown(e) {
-    const key = e.key?.toLowerCase()
-    if ((e.metaKey || e.ctrlKey) && (key === "k" || key === "p")) {
+    if (matches(binding("search"), e)) {
       e.preventDefault()
       this.open()
     }
