@@ -5,6 +5,7 @@ class ClaudeSandboxSettingsTest < ActiveSupport::TestCase
   PROJECT = JSON.parse(File.read(Rails.root.join(".claude/settings.json")))
   MANAGED = JSON.parse(File.read(Rails.root.join("docs/claude-managed-settings.json")))
   MAIN_CHECKOUT = "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app".freeze
+  EXTRA = %w[.claude .claude/settings.json .claude/settings.local.json .git/hooks .git/config].freeze
   GUARDS = %w[config/initializers/db_wipe_guard.rb lib/tasks/db_guard.rake config/database.yml].freeze
 
   test "project settings enable a fail-closed sandbox with no unsandboxed escape hatch" do
@@ -16,7 +17,8 @@ class ClaudeSandboxSettingsTest < ActiveSupport::TestCase
 
   test "project settings deny sandboxed writes to storage and the guards (project-relative ./ paths)" do
     deny = PROJECT.dig("sandbox", "filesystem", "denyWrite")
-    [ "./storage", "./storage/recovery_passphrase.key", "./.claude/hooks", "./.claude/hooks/guard_db.sh", *GUARDS.map { |g| "./#{g}" } ].each do |path|
+    [ "./storage", "./storage/recovery_passphrase.key", "./.claude/hooks", "./.claude/hooks/guard_db.sh", *EXTRA.map { |e| "./#{e}" },
+      *GUARDS.map { |g| "./#{g}" } ].each do |path|
       assert_includes deny, path
     end
   end
@@ -42,7 +44,7 @@ class ClaudeSandboxSettingsTest < ActiveSupport::TestCase
     assert_equal false, sandbox["allowUnsandboxedCommands"]
 
     deny = sandbox.dig("filesystem", "denyWrite")
-    [ "storage", "storage/recovery_passphrase.key", ".claude/hooks", ".claude/hooks/guard_db.sh", *GUARDS ].each do |path|
+    [ "storage", "storage/recovery_passphrase.key", ".claude/hooks", ".claude/hooks/guard_db.sh", *EXTRA, *GUARDS ].each do |path|
       assert_includes deny, "#{MAIN_CHECKOUT}/#{path}"
     end
 

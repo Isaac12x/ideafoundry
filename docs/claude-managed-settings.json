@@ -11,7 +11,12 @@
         "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/.claude/hooks/guard_db.sh",
         "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/config/initializers/db_wipe_guard.rb",
         "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/lib/tasks/db_guard.rake",
-        "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/config/database.yml"
+        "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/config/database.yml",
+        "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/.claude",
+        "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/.claude/settings.json",
+        "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/.claude/settings.local.json",
+        "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/.git/hooks",
+        "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/.git/config"
       ]
     },
     "network": {
