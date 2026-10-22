@@ -219,6 +219,49 @@ class GuardDbHookTest < ActiveSupport::TestCase
     xz storage/production.sqlite3
     bzip2 -f storage/development.sqlite3
     zstd --rm storage/development.sqlite3
+    sqlite3 storage/development.sqlite3 -readonly 'select 1'
+    sqlite3 -readonly -cmd '.shell rm -rf storage' storage/development.sqlite3
+    sqlite3 -cmd .tables storage/development.sqlite3
+    sqlite3 -readonly storage/development.sqlite3 '.open /tmp/x'
+    sqlite3 -readonly storage/development.sqlite3 '.backup /tmp/x'
+    sqlite3 -readonly storage/development.sqlite3 '.save /tmp/x'
+    sqlite3 -readonly storage/development.sqlite3 '.clone /tmp/x'
+    sqlite3 -readonly storage/development.sqlite3 '.read /tmp/x.sql'
+    printf '.tables' | sqlite3 storage/development.sqlite3
+    printf '.shell rm -rf storage' | sqlite3 -readonly storage/development.sqlite3
+    echo '.system touch x' | sqlite3 -readonly storage/development.sqlite3
+    sqlite3 storage/test.sqlite3 storage/development.sqlite3 'delete from t'
+    sqlite3 storage/test.sqlite3 .shell
+    echo x > .claude/hooks/guard_db.sh
+    echo x >.claude/settings.json
+    echo x | tee .claude/settings.local.json
+    sed -i '' s/a/b/ .claude/settings.local.json
+    cp /tmp/x .claude/hooks/guard_db.sh
+    mv .claude/hooks/guard_db.sh /tmp/x
+    ln -sf /tmp/x config/initializers/db_wipe_guard.rb
+    chmod 000 lib/tasks/db_guard.rake
+    rm .claude/settings.json
+    truncate -s 0 lib/tasks/db_guard.rake
+    git checkout -- .claude/hooks/guard_db.sh
+    git restore .claude/settings.json
+    somewrapper rm -rf storage
+    unknown-tool unlink storage/development.sqlite3
+    strace -f rm storage/x
+    echo x >storage/a.bin
+    rm -rf dir=storage
+    git -C . clean -fdx
+    git -c core.x=y clean -fdx
+    git --no-pager clean -fdx
+    git --git-dir=.git clean -fdx
+    git -C /tmp rm storage/x.sqlite3
+    git -C . checkout -- storage
+    find $PWD -delete
+    find "$PWD" -delete
+    find $HOME -delete
+    find ./ -delete
+    find * -delete
+    rm -rf ../../idea-app
+    rm -rf ../../../repos
   CASES
 
   ALLOWED = cases(<<~'CASES')
@@ -301,6 +344,27 @@ class GuardDbHookTest < ActiveSupport::TestCase
     find tmp -exec ls {} \;
     git log --grep='rm -rf storage'
     git commit -m x # just a comment
+    gh pr create --title "x" --body "$(cat <<'EOF'\n## Summary\nrm -rf storage and db:reset\nEOF\n)"
+    git commit -m "t" -m "$(cat <<'EOF'\nrm -rf storage and db:reset\nEOF\n)"
+    sqlite3 -readonly storage/development.sqlite3 .tables
+    sqlite3 -readonly storage/development.sqlite3 .schema
+    sqlite3 -readonly storage/development.sqlite3 '.mode csv'
+    sqlite3 -readonly -header storage/development.sqlite3 '.indexes'
+    sqlite3 -readonly storage/development.sqlite3 '.databases'
+    printf '.tables' | sqlite3 -readonly storage/development.sqlite3
+    cat .claude/hooks/guard_db.sh
+    cp .claude/hooks/guard_db.sh /tmp/backup.sh
+    git add .claude/hooks/guard_db.sh
+    git diff .claude/settings.json
+    ls .claude/hooks
+    git -C . status
+    git --no-pager log
+    git -c color.ui=never diff
+    git -C . clean -fd
+    find app -delete -name x
+    find ./tmp -name '*.log'
+    rm -rf ../tmp-copy/x
+    strace -f ls storage
   CASES
 
   BLOCKED.each_with_index do |cmd, i|
@@ -336,7 +400,7 @@ class GuardDbHookTest < ActiveSupport::TestCase
     [ "/r/storage/development.sqlite3", "/r/x/production.sqlite3-wal", "/r/x/x.sqlite3-shm", "/r/x/dev.sqlite3-journal",
       "storage/x.txt", "#{root}/storage/notes.txt", "/Users/someone/other-checkout/storage/x.txt", "/r/lib/storage/helper.rb",
       "tmp/../storage/x.txt", "/r/app/../storage/x.txt", "./storage/x.txt", "/r/config/recovery_passphrase.key",
-      "storage/recovery_passphrase.key", "/r/x/../x/../storage" ].each do |p|
+      "storage/recovery_passphrase.key", "/r/x/../x/../storage", "STORAGE/x.txt", "/r/Storage/y.txt" ].each do |p|
       assert_equal 2, file_status(p, root), p
     end
   end
@@ -345,7 +409,9 @@ class GuardDbHookTest < ActiveSupport::TestCase
     root = Rails.root.to_s
     [ ".claude/hooks/guard_db.sh", "#{root}/.claude/hooks/guard_db.sh", ".claude/settings.json", "#{root}/.claude/settings.json",
       "config/initializers/db_wipe_guard.rb", "#{root}/lib/tasks/db_guard.rake", "lib/tasks/db_guard.rake",
-      ".claude/hooks/../settings.json", "app/../config/initializers/db_wipe_guard.rb" ].each do |p|
+      ".claude/hooks/../settings.json", "app/../config/initializers/db_wipe_guard.rb",
+      ".claude/settings.local.json", ".claude/launch.json", ".claude/hooks/other.sh", ".claude/hooks/new_hook.sh",
+      ".CLAUDE/Hooks/guard_db.sh", "/r/.Claude/Settings.JSON", "/R/Config/Initializers/DB_Wipe_Guard.rb", "LIB/Tasks/DB_GUARD.RAKE" ].each do |p|
       stdout, stderr, st = Open3.capture3(*FILE_HOOK, stdin_data: %({"tool_input":{"file_path":"#{p}"}}))
       assert_equal 2, st.exitstatus, p
       assert_match(/owner-edited only/, stderr, p)
@@ -355,7 +421,7 @@ class GuardDbHookTest < ActiveSupport::TestCase
   test "file-edit mode allows config/storage.yml and similar" do
     root = Rails.root.to_s
     %w[/r/config/storage.yml /r/app/models/storage_item.rb config/storage.yml /r/app/models/idea.rb
-       app/../config/storage.yml /r/lib/tasks/other.rake .claude/hooks/other.sh .claude/settings.local.json].each do |p|
+       app/../config/storage.yml /r/lib/tasks/other.rake .claude/skills/x/SKILL.md .claude/agents/a.md].each do |p|
       assert_equal 0, file_status(p, root), p
     end
   end
