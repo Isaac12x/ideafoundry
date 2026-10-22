@@ -271,3 +271,8 @@ Solid Queue handles background processing. Recurring jobs are defined in `config
 | Queue cleanup | Hourly |
 
 In development, Solid Queue runs in-process. In production, start it separately with `bin/jobs`.
+
+### Claude Code sandbox (one time, owner)
+Agents run in an OS sandbox (`.claude/settings.json`); this machine-wide policy also protects the main checkout's `storage/` from every worktree. Install it with:
+`sudo mkdir -p "/Library/Application Support/ClaudeCode" && sudo cp docs/claude-managed-settings.json "/Library/Application Support/ClaudeCode/managed-settings.json"`
+Then run `/status` in Claude Code and check that the managed settings are listed as a setting source.

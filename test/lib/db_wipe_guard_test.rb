@@ -42,18 +42,32 @@ class DbWipeGuardTest < ActiveSupport::TestCase
   end
 
   test "test-named files are exempt" do
-    %w[storage/test.sqlite3 storage/test.sqlite3-3 storage/queue_test.sqlite3_2 storage/test_cache.sqlite3].each do |db|
+    %w[tmp/test.sqlite3 tmp/test.sqlite3-3 tmp/queue_test.sqlite3_2 tmp/test_cache.sqlite3].each do |db|
       assert DbWipeGuard.test_db?(config("test", db)), db
     end
   end
 
   test "token match: latest.sqlite3 and contest.sqlite3 are not test files" do
-    %w[storage/latest.sqlite3 storage/contest.sqlite3 storage/attest.sqlite3].each do |db|
+    %w[tmp/latest.sqlite3 tmp/contest.sqlite3 tmp/attest.sqlite3].each do |db|
       assert_not DbWipeGuard.test_db?(config("test", db)), db
     end
   end
 
-  test "test file outside storage/tmp is refused" do
+  test "test-named files under storage/ are refused: test databases live in tmp/" do
+    %w[storage/test.sqlite3 storage/queue_test.sqlite3 storage/test_cache.sqlite3 storage/test.sqlite3_3].each do |db|
+      assert_not DbWipeGuard.test_db?(config("test", db)), db
+      assert_raises(DbWipeGuard::Refused) { Tasks.drop(config("test", db)) }
+    end
+  end
+
+  test "the configured test databases all live under tmp/" do
+    ActiveRecord::Base.configurations.configs_for(env_name: "test").each do |c|
+      assert DbWipeGuard.test_db?(c), c.database
+      assert_match(%r{\Atmp/}, c.database)
+    end
+  end
+
+  test "test file outside tmp is refused" do
     assert_not DbWipeGuard.test_db?(config("test", "/var/data/test.sqlite3"))
     assert_not DbWipeGuard.test_db?(config("test", "../test.sqlite3"))
   end
@@ -80,13 +94,13 @@ class DbWipeGuardTest < ActiveSupport::TestCase
 
   test "DATABASE_URL set refuses even a test config" do
     ENV["DATABASE_URL"] = "sqlite3:storage/development.sqlite3"
-    assert_raises(DbWipeGuard::Refused) { Tasks.drop(config("test", "storage/test.sqlite3")) }
+    assert_raises(DbWipeGuard::Refused) { Tasks.drop(config("test", "tmp/test.sqlite3")) }
   ensure
     ENV.delete("DATABASE_URL")
   end
 
   test "test configs are exempt" do
-    assert DbWipeGuard.deny!(:drop, config("test", "storage/test.sqlite3"))
+    assert DbWipeGuard.deny!(:drop, config("test", "tmp/test.sqlite3"))
     assert DbWipeGuard.deny!(:truncate_all, "test")
   end
 end

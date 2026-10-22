@@ -81,5 +81,5 @@ gives you structural context (callers, dependents, test coverage) that file sear
 ## Databases (never wipe)
 
 - Never delete, drop, reset, truncate, overwrite or `schema:load` any database, in any env, no opt-in. Agents never run destructive db tasks (even `RAILS_ENV=test`); never `rm`/`mv`/redirect over `storage/`.
-- Guards: `lib/tasks/db_guard.rake`, `config/initializers/db_wipe_guard.rb`, `.claude/hooks/guard_db.sh` (Bash + file-edit hooks; best effort, the rake/initializer guards are the hard stop). Code and `test/lib/` are the inventory.
+- Guards: `lib/tasks/db_guard.rake`, `config/initializers/db_wipe_guard.rb`, `.claude/hooks/guard_db.sh` (Bash + file-edit hooks; best effort), the OS sandbox in `.claude/settings.json` + `docs/claude-managed-settings.json` (storage/ and guard files are not writable), and the rake/initializer guards (the hard stop). Test DBs live in `tmp/`. Code and `test/lib/` are the inventory.
 - Instead: tests reset themselves (`bin/rails test`, `db:test:prepare`); forward `db:migrate`/`db:prepare` are fine; scratch work in a separate worktree.
