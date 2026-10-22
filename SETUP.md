@@ -206,12 +206,11 @@ launchctl load ~/Library/LaunchAgents/com.iamin.idea-app.plist
 
 ## Database
 
-SQLite3 with four database files in `storage/`:
+SQLite3 with three database files in `storage/` (test databases live in `tmp/`, never in `storage/`):
 
 | File | Purpose |
 |------|---------|
 | `development.sqlite3` | Main dev database |
-| `test.sqlite3` | Test database |
 | `production.sqlite3` | Production database |
 | `queue.sqlite3` | Solid Queue job store |
 
@@ -273,6 +272,6 @@ Solid Queue handles background processing. Recurring jobs are defined in `config
 In development, Solid Queue runs in-process. In production, start it separately with `bin/jobs`.
 
 ### Claude Code sandbox (one time, owner)
-Agents run in an OS sandbox (`.claude/settings.json`); this machine-wide policy also protects the main checkout's `storage/` from every worktree. Install it with:
-`sudo mkdir -p "/Library/Application Support/ClaudeCode" && sudo cp docs/claude-managed-settings.json "/Library/Application Support/ClaudeCode/managed-settings.json"`
-Then run `/status` in Claude Code and check that the managed settings are listed as a setting source.
+`docs/claude-managed-settings.json` applies machine-wide (all projects) and makes the sandbox admin-required. Install: `sudo mkdir -p "/Library/Application Support/ClaudeCode" && sudo cp docs/claude-managed-settings.json "/Library/Application Support/ClaudeCode/managed-settings.json"`, then `/status` to verify.
+Agents can `git push` only over HTTPS (`gh auth setup-git`, then `git remote set-url origin https://github.com/<owner>/<repo>.git`); SSH fails inside the macOS sandbox, so otherwise push from your own terminal.
+`gh` may fail TLS inside Seatbelt; if so, run `gh` from your own terminal.

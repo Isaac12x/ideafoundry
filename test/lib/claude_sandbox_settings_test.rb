@@ -32,7 +32,7 @@ class ClaudeSandboxSettingsTest < ActiveSupport::TestCase
     assert commands.any? { |c| c.include?("guard_db.sh --file") }
     domains = PROJECT.dig("sandbox", "network", "allowedDomains")
     %w[github.com api.github.com rubygems.org registry.npmjs.org registry.yarnpkg.com].each { |host| assert_includes domains, host }
-    assert_includes PROJECT.dig("sandbox", "excludedCommands"), "git push *"
+    assert_not PROJECT.fetch("sandbox").key?("excludedCommands"), "no command may run outside the sandbox"
   end
 
   test "managed template uses absolute paths for the main checkout and does not lock out the owner's own rules" do
@@ -49,6 +49,9 @@ class ClaudeSandboxSettingsTest < ActiveSupport::TestCase
     rules = MANAGED.dig("permissions", "deny")
     [ "storage/**", ".claude/hooks/**", *GUARDS ].each { |path| assert_includes rules, "Edit(/#{MAIN_CHECKOUT}/#{path})" }
 
+    assert_equal PROJECT.dig("sandbox", "network", "allowedDomains"), sandbox.dig("network", "allowedDomains"),
+                 "managed settings replace the project's list once installed, so it must carry the same hosts"
+    assert_not sandbox.key?("excludedCommands")
     assert_not MANAGED.key?("allowManagedPermissionRulesOnly")
     assert_not MANAGED.key?("allowManagedHooksOnly")
     assert_not MANAGED.dig("permissions")&.key?("allowManagedPermissionRulesOnly")
