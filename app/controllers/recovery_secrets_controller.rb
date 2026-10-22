@@ -32,6 +32,7 @@ class RecoverySecretsController < ApplicationController
 
   def destroy
     session.delete(RECOVERY_SECRET_SESSION_KEY)
+    RecoverySecret.clear_key_cache! # locking: derived keys must not outlive the passphrase
     reset_recovery_secret_database_connections!
     redirect_to recovery_secret_path, notice: "Recovery passphrase cleared."
   end
