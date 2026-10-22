@@ -38,12 +38,21 @@ class RecoverySecretsController < ApplicationController
 
   private
 
-  # The rekey replaces the database files, so it refuses while another process (bin/jobs) has them open.
-  # The unlock still succeeds; the rekey is retried on a later unlock, or offline.
+  # The rekey replaces the database files, so no pool may hold a connection to the old inode: disconnect all
+  # before and after. It refuses while another process (bin/jobs) has them open; the unlock still succeeds and
+  # the user is told the rekey was deferred (it is retried on a later unlock).
   def rekey_if_needed!(passphrase)
-    RecoverySecret.rekey!(passphrase, env: Rails.env) if RecoverySecret.rekey_needed?
-  rescue SqlcipherDatabaseMigrator::Error => e
-    Rails.logger.warn "Database rekey deferred: #{e.message}"
+    return unless RecoverySecret.rekey_needed?
+
+    begin
+      reset_recovery_secret_database_connections!
+      RecoverySecret.rekey!(passphrase, env: Rails.env)
+    rescue SqlcipherDatabaseMigrator::Error, SQLite3::Exception => e
+      Rails.logger.warn "Database rekey deferred: #{e.class}: #{e.message}"
+      flash[:alert] = "Unlocked, but upgrading the database key was deferred: #{e.message}"
+    ensure
+      reset_recovery_secret_database_connections!
+    end
   end
 
   def verify_recovery_secret!

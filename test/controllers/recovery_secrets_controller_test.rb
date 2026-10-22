@@ -1,6 +1,21 @@
 require "test_helper"
 
 class RecoverySecretsControllerTest < ActionDispatch::IntegrationTest
+  # Records connection resets when a test sets events.
+  module ResetEvents
+    private
+
+    def reset_recovery_secret_database_connections!
+      RecoverySecretsControllerTest.events&.push(:disconnect)
+      super
+    end
+  end
+  RecoverySecretsController.prepend(ResetEvents)
+
+  class << self
+    attr_accessor :events
+  end
+
   setup do
     @original_recovery_passphrase_file = ENV[RecoverySecret::PASSPHRASE_FILE_ENV]
     @original_recovery_passphrase = ENV[RecoverySecret::PASSPHRASE_ENV]
@@ -101,6 +116,38 @@ class RecoverySecretsControllerTest < ActionDispatch::IntegrationTest
     end
   ensure
     FileUtils.rm_rf(root) if root
+  end
+
+  test "an unlock-time rekey disconnects every pool before and after it, and writes still work afterwards" do
+    events = RecoverySecretsControllerTest.events = []
+    RecoverySecret.stub(:rekey_needed?, true) do
+      RecoverySecret.stub(:rekey!, ->(*, **) { events << :rekey }) do
+        post recovery_secret_path, params: { recovery_passphrase: "typed in the UI", return_to: root_path }
+      end
+    end
+
+    assert_redirected_to root_path
+    assert_equal [ :disconnect, :rekey, :disconnect ], events
+    assert_nil flash[:alert]
+    user = User.first
+    user.update!(settings: user.settings.merge("written_after_rekey" => true))
+    assert User.first.settings["written_after_rekey"]
+  ensure
+    RecoverySecretsControllerTest.events = nil
+  end
+
+  test "a deferred rekey does not block the unlock and tells the user" do
+    [ SqlcipherDatabaseMigrator::Error.new("Database is in use by process 42. Stop the app (puma + bin/jobs) first"),
+      SQLite3::BusyException.new("database is locked") ].each do |error|
+      RecoverySecret.stub(:rekey_needed?, true) do
+        RecoverySecret.stub(:rekey!, ->(*, **) { raise error }) do
+          post recovery_secret_path, params: { recovery_passphrase: "typed in the UI", return_to: root_path }
+        end
+      end
+
+      assert_redirected_to root_path
+      assert_match(/Unlocked, but upgrading the database key was deferred/, flash[:alert])
+    end
   end
 
   test "POST recovery secret rejects blank passphrase" do
