@@ -430,7 +430,6 @@ class SettingsControllerTest < ActionDispatch::IntegrationTest
     assert_empty Dir[root.join("**/*.plaintext").to_s], "no plaintext backup may ever be written"
     assert_no_match(/backup/i, flash[:notice])
   ensure
-    SqlcipherDatabaseMigrator.release_retained_locks!
     FileUtils.rm_rf(root) if root&.exist?
   end
 
@@ -443,7 +442,6 @@ class SettingsControllerTest < ActionDispatch::IntegrationTest
     create_plaintext_sqlite_database(done)
     key = RecoverySecret.sqlcipher_key_hex_for("correct horse battery staple", n: RecoverySecret::SCRYPT_N_DEFAULT)
     SqlcipherDatabaseMigrator.new(key_hex: key).migrate!(done) # converted by an earlier, interrupted run
-    SqlcipherDatabaseMigrator.release_retained_locks!
 
     with_recovery_passphrase_file(root.join("recovery_passphrase.key")) do
       # the interrupted run had already stored the credential (it does so before converting anything)
@@ -466,7 +464,6 @@ class SettingsControllerTest < ActionDispatch::IntegrationTest
       db.close
     end
   ensure
-    SqlcipherDatabaseMigrator.release_retained_locks!
     FileUtils.rm_rf(root) if root&.exist?
   end
 

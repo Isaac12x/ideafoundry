@@ -5,9 +5,6 @@ require "sqlite3"
 
 class SqlcipherDatabaseMigrator
   SQLITE_HEADER = "SQLite format 3\0".b.freeze
-  SIDECAR_SUFFIXES = [ "-wal", "-shm" ].freeze
-  LOCK_MUTEX = Mutex.new
-  RETAINED_LOCKS = []
 
   Result = Struct.new(:path, :status, :error, keyword_init: true)
 
@@ -105,28 +102,22 @@ class SqlcipherDatabaseMigrator
   # writing into the unlinked file and those writes would be lost. So:
   #  1. Refuse unless no OTHER process has the database (or its -wal/-shm) open. lsof proves it, and a missing lsof
   #     refuses too. Run it offline: stop puma + bin/jobs, then `bin/rails db:encrypt_sqlite`.
-  #  2. Take the write lock (BEGIN IMMEDIATE, busy timeout) before exporting and hold it through the rename.
-  #  3. Never release it: the lock connection is retained until this process exits, so even a stale handle inside
-  #     this process gets SQLITE_BUSY instead of writing to the old inode.
-  def self.ensure_no_other_openers!(paths)
+  #  2. Take the write lock (BEGIN IMMEDIATE, busy timeout) before exporting and hold it while exporting and verifying.
+  #  3. Close every connection of ours on the old file BEFORE the rename (never keep one open on the old inode: when
+  #     SQLite closes the last connection it deletes "<db>-wal" by PATH, which after the rename is the NEW database's
+  #     WAL), then re-run lsof counting this process too, so a stale in-process handle refuses the swap.
+  def self.ensure_no_other_openers!(paths, include_self: false)
     files = Array(paths).flat_map { |p| [ p.to_s, "#{p}-wal", "#{p}-shm" ] }
     out, _err, status = Open3.capture3("lsof", "-t", "--", *files)
     raise Error, "lsof failed (exit #{status.exitstatus}); cannot prove the database is not in use" if status.exitstatus > 1
 
-    pids = out.split.map(&:to_i).uniq - [ Process.pid ]
+    pids = out.split.map(&:to_i).uniq
+    pids -= [ Process.pid ] unless include_self
     return if pids.empty?
 
     raise Error, "Database is in use by process #{pids.to_sentence}. Stop the app (puma + bin/jobs) first, or run `bin/rails db:encrypt_sqlite` offline."
   rescue Errno::ENOENT
     raise Error, "lsof is required to prove no other process has the database open; install it and retry"
-  end
-
-  def self.retain_lock(connection)
-    LOCK_MUTEX.synchronize { RETAINED_LOCKS << connection }
-  end
-
-  def self.release_retained_locks! # tests only; production holds them until the process exits
-    LOCK_MUTEX.synchronize { RETAINED_LOCKS.shift.close until RETAINED_LOCKS.empty? }
   end
 
   def self.plaintext_sqlite_database?(path)
@@ -222,7 +213,8 @@ class SqlcipherDatabaseMigrator
     paths.each do |p|
       next unless temporary_path(p).exist?
 
-      raise Error, "Stale temporary file #{temporary_path(p)} exists; refusing to continue. Remove it by hand if no migration is running."
+      raise Error, "Stale temporary file #{temporary_path(p)} exists (a previous run was killed?); it is never deleted automatically. " \
+                   "After checking that no migration is running, the owner can remove that file and retry."
     end
     self.class.ensure_no_other_openers!(paths) if paths.any?
   end
@@ -245,8 +237,8 @@ class SqlcipherDatabaseMigrator
 
     checkpoint_wal!(path, from_key_hex)
     locker = open_database(path, from_key_hex)
-    locker.execute("BEGIN IMMEDIATE") # blocks every other writer from here through the rename and beyond
-    # Any frame written between the checkpoint and the lock would be lost with the sidecars if the rename failed.
+    locker.execute("BEGIN IMMEDIATE") # blocks every other writer while we export and verify
+    # A frame written between the checkpoint and the lock means someone is writing: stop, nothing was modified.
     raise Error, "#{path} changed while the migration took its lock; nothing was modified, retry" if File.size?("#{path}-wal")
 
     # Re-check after the lock and right before the rename: narrows the window for a process that opened the file
@@ -255,17 +247,17 @@ class SqlcipherDatabaseMigrator
     export_encrypted_copy!(path, temp_path, from_key_hex, to_key_hex)
     verify_encrypted_database!(temp_path, to_key_hex)
     verify_same_row_counts!(locker, temp_path, to_key_hex)
-    self.class.ensure_no_other_openers!([ path ])
+    locker.close # closing the last connection checkpoints and deletes the OLD wal by path: safe only before the rename
+    locker = nil
+    self.class.ensure_no_other_openers!([ path ], include_self: true)
     replace_database!(path, temp_path)
     created = false
-    self.class.retain_lock(locker)
-    locker = nil
   ensure
     locker&.close # rolls back the (empty) transaction; the original is untouched
     FileUtils.rm_f(temp_path) if created
   end
 
-  # replace_database! drops the old -wal/-shm, so they must hold nothing: flush the WAL into the main file first.
+  # Flush the WAL into the main file first: the old -wal must hold nothing when the file is replaced.
   def checkpoint_wal!(path, key_hex)
     db = open_database(path, key_hex)
     busy, = db.get_first_row("PRAGMA wal_checkpoint(TRUNCATE)")
@@ -277,7 +269,8 @@ class SqlcipherDatabaseMigrator
   def create_temp_exclusively!(temp_path)
     File.open(temp_path, File::WRONLY | File::CREAT | File::EXCL, 0o600) { }
   rescue Errno::EEXIST
-    raise Error, "Stale temporary file #{temp_path} exists; refusing to overwrite it. Remove it by hand if no migration is running."
+    raise Error, "Stale temporary file #{temp_path} exists (a previous run was killed?); it is never deleted automatically. " \
+                 "After checking that no migration is running, the owner can remove that file and retry."
   end
 
   def open_database(path, key_hex = nil)
@@ -350,18 +343,15 @@ class SqlcipherDatabaseMigrator
 
   def replace_database!(path, encrypted_path)
     File.chmod(File.stat(path).mode & 0o7777, encrypted_path)
+    # Never delete -wal/-shm here: they are named by path, so after the rename they would be the NEW database's.
+    # Closing our last connection already removed the old ones; a leftover WAL with frames means someone wrote.
+    raise Error, "#{path}-wal has frames; refusing to replace the database" if File.size?("#{path}-wal")
+
     File.rename(encrypted_path, path)
-    # Only after a successful rename: the old -wal/-shm must not pair with the new file. The WAL is empty
-    # (TRUNCATE checkpoint under our lock), so nothing is lost; the lock connection keeps the old inode.
-    sidecar_paths(path).each { |sidecar| FileUtils.rm_f(sidecar) }
   end
 
   def temporary_path(path)
     path.dirname.join(".#{path.basename}.#{@timestamp}.sqlcipher")
-  end
-
-  def sidecar_paths(path)
-    SIDECAR_SUFFIXES.map { |suffix| Pathname.new("#{path}#{suffix}") }
   end
 
   def sql_string(value)

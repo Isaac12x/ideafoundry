@@ -14,7 +14,6 @@ class SqlcipherDatabaseMigratorTest < ActiveSupport::TestCase
   end
 
   teardown do
-    SqlcipherDatabaseMigrator.release_retained_locks!
     FileUtils.rm_rf(@root) if @root&.exist?
   end
 
@@ -59,7 +58,6 @@ class SqlcipherDatabaseMigratorTest < ActiveSupport::TestCase
   test "a partial migration (one database encrypted, one still plaintext) is detected per database and converges" do
     other = second_plaintext_database
     migrator.migrate!(@database_path) # the first database was converted before the run died
-    SqlcipherDatabaseMigrator.release_retained_locks!
     converted = File.binread(@database_path)
 
     SqlcipherDatabaseMigrator.stub(:configured_database_paths, [ @database_path.to_s, other.to_s ]) do
@@ -91,7 +89,6 @@ class SqlcipherDatabaseMigratorTest < ActiveSupport::TestCase
     other = second_plaintext_database
     migrator.migrate!(@database_path)
     SqlcipherDatabaseMigrator.new(key_hex: "cd" * 32).migrate!(other) # unknown key
-    SqlcipherDatabaseMigrator.release_retained_locks!
     before = File.binread(@database_path)
 
     SqlcipherDatabaseMigrator.stub(:configured_database_paths, [ @database_path.to_s, other.to_s ]) do
@@ -108,9 +105,7 @@ class SqlcipherDatabaseMigratorTest < ActiveSupport::TestCase
     other = second_plaintext_database
     migrator.migrate!(@database_path)
     migrator.migrate!(other)
-    SqlcipherDatabaseMigrator.release_retained_locks!
     migrator.rekey!(@database_path, new_key_hex: new_key_hex) # simulate a run that died after the first database
-    SqlcipherDatabaseMigrator.release_retained_locks!
     converted = File.binread(@database_path)
 
     SqlcipherDatabaseMigrator.stub(:configured_database_paths, [ @database_path.to_s, other.to_s ]) do
@@ -132,8 +127,7 @@ class SqlcipherDatabaseMigratorTest < ActiveSupport::TestCase
     assert_equal 3, calls.size, "once up front, once under the lock, once right before the rename"
   end
 
-  test "the old sidecars are removed only after a successful rename" do
-    FileUtils.touch("#{@database_path}-wal")
+  test "the migrator never deletes -wal/-shm by path (they would be the new database's)" do
     FileUtils.touch("#{@database_path}-shm")
     File.stub(:rename, ->(*) { raise Errno::EACCES }) do
       assert_raises(Errno::EACCES) { migrator.migrate!(@database_path) }
@@ -141,7 +135,7 @@ class SqlcipherDatabaseMigratorTest < ActiveSupport::TestCase
     assert File.exist?("#{@database_path}-shm"), "sidecars stay when the rename fails"
 
     migrator.migrate!(@database_path)
-    assert_not File.exist?("#{@database_path}-shm"), "stale sidecars are removed after the rename"
+    assert File.exist?("#{@database_path}-shm"), "and are not deleted after the rename either"
     assert opens_with?(@database_path, key_hex)
   end
 
@@ -184,11 +178,15 @@ class SqlcipherDatabaseMigratorTest < ActiveSupport::TestCase
 
   test "a row that only lives in the WAL survives" do
     wal_path = @root.join("wal.sqlite3")
-    other = SQLite3::Database.new(wal_path.to_s)
-    other.execute("PRAGMA journal_mode = wal")
-    other.execute("PRAGMA wal_autocheckpoint = 0")
-    other.execute("CREATE TABLE ideas (id integer primary key, title text)")
-    other.execute("INSERT INTO ideas (title) VALUES ('only in the wal')")
+    pid = fork do # a crashed writer: exit! skips the clean close, so its row stays in the WAL
+      db = SQLite3::Database.new(wal_path.to_s)
+      db.execute("PRAGMA journal_mode = wal")
+      db.execute("PRAGMA wal_autocheckpoint = 0")
+      db.execute("CREATE TABLE ideas (id integer primary key, title text)")
+      db.execute("INSERT INTO ideas (title) VALUES ('only in the wal')")
+      exit!(0)
+    end
+    Process.wait(pid)
     assert File.size?("#{wal_path}-wal"), "row must still be in the WAL"
 
     migrator.migrate!(wal_path)
@@ -197,11 +195,10 @@ class SqlcipherDatabaseMigratorTest < ActiveSupport::TestCase
     db.execute(%(PRAGMA key = "x'#{key_hex}'"))
     assert_equal [ [ "only in the wal" ] ], db.execute("SELECT title FROM ideas")
   ensure
-    other&.close
     db&.close
   end
 
-  test "no other connection can write between export and rename, nor after the rename through a stale handle" do
+  test "no other connection can write between export and rename" do
     other = SQLite3::Database.new(@database_path.to_s)
     other.busy_timeout = 0
     blocked = nil
@@ -211,6 +208,7 @@ class SqlcipherDatabaseMigratorTest < ActiveSupport::TestCase
       # the temp copy is verified inside the lock window; the first call (is it plaintext?) happens before it
       if args.first.to_s.end_with?(".sqlcipher")
         blocked = assert_raises(SQLite3::BusyException) { other.execute("INSERT INTO ideas (title) VALUES ('sneaky')") }
+        other.close # a handle of this process still open on the old file would make the swap refuse
       end
       real.call(*args)
     }) do
@@ -218,14 +216,58 @@ class SqlcipherDatabaseMigratorTest < ActiveSupport::TestCase
     end
 
     assert blocked, "a writer must be refused while the export is being verified"
-    assert_raises(SQLite3::BusyException) { other.execute("INSERT INTO ideas (title) VALUES ('stale handle')") }
-
     db = SQLite3::Database.new(@database_path.to_s)
     db.execute(%(PRAGMA key = "x'#{key_hex}'"))
     assert_equal [ [ "Encrypted from app" ] ], db.execute("SELECT title FROM ideas")
   ensure
     other&.close
     db&.close
+  end
+
+  test "a handle of this process still open on the old file refuses the swap" do
+    other = SQLite3::Database.new(@database_path.to_s)
+    other.execute("SELECT count(*) FROM ideas")
+    before = File.binread(@database_path)
+
+    error = assert_raises(SqlcipherDatabaseMigrator::Error) { migrator.migrate!(@database_path) }
+
+    assert_match(/in use by process/, error.message)
+    assert_equal before, File.binread(@database_path)
+    assert_equal [ "production.sqlite3" ], files_under_root
+  ensure
+    other&.close
+  end
+
+  # SQLite deletes "<db>-wal" BY PATH when the last connection to a file closes. A connection left open on the OLD
+  # inode would, on close or GC, delete the NEW database's WAL and lose its uncheckpointed frames.
+  def assert_new_database_wal_survives_migrator_cleanup(path, key)
+    writer = SQLite3::Database.new(path.to_s)
+    writer.execute(%(PRAGMA key = "x'#{key}'"))
+    writer.execute("PRAGMA journal_mode = wal")
+    writer.execute("PRAGMA wal_autocheckpoint = 0")
+    writer.execute("INSERT INTO ideas (title) VALUES ('only in the new wal')")
+    assert File.size?("#{path}-wal"), "the row must be uncheckpointed"
+
+    3.times { GC.start } # everything the migrator created is collected and closed, as at process exit
+
+    assert File.size?("#{path}-wal"), "the new database's WAL must still exist"
+    reader = SQLite3::Database.new(path.to_s)
+    reader.execute(%(PRAGMA key = "x'#{key}'"))
+    assert_includes reader.execute("SELECT title FROM ideas").flatten, "only in the new wal"
+  ensure
+    reader&.close
+    writer&.close
+  end
+
+  test "after migrate, closing everything the migrator created keeps the new database's uncheckpointed WAL data" do
+    migrator.migrate!(@database_path)
+    assert_new_database_wal_survives_migrator_cleanup(@database_path, key_hex)
+  end
+
+  test "after rekey, closing everything the migrator created keeps the new database's uncheckpointed WAL data" do
+    migrator.migrate!(@database_path)
+    migrator.rekey!(@database_path, new_key_hex: new_key_hex)
+    assert_new_database_wal_survives_migrator_cleanup(@database_path, new_key_hex)
   end
 
   test "refuses, touching nothing, while another process has the database open" do
@@ -272,7 +314,6 @@ class SqlcipherDatabaseMigratorTest < ActiveSupport::TestCase
 
   test "rekey! re-encrypts through the same safe path" do
     migrator.migrate!(@database_path)
-    SqlcipherDatabaseMigrator.release_retained_locks!
 
     migrator.rekey!(@database_path, new_key_hex: new_key_hex)
 
@@ -291,7 +332,6 @@ class SqlcipherDatabaseMigratorTest < ActiveSupport::TestCase
 
   test "rekey! refuses while another process has the database open" do
     migrator.migrate!(@database_path)
-    SqlcipherDatabaseMigrator.release_retained_locks!
     before = File.binread(@database_path)
 
     with_other_process_holding(@database_path) do
