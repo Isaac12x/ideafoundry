@@ -22,6 +22,8 @@ STORAGE='(^|[[:space:]>)=])((\./)+|([^[:space:]]*/)?(\.\./)+([^[:space:]]*/)?|(~
 DB="(\\.sqlite3?|${STORAGE}|recovery_passphrase)"
 # the guards themselves: owner-edited only (hook dir, .claude/*.json, initializer, rake task, git hooks/config incl. worktree gitdirs)
 GUARD='(\.claude/(hooks/|[^[:space:]/]*\.json)|config/initializers/db_wipe_guard\.rb|lib/tasks/db_guard\.rake|\.git/(hooks/|config([[:space:]]|$)|worktrees/[^/[:space:]]+/(hooks/|config)))'
+# the directories themselves (rm/mv/ln/git rm/checkout of .claude, .git or .git/hooks)
+DIRGUARD='(^|[[:space:]/])(\.claude|\.git(/hooks)?)(/|[[:space:]]|$)'
 has() { echo "$2" | grep -Eqi -- "$1"; }                 # has REGEX TEXT
 bad() { has "$1" "$2" && deny "$3"; }                    # bad REGEX TEXT MESSAGE
 
@@ -76,6 +78,8 @@ has "\\|[[:space:]]*(sudo[[:space:]]+)?${SH}([[:space:]]|$)" "$cmd" && ! has "\\
 bad "\\|[[:space:]]*(sudo[[:space:]]+)?(ruby|python3?|perl|node)([[:space:]]+-s?)?[[:space:]]*($|[;&|)])" "$cmd" "Piping code into an interpreter."
 # sqlite3 dot-commands can run shells and write files: only read-only ones, anywhere in the command (printf '.x' | sqlite3 ...)
 if has "${W}sqlite3${E}" "$cmd"; then
+  bad "(writefile|readfile|edit\\(|load_extension|vacuum[[:space:]]+into|${W}attach${E})" "$cmd" "sqlite3 function or statement that reads/writes files or loads code."
+  has '\|[[:space:]]*sqlite3' "$cmd" && ! has '(echo|printf)[^|]*\|[[:space:]]*sqlite3' "$cmd" && deny "Only echo/printf may be piped into sqlite3."
   while read -ra toks; do
     for t in "${toks[@]}"; do
       [[ "$t" =~ ^\.[a-z]+$ && ! "$t" =~ ^\.(tables|schema|dump|headers|mode|help|indexes|databases)$ ]] && deny "sqlite3 dot-command $t is not on the read-only allowlist."
@@ -87,7 +91,7 @@ has "(for|while|until)[[:space:]][^;]*${DB}" "$cmd" && has "${W}(rm|mv|shred|unl
 snip=$(echo "$cmd" | tr ';&|' '\n\n\n' | grep -Ev "^[[:space:]]*(sed|perl|awk|gawk)[[:space:]].*(-[a-z]*i([[:space:]]|$)|--in-place|inplace)")
 if has "(runner|console|rails c|ruby|python3?|perl|node|osascript|${W}-e${E})" "$snip"; then
   bad "DatabaseTasks|drop_table|drop_database|delete_all|destroy_all|truncate|\\.purge|${W}execute${E}|exec_[a-z]+|drop[[:space:]]+table|delete[[:space:]]+from" "$snip" "Wiping snippet."
-  has "$DB" "$snip" && bad "File\\.(delete|unlink|rename)|FileUtils|rm_rf|os\\.(remove|unlink|rename|rmdir)|shutil|unlink($|[[:space:]]|\\(|Sync)|rmSync|renameSync|File\\.(write|open|binwrite)|IO\\.(write|binwrite)|open\\([^)]*,[[:space:]]*[wa]b?[[:space:]]*[,)]|subprocess|system[[:space:]]*\\(|popen|spawn|exec[[:space:]]*\\(|do shell script" "$snip" "Deleting/moving files near a database."
+  has "(${DB}|${GUARD})" "$snip" && bad "File\\.(delete|unlink|rename)|FileUtils|rm_rf|os\\.(remove|unlink|rename|rmdir)|shutil|unlink($|[[:space:]]|\\(|Sync)|rmSync|renameSync|File\\.(write|open|binwrite)|IO\\.(write|binwrite)|open\\([^)]*,[[:space:]]*[wa]b?[[:space:]]*[,)]|subprocess|system[[:space:]]*\\(|popen|spawn|exec[[:space:]]*\\(|do shell script" "$snip" "Deleting/moving files near a database."
 fi
 bad 'docker(-compose)?[[:space:]]+(compose[[:space:]]+)?down[^;&|]*[[:space:]](-v|--volumes)' "$cmd" "docker down -v deletes volumes."
 bad 'docker[[:space:]]+volume[[:space:]]+(rm|prune)|docker[[:space:]]+system[[:space:]]+prune[^;&|]*--volumes' "$cmd" "docker volume removal."
@@ -111,14 +115,18 @@ while IFS= read -r seg; do
   c="${w[$i]##*/}"; s="${w[*]:$i}"; last="${w[$((${#w[@]}-1))]}"
   files="${w[*]:$((i+1))}"; for ((j=i+1; j<${#w[@]}; j++)); do [[ "${w[$j]}" == -* ]] || { files="${w[*]:$((j+1))}"; break; }; done   # args after the first non-option (the sed/perl/awk script)
 
+  # GIT_* environment can make git run programs (GIT_SSH_COMMAND, GIT_EXTERNAL_DIFF, ...), also via export/env
+  for t in "${w[@]}"; do
+    [[ "$t" =~ ^GIT_[A-Za-z0-9_]*= && ! "$t" =~ ^GIT_(AUTHOR|COMMITTER)_ && "$t" != GIT_PAGER=cat ]] && deny "GIT_* environment can make git run programs."
+  done
   # redirects, tee, dd of= onto a database, storage/ or a guard file
   bad ">>?[[:space:]]*[^[:space:]]*(${DB}|${GUARD})|tee[^;&|]*(${DB}|${GUARD})|of=[^[:space:]]*(${DB}|${GUARD})" "$s" "Writing to a database file or a guard file."
   # fallback whatever wraps it: a delete-class word plus a database/storage path in one segment
   [[ ! "$c" =~ ^(echo|printf|grep|rg|git|gh|sqlite3)$ ]] && has "${W}(rm|unlink|shred|truncate)${E}" "$s" && has "$DB" "$s" && deny "Delete with a database/storage path."
   # guard files are owner-edited only: no delete, move, chmod, copy-over or in-place edit
   case "$c" in
-    rm|unlink|shred|truncate|rmdir|chmod|chown|chflags|mv|dd|trash) bad "$GUARD" "$s" "guard files are owner-edited only." ;;
-    cp|ln|install|ditto|rsync) has "$GUARD" "$last" && deny "guard files are owner-edited only." ;;
+    rm|unlink|shred|truncate|rmdir|chmod|chown|chflags|mv|dd|trash) bad "(${GUARD}|${DIRGUARD})" "$s" "guard files are owner-edited only." ;;
+    cp|ln|install|ditto|rsync) has "(${GUARD}|${DIRGUARD})" "$last" && deny "guard files are owner-edited only." ;;
     sed|perl|awk|gawk) has "$GUARD" "$files" && has '[[:space:]]-[a-z]*i|--in-place|inplace' "$s" && deny "guard files are owner-edited only." ;;
   esac
 
@@ -130,21 +138,38 @@ while IFS= read -r seg; do
       has 'db:' "$s" && bad 'DATABASE_URL=' "$seg" "DATABASE_URL with a db task." ;;
     setup) bad '--reset' "$s" "bin/setup --reset." ;;
     git)
-      # git can be told to run commands: ssh/hooks/alias config, or --receive-pack/--upload-pack/--exec on remote commands
-      bad 'GIT_(SSH_COMMAND|SSH|PROXY_COMMAND|EXTERNAL_DIFF|CONFIG_COUNT|CONFIG_PARAMETERS|ASKPASS)=' "$seg" "git environment that runs commands."
-      read -ra g <<<"$s"; k=1   # skip global options (-C dir, -c k=v, --git-dir=...) to reach the subcommand
+      # git must not be told to run programs: no -c/--config-env, no config writes, no --exec style options, no ext:: remotes
+      read -ra g <<<"$s"; k=1   # skip global options (-C dir, --git-dir=...) to reach the subcommand
       while [ $k -lt ${#g[@]} ] && [[ "${g[$k]}" == -* ]]; do
-        [[ "${g[$k]}" == -c || "${g[$k]}" == --config-env* ]] && bad '(core\.(sshcommand|hookspath)|alias\.)' "${g[$((k+1))]:-} ${g[$k]}" "git -c config that runs commands."
-        [[ "${g[$k]}" =~ ^-(C|c|-git-dir|-work-tree|-namespace)$ ]] && k=$((k+1)); k=$((k+1))
+        [[ "${g[$k]}" == -c || "${g[$k]}" == --config-env* || "${g[$k]}" == --exec-path* ]] && deny "git -c/--config-env/--exec-path can make git run programs."
+        [[ "${g[$k]}" =~ ^-(C|-git-dir|-work-tree|-namespace)$ ]] && k=$((k+1)); k=$((k+1))
       done
       gs="git ${g[*]:$k}"
-      bad '^git[[:space:]]+(push|fetch|pull|clone|ls-remote)([[:space:]].*)?[[:space:]]--(receive-pack|upload-pack|exec)([[:space:]=]|$)' "$gs" "git remote command that runs a program."
+      bad '^git[[:space:]]+(push|fetch|pull|clone|ls-remote)([[:space:]].*)?[[:space:]]--(rece[a-z-]*|upl[a-z-]*|exe[a-z-]*)([[:space:]=]|$)' "$gs" "git remote command that runs a program."
       bad '^git[[:space:]]+clone([[:space:]].*)?[[:space:]]-u[[:space:]]' "$gs" "git clone -u runs a program (--upload-pack)."
-      has '^git[[:space:]]+config[[:space:]]' "$gs" && ! has '[[:space:]](--get|--get-all|--list|-l)([[:space:]]|$)' "$gs" && bad '(core\.(sshcommand|hookspath)|alias\.)' "$gs" "git config of ssh/hooks/alias runs commands."
+      bad '^git[[:space:]]+rebase([[:space:]].*)?[[:space:]](-x|--ex[a-z-]*)([[:space:]=]|$)' "$gs" "git rebase --exec runs commands."
+      bad '^git[[:space:]]+bisect[[:space:]]+run|^git[[:space:]]+submodule([[:space:]].*)?[[:space:]]foreach|^git[[:space:]]+init([[:space:]].*)?[[:space:]]--te[a-z-]*' "$gs" "git bisect run / submodule foreach / init --template run programs."
+      bad 'ext::' "$gs" "git ext:: remotes run programs."
+      if has '^git[[:space:]]+config([[:space:]]|$)' "$gs"; then   # config is read-only: --get/--list style, or a bare key
+        nonopt=0; readflag=""
+        read -ra gc <<<"${gs#git config}"
+        for t in "${gc[@]}"; do
+          case "$t" in
+            --get|--get-all|--get-regexp|--list|-l|--show-origin|--show-scope|--name-only) readflag=1 ;;
+            -*) ;;
+            *) nonopt=$((nonopt+1)) ;;
+          esac
+        done
+        has '[[:space:]](--add|--unset|--unset-all|--replace-all|--edit|-e|--rename-section|--remove-section)([[:space:]]|$)' "$gs" && deny "git config writes are not allowed."
+        { [ -n "$readflag" ] || [ "$nonopt" -le 1 ]; } || deny "git config writes are not allowed (read with --get/--list)."
+      fi
       bad '^git[[:space:]]+clean[^;&|]*[[:space:]](-[a-z]*[xX][a-z]*|--)' "$gs" "git clean -x/-X deletes ignored database files."
       bad '^git[[:space:]]+worktree[[:space:]]+(remove|prune)' "$gs" "git worktree remove deletes its storage/."
-      has '^git[[:space:]]+(rm|mv|checkout|restore)[[:space:]]' "$gs" && has "(${DB}|${GUARD})" "$gs" && deny "git rm/mv/checkout/restore on a database, storage/ or a guard file."
+      has '^git[[:space:]]+(rm|mv|checkout|restore)[[:space:]]' "$gs" && has "(${DB}|${GUARD}|${DIRGUARD})" "$gs" && deny "git rm/mv/checkout/restore on a database, storage/ or a guard file."
       bad '^git[[:space:]]+stash[^;&|]*([[:space:]]-[a-z]*[aA]|--all|--include-ignored)' "$gs" "git stash --all removes ignored files." ;;
+    gh)
+      bad '^gh[[:space:]]+alias[[:space:]]+(set|import)' "$s" "gh aliases can run shell commands."
+      bad '^gh[[:space:]]+(extension|extensions|ext)[[:space:]]+(install|exec|upgrade)' "$s" "gh extensions run arbitrary code." ;;
     gzip|gunzip|bzip2|bunzip2|xz|unxz|zstd)   # replace the original, unless it is kept (-k/--keep) or streamed (-c/--stdout): a backup
       has '[[:space:]](-[a-z]*[ck][a-z]*|--keep|--stdout)([[:space:]]|$)' "$s" && continue
       bad "$DB" "$s" "Compressing a database file in place." ;;
@@ -165,6 +190,7 @@ while IFS= read -r seg; do
       has '-delete|-exec[[:space:]]+(rm|mv|shred|unlink)' "$s" && { has "$DB" "$s" || has '^find[[:space:]]+(-[A-Za-z]+[[:space:]]+)*(\.|\./|\.\.|~|/|\*|\./\*|\$PWD|\$HOME)([[:space:]]|$)' "$s"; } && deny "find that deletes in storage or a project dir." ;;
     sqlite3)   # on a real database -readonly must come BEFORE the db path; a test db (every .sqlite3 name has the token "test") may be written
       bad '(^|[[:space:]])-(cmd|init)([[:space:]]|$)' "$s" "sqlite3 -cmd/-init can run dot-commands."
+      bad '<' "$s" "sqlite3 stdin redirects can carry dot-commands."
       ro=""; for t in "${w[@]:$((i+1))}"; do [[ "$t" == -* ]] || break; [ "$t" = -readonly ] && ro=1; done
       [ -n "$ro" ] && continue
       has "$DB" "$s" || continue

@@ -66,7 +66,12 @@
         "./.claude/hooks/guard_db.sh",
         "./config/initializers/db_wipe_guard.rb",
         "./lib/tasks/db_guard.rake",
-        "./config/database.yml"
+        "./config/database.yml",
+        "./.claude",
+        "./.claude/settings.json",
+        "./.claude/settings.local.json",
+        "./.git/hooks",
+        "./.git/config"
       ]
     },
     "network": {

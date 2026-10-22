@@ -239,6 +239,57 @@ class GuardDbHookTest < ActiveSupport::TestCase
     xz storage/production.sqlite3
     bzip2 -f storage/development.sqlite3
     zstd --rm storage/development.sqlite3
+    rm -rf .claude
+    rm -rf .claude/
+    rm -r ./.claude
+    mv .git/hooks /tmp/x
+    mv .git /tmp/x
+    rm -rf .git/hooks
+    ln -s /tmp/x .claude
+    git rm -r .claude
+    git checkout -- .claude
+    git restore .git/hooks
+    ruby -e 'File.write(".claude/settings.json", "{}")'
+    python3 -c "open('.git/hooks/pre-commit','w')"
+    sqlite3 -readonly storage/development.sqlite3 "select writefile('/tmp/x', 'y')"
+    sqlite3 -readonly storage/development.sqlite3 "select readfile('/etc/passwd')"
+    sqlite3 -readonly storage/development.sqlite3 "select edit('x')"
+    sqlite3 -readonly storage/development.sqlite3 "select load_extension('/tmp/x.dylib')"
+    sqlite3 -readonly storage/development.sqlite3 "VACUUM INTO '/tmp/x.db'"
+    sqlite3 -readonly storage/development.sqlite3 "ATTACH '/tmp/x.db' AS o"
+    sqlite3 storage/test.sqlite3 "attach '/tmp/x.db' as o"
+    printf "select writefile('/tmp/x','y')" | sqlite3 -readonly storage/development.sqlite3
+    sqlite3 -readonly storage/development.sqlite3 < x.sql
+    sqlite3 storage/test.sqlite3 < x.sql
+    sqlite3 -readonly storage/development.sqlite3 <<< '.tables'
+    cat x.sql | sqlite3 -readonly storage/development.sqlite3
+    git -c color.ui=never status
+    git --config-env=core.sshCommand=VAR fetch
+    git --exec-path=/tmp/x status
+    git config user.name x
+    git config --global user.email x@example.com
+    git config --unset user.name
+    git config --add safe.directory /tmp
+    git config --edit
+    export GIT_SSH_COMMAND=x
+    GIT_DIR=/tmp/x git status
+    GIT_CONFIG_GLOBAL=/tmp/x git status
+    env GIT_EXTERNAL_DIFF=x git diff
+    git rebase --exec 'make' main
+    git rebase -i -x 'make' main
+    git rebase --ex make main
+    git bisect run make
+    git submodule foreach 'make'
+    git init --template=/tmp/t
+    git init --tem /tmp/t
+    git remote add o ext::sh
+    git remote set-url origin ext::sh
+    git clone ext::sh
+    git push --rece=x origin main
+    git fetch --upl x
+    git pull --exe=x
+    gh alias set x 'pr list'
+    gh extension install owner/gh-x
     sqlite3 storage/development.sqlite3 -readonly 'select 1'
     sqlite3 -readonly -cmd '.shell rm -rf storage' storage/development.sqlite3
     sqlite3 -cmd .tables storage/development.sqlite3
@@ -295,9 +346,7 @@ class GuardDbHookTest < ActiveSupport::TestCase
     sqlite3 -readonly storage/development.sqlite3 .dump
     sqlite3 --version
     sqlite3 :memory: 'select 1'
-    sqlite3 -readonly storage/development.sqlite3 < x.sql
     sqlite3 storage/test.sqlite3 'delete from t'
-    sqlite3 storage/test.sqlite3 < x.sql
     bin/backup
     ls storage/
     ls storage
@@ -379,7 +428,6 @@ class GuardDbHookTest < ActiveSupport::TestCase
     ls .claude/hooks
     git -C . status
     git --no-pager log
-    git -c color.ui=never diff
     git -C . clean -fd
     find app -delete -name x
     find ./tmp -name '*.log'
@@ -390,10 +438,41 @@ class GuardDbHookTest < ActiveSupport::TestCase
     git fetch --all
     git pull --rebase
     git clone https://example.com/r.git
-    git config user.name x
     git config --get core.hooksPath
     git config --list
     cat .git/config
+    ls .claude
+    ls .claude/hooks
+    cat .claude/settings.json
+    git checkout -- app/x.rb
+    git checkout main
+    git checkout -b feature/x
+    git restore app/x.rb
+    git rm app/old.rb
+    git mv .gitignore .gitignore.bak
+    git mv .github/old .github/new
+    rm -f tmp/.claude-cache
+    git config --get user.name
+    git config user.name
+    git config --get-all remote.origin.url
+    git config -l
+    git config --show-origin --list
+    git -C . status
+    GIT_AUTHOR_NAME=x GIT_COMMITTER_NAME=y git commit -m x
+    GIT_PAGER=cat git log
+    git rebase main
+    git rebase -i HEAD~3
+    git bisect start
+    git submodule update --init
+    git init
+    git remote -v
+    git remote add upstream https://example.com/r.git
+    git push --recurse-submodules=check origin main
+    gh pr create --title x --body y
+    gh alias list
+    gh extension list
+    printf '.tables' | sqlite3 -readonly storage/development.sqlite3
+    sqlite3 -readonly storage/development.sqlite3 'select * from attachments'
     sqlite3 -readonly storage/development.sqlite3 'select name from t where kind = rm'
   CASES
 
