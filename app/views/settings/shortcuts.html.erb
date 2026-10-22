@@ -1,0 +1,37 @@
+<% typed = params[:keyboard_shortcuts].respond_to?(:key?) ? params[:keyboard_shortcuts] : {} %>
+<%= render 'settings/upgrade_bar' %>
+<div class="settings-container">
+  <div class="page-header">
+    <h2>Keyboard shortcuts</h2>
+    <div class="header-actions">
+      <%= link_to settings_path, class: "btn btn-sm" do %>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        Back to Settings
+      <% end %>
+    </div>
+  </div>
+
+  <%= form_with url: settings_shortcuts_path, method: :patch, local: true, class: "display-settings-form" do %>
+    <div class="display-fields-card">
+      <p class="display-field-hint">Click a field and press the combo (e.g. Ctrl/Cmd+Shift+S), or type a sequence like <code>g x</code>. A custom binding replaces the default; leave blank to keep the default.</p>
+      <% User::DEFAULT_SHORTCUTS.each do |id, shortcut| %>
+        <div class="display-field-row">
+          <label class="display-field-label" for="keyboard_shortcuts_<%= id %>">
+            <%= shortcut["label"] %>
+            <kbd><%= @user.shortcut_binding(id) %></kbd>
+            <% if @user.keyboard_shortcuts[id] %><small>custom (default <kbd><%= shortcut["key"] %></kbd>)</small><% end %>
+          </label>
+          <%= text_field_tag "keyboard_shortcuts[#{id}]", typed[id] || @user.keyboard_shortcuts[id],
+                id: "keyboard_shortcuts_#{id}", class: "form-control", maxlength: 32,
+                placeholder: shortcut["key"], autocomplete: "off",
+                data: { controller: "shortcut-capture", action: "keydown->shortcut-capture#capture" } %>
+        </div>
+      <% end %>
+    </div>
+    <div class="tab-toggle-actions">
+      <%= submit_tag "Save shortcuts", class: "btn btn-primary" %>
+      <%= button_tag "Reset all to defaults", type: "submit", name: "reset_all", value: "1", class: "btn btn-secondary",
+            data: { turbo_confirm: "Reset all keyboard shortcuts to defaults?" } %>
+    </div>
+  <% end %>
+</div>

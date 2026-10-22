@@ -187,6 +187,8 @@ Rails.application.routes.draw do
   patch "settings/features", to: "settings#update_features"
   get "settings/display", to: "settings#display", as: :settings_display
   patch "settings/display", to: "settings#update_display"
+  get "settings/shortcuts", to: "settings#shortcuts", as: :settings_shortcuts
+  patch "settings/shortcuts", to: "settings#update_shortcuts"
   get "settings/scoring", to: "settings#scoring"
   patch "settings/scoring", to: "settings#update_scoring"
   get "settings/scoring/weights", to: "settings#get_scoring_weights"

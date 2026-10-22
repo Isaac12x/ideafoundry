@@ -1,4 +1,5 @@
 import { Controller } from "@hotwired/stimulus"
+import { DEFAULT_BINDINGS, binding, matches, sequenceKeys } from "lib/shortcut_bindings"
 
 const HINT_CHARS = "asdfghjklqwertyuiopzxcvbnm1234567890"
 
@@ -117,89 +118,84 @@ export default class extends Controller {
 
     if (this.handleComboShortcut(event)) return
 
+    this.handleSequence(event)
+  }
+
+  // Every non-sequence action fires on its effective binding (the user's, else the default).
+  // Chord bindings (Ctrl/Cmd/Alt) work while typing; bare keys only outside fields and dialogs.
+  handleComboShortcut(event) {
+    if (event.altKey && /^\d$/.test(event.key.toLowerCase())) {
+      const key = event.key.toLowerCase()
+      event.preventDefault()
+      this.switchTab(key === "0" ? 9 : Number(key) - 1)
+      return true
+    }
+
+    const id = Object.keys(DEFAULT_BINDINGS).find((name) => matches(binding(name), event))
+    const actions = id && this.shortcutActions()
+    if (!actions?.[id]) return false
+
+    const chord = /(Ctrl\/Cmd|Alt)\+/.test(binding(id))
+    if (!chord && (this.constructor.isEditableTarget(event.target) || document.querySelector("dialog[open]"))) return false
+
+    // A handler returning false found nothing to act on, so the key is left to the page.
+    if (actions[id](event) === false) return false
+
+    event.preventDefault()
+    return true
+  }
+
+  shortcutActions() {
+    const go = (url) => () => url && this.visit(url)
+    const urls = this.navigationUrls()
+    const actions = {
+      cheatsheet: () => this.togglePanel(),
+      hints: () => this.openHints(),
+      focus_search: () => this.focusSearch(),
+      save: (event) => this.saveCurrentContext(event.target),
+      submit: (event) => this.submitCurrentContext(event.target),
+      ask_agent: () => this.clickFirst("[data-shortcut-role~='ask-agent'], .ask-agent-launcher"),
+      edit: () => this.clickFirst("[data-shortcut-role~='edit'], a[href$='/edit'], a[href*='/edit?']"),
+      prev_tab: () => this.moveTab(-1),
+      next_tab: () => this.moveTab(1),
+    }
+    Object.entries(urls).forEach(([id, url]) => { actions[id] = go(url) })
+    return actions
+  }
+
+  navigationUrls() {
+    return {
+      go_plan: this.planUrlValue,
+      go_ideas: this.ideasUrlValue,
+      go_licensing: this.licensingUrlValue,
+      go_intake: this.intakeUrlValue,
+      go_topologies: this.topologiesUrlValue,
+      go_kb: this.kbUrlValue,
+      go_backlog: this.backlogUrlValue,
+      go_settings: this.settingsUrlValue,
+      new_idea: this.newIdeaUrlValue,
+      new_list: this.newListUrlValue,
+      new_topology: this.newTopologyUrlValue,
+      new_import: this.importUrlValue,
+    }
+  }
+
+  handleSequence(event) {
     if (this.constructor.isEditableTarget(event.target)) return
     if (document.querySelector("dialog[open]")) return
     if (event.metaKey || event.ctrlKey || event.altKey) return
 
-    if (event.key === "?") {
-      event.preventDefault()
-      this.togglePanel()
-      return
-    }
-
-    if (event.key === "/") {
-      event.preventDefault()
-      this.focusSearch()
-      return
-    }
-
-    if (event.key === "]" || event.key === "[") {
-      event.preventDefault()
-      this.moveTab(event.key === "]" ? 1 : -1)
-      return
-    }
-
-    if (event.key.toLowerCase() === "e") {
-      this.clickFirst("[data-shortcut-role~='edit'], a[href$='/edit'], a[href*='/edit?']")
-      return
-    }
-
-    this.handleSequence(event)
-  }
-
-  handleComboShortcut(event) {
     const key = event.key.toLowerCase()
-    const mod = event.metaKey || event.ctrlKey
+    if (!/^[a-z0-9]$/.test(key)) return
 
-    // Lock (Ctrl/Cmd+L) belongs to typing-activity; don't swallow it here.
-    if (mod && !event.shiftKey && key === "l") return false
+    if (!this.sequence) {
+      if (!Object.keys(DEFAULT_BINDINGS).some((id) => sequenceKeys(binding(id))?.[0] === key)) return
 
-    if (mod && key === ".") {
-      event.preventDefault()
-      this.openHints()
-      return true
-    }
-
-    if (mod && key === "j") {
-      event.preventDefault()
-      this.clickFirst("[data-shortcut-role~='ask-agent'], .ask-agent-launcher")
-      return true
-    }
-
-    if (mod && key === "s") {
-      event.preventDefault()
-      this.saveCurrentContext(event.target)
-      return true
-    }
-
-    if (mod && key === "enter") {
-      event.preventDefault()
-      this.submitCurrentContext(event.target)
-      return true
-    }
-
-    if (event.altKey && /^\d$/.test(key)) {
-      const index = key === "0" ? 9 : Number(key) - 1
-      event.preventDefault()
-      this.switchTab(index)
-      return true
-    }
-
-    return false
-  }
-
-  handleSequence(event) {
-    const key = event.key.toLowerCase()
-    if (!/^[a-z]$/.test(key)) return
-
-    if (!this.sequence && (key === "g" || key === "n")) {
       event.preventDefault()
       this.sequence = key
       this.sequenceTimer = window.setTimeout(() => this.clearSequence(), 1500)
       return
     }
-
-    if (!this.sequence) return
 
     event.preventDefault()
     const sequence = `${this.sequence} ${key}`
@@ -208,23 +204,9 @@ export default class extends Controller {
   }
 
   executeSequence(sequence) {
-    const routes = {
-      "g p": this.planUrlValue,
-      "g i": this.ideasUrlValue,
-      "g l": this.licensingUrlValue,
-      "g n": this.intakeUrlValue,
-      "g t": this.topologiesUrlValue,
-      "g k": this.kbUrlValue,
-      "g b": this.backlogUrlValue,
-      "g s": this.settingsUrlValue,
-      "n i": this.newIdeaUrlValue,
-      "n l": this.newListUrlValue,
-      "n t": this.newTopologyUrlValue,
-      "n s": this.importUrlValue,
-    }
-
-    const url = routes[sequence]
-    if (url) this.visit(url)
+    const actions = this.shortcutActions()
+    const id = Object.keys(actions).find((name) => binding(name)?.toLowerCase() === sequence)
+    if (id) actions[id]({})
   }
 
   clearSequence() {
@@ -321,13 +303,10 @@ export default class extends Controller {
       {
         title: "Global",
         items: [
-          { key: "?", label: "Toggle this cheatsheet" },
-          { key: "Ctrl/Cmd+K", label: "Search ideas" },
-          { key: "Ctrl/Cmd+.", label: `Show action hints for ${this.visibleActions.length} visible controls` },
-          { key: "/", label: "Focus search or filters" },
-          { key: "Ctrl/Cmd+S", label: "Save the current form" },
-          { key: "Ctrl/Cmd+Enter", label: "Submit the current form" },
-          { key: "Ctrl/Cmd+J", label: "Open Ask Agent" },
+          ...["cheatsheet", "search", "hints", "focus_search", "save", "submit", "ask_agent"].map((id) => ({
+            key: binding(id),
+            label: id === "hints" ? `Show action hints for ${this.visibleActions.length} visible controls` : DEFAULT_BINDINGS[id].label,
+          })),
         ],
       },
       {
@@ -345,24 +324,9 @@ export default class extends Controller {
   }
 
   navigationShortcuts() {
-    const shortcuts = [
-      ["g p", "Plan", this.planUrlValue],
-      ["g i", "Ideas", this.ideasUrlValue],
-      ["g l", "Licensing", this.licensingUrlValue],
-      ["g n", "Intake", this.intakeUrlValue],
-      ["g t", "Topologies", this.topologiesUrlValue],
-      ["g k", "Knowledge Base", this.kbUrlValue],
-      ["g b", "Backlog", this.backlogUrlValue],
-      ["g s", "Settings", this.settingsUrlValue],
-      ["n i", "New idea", this.newIdeaUrlValue],
-      ["n l", "New named list", this.newListUrlValue],
-      ["n t", "New topology", this.newTopologyUrlValue],
-      ["n s", "Import submissions", this.importUrlValue],
-    ]
-
-    return shortcuts
-      .filter(([, , url]) => url)
-      .map(([key, label]) => ({ key, label }))
+    return Object.entries(this.navigationUrls())
+      .filter(([, url]) => url)
+      .map(([id]) => ({ key: binding(id), label: DEFAULT_BINDINGS[id].label }))
   }
 
   currentFlowShortcuts() {
@@ -373,8 +337,8 @@ export default class extends Controller {
     })
 
     if (this.visibleTabs().length > 1) {
-      items.push({ key: "[", label: "Previous tab" })
-      items.push({ key: "]", label: "Next tab" })
+      items.push({ key: binding("prev_tab"), label: "Previous tab" })
+      items.push({ key: binding("next_tab"), label: "Next tab" })
     }
 
     const explicit = this.explicitShortcuts()
@@ -542,25 +506,38 @@ export default class extends Controller {
       ".topology-graph-search",
     ].join(","))
 
-    if (search) {
-      search.focus()
-      search.select?.()
-    }
+    if (!search) return false
+
+    search.focus()
+    search.select?.()
+    return true
+  }
+
+  // The focused form, else the first form in <main>. Never a data-shortcut-skip form: lock forms must not be saved or submitted by shortcut.
+  actionForm(target) {
+    const own = target?.closest?.("form")
+    if (own && !own.closest("[data-shortcut-skip]")) return own
+
+    return this.firstVisible("main form:not([data-shortcut-skip])")
   }
 
   saveCurrentContext(target) {
-    const form = target?.closest?.("form") || this.firstVisible("form")
-    const saveControl = form?.querySelector("[data-shortcut-role~='save'], button[type='submit'], input[type='submit']")
+    const form = this.actionForm(target)
+    // Unfocused forms only save via an explicit role or primary button, never an arbitrary submit (Delete).
+    const focused = form && form === target?.closest?.("form")
+    const saveControl = form?.querySelector(focused
+      ? "[data-shortcut-role~='save'], button[type='submit'], input[type='submit']"
+      : "[data-shortcut-role~='save'], button[type='submit'].btn-primary, input[type='submit'].btn-primary")
     if (saveControl) {
       saveControl.click()
       return
     }
 
-    this.clickFirst("[data-shortcut-role~='save'], button[type='submit'].btn-primary, input[type='submit'].btn-primary")
+    this.clickFirst("[data-shortcut-role~='save']:not([data-shortcut-skip] *), main button[type='submit'].btn-primary:not([data-shortcut-skip] *), main input[type='submit'].btn-primary:not([data-shortcut-skip] *)")
   }
 
   submitCurrentContext(target) {
-    const form = target?.closest?.("form") || this.firstVisible("form")
+    const form = this.actionForm(target)
     if (!form) return
 
     if (form.requestSubmit) {
@@ -578,7 +555,7 @@ export default class extends Controller {
 
   moveTab(delta) {
     const tabs = this.visibleTabs()
-    if (tabs.length === 0) return
+    if (tabs.length === 0) return false
 
     const current = tabs.findIndex((tab) => tab.classList.contains("active") || tab.getAttribute("aria-selected") === "true")
     const next = ((current >= 0 ? current : 0) + delta + tabs.length) % tabs.length

@@ -6,6 +6,7 @@ pin "@hotwired/stimulus", to: "stimulus.min.js", preload: true
 pin "@hotwired/stimulus-loading", to: "stimulus-loading.js", preload: true
 pin_all_from "app/javascript/controllers", under: "controllers"
 pin "lib/idea_draft_store", to: "lib/idea_draft_store.mjs"
+pin "lib/shortcut_bindings", to: "lib/shortcut_bindings.mjs"
 pin "lib/kb_anchor", to: "lib/kb_anchor.mjs"
 pin "lib/app_dialog", to: "lib/app_dialog.mjs"
 pin "lib/kb_order", to: "lib/kb_order.mjs"

@@ -1018,6 +1018,38 @@ has_many :media_digests, dependent: :destroy
     int.between?(70, 150) ? int : 100
   end
 
+  # Keyboard shortcuts: the id -> { key, label } defaults live in the JS table (single source).
+  DEFAULT_SHORTCUTS = JSON.parse(
+    File.read(Rails.root.join("app/javascript/lib/shortcut_bindings.mjs"))[/DEFAULT_BINDINGS = (\{.*?^\})/m, 1]
+  ).freeze
+  # Canonical order Ctrl/Cmd, Alt, Shift (the JS capture and matcher agree); or a two-step "g p" sequence.
+  SHORTCUT_BINDING = %r{\A(?:Ctrl/Cmd\+)?(?:Alt\+)?(?:Shift\+)?(?:\S|Enter|Arrow(?:Up|Down|Left|Right)|F(?:[1-9]|1[0-2]))\z|\A[a-z0-9] [a-z0-9]\z}
+  SHORTCUT_CHORD = %r{\A(?:Ctrl/Cmd|Alt)\+}
+  SHORTCUT_ALT_DIGIT = %r{Alt\+(?:Shift\+)?\d\z} # Alt+1..9/0 switch tabs and are not rebindable
+
+  # The user's overrides only ({ id => binding }); anything unset uses the default.
+  def keyboard_shortcuts
+    (settings&.dig("keyboard_shortcuts") || {}).slice(*DEFAULT_SHORTCUTS.keys)
+  end
+
+  def shortcut_binding(id)
+    keyboard_shortcuts[id.to_s].presence || DEFAULT_SHORTCUTS.dig(id.to_s, "key")
+  end
+
+  # Blank = reset to default. Rejects unknown ids, malformed bindings and collisions
+  # (including with defaults such as the Ctrl/Cmd+L lock); adds errors and returns false.
+  def update_keyboard_shortcuts(raw)
+    # A bare capital ("E") is the same key as "e": store it lowercase.
+    custom = raw.to_h.transform_values { |v| v.to_s.strip.sub(/\A[A-Z]\z/, &:downcase) }.reject { |_, v| v.empty? }
+    errors.clear
+    keyboard_shortcut_errors(custom).each { |message| errors.add(:base, message) }
+    return false if errors.any?
+
+    self.settings ||= {}
+    custom.empty? ? settings.delete("keyboard_shortcuts") : settings["keyboard_shortcuts"] = custom
+    save
+  end
+
   def nav_text_hidden?
     settings&.dig("nav_text_hidden") == true
   end
@@ -1047,6 +1079,47 @@ has_many :media_digests, dependent: :destroy
       feature.nil? || feature_enabled?(feature)
     end
   end
+
+  def keyboard_shortcut_errors(custom)
+    problems = (custom.keys - DEFAULT_SHORTCUTS.keys).map { |id| "Unknown shortcut #{id}" }
+    custom.each do |id, bind|
+      next unless DEFAULT_SHORTCUTS.key?(id)
+
+      label = DEFAULT_SHORTCUTS[id]["label"]
+      default = DEFAULT_SHORTCUTS[id]["key"]
+      if !(bind.length <= 32 && bind.match?(SHORTCUT_BINDING))
+        problems << "#{label}: #{bind.inspect} is not a valid binding"
+      elsif bind.match?(SHORTCUT_ALT_DIGIT)
+        problems << "#{label}: Alt+digit is reserved for switching tabs"
+      elsif default.match?(SHORTCUT_CHORD) && !bind.match?(SHORTCUT_CHORD)
+        # These fire while typing, so a bare key or sequence would trigger from text fields.
+        problems << "#{label}: needs Ctrl/Cmd or Alt, e.g. #{default}"
+      elsif bind.match?(/Shift\+[^A-Za-z0-9]\z/)
+        problems << "#{label}: Shift is implied by symbols, use #{bind.sub('Shift+', '').inspect}"
+      elsif bind.match?(/\A(?:Shift\+)?(?:Enter|Arrow|F\d)/)
+        # Bare named keys would steal Enter/arrows/F-keys from focused controls.
+        problems << "#{label}: #{bind.inspect} needs Ctrl/Cmd or Alt"
+      elsif !default.include?(" ") && bind.include?(" ")
+        problems << "#{label}: sequences are only for navigation shortcuts"
+      elsif id == "lock" && %w[ctrl/cmd+s ctrl/cmd+enter].include?(bind.downcase)
+        problems << "#{label}: can't share Save or Submit keys"
+      end
+    end
+    return problems if problems.any?
+
+    effective = DEFAULT_SHORTCUTS.to_h { |id, d| [ id, (custom[id] || d["key"]).downcase ] }
+    effective.group_by { |_, bind| bind }.each_value do |pairs|
+      next if pairs.size < 2
+
+      problems << "#{pairs.map { |id, _| DEFAULT_SHORTCUTS[id]['label'] }.join(' and ')} share #{pairs.first.last.inspect}"
+    end
+    # A bare key can't also start a sequence ("g" vs "g p").
+    effective.values.select { |b| b.include?(" ") }.map { |b| b.split.first }.uniq.each do |first|
+      problems << "#{first.inspect} starts a sequence, so it can't be a single-key shortcut" if effective.value?(first)
+    end
+    problems
+  end
+  private :keyboard_shortcut_errors
 
   def update_display_quote(params)
     h = params.to_h

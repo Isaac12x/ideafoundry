@@ -29,6 +29,14 @@
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
     <% end %>
 
+    <%= link_to settings_shortcuts_path, class: "settings-row" do %>
+      <div class="settings-row-info">
+        <h3>Keyboard shortcuts</h3>
+        <p>Replace the built-in shortcuts with your own</p>
+      </div>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+    <% end %>
+
     <%= link_to settings_topologies_path, class: "settings-row" do %>
       <div class="settings-row-info">
         <h3>Topologies & Graph</h3>

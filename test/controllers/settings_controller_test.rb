@@ -777,6 +777,86 @@ class SettingsControllerTest < ActionDispatch::IntegrationTest
     assert_equal User::DEFAULT_IDEA_TAB_SETTINGS, @user.idea_tab_settings
   end
 
+  test "keyboard shortcuts persist per user and are serialized into the page" do
+    get settings_shortcuts_path
+    assert_response :success
+
+    patch settings_shortcuts_path, params: { keyboard_shortcuts: { save: "Ctrl/Cmd+Y", go_plan: "g x", edit: "" } }
+    assert_redirected_to settings_shortcuts_path
+    assert_equal({ "save" => "Ctrl/Cmd+Y", "go_plan" => "g x" }, @user.reload.keyboard_shortcuts)
+    assert_equal "Ctrl/Cmd+Y", @user.shortcut_binding("save")
+    assert_equal "e", @user.shortcut_binding("edit")
+
+    get settings_path
+    assert_select "body[data-shortcut-overrides*='Ctrl/Cmd+Y']"
+  end
+
+  test "keyboard shortcuts reject collisions, bad bindings and unknown ids" do
+    {
+      { save: "Ctrl/Cmd+L" } => "Save the current form",       # collides with the lock default
+      { save: "Ctrl/Cmd+K" } => "Search ideas",                 # collides with another default
+      { save: "ctrl+s" } => "not a valid binding",
+      { save: "Ctrl/Cmd+#{"x" * 40}" } => "not a valid binding",
+      { edit: "g" } => "starts a sequence",
+      { save: "Ctrl/Cmd+Y", submit: "Ctrl/Cmd+Y" } => "share",
+      { lock: "x" } => "needs Ctrl/Cmd or Alt",
+      { search: "g x" } => "needs Ctrl/Cmd or Alt",
+      { lock: "Ctrl/Cmd+S" } => "share",
+      { lock: "Ctrl/Cmd+Enter" } => "share",
+      { lock: "Shift+Ctrl/Cmd+Y" } => "not a valid binding",   # canonical modifier order only
+      { edit: "Alt+1" } => "reserved",
+      { edit: "x y z" } => "not a valid binding",
+      { edit: "g x" } => "only for navigation",
+      { edit: "Shift+?" } => "Shift is implied",
+      { edit: "Enter" } => "needs Ctrl/Cmd or Alt",
+      { edit: "ArrowDown" } => "needs Ctrl/Cmd or Alt",
+      { edit: "F5" } => "needs Ctrl/Cmd or Alt"
+    }.each do |params, message|
+      patch settings_shortcuts_path, params: { keyboard_shortcuts: params }
+      assert_response :unprocessable_content
+      assert_includes response.body, message
+      assert_empty @user.reload.keyboard_shortcuts
+    end
+
+    assert_not @user.update_keyboard_shortcuts("bogus" => "Ctrl/Cmd+Y")
+
+    @user.update_keyboard_shortcuts("save" => "Ctrl/Cmd+Y")
+    [ { keyboard_shortcuts: "oops" }, {} ].each do |bad| # non-hash or missing: no 500, nothing wiped
+      patch settings_shortcuts_path, params: bad
+      assert_response :unprocessable_content
+      assert_equal({ "save" => "Ctrl/Cmd+Y" }, @user.reload.keyboard_shortcuts)
+    end
+    @user.update_keyboard_shortcuts({})
+
+    assert @user.update_keyboard_shortcuts("edit" => "X")
+    assert_equal "x", @user.keyboard_shortcuts["edit"]
+
+    patch settings_shortcuts_path, params: { keyboard_shortcuts: { save: "Ctrl/Cmd+K" } }
+    assert_select "input[name='keyboard_shortcuts[save]'][value='Ctrl/Cmd+K']" # typed value survives a 422
+  end
+
+  test "reset all clears custom shortcuts" do
+    @user.update_keyboard_shortcuts("save" => "Ctrl/Cmd+Y")
+    get settings_shortcuts_path
+    assert_select "small", text: /custom/
+    patch settings_shortcuts_path, params: { reset_all: "1" }
+    assert_empty @user.reload.keyboard_shortcuts
+  end
+
+  test "lock can never take the Save or Submit keys, even once those are moved" do
+    assert_not @user.update_keyboard_shortcuts("save" => "Ctrl/Cmd+Y", "lock" => "Ctrl/Cmd+S")
+    assert_not @user.update_keyboard_shortcuts("submit" => "Ctrl/Cmd+Y", "lock" => "Ctrl/Cmd+Enter")
+  end
+
+  test "user can rebind lock and then reuse its default" do
+    assert @user.update_keyboard_shortcuts("lock" => "Ctrl/Cmd+Shift+L", "save" => "Ctrl/Cmd+L")
+    assert_equal "Ctrl/Cmd+Shift+L", @user.shortcut_binding("lock")
+  end
+
+  test "JS default shortcut table is readable by the server" do
+    assert_equal "Ctrl/Cmd+L", User::DEFAULT_SHORTCUTS.dig("lock", "key")
+  end
+
   test "GET settings/display renders display page" do
     get settings_display_path
     assert_response :success

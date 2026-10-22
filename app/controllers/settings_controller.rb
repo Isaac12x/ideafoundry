@@ -46,6 +46,23 @@ class SettingsController < ApplicationController
     end
   end
 
+  def shortcuts
+  end
+
+  def update_shortcuts
+    overrides = params[:reset_all] ? {} : params.permit(keyboard_shortcuts: User::DEFAULT_SHORTCUTS.keys)[:keyboard_shortcuts]
+    # Only reset_all clears; a missing or non-hash param is rejected and leaves saved overrides alone.
+    if overrides.nil?
+      flash.now[:alert] = "No shortcuts submitted."
+      render :shortcuts, status: :unprocessable_content
+    elsif @user.update_keyboard_shortcuts(overrides)
+      redirect_to settings_shortcuts_path, notice: "Keyboard shortcuts updated."
+    else
+      flash.now[:alert] = @user.errors.full_messages.to_sentence
+      render :shortcuts, status: :unprocessable_content
+    end
+  end
+
   def scoring
     @scoring_systems = @user.available_scoring_systems
   end
