@@ -77,8 +77,12 @@ class SqlcipherDatabaseMigrator
   end
 
   def self.encrypted_database_openable_with_current_key?(path)
-    new(key_hex: RecoverySecret.sqlcipher_key_hex).send(:verify_encrypted_database!, Pathname.new(path.to_s))
-    true
+    migrator = new(key_hex: RecoverySecret.sqlcipher_key_hex)
+    pathname = Pathname.new(path.to_s)
+    # the stored scrypt cost first, then the other known cost (a partially rekeyed set of databases)
+    return true if migrator.send(:opens_with?, pathname, RecoverySecret.sqlcipher_key_hex)
+
+    RecoverySecret.alternate_sqlcipher_key_hexes.any? { |key_hex| migrator.send(:opens_with?, pathname, key_hex) }
   rescue RecoverySecret::Missing, Error, SQLite3::SQLException, SQLite3::NotADatabaseException, SQLite3::IOException
     false
   end

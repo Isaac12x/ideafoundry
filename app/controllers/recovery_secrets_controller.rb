@@ -47,7 +47,7 @@ class RecoverySecretsController < ApplicationController
     begin
       reset_recovery_secret_database_connections!
       RecoverySecret.rekey!(passphrase, env: Rails.env)
-    rescue SqlcipherDatabaseMigrator::Error, SQLite3::Exception => e
+    rescue StandardError => e # whatever fails (a database, the credential write), the unlock must still succeed
       Rails.logger.warn "Database rekey deferred: #{e.class}: #{e.message}"
       flash[:alert] = "Unlocked, but upgrading the database key was deferred: #{e.message}"
     ensure

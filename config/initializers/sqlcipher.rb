@@ -53,6 +53,18 @@ module IdeaFoundrySqlcipherConnectionKey
 
   def verify_sqlcipher_database_unlock!
     @raw_connection.get_first_value("SELECT count(*) FROM sqlite_master")
+  rescue SQLite3::NotADatabaseException => e
+    # A partial rekey can leave this file on the other known scrypt cost than the stored kdf_n: try those keys
+    # before treating the database as locked (see RecoverySecret.alternate_sqlcipher_key_hexes).
+    RecoverySecret.alternate_sqlcipher_key_hexes.each do |key_hex|
+      @raw_connection.execute(%(PRAGMA key = "x'#{key_hex}'"))
+      value = @raw_connection.get_first_value("SELECT count(*) FROM sqlite_master")
+      Rails.logger.warn("[SQLCipher] #{database_path} opened with an alternate scrypt cost; the next unlock converges it.")
+      return value
+    rescue SQLite3::NotADatabaseException
+      next
+    end
+    raise e
   end
 
   def sqlcipher_available?

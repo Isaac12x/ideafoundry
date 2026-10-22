@@ -72,6 +72,16 @@ class RecoverySecret
       derive_key(SQLCIPHER_SALT, value: passphrase, n: n).unpack1("H*")
     end
 
+    # Lockout-proof unlock. A rekey converts several files and then stores the new kdf_n, so a failure in between
+    # (one database failed, or the credential write raised) leaves files on a different scrypt cost than the stored
+    # one. Connections therefore try the stored cost first and then the other known cost per database (see
+    # config/initializers/sqlcipher.rb); the next unlock re-runs rekey!, which skips converted files, converts the
+    # stragglers and only then stores the new kdf_n. The passphrase alone always opens every database.
+    def alternate_sqlcipher_key_hexes
+      stored = read_configured_kdf_n || SCRYPT_N
+      ([ SCRYPT_N, SCRYPT_N_DEFAULT ] - [ stored ]).map { |n| sqlcipher_key_hex_for(value, n: n) }
+    end
+
     def rekey_needed?
       (read_configured_kdf_n || SCRYPT_N) < SCRYPT_N_DEFAULT
     end

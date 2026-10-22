@@ -56,6 +56,24 @@ class SqlcipherDatabaseMigratorTest < ActiveSupport::TestCase
     db&.close
   end
 
+  test "a partial migration (one database encrypted, one still plaintext) is detected per database and converges" do
+    other = second_plaintext_database
+    migrator.migrate!(@database_path) # the first database was converted before the run died
+    SqlcipherDatabaseMigrator.release_retained_locks!
+    converted = File.binread(@database_path)
+
+    SqlcipherDatabaseMigrator.stub(:configured_database_paths, [ @database_path.to_s, other.to_s ]) do
+      statuses = migrator.configured_statuses(env: "production").map(&:status)
+      assert_equal [ :encrypted, :plaintext ], statuses
+
+      results = migrator.migrate_configured!(env: "production")
+      assert_equal [ :already_encrypted, :encrypted ], results.map(&:status)
+    end
+
+    assert_equal converted, File.binread(@database_path), "the converted database is not rewritten"
+    assert opens_with?(other, key_hex)
+  end
+
   test "migrate_configured! is all or nothing: one blocked database leaves every database untouched" do
     other = second_plaintext_database
     File.write(@root.join(".queue.sqlite3.20260518123045.sqlcipher"), "stale")
