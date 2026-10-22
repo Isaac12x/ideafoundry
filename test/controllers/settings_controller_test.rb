@@ -1,6 +1,26 @@
 require "test_helper"
 
 class SettingsControllerTest < ActionDispatch::IntegrationTest
+  # Records the order of connection resets around an encryption, when a test sets db_events.
+  module DbEvents
+    private
+
+    def disconnect_database_connections!
+      SettingsControllerTest.db_events&.push(:disconnect)
+      super
+    end
+
+    def reconnect_primary_database!
+      SettingsControllerTest.db_events&.push(:reconnect)
+      super
+    end
+  end
+  SettingsController.prepend(DbEvents)
+
+  class << self
+    attr_accessor :db_events
+  end
+
   def setup
     @user = User.first || User.create!(email: "test@example.com", name: "Test")
   end
@@ -410,6 +430,35 @@ class SettingsControllerTest < ActionDispatch::IntegrationTest
     assert_empty Dir[root.join("**/*.plaintext").to_s], "no plaintext backup may ever be written"
     assert_no_match(/backup/i, flash[:notice])
   ensure
+    SqlcipherDatabaseMigrator.release_retained_locks!
+    FileUtils.rm_rf(root) if root&.exist?
+  end
+
+  test "POST settings/security/encrypt-database disconnects every pool again before reconnecting, even when it refuses" do
+    SettingsControllerTest.db_events = []
+    refuse = ->(*) { raise SqlcipherDatabaseMigrator::Error, "Database is in use by process 42. Stop the app (puma + bin/jobs) first, or run `bin/rails db:encrypt_sqlite` offline." }
+    root = Rails.root.join("tmp/settings_sqlcipher_refusal_test_#{SecureRandom.hex(6)}")
+    database_path = root.join("production.sqlite3")
+    FileUtils.mkdir_p(root)
+    create_plaintext_sqlite_database(database_path)
+
+    with_recovery_passphrase_file(root.join("recovery_passphrase.key")) do
+      SqlcipherDatabaseMigrator.stub(:configured_database_paths, [ database_path.to_s ]) do
+        SqlcipherDatabaseMigrator.stub(:ensure_no_other_openers!, refuse) do
+          post settings_security_encrypt_database_path, params: {
+            database_encryption: { passphrase: "correct horse battery staple", passphrase_confirmation: "correct horse battery staple",
+                                   saved_primary: "1", saved_secondary: "1" }
+          }
+        end
+      end
+    end
+
+    assert_redirected_to settings_security_path
+    assert_match(/Stop the app \(puma \+ bin\/jobs\) first, or run `bin\/rails db:encrypt_sqlite` offline/, flash[:alert])
+    assert_equal "SQLite format 3\0", File.binread(database_path, 16)
+    assert_equal [ :disconnect, :disconnect, :reconnect ], SettingsControllerTest.db_events
+  ensure
+    SettingsControllerTest.db_events = nil
     FileUtils.rm_rf(root) if root&.exist?
   end
 

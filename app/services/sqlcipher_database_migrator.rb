@@ -91,9 +91,10 @@ class SqlcipherDatabaseMigrator
   end
 
   def self.rekey_configured!(env:, old_key_hex:, new_key_hex:)
-    paths = configured_database_paths(env: env)
-    ensure_no_other_openers!(paths) # all or nothing: never rekey some files and then refuse the rest
-    paths.each { |path| new(key_hex: old_key_hex).rekey!(path, new_key_hex: new_key_hex) }
+    migrator = new(key_hex: old_key_hex)
+    migrator.preflight_rekey!(configured_database_paths(env: env), new_key_hex).each do |path|
+      migrator.rekey!(path, new_key_hex: new_key_hex)
+    end
   end
 
   # Concurrency design. A re-encrypt replaces the file (new inode); a process still holding the old inode would keep
@@ -111,7 +112,7 @@ class SqlcipherDatabaseMigrator
     pids = out.split.map(&:to_i).uniq - [ Process.pid ]
     return if pids.empty?
 
-    raise Error, "Database is in use by process #{pids.to_sentence}. Stop the app (puma and bin/jobs) and run `bin/rails db:encrypt_sqlite` offline."
+    raise Error, "Database is in use by process #{pids.to_sentence}. Stop the app (puma + bin/jobs) first, or run `bin/rails db:encrypt_sqlite` offline."
   rescue Errno::ENOENT
     raise Error, "lsof is required to prove no other process has the database open; install it and retry"
   end
@@ -136,7 +137,28 @@ class SqlcipherDatabaseMigrator
   end
 
   def migrate_configured!(env:)
-    self.class.configured_database_paths(env: env).map { |path| migrate!(path) }
+    paths = self.class.configured_database_paths(env: env)
+    preflight_migrate!(paths)
+    paths.map { |path| migrate!(path) }
+  end
+
+  # All or nothing: prove every file can be handled before touching any, so a failure never leaves some
+  # databases converted and others not (which could lock the user out of the converted ones).
+  def preflight_migrate!(paths)
+    ensure_sqlcipher_available!
+    todo = absolute_paths(paths).select(&:exist?).reject { |p| encrypted_database?(p) }
+    todo.each do |p|
+      raise Error, "#{p} is neither plaintext SQLite nor an openable SQLCipher database" unless plaintext_sqlite_database?(p)
+    end
+    ensure_ready!(todo)
+  end
+
+  # Returns the paths still to rekey. Paths already on the new key are skipped, so a retry after a partial run converges.
+  def preflight_rekey!(paths, new_key_hex)
+    todo = absolute_paths(paths).select { |p| p.exist? && !plaintext_sqlite_database?(p) }.reject { |p| opens_with?(p, new_key_hex) }
+    todo.each { |p| raise Error, "#{p} opens with neither the old nor the new key" unless opens_with?(p, @key_hex) }
+    ensure_ready!(todo)
+    todo
   end
 
   def configured_statuses(env:)
@@ -181,11 +203,32 @@ class SqlcipherDatabaseMigrator
     path = Pathname.new(database.to_s)
     path = Rails.root.join(path) unless path.absolute?
     return unless path.exist? && !plaintext_sqlite_database?(path)
+    return if opens_with?(path, new_key_hex) # already converted (a previous partial run)
 
     reencrypt!(path, from_key_hex: @key_hex, to_key_hex: new_key_hex)
   end
 
   private
+
+  def absolute_paths(paths)
+    paths.map { |p| Pathname.new(p.to_s).then { |pa| pa.absolute? ? pa : Rails.root.join(pa) } }
+  end
+
+  def ensure_ready!(paths)
+    paths.each do |p|
+      next unless temporary_path(p).exist?
+
+      raise Error, "Stale temporary file #{temporary_path(p)} exists; refusing to continue. Remove it by hand if no migration is running."
+    end
+    self.class.ensure_no_other_openers!(paths) if paths.any?
+  end
+
+  def opens_with?(path, key_hex)
+    verify_encrypted_database!(path, key_hex)
+    true
+  rescue Error, SQLite3::Exception
+    false
+  end
 
   # No plaintext copy is ever made. The original is untouched until the encrypted copy is fully written and
   # verified (integrity, per-table row counts), all under the write lock; only then does an atomic rename replace
@@ -202,9 +245,13 @@ class SqlcipherDatabaseMigrator
     # Any frame written between the checkpoint and the lock would be lost with the sidecars if the rename failed.
     raise Error, "#{path} changed while the migration took its lock; nothing was modified, retry" if File.size?("#{path}-wal")
 
+    # Re-check after the lock and right before the rename: narrows the window for a process that opened the file
+    # since the first check, but cannot close it (lsof is a snapshot).
+    self.class.ensure_no_other_openers!([ path ])
     export_encrypted_copy!(path, temp_path, from_key_hex, to_key_hex)
     verify_encrypted_database!(temp_path, to_key_hex)
     verify_same_row_counts!(locker, temp_path, to_key_hex)
+    self.class.ensure_no_other_openers!([ path ])
     replace_database!(path, temp_path)
     created = false
     self.class.retain_lock(locker)
@@ -299,9 +346,10 @@ class SqlcipherDatabaseMigrator
 
   def replace_database!(path, encrypted_path)
     File.chmod(File.stat(path).mode & 0o7777, encrypted_path)
-    # Stale -wal/-shm of the old file must not pair with the new one; our lock connection holds the old inode.
-    sidecar_paths(path).each { |sidecar| FileUtils.rm_f(sidecar) }
     File.rename(encrypted_path, path)
+    # Only after a successful rename: the old -wal/-shm must not pair with the new file. The WAL is empty
+    # (TRUNCATE checkpoint under our lock), so nothing is lost; the lock connection keeps the old inode.
+    sidecar_paths(path).each { |sidecar| FileUtils.rm_f(sidecar) }
   end
 
   def temporary_path(path)

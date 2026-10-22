@@ -277,7 +277,11 @@ class SettingsController < ApplicationController
     Rails.logger.error "Failed to encrypt SQLite databases from settings: #{e.message}"
     redirect_to settings_security_path, alert: "Failed to encrypt SQLite databases: #{e.message}"
   ensure
-    reconnect_primary_database!
+    begin
+      disconnect_database_connections! # no pool may keep a connection to the replaced inode
+    ensure
+      reconnect_primary_database!
+    end
   end
 
   def update_notifications

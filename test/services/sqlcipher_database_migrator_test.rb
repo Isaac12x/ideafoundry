@@ -37,6 +37,96 @@ class SqlcipherDatabaseMigratorTest < ActiveSupport::TestCase
   def migrator = SqlcipherDatabaseMigrator.new(key_hex: RecoverySecret.sqlcipher_key_hex, timestamp: "20260518123045")
   def files_under_root = Dir.glob(@root.join("**/*").to_s, File::FNM_DOTMATCH).select { |f| File.file?(f) }.map { |f| File.basename(f) }.sort
 
+  def second_plaintext_database
+    path = @root.join("queue.sqlite3")
+    db = SQLite3::Database.new(path.to_s)
+    db.execute("CREATE TABLE jobs (id integer primary key)")
+    db.close
+    path
+  end
+
+  def opens_with?(path, key)
+    db = SQLite3::Database.new(path.to_s)
+    db.execute(%(PRAGMA key = "x'#{key}'"))
+    db.get_first_value("SELECT count(*) FROM sqlite_master")
+    true
+  rescue SQLite3::Exception
+    false
+  ensure
+    db&.close
+  end
+
+  test "migrate_configured! is all or nothing: one blocked database leaves every database untouched" do
+    other = second_plaintext_database
+    File.write(@root.join(".queue.sqlite3.20260518123045.sqlcipher"), "stale")
+    before = File.binread(@database_path)
+
+    SqlcipherDatabaseMigrator.stub(:configured_database_paths, [ @database_path.to_s, other.to_s ]) do
+      assert_raises(SqlcipherDatabaseMigrator::Error) { migrator.migrate_configured!(env: "production") }
+    end
+
+    assert_equal before, File.binread(@database_path)
+    assert_equal "SQLite format 3\0", File.binread(other, 16)
+  end
+
+  test "rekey_configured! is all or nothing: a database that opens with neither key blocks every rekey" do
+    other = second_plaintext_database
+    migrator.migrate!(@database_path)
+    SqlcipherDatabaseMigrator.new(key_hex: "cd" * 32).migrate!(other) # unknown key
+    SqlcipherDatabaseMigrator.release_retained_locks!
+    before = File.binread(@database_path)
+
+    SqlcipherDatabaseMigrator.stub(:configured_database_paths, [ @database_path.to_s, other.to_s ]) do
+      assert_raises(SqlcipherDatabaseMigrator::Error) do
+        SqlcipherDatabaseMigrator.rekey_configured!(env: "production", old_key_hex: key_hex, new_key_hex: new_key_hex)
+      end
+    end
+
+    assert_equal before, File.binread(@database_path)
+    assert opens_with?(@database_path, key_hex)
+  end
+
+  test "rekey converges after a partial run: already converted databases are skipped" do
+    other = second_plaintext_database
+    migrator.migrate!(@database_path)
+    migrator.migrate!(other)
+    SqlcipherDatabaseMigrator.release_retained_locks!
+    migrator.rekey!(@database_path, new_key_hex: new_key_hex) # simulate a run that died after the first database
+    SqlcipherDatabaseMigrator.release_retained_locks!
+    converted = File.binread(@database_path)
+
+    SqlcipherDatabaseMigrator.stub(:configured_database_paths, [ @database_path.to_s, other.to_s ]) do
+      SqlcipherDatabaseMigrator.rekey_configured!(env: "production", old_key_hex: key_hex, new_key_hex: new_key_hex)
+    end
+
+    assert_equal converted, File.binread(@database_path), "an already converted database is not rewritten"
+    assert opens_with?(@database_path, new_key_hex)
+    assert opens_with?(other, new_key_hex)
+    assert_not opens_with?(other, key_hex)
+  end
+
+  test "ensure_no_other_openers! runs again after the lock and before the rename" do
+    calls = []
+    SqlcipherDatabaseMigrator.stub(:ensure_no_other_openers!, ->(*) { calls << :check }) do
+      migrator.migrate!(@database_path)
+    end
+
+    assert_equal 3, calls.size, "once up front, once under the lock, once right before the rename"
+  end
+
+  test "the old sidecars are removed only after a successful rename" do
+    FileUtils.touch("#{@database_path}-wal")
+    FileUtils.touch("#{@database_path}-shm")
+    File.stub(:rename, ->(*) { raise Errno::EACCES }) do
+      assert_raises(Errno::EACCES) { migrator.migrate!(@database_path) }
+    end
+    assert File.exist?("#{@database_path}-shm"), "sidecars stay when the rename fails"
+
+    migrator.migrate!(@database_path)
+    assert_not File.exist?("#{@database_path}-shm"), "stale sidecars are removed after the rename"
+    assert opens_with?(@database_path, key_hex)
+  end
+
   test "migrates a plaintext SQLite database to SQLCipher without ever writing a plaintext copy" do
     result = migrator.migrate!(@database_path)
 
