@@ -190,7 +190,6 @@ class RecoverySecretsControllerTest < ActionDispatch::IntegrationTest
     assert_not opens_at_cost?(straggler, RecoverySecret::SCRYPT_N)
     assert_equal RecoverySecret::SCRYPT_N_DEFAULT, stored_cost
   ensure
-    SqlcipherDatabaseMigrator.release_retained_locks!
   end
 
   test "if storing the credential raised after every database was converted, the next unlock still works" do
@@ -201,7 +200,6 @@ class RecoverySecretsControllerTest < ActionDispatch::IntegrationTest
       RecoverySecret.stub(:store_credential!, ->(*, **) { raise IOError, "disk full" }) do
         assert_raises(IOError) { RecoverySecret.rekey!(PASSPHRASE, env: "production") }
       end
-      SqlcipherDatabaseMigrator.release_retained_locks!
       paths.each { |path| assert opens_at_cost?(path, RecoverySecret::SCRYPT_N_DEFAULT) }
       assert_equal RecoverySecret::SCRYPT_N, stored_cost, "the credential still has the old cost"
 
@@ -213,7 +211,6 @@ class RecoverySecretsControllerTest < ActionDispatch::IntegrationTest
     assert_equal RecoverySecret::SCRYPT_N_DEFAULT, stored_cost
     assert_not RecoverySecret.rekey_needed?
   ensure
-    SqlcipherDatabaseMigrator.release_retained_locks!
   end
 
   test "POST recovery secret rejects blank passphrase" do
