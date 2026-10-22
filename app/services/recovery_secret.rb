@@ -26,6 +26,12 @@ class RecoverySecret
   @keychain_cache = nil
   @keychain_mutex = Mutex.new
 
+  # Derived keys memoised by [sha256(passphrase), salt, n, length]: scrypt costs ~0.1s at 2^17 and every new
+  # connection derives its key. Process memory only; cleared when the passphrase changes or the app is locked.
+  KEY_CACHE_LIMIT = 32
+  @key_cache = {}
+  @key_cache_mutex = Mutex.new
+
   class Missing < KeyError; end
 
   class << self
@@ -77,6 +83,10 @@ class RecoverySecret
     # one. Connections therefore try the stored cost first and then the other known cost per database (see
     # config/initializers/sqlcipher.rb); the next unlock re-runs rekey!, which skips converted files, converts the
     # stragglers and only then stores the new kdf_n. The passphrase alone always opens every database.
+    def clear_key_cache!
+      @key_cache_mutex.synchronize { @key_cache.clear }
+    end
+
     def alternate_sqlcipher_key_hexes
       stored = read_configured_kdf_n || SCRYPT_N
       ([ SCRYPT_N, SCRYPT_N_DEFAULT ] - [ stored ]).map { |n| sqlcipher_key_hex_for(value, n: n) }
@@ -141,9 +151,17 @@ class RecoverySecret
       Rails.root.join(Rails.env.test? ? "tmp" : "storage", "app_node_id")
     end
 
+    # With no stored credential, existing encrypted databases can only be on the legacy cost (that is what opened
+    # them): store THAT, so rekey_needed? stays true and the unlock converges them. A fresh install gets the default.
     def persist_user_passphrase!(passphrase)
-      kdf_n = read_configured_kdf_n || SCRYPT_N_DEFAULT
+      kdf_n = read_configured_kdf_n || (encrypted_databases_exist? ? SCRYPT_N : SCRYPT_N_DEFAULT)
       store_credential!(passphrase, kdf_n: kdf_n)
+    end
+
+    def encrypted_databases_exist?
+      SqlcipherDatabaseMigrator.configured_database_paths(env: Rails.env).any? do |path|
+        File.file?(path) && File.size(path).positive? && !SqlcipherDatabaseMigrator.plaintext_sqlite_database?(path)
+      end
     end
 
     # One-time startup migration: moves old co-located storage/recovery_passphrase.key
@@ -242,6 +260,7 @@ class RecoverySecret
 
     def store_credential!(passphrase, kdf_n:)
       kdf_params = { n: kdf_n, r: SCRYPT_R, p: SCRYPT_P }
+      clear_key_cache! # the passphrase or cost is changing
 
       # Primary: OS keychain (skipped in test to avoid polluting the real keychain)
       unless Rails.env.test?
@@ -309,10 +328,19 @@ class RecoverySecret
     def derive_key(salt, length: 32, value: self.value, n: nil)
       kdf_n = n || read_configured_kdf_n || SCRYPT_N
       key_material = decode_key_material(value)
-      OpenSSL::KDF.scrypt(key_material, salt: salt, N: kdf_n, r: SCRYPT_R, p: SCRYPT_P, length: length)
-    rescue NoMethodError
-      key_material = decode_key_material(value)
-      OpenSSL::PKCS5.pbkdf2_hmac(key_material, salt, PBKDF2_ITERATIONS, length, OpenSSL::Digest::SHA256.new)
+      cache_key = [ OpenSSL::Digest::SHA256.hexdigest(key_material), salt, kdf_n, length ]
+      cached = @key_cache_mutex.synchronize { @key_cache[cache_key] }
+      return cached if cached
+
+      key = begin
+        OpenSSL::KDF.scrypt(key_material, salt: salt, N: kdf_n, r: SCRYPT_R, p: SCRYPT_P, length: length)
+      rescue NoMethodError
+        OpenSSL::PKCS5.pbkdf2_hmac(key_material, salt, PBKDF2_ITERATIONS, length, OpenSSL::Digest::SHA256.new)
+      end
+      @key_cache_mutex.synchronize do
+        @key_cache.clear if @key_cache.size >= KEY_CACHE_LIMIT
+        @key_cache[cache_key] = key
+      end
     end
 
     def decode_key_material(value)

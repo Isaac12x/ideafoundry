@@ -175,6 +175,30 @@ class RecoverySecretsControllerTest < ActionDispatch::IntegrationTest
 
   def stored_cost = RecoverySecret.send(:read_configured_kdf_n)
 
+  test "with no stored credential and databases on the legacy cost, the unlock converges them and stores a matching credential" do
+    legacy = encrypted_database("legacy.sqlite3", RecoverySecret::SCRYPT_N)
+    assert_nil stored_cost, "nothing is stored yet"
+
+    SqlcipherDatabaseMigrator.stub(:configured_database_paths, [ legacy.to_s ]) do
+      post recovery_secret_path, params: { recovery_passphrase: PASSPHRASE, return_to: root_path }
+    end
+
+    assert_redirected_to root_path
+    assert_nil flash[:alert]
+    assert opens_at_cost?(legacy, RecoverySecret::SCRYPT_N_DEFAULT)
+    assert_equal RecoverySecret::SCRYPT_N_DEFAULT, stored_cost
+    assert_equal PASSPHRASE, JSON.parse(File.read(ENV[RecoverySecret::PASSPHRASE_FILE_ENV]))["passphrase"]
+    assert_not RecoverySecret.rekey_needed?
+  end
+
+  test "a fresh install with no encrypted databases stores the default cost straight away" do
+    SqlcipherDatabaseMigrator.stub(:configured_database_paths, [ @recovery_secret_root.join("missing.sqlite3").to_s ]) do
+      post recovery_secret_path, params: { recovery_passphrase: PASSPHRASE, return_to: root_path }
+    end
+
+    assert_equal RecoverySecret::SCRYPT_N_DEFAULT, stored_cost
+  end
+
   test "unlock after a partial rekey (one database converted, one not) still works and converges everything" do
     converted = encrypted_database("converted.sqlite3", RecoverySecret::SCRYPT_N_DEFAULT)
     straggler = encrypted_database("straggler.sqlite3", RecoverySecret::SCRYPT_N)
