@@ -22,7 +22,7 @@
       controller_path.to_s == "recovery_secrets"
     backlog_only = backlog_lock_bypass_active?
     typing_activity_enabled = @user&.security_lock_enabled? && !security_lock_screen && !backlog_only
-    typing_lock_shortcut = "Ctrl/Cmd+L"
+    typing_lock_shortcut = @user&.shortcut_binding("lock") || User::DEFAULT_SHORTCUTS.dig("lock", "key")
     quote_page_key = User.nav_page_key(controller_path)
     display_quote = @user&.quote_for_page(quote_page_key).to_s.strip
     display_contrast = @user&.display_contrast.to_s
@@ -35,6 +35,7 @@
   <body class="<%= [body_class, show_notes ? 'has-notes-bar' : nil].compact.join(' ') %>"
         data-contrast="<%= display_contrast.presence || 'normal' %>"
         style="--contrast: <%= (@user&.display_contrast || 100) %>%"
+        data-shortcut-overrides="<%= (@user&.keyboard_shortcuts || {}).to_json %>"
         <% if body_controllers.any? %>
           data-controller="<%= body_controllers.join(' ') %>"
         <% end %>
@@ -122,10 +123,10 @@
                   class: "nav-pill nav-lock-button",
                   title: "Lock (#{typing_lock_shortcut})",
                   aria: { label: "Lock" },
-                  data: { shortcut_key: "Ctrl/Cmd+L", shortcut_label: "Lock workspace", shortcut_group: "Global" },
+                  data: { shortcut_key: typing_lock_shortcut, shortcut_label: "Lock workspace", shortcut_group: "Global" },
                   form: {
                     class: "nav-lock-form",
-                    data: { typing_activity_target: "lockForm" }
+                    data: { typing_activity_target: "lockForm", shortcut_skip: true }
                   } do %>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <rect x="5" y="11" width="14" height="10" rx="2"/>

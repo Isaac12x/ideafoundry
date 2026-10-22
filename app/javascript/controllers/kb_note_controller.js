@@ -1,4 +1,5 @@
 import { Controller } from "@hotwired/stimulus"
+import { binding, matches } from "lib/shortcut_bindings"
 
 // "Why I saved this" note above a KB file. Reads/writes the sidecar "<file>.note.md"
 // through KbNotesController: click to start writing, Ctrl/Cmd+Enter saves, Esc cancels.
@@ -69,7 +70,7 @@ export default class extends Controller {
     if (event.key === "Escape") {
       event.preventDefault()
       this.cancel()
-    } else if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) {
+    } else if (matches(binding("submit"), event)) {
       event.preventDefault()
       this.formTarget.requestSubmit()
     }
