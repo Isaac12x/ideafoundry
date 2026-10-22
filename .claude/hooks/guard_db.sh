@@ -20,8 +20,8 @@ W='(^|[^[:alnum:]_])'; E='([^[:alnum:]_]|$)'             # word edges
 # (not ./lib/storage, tmp/storage, storage.yml)
 STORAGE='(^|[[:space:]>)=])((\./)+|([^[:space:]]*/)?(\.\./)+([^[:space:]]*/)?|(~|\$PWD|\$HOME)?/([^[:space:]]*/)?)?storage(/|[[:space:]]|$)'
 DB="(\\.sqlite3?|${STORAGE}|recovery_passphrase)"
-# the guards themselves: owner-edited only (hook dir, .claude/*.json, initializer, rake task)
-GUARD='(\.claude/(hooks/|[^[:space:]/]*\.json)|config/initializers/db_wipe_guard\.rb|lib/tasks/db_guard\.rake)'
+# the guards themselves: owner-edited only (hook dir, .claude/*.json, initializer, rake task, git hooks/config incl. worktree gitdirs)
+GUARD='(\.claude/(hooks/|[^[:space:]/]*\.json)|config/initializers/db_wipe_guard\.rb|lib/tasks/db_guard\.rake|\.git/(hooks/|config([[:space:]]|$)|worktrees/[^/[:space:]]+/(hooks/|config)))'
 has() { echo "$2" | grep -Eqi -- "$1"; }                 # has REGEX TEXT
 bad() { has "$1" "$2" && deny "$3"; }                    # bad REGEX TEXT MESSAGE
 
@@ -43,7 +43,8 @@ if [ "$mode" = file ]; then
     storage|*/storage|storage/*|*/storage/*) deny "Editing under storage/." ;;
     *recovery_passphrase*) deny "Editing the recovery passphrase." ;;
     .claude/hooks/*|*/.claude/hooks/*|.claude/*.json|*/.claude/*.json|\
-    config/initializers/db_wipe_guard.rb|*/config/initializers/db_wipe_guard.rb|lib/tasks/db_guard.rake|*/lib/tasks/db_guard.rake)
+    config/initializers/db_wipe_guard.rb|*/config/initializers/db_wipe_guard.rb|lib/tasks/db_guard.rake|*/lib/tasks/db_guard.rake|\
+    .git/hooks/*|*/.git/hooks/*|.git/config|*/.git/config|*/.git/worktrees/*/config*|*/.git/worktrees/*/hooks/*)
       deny "guard files are owner-edited only." ;;
   esac
   bad '\.sqlite3?(-wal|-shm|-journal)?$' "$p" "Editing a database file."
@@ -111,9 +112,9 @@ while IFS= read -r seg; do
   files="${w[*]:$((i+1))}"; for ((j=i+1; j<${#w[@]}; j++)); do [[ "${w[$j]}" == -* ]] || { files="${w[*]:$((j+1))}"; break; }; done   # args after the first non-option (the sed/perl/awk script)
 
   # redirects, tee, dd of= onto a database, storage/ or a guard file
-  bad ">>?[[:space:]]*[^[:space:]]*(${DB}|${GUARD})|tee[[:space:]][^;&|]*(${DB}|${GUARD})|of=[^[:space:]]*(${DB}|${GUARD})" "$s" "Writing to a database file or a guard file."
+  bad ">>?[[:space:]]*[^[:space:]]*(${DB}|${GUARD})|tee[^;&|]*(${DB}|${GUARD})|of=[^[:space:]]*(${DB}|${GUARD})" "$s" "Writing to a database file or a guard file."
   # fallback whatever wraps it: a delete-class word plus a database/storage path in one segment
-  [[ ! "$c" =~ ^(echo|printf|grep|rg|git|gh)$ ]] && has "${W}(rm|unlink|shred|truncate)${E}" "$s" && has "$DB" "$s" && deny "Delete with a database/storage path."
+  [[ ! "$c" =~ ^(echo|printf|grep|rg|git|gh|sqlite3)$ ]] && has "${W}(rm|unlink|shred|truncate)${E}" "$s" && has "$DB" "$s" && deny "Delete with a database/storage path."
   # guard files are owner-edited only: no delete, move, chmod, copy-over or in-place edit
   case "$c" in
     rm|unlink|shred|truncate|rmdir|chmod|chown|chflags|mv|dd|trash) bad "$GUARD" "$s" "guard files are owner-edited only." ;;
@@ -129,9 +130,17 @@ while IFS= read -r seg; do
       has 'db:' "$s" && bad 'DATABASE_URL=' "$seg" "DATABASE_URL with a db task." ;;
     setup) bad '--reset' "$s" "bin/setup --reset." ;;
     git)
+      # git can be told to run commands: ssh/hooks/alias config, or --receive-pack/--upload-pack/--exec on remote commands
+      bad 'GIT_(SSH_COMMAND|SSH|PROXY_COMMAND|EXTERNAL_DIFF|CONFIG_COUNT|CONFIG_PARAMETERS|ASKPASS)=' "$seg" "git environment that runs commands."
       read -ra g <<<"$s"; k=1   # skip global options (-C dir, -c k=v, --git-dir=...) to reach the subcommand
-      while [ $k -lt ${#g[@]} ] && [[ "${g[$k]}" == -* ]]; do [[ "${g[$k]}" =~ ^-(C|c|-git-dir|-work-tree|-namespace)$ ]] && k=$((k+1)); k=$((k+1)); done
+      while [ $k -lt ${#g[@]} ] && [[ "${g[$k]}" == -* ]]; do
+        [[ "${g[$k]}" == -c || "${g[$k]}" == --config-env* ]] && bad '(core\.(sshcommand|hookspath)|alias\.)' "${g[$((k+1))]:-} ${g[$k]}" "git -c config that runs commands."
+        [[ "${g[$k]}" =~ ^-(C|c|-git-dir|-work-tree|-namespace)$ ]] && k=$((k+1)); k=$((k+1))
+      done
       gs="git ${g[*]:$k}"
+      bad '^git[[:space:]]+(push|fetch|pull|clone|ls-remote)([[:space:]].*)?[[:space:]]--(receive-pack|upload-pack|exec)([[:space:]=]|$)' "$gs" "git remote command that runs a program."
+      bad '^git[[:space:]]+clone([[:space:]].*)?[[:space:]]-u[[:space:]]' "$gs" "git clone -u runs a program (--upload-pack)."
+      has '^git[[:space:]]+config[[:space:]]' "$gs" && ! has '[[:space:]](--get|--get-all|--list|-l)([[:space:]]|$)' "$gs" && bad '(core\.(sshcommand|hookspath)|alias\.)' "$gs" "git config of ssh/hooks/alias runs commands."
       bad '^git[[:space:]]+clean[^;&|]*[[:space:]](-[a-z]*[xX][a-z]*|--)' "$gs" "git clean -x/-X deletes ignored database files."
       bad '^git[[:space:]]+worktree[[:space:]]+(remove|prune)' "$gs" "git worktree remove deletes its storage/."
       has '^git[[:space:]]+(rm|mv|checkout|restore)[[:space:]]' "$gs" && has "(${DB}|${GUARD})" "$gs" && deny "git rm/mv/checkout/restore on a database, storage/ or a guard file."

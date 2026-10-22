@@ -80,12 +80,7 @@
         "registry.npmjs.org",
         "registry.yarnpkg.com"
       ]
-    },
-    "excludedCommands": [
-      "git fetch *",
-      "git pull *",
-      "git push *"
-    ]
+    }
   },
   "permissions": {
     "deny": [

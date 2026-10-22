@@ -13,6 +13,18 @@
         "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/lib/tasks/db_guard.rake",
         "/Users/iamin/work/projects/active/ideafoundry/repos/idea-app/config/database.yml"
       ]
+    },
+    "network": {
+      "allowedDomains": [
+        "github.com",
+        "api.github.com",
+        "codeload.github.com",
+        "*.githubusercontent.com",
+        "rubygems.org",
+        "*.rubygems.org",
+        "registry.npmjs.org",
+        "registry.yarnpkg.com"
+      ]
     }
   },
   "permissions": {

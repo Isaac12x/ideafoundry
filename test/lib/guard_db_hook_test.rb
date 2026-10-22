@@ -215,6 +215,26 @@ class GuardDbHookTest < ActiveSupport::TestCase
     rm -rf $HOME/work/projects
     rm -rf /Users/someone/work
     rm -rf ~/work/projects
+    git push --receive-pack=x origin main
+    git fetch --upload-pack x
+    git clone --upload-pack=x https://example.com/r.git
+    git pull --exec=x
+    git ls-remote --upload-pack=x origin
+    git clone -u x https://example.com/r.git
+    git -c core.sshCommand=x fetch
+    git -c core.hooksPath=/tmp/h commit -m x
+    git -c alias.x=!sh x
+    git --config-env=core.sshCommand=VAR fetch
+    git config core.hooksPath /tmp/h
+    git config --global core.sshCommand x
+    git config alias.x '!x'
+    GIT_SSH_COMMAND=x git fetch
+    echo x > .git/hooks/pre-commit
+    cp x .git/config
+    chmod +x .git/hooks/pre-push
+    echo x | tee .git/config
+    echo x | tee -a storage/a.sqlite3
+    echo x | tee storage/a.bin
     gzip storage/development.sqlite3
     xz storage/production.sqlite3
     bzip2 -f storage/development.sqlite3
@@ -365,6 +385,16 @@ class GuardDbHookTest < ActiveSupport::TestCase
     find ./tmp -name '*.log'
     rm -rf ../tmp-copy/x
     strace -f ls storage
+    git push origin main
+    git push -u origin feature
+    git fetch --all
+    git pull --rebase
+    git clone https://example.com/r.git
+    git config user.name x
+    git config --get core.hooksPath
+    git config --list
+    cat .git/config
+    sqlite3 -readonly storage/development.sqlite3 'select name from t where kind = rm'
   CASES
 
   BLOCKED.each_with_index do |cmd, i|
@@ -411,7 +441,9 @@ class GuardDbHookTest < ActiveSupport::TestCase
       "config/initializers/db_wipe_guard.rb", "#{root}/lib/tasks/db_guard.rake", "lib/tasks/db_guard.rake",
       ".claude/hooks/../settings.json", "app/../config/initializers/db_wipe_guard.rb",
       ".claude/settings.local.json", ".claude/launch.json", ".claude/hooks/other.sh", ".claude/hooks/new_hook.sh",
-      ".CLAUDE/Hooks/guard_db.sh", "/r/.Claude/Settings.JSON", "/R/Config/Initializers/DB_Wipe_Guard.rb", "LIB/Tasks/DB_GUARD.RAKE" ].each do |p|
+      ".CLAUDE/Hooks/guard_db.sh", "/r/.Claude/Settings.JSON", "/R/Config/Initializers/DB_Wipe_Guard.rb", "LIB/Tasks/DB_GUARD.RAKE",
+      ".git/hooks/pre-commit", "/r/.git/hooks/pre-push", ".git/config", "/r/.git/config", "/main/.git/worktrees/wt/config",
+      "/main/.git/worktrees/wt/config.worktree", "/main/.git/worktrees/wt/hooks/x", "/r/.GIT/Hooks/post-commit" ].each do |p|
       stdout, stderr, st = Open3.capture3(*FILE_HOOK, stdin_data: %({"tool_input":{"file_path":"#{p}"}}))
       assert_equal 2, st.exitstatus, p
       assert_match(/owner-edited only/, stderr, p)
@@ -421,7 +453,8 @@ class GuardDbHookTest < ActiveSupport::TestCase
   test "file-edit mode allows config/storage.yml and similar" do
     root = Rails.root.to_s
     %w[/r/config/storage.yml /r/app/models/storage_item.rb config/storage.yml /r/app/models/idea.rb
-       app/../config/storage.yml /r/lib/tasks/other.rake .claude/skills/x/SKILL.md .claude/agents/a.md].each do |p|
+       app/../config/storage.yml /r/lib/tasks/other.rake .claude/skills/x/SKILL.md .claude/agents/a.md
+       /r/.gitignore /r/.github/workflows/ci.yml /r/app/config /r/docs/git/config /r/.git-blame-ignore-revs].each do |p|
       assert_equal 0, file_status(p, root), p
     end
   end
