@@ -434,6 +434,42 @@ class SettingsControllerTest < ActionDispatch::IntegrationTest
     FileUtils.rm_rf(root) if root&.exist?
   end
 
+  test "POST settings/security/encrypt-database finishes a partial migration: the encrypted database is kept, the plaintext one converted" do
+    root = Rails.root.join("tmp/settings_sqlcipher_partial_test_#{SecureRandom.hex(6)}")
+    FileUtils.mkdir_p(root)
+    done = root.join("production.sqlite3")
+    pending = root.join("queue.sqlite3")
+    create_plaintext_sqlite_database(pending)
+    create_plaintext_sqlite_database(done)
+    key = RecoverySecret.sqlcipher_key_hex_for("correct horse battery staple", n: RecoverySecret::SCRYPT_N_DEFAULT)
+    SqlcipherDatabaseMigrator.new(key_hex: key).migrate!(done) # converted by an earlier, interrupted run
+    SqlcipherDatabaseMigrator.release_retained_locks!
+
+    with_recovery_passphrase_file(root.join("recovery_passphrase.key")) do
+      # the interrupted run had already stored the credential (it does so before converting anything)
+      RecoverySecret.send(:store_credential!, "correct horse battery staple", kdf_n: RecoverySecret::SCRYPT_N_DEFAULT)
+      SqlcipherDatabaseMigrator.stub(:configured_database_paths, [ done.to_s, pending.to_s ]) do
+        post settings_security_encrypt_database_path, params: {
+          database_encryption: { passphrase: "correct horse battery staple", passphrase_confirmation: "correct horse battery staple",
+                                 saved_primary: "1", saved_secondary: "1" }
+        }
+      end
+    end
+
+    assert_redirected_to settings_security_path
+    assert_match(/Encrypted 1 SQLite database/, flash[:notice])
+    [ done, pending ].each do |path|
+      assert_not_equal "SQLite format 3\0", File.binread(path, 16), path.to_s
+      db = SQLite3::Database.new(path.to_s)
+      db.execute(%(PRAGMA key = "x'#{key}'"))
+      assert_equal "Encrypted from settings", db.get_first_value("SELECT title FROM ideas")
+      db.close
+    end
+  ensure
+    SqlcipherDatabaseMigrator.release_retained_locks!
+    FileUtils.rm_rf(root) if root&.exist?
+  end
+
   test "POST settings/security/encrypt-database disconnects every pool again before reconnecting, even when it refuses" do
     SettingsControllerTest.db_events = []
     refuse = ->(*) { raise SqlcipherDatabaseMigrator::Error, "Database is in use by process 42. Stop the app (puma + bin/jobs) first, or run `bin/rails db:encrypt_sqlite` offline." }
