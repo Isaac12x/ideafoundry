@@ -18,8 +18,10 @@ else deny "Neither jq nor python3 available to parse hook input."; fi
 W='(^|[^[:alnum:]_])'; E='([^[:alnum:]_]|$)'             # word edges
 # the project's top-level storage dir: storage, ./storage, ../x/storage, tmp/../storage, /abs/storage, $PWD/storage
 # (not ./lib/storage, tmp/storage, storage.yml)
-STORAGE='(^|[[:space:]])((\./)+|([^[:space:]]*/)?(\.\./)+([^[:space:]]*/)?|(~|\$PWD|\$HOME)?/([^[:space:]]*/)?)?storage(/|[[:space:]]|$)'
+STORAGE='(^|[[:space:]>)=])((\./)+|([^[:space:]]*/)?(\.\./)+([^[:space:]]*/)?|(~|\$PWD|\$HOME)?/([^[:space:]]*/)?)?storage(/|[[:space:]]|$)'
 DB="(\\.sqlite3?|${STORAGE}|recovery_passphrase)"
+# the guards themselves: owner-edited only (hook dir, .claude/*.json, initializer, rake task)
+GUARD='(\.claude/(hooks/|[^[:space:]/]*\.json)|config/initializers/db_wipe_guard\.rb|lib/tasks/db_guard\.rake)'
 has() { echo "$2" | grep -Eqi -- "$1"; }                 # has REGEX TEXT
 bad() { has "$1" "$2" && deny "$3"; }                    # bad REGEX TEXT MESSAGE
 
@@ -35,11 +37,12 @@ normpath() {   # collapse "." and ".." lexically (no filesystem access), so tmp/
 
 # --- 2. Write|Edit|NotebookEdit: database files, anything under a storage/ dir, the guards themselves ---
 if [ "$mode" = file ]; then
+  shopt -s nocasematch   # APFS is case-insensitive: .Claude/Hooks/ is the same directory
   p=$(normpath "$raw")
   case "$p" in
     storage|*/storage|storage/*|*/storage/*) deny "Editing under storage/." ;;
     *recovery_passphrase*) deny "Editing the recovery passphrase." ;;
-    .claude/hooks/guard_db.sh|*/.claude/hooks/guard_db.sh|.claude/settings.json|*/.claude/settings.json|\
+    .claude/hooks/*|*/.claude/hooks/*|.claude/*.json|*/.claude/*.json|\
     config/initializers/db_wipe_guard.rb|*/config/initializers/db_wipe_guard.rb|lib/tasks/db_guard.rake|*/lib/tasks/db_guard.rake)
       deny "guard files are owner-edited only." ;;
   esac
@@ -51,17 +54,18 @@ fi
 # strings and the first echo/printf string, but never a double-quoted string holding $( or a backtick (it executes).
 # Quotes -> spaces so `rm -rf "storage"` and `bash -c 'rm -rf storage'` read as plain words; backticks -> `;` so their
 # contents sit in command position; `>|` -> `>`; ${PWD} and $(pwd) -> $PWD.
-# Heredoc bodies are dropped only when a line STARTS with `git commit`/`gh pr|issue` (no quote, #, $ or pipe before
-# the heredoc, except the `"$(cat` form), and only when no shell/interpreter word appears anywhere (`| sh`,
+# Heredoc bodies are dropped only when a line STARTS with `git commit`/`gh pr|issue` (only whole quoted values, no #, $
+# or pipe before the heredoc, except the `"$(cat` form), and only when no shell/interpreter word appears anywhere (`| sh`,
 # `sh <<EOF`, `python3 - <<EOF` would execute the body).
 if ! has "${W}(sh|bash|zsh|dash|ksh|fish|eval|source|ruby|python3?|perl|node|xargs|runner|console)${E}" "$raw"; then
   raw=$(echo "$raw" | awk '!h { print } h { l=$0; gsub(/^[ \t]+/, "", l); if (l == t) { h=0; print } }
-    !h && match($0, "^[ \t]*(git commit|gh (pr|issue))[^|;&#\"\047$]*(\"[$][(]cat[ \t]*)?<<-?[ ]*[\"\047][A-Za-z_]+[\"\047]") { t=substr($0, RSTART, RLENGTH); sub(/^.*<</, "", t); gsub(/[^A-Za-z_]/, "", t); h=1 }') || deny "Normalising failed."
+    !h && match($0, "^[ \t]*(git commit|gh (pr|issue))([^|;&#$\"\047]|\"[^\"$]*\"|\047[^\047]*\047)*(\"[$][(]cat[ \t]*)?<<-?[ ]*[\"\047][A-Za-z_]+[\"\047]") { t=substr($0, RSTART, RLENGTH); sub(/^.*<</, "", t); gsub(/[^A-Za-z_]/, "", t); h=1 }') || deny "Normalising failed."
 fi
 q="'"; str="(\"([^\"\`$]|\\\$[^(])*\"|$q[^$q]*$q)"
 if has 'git commit|gh (pr|issue)' "$raw"; then raw=$(echo "$raw" | sed -E "s/(-m|--message|--body|--title|-b)[[:space:]]+$str/\1 x/g") || deny "Normalising failed."; fi
-cmd=$(echo "$raw" | sed -E "s/(echo|printf)[[:space:]]+$str/\1 x/g" | tr "\"'" '  ' | tr '`' ';') || deny "Normalising failed."
-cmd=${cmd//>|/>}; cmd=${cmd//\$\{PWD\}/\$PWD}; cmd=${cmd//\$(pwd)/\$PWD}; cmd=${cmd//\$\{HOME\}/\$HOME}
+blank="s/(echo|printf)[[:space:]]+$str/\1 x/g"; has "${W}sqlite3${E}" "$raw" && blank='s/^$//'   # sqlite3 may read its dot-commands from the pipe
+cmd=$(echo "$raw" | sed -E "$blank" | tr "\"'" '  ' | tr '`' ';') || deny "Normalising failed."
+cmd=${cmd//>|/>}; cmd=${cmd//>/> }; cmd=${cmd//\$\{PWD\}/\$PWD}; cmd=${cmd//\$(pwd)/\$PWD}; cmd=${cmd//\$\{HOME\}/\$HOME}
 
 # --- 3. whole command (must see across pipes, loops, heredocs, interpreter snippets) ---
 has "xargs[^;&]*${W}(rm|mv|shred|unlink|truncate)${E}" "$cmd" && has "$DB" "$cmd" && deny "xargs delete."
@@ -69,6 +73,14 @@ has "xargs[^;&]*${W}(rm|mv|shred|unlink|truncate)${E}" "$cmd" && has "$DB" "$cmd
 SH='(sh|bash|zsh|dash|ksh|fish|source|eval)'
 has "\\|[[:space:]]*(sudo[[:space:]]+)?${SH}([[:space:]]|$)" "$cmd" && ! has "\\|[[:space:]]*(sudo[[:space:]]+)?${SH}[[:space:]]+-[a-z]*c" "$cmd" && deny "Piping into a shell."
 bad "\\|[[:space:]]*(sudo[[:space:]]+)?(ruby|python3?|perl|node)([[:space:]]+-s?)?[[:space:]]*($|[;&|)])" "$cmd" "Piping code into an interpreter."
+# sqlite3 dot-commands can run shells and write files: only read-only ones, anywhere in the command (printf '.x' | sqlite3 ...)
+if has "${W}sqlite3${E}" "$cmd"; then
+  while read -ra toks; do
+    for t in "${toks[@]}"; do
+      [[ "$t" =~ ^\.[a-z]+$ && ! "$t" =~ ^\.(tables|schema|dump|headers|mode|help|indexes|databases)$ ]] && deny "sqlite3 dot-command $t is not on the read-only allowlist."
+    done
+  done <<<"$cmd"
+fi
 has "(for|while|until)[[:space:]][^;]*${DB}" "$cmd" && has "${W}(rm|mv|shred|unlink|truncate)${E}" "$cmd" && deny "Loop over database/storage files that deletes."
 # interpreter snippets (ruby/python/node/perl/console); in-place sed/perl/awk text edits are not snippets (their file args are judged below)
 snip=$(echo "$cmd" | tr ';&|' '\n\n\n' | grep -Ev "^[[:space:]]*(sed|perl|awk|gawk)[[:space:]].*(-[a-z]*i([[:space:]]|$)|--in-place|inplace)")
@@ -98,8 +110,16 @@ while IFS= read -r seg; do
   c="${w[$i]##*/}"; s="${w[*]:$i}"; last="${w[$((${#w[@]}-1))]}"
   files="${w[*]:$((i+1))}"; for ((j=i+1; j<${#w[@]}; j++)); do [[ "${w[$j]}" == -* ]] || { files="${w[*]:$((j+1))}"; break; }; done   # args after the first non-option (the sed/perl/awk script)
 
-  # redirects, tee, dd of= onto a database or storage/
-  bad ">>?[[:space:]]*[^[:space:]]*${DB}|tee[[:space:]][^;&|]*${DB}|of=[^[:space:]]*${DB}" "$s" "Writing to a database file."
+  # redirects, tee, dd of= onto a database, storage/ or a guard file
+  bad ">>?[[:space:]]*[^[:space:]]*(${DB}|${GUARD})|tee[[:space:]][^;&|]*(${DB}|${GUARD})|of=[^[:space:]]*(${DB}|${GUARD})" "$s" "Writing to a database file or a guard file."
+  # fallback whatever wraps it: a delete-class word plus a database/storage path in one segment
+  [[ ! "$c" =~ ^(echo|printf|grep|rg|git|gh)$ ]] && has "${W}(rm|unlink|shred|truncate)${E}" "$s" && has "$DB" "$s" && deny "Delete with a database/storage path."
+  # guard files are owner-edited only: no delete, move, chmod, copy-over or in-place edit
+  case "$c" in
+    rm|unlink|shred|truncate|rmdir|chmod|chown|chflags|mv|dd|trash) bad "$GUARD" "$s" "guard files are owner-edited only." ;;
+    cp|ln|install|ditto|rsync) has "$GUARD" "$last" && deny "guard files are owner-edited only." ;;
+    sed|perl|awk|gawk) has "$GUARD" "$files" && has '[[:space:]]-[a-z]*i|--in-place|inplace' "$s" && deny "guard files are owner-edited only." ;;
+  esac
 
   [[ -n "$in_storage" && "$c" =~ ^(rm|mv|cp|ln|tar|unzip|curl|wget|dd|tee|sed|perl|awk|gzip|xz|bzip2|zstd|find|truncate|shred)$ ]] && deny "Working inside storage/ (cd)."
   case "$c" in
@@ -109,10 +129,13 @@ while IFS= read -r seg; do
       has 'db:' "$s" && bad 'DATABASE_URL=' "$seg" "DATABASE_URL with a db task." ;;
     setup) bad '--reset' "$s" "bin/setup --reset." ;;
     git)
-      bad '^git[[:space:]]+(-C[[:space:]]+[^[:space:]]+[[:space:]]+)?clean[^;&|]*[[:space:]](-[a-z]*[xX][a-z]*|--)' "$s" "git clean -x/-X deletes ignored database files."
-      bad '^git[[:space:]]+(-C[[:space:]]+[^[:space:]]+[[:space:]]+)?worktree[[:space:]]+(remove|prune)' "$s" "git worktree remove deletes its storage/."
-      has '^git[[:space:]]+(-C[[:space:]]+[^[:space:]]+[[:space:]]+)?(rm|mv|checkout|restore)[[:space:]]' "$s" && has "$DB" "$s" && deny "git rm/mv/checkout/restore on a database or storage/."
-      bad '^git[[:space:]]+stash[^;&|]*([[:space:]]-[a-z]*[aA]|--all|--include-ignored)' "$s" "git stash --all removes ignored files." ;;
+      read -ra g <<<"$s"; k=1   # skip global options (-C dir, -c k=v, --git-dir=...) to reach the subcommand
+      while [ $k -lt ${#g[@]} ] && [[ "${g[$k]}" == -* ]]; do [[ "${g[$k]}" =~ ^-(C|c|-git-dir|-work-tree|-namespace)$ ]] && k=$((k+1)); k=$((k+1)); done
+      gs="git ${g[*]:$k}"
+      bad '^git[[:space:]]+clean[^;&|]*[[:space:]](-[a-z]*[xX][a-z]*|--)' "$gs" "git clean -x/-X deletes ignored database files."
+      bad '^git[[:space:]]+worktree[[:space:]]+(remove|prune)' "$gs" "git worktree remove deletes its storage/."
+      has '^git[[:space:]]+(rm|mv|checkout|restore)[[:space:]]' "$gs" && has "(${DB}|${GUARD})" "$gs" && deny "git rm/mv/checkout/restore on a database, storage/ or a guard file."
+      bad '^git[[:space:]]+stash[^;&|]*([[:space:]]-[a-z]*[aA]|--all|--include-ignored)' "$gs" "git stash --all removes ignored files." ;;
     gzip|gunzip|bzip2|bunzip2|xz|unxz|zstd)   # replace the original, unless it is kept (-k/--keep) or streamed (-c/--stdout): a backup
       has '[[:space:]](-[a-z]*[ck][a-z]*|--keep|--stdout)([[:space:]]|$)' "$s" && continue
       bad "$DB" "$s" "Compressing a database file in place." ;;
@@ -120,7 +143,7 @@ while IFS= read -r seg; do
       bad "$DB" "$s" "Touching database files."
       [ "$c" = rm ] && bad "(^|[[:space:]])(/|\\.|\\.\\.|~|\\*|\\\$PWD|\\\$HOME)/?\\*?([[:space:]]|$)" "$s" "rm of a project directory."
       # recursive: home/work, parent globs, a sibling repo/worktree (../name), repos/name
-      [ "$c" = rm ] && has '[[:space:]](-[a-zA-Z]*[rR]|--recursive)' "$s" && bad "(^|[[:space:]])((~|\\\$HOME|/Users/[^[:space:]/]+)/work[^[:space:]]*|\\.\\./(\\*|[^[:space:]/]+)/?|(.*/)?repos/[^[:space:]/]+/?)\\*?([[:space:]]|$)" "$s" "rm -r of a parent or sibling repo directory." ;;
+      [ "$c" = rm ] && has '[[:space:]](-[a-zA-Z]*[rR]|--recursive)' "$s" && bad "(^|[[:space:]])((~|\\\$HOME|/Users/[^[:space:]/]+)/work[^[:space:]]*|(\\.\\./)+(\\*|[^[:space:]/]+)/?|(.*/)?repos/[^[:space:]/]+/?)\\*?([[:space:]]|$)" "$s" "rm -r of a parent or sibling repo directory." ;;
     sed|perl|awk|gawk) has "$DB" "$files" && bad '[[:space:]]-[a-z]*i|--in-place|inplace' "$s" "In-place edit of a database file." ;;
     curl|wget) has "$DB" "$s" && bad '(^|[[:space:]])(-o|-O|--output|--output-document)([[:space:]=]|$)' "$s" "Download over a database file." ;;
     tar) has "$DB" "$s" && bad '(^tar[[:space:]]+[a-z]*x|[[:space:]]-[a-z]*x|--extract)' "$s" "tar extract into storage/." ;;
@@ -130,13 +153,17 @@ while IFS= read -r seg; do
     cp|ln|install|ditto|rsync) has "$STORAGE" "$last" && deny "Copy/link into storage/." ;;   # last arg = destination; backups out of storage/ are fine
     find)
       bad '-exec(dir)?[[:space:]]+(sh|bash|zsh|env|ruby|python3?|perl|node)([[:space:]]|$)' "$s" "find -exec of a shell/interpreter."
-      has '-delete|-exec[[:space:]]+(rm|mv|shred|unlink)' "$s" && { has "$DB" "$s" || has '^find[[:space:]]+(-[A-Za-z]+[[:space:]]+)*(\.|\.\.|~|/)([[:space:]]|$)' "$s"; } && deny "find that deletes in storage or a project dir." ;;
-    sqlite3)   # any sqlite3 on a real database must be -readonly; a test db (token "test" in every .sqlite3 name) may be written
-      if has '(^|[[:space:]])-readonly' "$s"; then
-        bad '\.(shell|system|output|once|cd|log)([[:space:]]|$)' "$s" "sqlite3 dot-command escapes -readonly."
-      elif has "$DB" "$s" && ! { has "${W}test${E}" "$(echo "$s" | grep -Eo '[^[:space:]]*\.sqlite3[^[:space:]]*' | tr '\n' ' ')" && ! has "(development|production)" "$s"; }; then
-        deny "Raw sqlite3 on a real database needs -readonly: sqlite3 -readonly <db>."
-      fi ;;
+      has '-delete|-exec[[:space:]]+(rm|mv|shred|unlink)' "$s" && { has "$DB" "$s" || has '^find[[:space:]]+(-[A-Za-z]+[[:space:]]+)*(\.|\./|\.\.|~|/|\*|\./\*|\$PWD|\$HOME)([[:space:]]|$)' "$s"; } && deny "find that deletes in storage or a project dir." ;;
+    sqlite3)   # on a real database -readonly must come BEFORE the db path; a test db (every .sqlite3 name has the token "test") may be written
+      bad '(^|[[:space:]])-(cmd|init)([[:space:]]|$)' "$s" "sqlite3 -cmd/-init can run dot-commands."
+      ro=""; for t in "${w[@]:$((i+1))}"; do [[ "$t" == -* ]] || break; [ "$t" = -readonly ] && ro=1; done
+      [ -n "$ro" ] && continue
+      has "$DB" "$s" || continue
+      names=$(echo "$s" | grep -Eo '[^[:space:]]*\.sqlite3?[^[:space:]]*')
+      [ -n "$names" ] || deny "Raw sqlite3 on storage/ needs -readonly: sqlite3 -readonly <db>."
+      while read -r t; do
+        has "${W}test${E}" "$t" && ! has "(development|production)" "$t" || deny "Raw sqlite3 on a real database needs -readonly before the db path: sqlite3 -readonly <db>."
+      done <<<"$names" ;;
   esac
 done < <(echo "$cmd" | tr ';&|(){}' '\n\n\n\n\n\n\n')
 exit 0
