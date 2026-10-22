@@ -30,13 +30,17 @@ module DbWipeGuard
     name.match?(TEST_FILE) && !name.match?(REAL_FILE) && safe_location?(config.database.to_s)
   end
 
-  # Real path (symlinks resolved) must sit under Rails.root/storage or tmp, and the file itself must not be a symlink.
+  # Real path (symlinks resolved) must sit under Rails.root/tmp, never under storage/ (even through a symlinked
+  # tmp), and the file itself must not be a symlink. Test databases live in tmp/; storage/ is the real data dir.
   def self.safe_location?(database)
     path = File.expand_path(database, Rails.root)
     return false if File.symlink?(path)
 
     real = File.exist?(path) ? File.realpath(path) : File.join(File.realpath(File.dirname(path)), File.basename(path))
-    %w[storage tmp].any? { |d| real.start_with?(File.realpath(Rails.root.join(d)) + File::SEPARATOR) }
+    tmp = File.realpath(Rails.root.join("tmp")) + File::SEPARATOR
+    storage = File.expand_path(Rails.root.join("storage").to_s)
+    storage = File.realpath(storage) if File.exist?(storage)
+    real.start_with?(tmp) && !real.start_with?(storage + File::SEPARATOR) && !tmp.start_with?(storage + File::SEPARATOR)
   rescue SystemCallError
     false
   end

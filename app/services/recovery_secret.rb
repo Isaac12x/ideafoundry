@@ -128,7 +128,7 @@ class RecoverySecret
     end
 
     def app_node_id_file_path
-      Rails.root.join("storage", "app_node_id")
+      Rails.root.join(Rails.env.test? ? "tmp" : "storage", "app_node_id")
     end
 
     def persist_user_passphrase!(passphrase)
