@@ -21,12 +21,21 @@
       </div>
     </div>
   <% else %>
-    <div class="kb-tree" role="tree" aria-label="Knowledge base files">
+    <% single = folders.one? && folders.first[:exists] %>
+    <%# One root: no root row (its actions are in the toolbar); the tree itself is the root's drop and context-menu target. %>
+    <div class="kb-tree<%= " kb-tree--solo" if single %>" role="tree" aria-label="Knowledge base files"
+         <% if single %>
+           data-action="contextmenu->kb-tree#show dragover->kb-tree#dragOver dragleave->kb-tree#dragLeave drop->kb-tree#drop"
+           data-kb-tree-type-param="root" data-kb-tree-src-param="<%= folders.first[:index] %>" data-kb-tree-rel-param=""
+           data-kb-tree-area-param="true" data-kb-tree-sort-param="<%= folders.first[:preference]&.sort_mode %>"
+           data-kb-tree-favorite-param="<%= folders.first[:preference]&.favorite? %>"
+         <% end %>>
       <% folders.each do |folder| %>
         <% writable = folder[:exists] || folder[:native] %>
         <% has_directories = folder[:tree].values.any? { |node| node[:type] == :dir } %>
         <% root_favorite = folder[:preference]&.favorite? %>
         <div class="kb-folder-group" role="none" data-controller="kb-folder">
+          <% unless single %>
           <div class="kb-node kb-folder-header"
                role="treeitem" tabindex="-1" aria-expanded="true" aria-label="<%= folder[:label] %>"
                <% if writable %>
@@ -90,6 +99,7 @@
               <span class="kb-folder-status">(<%= folder[:drive] ? "unmounted" : "unavailable" %>)</span>
             <% end %>
           </div>
+          <% end %>
           <div class="kb-node-children kb-folder-files" role="group">
             <% if folder[:tree].empty? %>
               <span class="kb-no-files">Drop files here or create a folder</span>

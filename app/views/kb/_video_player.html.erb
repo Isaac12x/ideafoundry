@@ -1,0 +1,38 @@
+<%# Video + custom control bar (native controls resize with page zoom); see kb_video_controls_controller.js.
+    locals: src, mime, captions_url, selectable, video_data (data attrs for the <video>). Block = extra bar buttons. %>
+<% selectable = local_assigns.fetch(:selectable, false) %>
+<div class="kb-vplayer" data-controller="kb-video-controls kb-seek-preview" data-action="keydown->kb-video-controls#key">
+  <%= tag.video class: [ "kb-video-player", ("kb-selectable-media" if selectable) ], preload: "metadata",
+        tabindex: (0 if selectable), title: ("Select, then press Ctrl/Cmd+C to copy" if selectable),
+        data: { kb_video_controls_target: "video", kb_seek_preview_target: "video" }.merge(local_assigns.fetch(:video_data, {})) do %>
+    <%= tag.source src: src, type: mime %>
+    <% if local_assigns[:captions_url] %><%= tag.track kind: "captions", src: captions_url, srclang: "en", label: "Captions" %><% end %>
+    Your browser does not support video playback.
+  <% end %>
+  <div class="kb-vplayer__thumb" data-kb-seek-preview-target="thumb" hidden aria-hidden="true">
+    <canvas data-kb-seek-preview-target="canvas"></canvas>
+    <span data-kb-seek-preview-target="stamp"></span>
+  </div>
+  <div class="kb-vplayer__bar" role="group" aria-label="Video controls">
+    <button type="button" class="kb-vplayer__btn" aria-label="Play" title="Play (Space)" aria-keyshortcuts="Space" data-kb-video-controls-target="play" data-action="kb-video-controls#toggle">
+      <svg class="kb-vplayer__when-paused" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="7 4 20 12 7 20" fill="currentColor"/></svg>
+      <svg class="kb-vplayer__when-playing" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="4" width="4" height="16" fill="currentColor"/><rect x="14" y="4" width="4" height="16" fill="currentColor"/></svg>
+    </button>
+    <input type="range" class="kb-vplayer__seek" min="0" max="0" step="any" value="0" aria-label="Seek" data-kb-video-controls-target="seek" data-kb-seek-preview-target="seek" data-action="input->kb-video-controls#scrub change->kb-video-controls#seek">
+    <span class="kb-vplayer__time" data-kb-video-controls-target="time">0:00 / 0:00</span>
+    <button type="button" class="kb-vplayer__btn" aria-label="Mute" title="Mute (M)" aria-keyshortcuts="M" data-kb-video-controls-target="mute" data-action="kb-video-controls#mute">
+      <svg class="kb-vplayer__when-sound" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19" fill="currentColor"/><path d="M15.5 8.5a5 5 0 010 7"/><path d="M18.5 5.5a9 9 0 010 13"/></svg>
+      <svg class="kb-vplayer__when-muted" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19" fill="currentColor"/><line x1="22" y1="9" x2="16" y2="15"/><line x1="16" y1="9" x2="22" y2="15"/></svg>
+    </button>
+    <input type="range" class="kb-vplayer__vol" min="0" max="1" step="0.05" value="1" aria-label="Volume" data-kb-video-controls-target="volume" data-action="input->kb-video-controls#volume">
+    <select class="kb-vplayer__speed" aria-label="Playback speed" data-kb-video-controls-target="speed" data-action="change->kb-video-controls#speed">
+      <% %w[0.5 0.75 1 1.25 1.5 2].each do |rate| %><option value="<%= rate %>"<%= " selected" if rate == "1" %>><%= rate %>x</option><% end %>
+    </select>
+    <button type="button" class="kb-vplayer__btn" hidden aria-pressed="false" data-kb-video-controls-target="captions" data-action="kb-video-controls#captions">CC</button>
+    <%= yield %>
+    <button type="button" class="kb-vplayer__btn" aria-label="Fullscreen" title="Fullscreen (F)" aria-keyshortcuts="F" data-kb-video-controls-target="fullscreen" data-action="kb-video-controls#fullscreen">
+      <svg class="kb-vplayer__when-windowed" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3H5a2 2 0 00-2 2v3"/><path d="M16 3h3a2 2 0 012 2v3"/><path d="M8 21H5a2 2 0 01-2-2v-3"/><path d="M16 21h3a2 2 0 002-2v-3"/></svg>
+      <svg class="kb-vplayer__when-fullscreen" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8h3a2 2 0 002-2V3"/><path d="M21 8h-3a2 2 0 01-2-2V3"/><path d="M3 16h3a2 2 0 012 2v3"/><path d="M21 16h-3a2 2 0 00-2 2v3"/></svg>
+    </button>
+  </div>
+</div>

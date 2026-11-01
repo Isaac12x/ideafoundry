@@ -1,7 +1,8 @@
 import { Controller } from "@hotwired/stimulus"
 
 // Right-hand "Bookmarks" panel for paged documents (pdf, comic, epub, converted books).
-// "Contents" is the document's own outline; "Your bookmarks" are saved server-side per file.
+// "Contents" is the document's own outline; "Your highlights" are kb-annotate's marks (click jumps to the text);
+// "Pages" are saved server-side per file, for places with nothing to highlight (comics, epubs, scans).
 // It only talks to the viewer through events, so it works for any of them:
 //   in  (bubble up from the viewer): kb-pdf:outline / kb-pdf:page, kb-book:toc / kb-book:location, kb-comic:page
 //   out (sent to the viewer):        kb-pdf:goto / kb-comic:goto (detail = page), kb-book:goto (detail = CFI or href)
@@ -12,19 +13,23 @@ const fileOf = (href) => String(href || "").split("#")[0]
 const order = (a, b) => (a.page ?? 0) - (b.page ?? 0) || (a.progress ?? 0) - (b.progress ?? 0) || a.id - b.id
 
 export default class extends Controller {
-  static targets = ["panel", "toggle", "contents", "outline", "list", "empty", "status", "add"]
+  static targets = ["panel", "toggle", "contents", "outline", "highlights", "highlightList", "list", "empty", "status", "add"]
   static values = { url: String, src: String, file: String }
 
   connect() {
     this.items = []
     this.marks = []
+    this.highlights = []
     this.current = {}
     this._narrow = window.matchMedia(NARROW)
-    this._setOpen(this._narrow.matches ? false : this._stored() !== "0")
+    this._setOpen(this._narrow.matches ? false : this._stored() === "1") // hidden until the icon is clicked
     this._onKey = (event) => {
       if (event.key.toLowerCase() !== "b" || event.metaKey || event.ctrlKey || event.altKey || event.defaultPrevented || typing(event.target)) return
       event.preventDefault()
-      this.add()
+      // Text selected: B bookmarks that passage as a highlight. Otherwise the page.
+      const mark = new CustomEvent("kb-bookmarks:mark", { cancelable: true })
+      if (window.dispatchEvent(mark)) this.add()
+      else if (this.panelTarget.hidden) this._setOpen(true)
     }
     window.addEventListener("keydown", this._onKey)
     this._load()
@@ -58,6 +63,11 @@ export default class extends Controller {
     this._highlight()
   }
 
+  highlighted(event) {
+    this.highlights = event.detail
+    this._renderMarks()
+  }
+
   // ── panel ───────────────────────────────────────────────────────────────
 
   toggle() {
@@ -80,6 +90,8 @@ export default class extends Controller {
     else if (act === "rename") this._edit(+id)
     else if (act === "delete") this._remove(+id)
     else if (act === "undo") this._undelete()
+    else if (act === "highlight") this._toHighlight("reveal", +id)
+    else if (act === "erase") this._toHighlight("erase", +id)
   }
 
   async add() {
@@ -177,6 +189,11 @@ export default class extends Controller {
     this._renderMarks()
   }
 
+  _toHighlight(action, id) {
+    window.dispatchEvent(new CustomEvent(`kb-bookmarks:${action}`, { detail: id }))
+    if (action === "reveal" && this._narrow.matches) this.close()
+  }
+
   _go(target) {
     if (!target) return
     const find = (name) => this.element.querySelector(`[data-controller~="${name}"]`)
@@ -208,7 +225,18 @@ export default class extends Controller {
   }
 
   _renderMarks() {
+    const count = this.marks.length + this.highlights.length
     this.emptyTarget.hidden = this.marks.length > 0
+    // Line icon with none, filled icon with any; the label carries the count.
+    this.toggleTarget.classList.toggle("has-marks", count > 0)
+    this.toggleTarget.title = this.toggleTarget.ariaLabel = count ? `Bookmarks (${count})` : "Bookmarks"
+    this.highlightsTarget.hidden = this.highlights.length === 0
+    this.highlightListTarget.replaceChildren(...this.highlights.map((mark) => {
+      const go = this._button(mark.quote, "kb-bookmarks__go", { act: "highlight", id: mark.id })
+      go.dataset.color = mark.color
+      if (mark.page) go.append(this._meta(`p. ${mark.page}`))
+      return this._li(go, this._button("×", "kb-bookmarks__tool", { act: "erase", id: mark.id }, "Remove highlight"))
+    }))
     this.listTarget.replaceChildren(...this.marks.map((mark) => {
       const go = this._button(mark.label, "kb-bookmarks__go", { act: "mark", id: mark.id })
       if (mark.page) go.append(this._meta(`p. ${mark.page}`))

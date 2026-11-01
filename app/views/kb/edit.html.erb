@@ -1,5 +1,5 @@
 <turbo-frame id="kb-content">
-  <%= form_with url: kb_fs_save_path, method: :patch, class: "kb-editor" do |f| %>
+  <%= form_with url: kb_fs_save_path, method: :patch, class: "kb-editor", data: { controller: "kb-selection-menu", kb_selection_menu_file_value: @selected_file, kb_selection_menu_questions_url_value: settings_local_agent_questions_path, kb_selection_menu_settings_url_value: settings_local_agent_path } do |f| %>
     <%= f.hidden_field :src, value: @selected_folder_index %>
     <%= f.hidden_field :file, value: @selected_file %>
     <div class="kb-editor-toolbar">

@@ -13,6 +13,10 @@ export default class extends Controller {
     }
 
     this.resizing = false
+    this.onPrefill = ({ detail }) => this.prefill(detail)
+    this.onQueued = ({ detail }) => this.queued(detail)
+    window.addEventListener("ask-agent:prefill", this.onPrefill)
+    window.addEventListener("ask-agent:queued", this.onQueued)
     this.inventionIndex = this.initialInventionIndex()
     this.showCurrentInvention({ immediate: true })
     this.startInventionCycle()
@@ -26,12 +30,14 @@ export default class extends Controller {
   }
 
   disconnect() {
+    window.removeEventListener("ask-agent:prefill", this.onPrefill)
+    window.removeEventListener("ask-agent:queued", this.onQueued)
     this.stopResize()
     this.stopInventionCycle()
     window.clearTimeout(this.swapTimer)
   }
 
-  open(event) {
+  open(event, { focus = true } = {}) {
     event?.preventDefault()
     if (!this.hasPanelTarget) return
 
@@ -46,9 +52,31 @@ export default class extends Controller {
     document.body.classList.add("ask-agent-open")
     this.scrollMessages()
 
-    if (this.hasBodyTarget) {
+    if (focus && this.hasBodyTarget) {
       this.bodyTarget.focus()
     }
+  }
+
+  // "ask-agent:prefill" { text }: open with text in the question box, cursor at the end (KB "Ask AI").
+  prefill({ text }) {
+    if (!this.hasBodyTarget) return
+    this.bodyTarget.value = text
+    this.open()
+    this.bodyTarget.setSelectionRange(text.length, text.length)
+  }
+
+  // "ask-agent:queued" { question }: a question was sent without a page load (KB "Expand"); show it as pending.
+  // The panel opens without taking focus, so the reader's selection and scroll position stay put.
+  queued({ question }) {
+    if (!this.hasMessagesTarget) return
+    this.messagesTarget.querySelector(".ask-agent-sidebar__empty")?.remove()
+    const article = document.createElement("article")
+    article.className = "ask-agent-thread"
+    article.innerHTML = `<div class="ask-agent-message ask-agent-message--user"><div class="ask-agent-message__meta"><span>You</span><time>just now</time></div><p></p></div>
+      <div class="ask-agent-message ask-agent-message--pending"><div class="ask-agent-message__meta"><span>Agent</span><time>Pending</time></div><p>Waiting for an answer.</p></div>`
+    article.querySelector("p").textContent = question
+    this.messagesTarget.appendChild(article)
+    this.open(null, { focus: false })
   }
 
   close() {

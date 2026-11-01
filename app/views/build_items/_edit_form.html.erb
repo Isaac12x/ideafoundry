@@ -1,7 +1,7 @@
 <div class="backlog-item backlog-item--editing" id="build_item_<%= build_item.id %>" data-item-id="<%= build_item.id %>">
   <%= form_with(model: build_item, class: "backlog-edit-form") do |f| %>
     <div class="backlog-edit-fields">
-      <%= f.text_field :title, class: "backlog-form-input" %>
+      <%= f.text_area :title, rows: 1, data: { enter_submit: true }, class: "backlog-form-input" %>
       <%= f.text_area :description, class: "backlog-form-textarea", rows: 2, placeholder: "Notes or details..." %>
 
       <div class="backlog-form-links" data-controller="backlog-links">

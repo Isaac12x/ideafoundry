@@ -193,12 +193,17 @@ class SettingsController < ApplicationController
 
   def create_local_agent_question
     unless @user.local_agent_enabled?
+      # JSON callers (KB selection menu) get a state they can show, not a redirect.
+      return render json: { error: "disabled", settings_url: settings_local_agent_path }, status: :unprocessable_content if request.format.json?
+
       redirect_to local_agent_question_return_path(anchor: false), alert: "Enable the local agent before asking a question."
       return
     end
 
     question = local_agent_question_params[:body].to_s.strip
     if question.blank?
+      return render json: { error: "blank" }, status: :unprocessable_content if request.format.json?
+
       redirect_to local_agent_question_return_path, alert: "Enter a question for the local agent."
       return
     end
@@ -212,6 +217,7 @@ class SettingsController < ApplicationController
       }
     )
     LocalAgentSupervisorJob.perform_later(@user.id, run_once: true)
+    return render json: { ok: true, live: @user.local_agent_live?, settings_url: settings_local_agent_path } if request.format.json?
 
     redirect_to local_agent_question_return_path, notice: "Question queued for the local agent."
   end
