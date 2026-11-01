@@ -261,6 +261,7 @@ Rails.application.routes.draw do
   get "knowledge-base/ocr", to: "kb_ocr#show", as: :kb_ocr
   get "knowledge-base/transcript", to: "kb_transcripts#show", as: :kb_transcript
   post "knowledge-base/transcript", to: "kb_transcripts#create"
+  post "knowledge-base/description", to: "kb_descriptions#create", as: :kb_description
   get "knowledge-base/note", to: "kb_notes#show", as: :kb_note
   patch "knowledge-base/note", to: "kb_notes#update"
   get "knowledge-base/archive", to: "kb_archives#show", as: :kb_archive

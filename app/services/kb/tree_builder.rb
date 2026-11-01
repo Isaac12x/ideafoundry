@@ -171,6 +171,8 @@ module Kb
         f[:note] = Kb::Note.preview(f[:abs]) || "Note"
         side
       end
+      # "<file>.source.json" (download link + description) is hidden too; the viewer shows it.
+      hidden += files.filter_map { |f| side = Kb::Source.sidecar(f[:rel]); side if !Kb::Source.sidecar?(f[:rel]) && rels.key?(side) }
       files.reject! { |f| hidden.include?(f[:rel]) }
     end
 

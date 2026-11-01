@@ -6,6 +6,16 @@
     <%= csrf_meta_tags %>
     <%= csp_meta_tag %>
     <%= action_cable_meta_tag %>
+    <%# Runs while the page is still loading, before any module: keys pressed before the lock controller exists are replayed by it (typing_activity_controller#replayEarlyKeys). %>
+    <%= javascript_tag nonce: true do %>
+      window.__earlyKeys = [];
+      document.addEventListener("keydown", function (e) {
+        if (window.__earlyKeys && (e.ctrlKey || e.metaKey || e.altKey) && window.__earlyKeys.length < 20)
+          window.__earlyKeys.push({ key: e.key, code: e.code, ctrlKey: e.ctrlKey, metaKey: e.metaKey, altKey: e.altKey, shiftKey: e.shiftKey, repeat: e.repeat });
+      }, true);
+    <% end %>
+    <meta name="kb-pdf-bundle" content="<%= asset_path('kb_viewers/pdf.js') %>">
+    <meta name="kb-pdf-worker" content="<%= asset_path('kb_viewers/pdf.worker.js') %>">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -31,10 +41,12 @@
     body_controllers << "shortcuts" unless security_lock_screen || backlog_only
     body_controllers << "typing-activity" if typing_activity_enabled
     body_controllers << "kb-notes" if show_notes
+    body_controllers << "draft-keeper" if @user && !security_lock_screen
   %>
   <body class="<%= [body_class, show_notes ? 'has-notes-bar' : nil].compact.join(' ') %>"
         data-contrast="<%= display_contrast.presence || 'normal' %>"
         style="--contrast: <%= (@user&.display_contrast || 100) %>%"
+        <% if @user %>data-draft-user="<%= @user.id %>" data-draft-seed="<%= @user.idea_draft_unlock_seed %>"<% end %>
         data-shortcut-overrides="<%= (@user&.keyboard_shortcuts || {}).to_json %>"
         <% if body_controllers.any? %>
           data-controller="<%= body_controllers.join(' ') %>"
@@ -123,7 +135,7 @@
                   class: "nav-pill nav-lock-button",
                   title: "Lock (#{typing_lock_shortcut})",
                   aria: { label: "Lock" },
-                  data: { shortcut_key: typing_lock_shortcut, shortcut_label: "Lock workspace", shortcut_group: "Global" },
+                  data: { shortcut_key: typing_lock_shortcut, shortcut_label: "Lock workspace", shortcut_group: "Global", shortcut_id: "lock", shortcut_title: "Lock" },
                   form: {
                     class: "nav-lock-form",
                     data: { typing_activity_target: "lockForm", shortcut_skip: true }

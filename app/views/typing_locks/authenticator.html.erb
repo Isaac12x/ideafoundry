@@ -1,6 +1,6 @@
 <% content_for :body_class, "typing-lock-page typing-lock-page--fixed" %>
 
-<%= render "authenticator_panel",
+<%= render "typing_locks/authenticator_panel",
       return_to: @return_to,
       challenge_token: @authenticator_challenge_token,
       error: @authenticator_error %>

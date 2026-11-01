@@ -16,7 +16,7 @@ module Kb
     def sidecar?(path) = path.to_s.end_with?(SUFFIX)
 
     # Notes pair with anything that is not itself markdown/a note.
-    def eligible?(abs) = !sidecar?(abs) && Kb::MediaTypes.kind_for(abs) != :markdown
+    def eligible?(abs) = !sidecar?(abs) && !Kb::Source.sidecar?(abs) && Kb::MediaTypes.kind_for(abs) != :markdown
 
     # Sidecar path when `abs` has a note next to it, else nil.
     def sidecar_for(abs)

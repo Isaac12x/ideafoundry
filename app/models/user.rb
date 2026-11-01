@@ -1025,6 +1025,8 @@ has_many :media_digests, dependent: :destroy
   # Canonical order Ctrl/Cmd, Alt, Shift (the JS capture and matcher agree); or a two-step "g p" sequence.
   SHORTCUT_BINDING = %r{\A(?:Ctrl/Cmd\+)?(?:Alt\+)?(?:Shift\+)?(?:\S|Enter|Arrow(?:Up|Down|Left|Right)|F(?:[1-9]|1[0-2]))\z|\A[a-z0-9] [a-z0-9]\z}
   SHORTCUT_CHORD = %r{\A(?:Ctrl/Cmd|Alt)\+}
+  # Mirrors browserReserved() in shortcut_bindings.mjs off Mac: Ctrl+<these> belongs to the browser, so the app fires Alt+<key>.
+  SHORTCUT_BROWSER_OWNED = %r{\Actrl/cmd\+((?:shift\+)?)([defghjklmnopqrstuwy])\z}
   SHORTCUT_ALT_DIGIT = %r{Alt\+(?:Shift\+)?\d\z} # Alt+1..9/0 switch tabs and are not rebindable
 
   # The user's overrides only ({ id => binding }); anything unset uses the default.
@@ -1107,7 +1109,8 @@ has_many :media_digests, dependent: :destroy
     end
     return problems if problems.any?
 
-    effective = DEFAULT_SHORTCUTS.to_h { |id, d| [ id, (custom[id] || d["key"]).downcase ] }
+    # Compare what fires on Windows/Linux (Ctrl/Cmd+S becomes Alt+S there); Mac can't collide more, Ctrl+key isn't typeable.
+    effective = DEFAULT_SHORTCUTS.to_h { |id, d| [ id, (custom[id] || d["key"]).downcase.sub(SHORTCUT_BROWSER_OWNED) { "alt+#{$1}#{$2}" } ] }
     effective.group_by { |_, bind| bind }.each_value do |pairs|
       next if pairs.size < 2
 

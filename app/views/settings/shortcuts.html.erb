@@ -13,18 +13,18 @@
 
   <%= form_with url: settings_shortcuts_path, method: :patch, local: true, class: "display-settings-form" do %>
     <div class="display-fields-card">
-      <p class="display-field-hint">Click a field and press the combo (e.g. Ctrl/Cmd+Shift+S), or type a sequence like <code>g x</code>. A custom binding replaces the default; leave blank to keep the default.</p>
+      <p class="display-field-hint">Click a field and press the combo (e.g. Ctrl/Cmd+Shift+Y), or type a sequence like <code>g x</code>. Ctrl/Cmd+letter shortcuts that the browser already owns (S, P, L, T, W, N, R, F...) never override it: they fire as Ctrl+letter on Mac and Alt+letter on Windows/Linux. A custom binding replaces the default; leave blank to keep the default.</p>
       <% User::DEFAULT_SHORTCUTS.each do |id, shortcut| %>
         <div class="display-field-row">
           <label class="display-field-label" for="keyboard_shortcuts_<%= id %>">
             <%= shortcut["label"] %>
-            <kbd><%= @user.shortcut_binding(id) %></kbd>
-            <% if @user.keyboard_shortcuts[id] %><small>custom (default <kbd><%= shortcut["key"] %></kbd>)</small><% end %>
+            <kbd data-shortcut-id="<%= id %>"><%= @user.shortcut_binding(id) %></kbd>
+            <% if @user.keyboard_shortcuts[id] %><small>custom (default <kbd data-shortcut-raw="<%= shortcut["key"] %>"><%= shortcut["key"] %></kbd>)</small><% end %>
           </label>
           <%= text_field_tag "keyboard_shortcuts[#{id}]", typed[id] || @user.keyboard_shortcuts[id],
                 id: "keyboard_shortcuts_#{id}", class: "form-control", maxlength: 32,
                 placeholder: shortcut["key"], autocomplete: "off",
-                data: { controller: "shortcut-capture", action: "keydown->shortcut-capture#capture" } %>
+                data: { controller: "shortcut-capture", action: "keydown->shortcut-capture#capture", shortcut_raw: shortcut["key"] } %>
         </div>
       <% end %>
     </div>

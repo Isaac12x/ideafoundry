@@ -32,7 +32,7 @@ class KbMediaEditsControllerTest < ActionDispatch::IntegrationTest
 
     get kb_file_path(src: 0, file: "evidence.png")
     assert_response :success
-    assert_select "a.kb-content-edit-link[href=?]", kb_edit_path(src: 0, file: "evidence.png"), text: /Edit/
+    assert_select "a.kb-content-edit-link[href=?][aria-label=?][title=?]", kb_edit_path(src: 0, file: "evidence.png"), "Edit evidence.png", "Edit"
     assert_select ".kb-media-editor", count: 0
 
     get kb_edit_path(src: 0, file: "evidence.png")

@@ -4,15 +4,17 @@ import { Controller } from "@hotwired/stimulus"
 // on the element as a custom property and in localStorage, so it survives
 // reloads and tree re-renders without a round trip.
 const STORE_KEY = "kb-sidebar-width"
+const COLLAPSE_KEY = "kb-sidebar-collapsed"
 const MIN = 180
 const MAX = 560
 const STEP = 16
 
 export default class extends Controller {
-  static targets = ["handle", "panel", "toggle"]
+  static targets = ["handle", "panel", "toggle", "collapse"]
 
   connect() {
     this.apply(this.stored() ?? this.panelTarget.offsetWidth)
+    this.setCollapsed(this.read(COLLAPSE_KEY) === "1")
 
     this._onMove = (event) => this.move(event)
     this._onUp = () => this.stop()
@@ -49,6 +51,27 @@ export default class extends Controller {
 
     event.preventDefault()
     this.apply(this.panelTarget.offsetWidth + delta)
+  }
+
+  // Wide screens: collapse the sidebar to a thin rail (remembered) so the document gets the width.
+  toggleCollapse() {
+    this.setCollapsed(!this.element.classList.contains("is-collapsed"))
+    this.write(COLLAPSE_KEY, this.element.classList.contains("is-collapsed") ? "1" : "0")
+  }
+
+  setCollapsed(collapsed) {
+    this.element.classList.toggle("is-collapsed", collapsed)
+    if (!this.hasCollapseTarget) return
+    this.collapseTarget.setAttribute("aria-expanded", String(!collapsed))
+    this.collapseTarget.title = this.collapseTarget.ariaLabel = collapsed ? "Show files" : "Hide files"
+  }
+
+  read(key) {
+    try { return localStorage.getItem(key) } catch { return null }
+  }
+
+  write(key, value) {
+    try { localStorage.setItem(key, value) } catch { /* ponytail: storage disabled, collapse just won't persist */ }
   }
 
   // Narrow screens: the sidebar is an off-canvas drawer (CSS); this flips it.

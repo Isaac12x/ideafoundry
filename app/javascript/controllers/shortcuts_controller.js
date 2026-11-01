@@ -1,6 +1,8 @@
 import { Controller } from "@hotwired/stimulus"
-import { DEFAULT_BINDINGS, binding, matches, sequenceKeys } from "lib/shortcut_bindings"
+import { DEFAULT_BINDINGS, binding, labelShortcuts, matches, platformBinding, sequenceKeys } from "lib/shortcut_bindings"
 
+const SUBMIT = "button:not([type]), button[type='submit'], input[type='submit']"
+const SUBMIT_PRIMARY = "button:not([type]).btn-primary, button[type='submit'].btn-primary, input[type='submit'].btn-primary"
 const HINT_CHARS = "asdfghjklqwertyuiopzxcvbnm1234567890"
 
 export default class extends Controller {
@@ -48,6 +50,7 @@ export default class extends Controller {
     this.hintBuffer = ""
     this.visibleActions = []
     this.rendering = false
+    labelShortcuts()
 
     this.boundKeydown = this.onKeydown.bind(this)
     this.boundRefresh = this.scheduleRefresh.bind(this)
@@ -104,6 +107,8 @@ export default class extends Controller {
 
   onKeydown(event) {
     if (!event.key || event.isComposing) return
+    // Recording a shortcut (Settings > Shortcuts) must never run it.
+    if (event.defaultPrevented || event.target.closest?.("[data-controller~='shortcut-capture']")) return
 
     if (this.hintMode) {
       this.handleHintKey(event)
@@ -135,7 +140,7 @@ export default class extends Controller {
     const actions = id && this.shortcutActions()
     if (!actions?.[id]) return false
 
-    const chord = /(Ctrl\/Cmd|Alt)\+/.test(binding(id))
+    const chord = /^(Ctrl|Alt)/.test(binding(id))
     if (!chord && (this.constructor.isEditableTarget(event.target) || document.querySelector("dialog[open]"))) return false
 
     // A handler returning false found nothing to act on, so the key is left to the page.
@@ -222,7 +227,11 @@ export default class extends Controller {
     this.renderPanel()
   }
 
+  // The action scan measures every link/button on the page (thousands in a big KB tree): only while someone is looking.
+  // openPanel/openHints refresh first, so a closed panel never goes stale.
   scheduleRefresh() {
+    if (!this.panelOpen() && !this.hintMode) return
+
     window.clearTimeout(this.refreshTimer)
     this.refreshTimer = window.setTimeout(() => this.refresh(), 60)
   }
@@ -356,7 +365,7 @@ export default class extends Controller {
       .filter((element) => this.isVisible(element))
       .filter((element) => !element.closest(".app-header, .shortcuts-shell, .command-palette"))
       .map((element) => ({
-        key: element.dataset.shortcutKey,
+        key: platformBinding(element.dataset.shortcutKey),
         label: element.dataset.shortcutLabel || this.labelFor(element),
       }))
       .filter((item) => item.key && item.label)
@@ -506,11 +515,15 @@ export default class extends Controller {
       ".topology-graph-search",
     ].join(","))
 
-    if (!search) return false
+    search?.focus()
+    search?.select?.()
+    if (search && document.activeElement === search) return true
 
-    search.focus()
-    search.select?.()
-    return true
+    // No search field took focus (none, or a hidden one such as the related-entries input): a collapsed
+    // search icon (e.g. the KB tree filter) opens and focuses itself.
+    const reveal = this.firstVisible("[data-shortcut-role~='search-reveal']")
+    reveal?.click()
+    return !!reveal
   }
 
   // The focused form, else the first form in <main>. Never a data-shortcut-skip form: lock forms must not be saved or submitted by shortcut.
@@ -525,15 +538,16 @@ export default class extends Controller {
     const form = this.actionForm(target)
     // Unfocused forms only save via an explicit role or primary button, never an arbitrary submit (Delete).
     const focused = form && form === target?.closest?.("form")
+    // A <button> with no type submits too.
     const saveControl = form?.querySelector(focused
-      ? "[data-shortcut-role~='save'], button[type='submit'], input[type='submit']"
-      : "[data-shortcut-role~='save'], button[type='submit'].btn-primary, input[type='submit'].btn-primary")
+      ? `[data-shortcut-role~='save'], ${SUBMIT}`
+      : `[data-shortcut-role~='save'], ${SUBMIT_PRIMARY}`)
     if (saveControl) {
       saveControl.click()
-      return
+      return true
     }
 
-    this.clickFirst("[data-shortcut-role~='save']:not([data-shortcut-skip] *), main button[type='submit'].btn-primary:not([data-shortcut-skip] *), main input[type='submit'].btn-primary:not([data-shortcut-skip] *)")
+    return this.clickFirst("[data-shortcut-role~='save']:not([data-shortcut-skip] *), main button:not([type]).btn-primary:not([data-shortcut-skip] *), main button[type='submit'].btn-primary:not([data-shortcut-skip] *), main input[type='submit'].btn-primary:not([data-shortcut-skip] *)")
   }
 
   submitCurrentContext(target) {

@@ -214,7 +214,9 @@ class KbDownload < ApplicationRecord
     folder = File.join(File.dirname(file), self.class.safe_name(title.presence || File.basename(filename, ".*")))
     folder = "#{folder}-#{SecureRandom.hex(2)}" if File.exist?(folder)
     FileUtils.mkdir_p(folder)
+    source = Kb::Source.sidecar_for(file)
     FileUtils.mv(file, folder)
+    Kb::Source.carry!(source, File.join(folder, File.basename(file)))
     update!(dir: folder.delete_prefix("#{base}/"))
   end
 end

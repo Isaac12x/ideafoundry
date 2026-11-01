@@ -220,6 +220,7 @@ class TypingLocksControllerTest < ActionDispatch::IntegrationTest
     post lock_typing_lock_path, params: { return_to: ideas_path }
 
     assert_redirected_to root_path
+    assert_equal '"cache"', response.headers["Clear-Site-Data"]
 
     get ideas_path
     assert_redirected_to root_path
@@ -423,6 +424,17 @@ class TypingLocksControllerTest < ActionDispatch::IntegrationTest
 
     get ideas_path
     assert_redirected_to root_path
+  end
+
+  test "authenticator-only lock renders its panel from the root controller" do
+    @user.update!(settings: { "typing_lock" => { "enabled" => false } })
+    @user.update_authenticator_app_settings("enabled" => "1")
+    @user.save!
+
+    get root_path
+
+    assert_response :success
+    assert_match(/name="authenticator_code"/, response.body)
   end
 
   test "voice id posts audio to the bundled local transcription service" do

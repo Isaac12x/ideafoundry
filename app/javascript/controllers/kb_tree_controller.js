@@ -2,6 +2,7 @@ import { Controller } from "@hotwired/stimulus"
 import { confirmDialog, alertDialog } from "lib/app_dialog"
 import { dropZone, insertNear, shift } from "lib/kb_order"
 import { embeddedUrl, clipFromUrl, formatClip } from "lib/kb_clip_time"
+import { PLAYER, adoptRender, swapKey, swapTo, unwarm, warm } from "lib/kb_video_swap"
 
 const MENU_VISIBILITY = {
   newFile: (node) => node.type !== "file",
@@ -64,13 +65,25 @@ export default class extends Controller {
     this.element.addEventListener("keydown", this._onTreeKeydown)
     this.element.addEventListener("focusin", this._onTreeFocusin)
     // Turbo broadcasts and folder toggles change the tree under us; keep ARIA state and the roving tab stop in step.
-    this._observer = new MutationObserver(() => this._queueSync())
+    this._observer = new MutationObserver((records) => this._queueSync(records))
     this._observer.observe(this.element, { subtree: true, childList: true, attributes: true, attributeFilter: ["class"] })
     this._syncTree()
     this._onBeforeStreamRender = (event) => this._preserveSelectionAcrossStream(event)
     document.addEventListener("turbo:before-stream-render", this._onBeforeStreamRender)
     this._onFrameLoad = (event) => this._highlightFrameFile(event)
     document.addEventListener("turbo:frame-load", this._onFrameLoad)
+    document.addEventListener("turbo:before-frame-render", adoptRender)
+    // The optimistic click state is undone when the pane never gets the file (404, offline, no frame in the response).
+    this._onFrameOk = (event) => { if (event.target?.id === "kb-content") this._pendingSwap = null }
+    this._onFrameFail = (event) => { if (event.target?.id === "kb-content") this._undoSwap() }
+    this._onFrameResponse = (event) => { if (event.target?.id === "kb-content" && event.detail?.fetchResponse?.response?.ok === false) this._undoSwap() }
+    document.addEventListener("turbo:frame-load", this._onFrameOk)
+    document.addEventListener("turbo:frame-missing", this._onFrameFail)
+    document.addEventListener("turbo:fetch-request-error", this._onFrameFail)
+    document.addEventListener("turbo:before-fetch-response", this._onFrameResponse)
+    this._warm = {}
+    this._onPointerOver = (event) => warm(this._warm, event.target.closest?.(".kb-file-link"))
+    this.element.addEventListener("pointerover", this._onPointerOver)
     // After the folder controllers inside restore their saved collapsed state.
     this._revealTimer = window.setTimeout(() => this._revealFromUrl())
   }
@@ -97,11 +110,48 @@ export default class extends Controller {
     this._unbindDocListeners()
     document.removeEventListener("turbo:before-stream-render", this._onBeforeStreamRender)
     document.removeEventListener("turbo:frame-load", this._onFrameLoad)
+    document.removeEventListener("turbo:before-frame-render", adoptRender)
+    document.removeEventListener("turbo:frame-load", this._onFrameOk)
+    document.removeEventListener("turbo:frame-missing", this._onFrameFail)
+    document.removeEventListener("turbo:fetch-request-error", this._onFrameFail)
+    document.removeEventListener("turbo:before-fetch-response", this._onFrameResponse)
+    this.element.removeEventListener("pointerover", this._onPointerOver)
+    unwarm(this._warm)
   }
 
   // Optimistically drop the "new download" dot; the server clears opened_at on open.
+  // Also responds at once to the click: highlight the row and stop the open video, instead of waiting
+  // for the frame response (the pane swap) to do it.
   markSeen(event) {
-    event.currentTarget.closest(".kb-file-row")?.classList.remove("is-new")
+    const row = event.currentTarget.closest(".kb-file-row")
+    const wasNew = !!row?.classList.contains("is-new")
+    row?.classList.remove("is-new")
+    if (event.defaultPrevented || event.button || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
+    const video = document.querySelector(PLAYER)
+    const link = event.currentTarget
+    if (row?.classList.contains("is-active")) return
+    // Rapid switching A -> B -> C keeps A's undo: A is what the pane still shows until some frame lands.
+    const pending = this._pendingSwap ||= { undo: null, news: [], active: Array.from(this.element.querySelectorAll(".kb-file-row.is-active, .kb-file-link.is-active")) }
+    // A video over a playing/paused video: re-point the live player now, the frame only fills in the panels after.
+    const undo = video && link.dataset.kbVideo && row ? swapTo(video, { url: link.dataset.kbVideo, key: swapKey(row.dataset.kbTreeSrcParam, row.dataset.kbTreeRelParam) }) : null
+    pending.undo ||= undo
+    if (wasNew) pending.news.push(row)
+    // Not handled (no player, or one nothing resumes, like the media editor's): stop it rather than let the old file play on.
+    if (!undo) video?.pause()
+    if (!row) return
+    this.element.querySelectorAll(".kb-file-row.is-active, .kb-file-link.is-active").forEach((el) => el.classList.remove("is-active"))
+    row.classList.add("is-active")
+    row.querySelector(".kb-file-link")?.classList.add("is-active")
+  }
+
+  _undoSwap() {
+    const pending = this._pendingSwap
+    this._pendingSwap = null
+    if (!pending) return
+    pending.undo?.()
+    this.element.querySelectorAll(".kb-file-row.is-active, .kb-file-link.is-active").forEach((el) => el.classList.remove("is-active"))
+    pending.active.forEach((el) => el.classList.add("is-active"))
+    pending.news.forEach((el) => el.classList.add("is-new"))
   }
 
   // The tree is not re-rendered when the pane changes, so is-active would stay on
@@ -121,7 +171,6 @@ export default class extends Controller {
     this.element.querySelectorAll(".kb-file-row.is-active, .kb-file-link.is-active").forEach((el) => el.classList.remove("is-active"))
     row.classList.add("is-active")
     row.querySelector(".kb-file-link")?.classList.add("is-active")
-    this._queueSync()
   }
 
   show(event) {
@@ -302,21 +351,52 @@ export default class extends Controller {
     return { src: row.dataset.kbTreeSrcParam, rel: row.dataset.kbTreeRelParam ?? "" }
   }
 
-  _queueSync() {
+  // Mutation records are collected until the microtask runs. A class flip alone (is-active, is-collapsed) only
+  // re-syncs the rows that flipped; anything that adds or removes nodes re-syncs the whole tree.
+  _queueSync(records = null) {
+    // The controller wraps the whole page: a pane render or a player class flip (transcript highlight, controls) is not the tree.
+    if (records) records = records.filter((record) => typeof record.target.closest !== "function" || record.target.closest(".kb-sidebar"))
+    if (records?.length === 0) return
+    if (!records || records.some((record) => record.type !== "attributes")) this._syncAll = true
+    else { this._syncRows ||= new Set(); records.forEach((record) => this._syncRows.add(record.target)) }
     if (this._syncQueued) return
     this._syncQueued = true
-    queueMicrotask(() => { this._syncQueued = false; this._syncTree() })
+    queueMicrotask(() => {
+      this._syncQueued = false
+      const rows = this._syncRows
+      const all = this._syncAll || !rows
+      this._syncRows = null
+      this._syncAll = false
+      if (all) this._syncTree()
+      else this._syncChanged(rows)
+    })
+  }
+
+  // Writes only on change: this runs on every class flip in a tree of thousands of rows.
+  _aria(el, name, value) { if (el.getAttribute(name) !== value) el.setAttribute(name, value) }
+
+  _syncFile(row) {
+    const on = row.classList.contains("is-active")
+    this._aria(row, "aria-selected", String(on))
+    if (on) this._aria(row, "aria-current", "page"); else row.removeAttribute("aria-current")
+  }
+
+  _syncDir(header) { this._aria(header, "aria-expanded", String(!header.parentElement.classList.contains("is-collapsed"))) }
+
+  _syncChanged(rows) {
+    let collapsed = false
+    rows.forEach((el) => {
+      if (el.matches(".kb-file-row")) this._syncFile(el)
+      else if (el.matches(".kb-dir-group")) { collapsed = true; const header = el.querySelector(":scope > .kb-dir-header"); if (header) this._syncDir(header) }
+    })
+    // Folding away the row that holds the tab stop is the one class flip that needs the roving item moved.
+    if (collapsed && this.element.querySelector(`${TREEITEM}[tabindex="0"]`)?.closest(".kb-dir-group.is-collapsed")) this._syncTree()
   }
 
   _syncTree() {
-    this.element.querySelectorAll(".kb-dir-header").forEach((row) => {
-      row.setAttribute("aria-expanded", String(!row.parentElement.classList.contains("is-collapsed")))
-    })
-    this.element.querySelectorAll(".kb-file-row").forEach((row) => {
-      const on = row.classList.contains("is-active")
-      row.setAttribute("aria-selected", String(on))
-      if (on) row.setAttribute("aria-current", "page"); else row.removeAttribute("aria-current")
-    })
+    const set = (el, name, value) => this._aria(el, name, value)
+    this.element.querySelectorAll(".kb-dir-header").forEach((row) => this._syncDir(row))
+    this.element.querySelectorAll(".kb-file-row").forEach((row) => this._syncFile(row))
 
     const items = this._items()
     if (!items.length) return
@@ -327,7 +407,7 @@ export default class extends Controller {
       || (key && items.find((el) => el.dataset.kbTreeSrcParam === key.src && (el.dataset.kbTreeRelParam ?? "") === key.rel))
       || items.find((el) => el.classList.contains("is-active"))
       || items[0]
-    items.forEach((el) => el.setAttribute("tabindex", el === pick ? "0" : "-1"))
+    items.forEach((el) => set(el, "tabindex", el === pick ? "0" : "-1"))
     this.element.querySelectorAll(`${TREEITEM}[tabindex="0"]`).forEach((el) => { if (el !== pick) el.setAttribute("tabindex", "-1") })
   }
 
@@ -547,6 +627,8 @@ export default class extends Controller {
 
     const node = this._node
     const fields = { src: node.src, dir: this._targetDir(node), name, kind: "file" }
+    const viewed = this._viewedRel()
+    if (viewed) fields.view_rel = viewed // lets the server route a root-level download into the project being viewed
     if (this.hasFormatTarget && !this.formatTarget.hidden) {
       fields.format = this.formatTarget.querySelector("input:checked")?.value || "auto"
       if (this.hasClipStartTarget) {
@@ -675,7 +757,22 @@ export default class extends Controller {
     this.element.querySelectorAll(".is-drop-target, .is-drop-before, .is-drop-after").forEach((element) => element.classList.remove("is-drop-target", "is-drop-before", "is-drop-after"))
   }
 
+  // Toolbar buttons (single root): fan out to each root's kb-folder controller.
+  collapseAll() { this._eachFolder((folder) => folder.collapseAll()) }
+  expandAll() { this._eachFolder((folder) => folder.expandAll()) }
+
+  _eachFolder(fn) {
+    this.element.querySelectorAll(".kb-folder-group").forEach((group) => {
+      const folder = this.application.getControllerForElementAndIdentifier(group, "kb-folder")
+      if (folder) fn(folder)
+    })
+  }
+
+  // The single-root tree container is the root's drop target, but only over empty space (rows handle themselves).
+  _overRow(event) { return event.params.area && event.target.closest?.(TREEITEM) }
+
   dragOver(event) {
+    if (this._overRow(event)) return
     const externalFiles = this._hasExternalFiles(event)
     const zone = externalFiles ? "into" : this._zone(event)
     if (externalFiles ? event.params.type === "file" : !this._canDrop(event.params, zone)) return
@@ -686,10 +783,12 @@ export default class extends Controller {
   }
 
   dragLeave(event) {
+    if (this._overRow(event)) return
     this._paintZone(event.currentTarget, null)
   }
 
   drop(event) {
+    if (this._overRow(event)) return
     const destination = event.params
     const zone = this._hasExternalFiles(event) ? "into" : this._zone(event)
     const siblings = zone === "into" ? [] : this._siblingNames(event.currentTarget)
@@ -979,6 +1078,14 @@ export default class extends Controller {
     const dy = Math.max(0, rect.bottom - (window.innerHeight - 8))
     menu.style.left = `${parseFloat(menu.style.left) - dx}px`
     menu.style.top = `${parseFloat(menu.style.top) - dy}px`
+  }
+
+  // Folder/file/project currently shown in the content pane (frame src, else the page URL).
+  _viewedRel() {
+    const frame = document.getElementById("kb-content")
+    let params
+    try { params = new URL(frame?.getAttribute("src") || window.location.href, window.location.origin).searchParams } catch (_error) { return "" }
+    return params.get("file") || params.get("path") || params.get("project") || ""
   }
 
   _targetDir(node) {

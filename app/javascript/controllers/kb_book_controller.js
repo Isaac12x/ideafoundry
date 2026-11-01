@@ -29,6 +29,7 @@ export default class extends Controller {
 
   disconnect() {
     this.gone = true
+    this._abort?.abort()
     clearTimeout(this._timer)
     this.element.removeEventListener("kb-book:goto", this._onGoto)
     window.removeEventListener("keydown", this._onKey)
@@ -53,7 +54,8 @@ export default class extends Controller {
   async open(url) {
     this.say("Opening book…")
     try {
-      const [{ ePub }, response] = await Promise.all([import(this.bundleUrlValue), fetch(url, { credentials: "same-origin" })])
+      this._abort = new AbortController()
+      const [{ ePub }, response] = await Promise.all([import(this.bundleUrlValue), fetch(url, { credentials: "same-origin", signal: this._abort.signal })])
       if (!response.ok) throw new Error("download failed")
       const buffer = await response.arrayBuffer()
       if (this.gone) return

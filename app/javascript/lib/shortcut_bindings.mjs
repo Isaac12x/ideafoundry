@@ -39,9 +39,35 @@ export function overrides() {
   return cached.parsed
 }
 
+export const isMac = () => /Mac|iP(hone|ad|od)/i.test(globalThis.navigator?.userAgentData?.platform || globalThis.navigator?.platform || "")
+
+// Letters the browser/OS owns behind Cmd (Mac) or Ctrl (elsewhere): save, print, lock-screen, tab/window/find...
+// Cmd/Ctrl + these must reach the browser untouched, so an app action bound to them moves to Ctrl (Mac) or Alt (elsewhere).
+// ponytail: Ctrl+K is kill-line on Mac text fields, but Cmd+K is no browser shortcut there, so K only moves off Windows/Linux.
+export const browserReserved = (key) => new RegExp(`^[defghjlmnopqrstuwy${isMac() ? "" : "k"}]$`, "i").test(key)
+
+// "Ctrl/Cmd+S" is the user-facing form; what actually fires is Ctrl+S on Mac, Alt+S elsewhere.
+export function platformBinding(bind) {
+  const parts = String(bind || "").match(/^Ctrl\/Cmd\+((?:Shift\+)?)(.)$/)
+  if (!parts || !browserReserved(parts[2])) return bind
+  return `${isMac() ? "Ctrl" : "Alt"}+${parts[1]}${parts[2]}`
+}
+
 // Effective binding: the user's if set, else the default.
 export function binding(id) {
-  return overrides()[id] || DEFAULT_BINDINGS[id]?.key
+  return platformBinding(overrides()[id] || DEFAULT_BINDINGS[id]?.key)
+}
+
+// The server renders "Ctrl/Cmd+L"; show the key that really fires here. data-shortcut-id = a shortcut's effective
+// binding, data-shortcut-raw = a literal binding; data-shortcut-title="Lock" sets the title instead of the text
+// (inputs get a placeholder).
+export function labelShortcuts(root = document) {
+  root.querySelectorAll("[data-shortcut-id], [data-shortcut-raw]").forEach((el) => {
+    const text = el.dataset.shortcutId ? binding(el.dataset.shortcutId) : platformBinding(el.dataset.shortcutRaw)
+    if (el.dataset.shortcutTitle) el.title = `${el.dataset.shortcutTitle} (${text})`
+    else if (el.matches("input")) el.placeholder = text
+    else el.textContent = text
+  })
 }
 
 const codeKey = (code) => String(code || "").replace(/^(Key|Digit)/, "").toLowerCase()
@@ -50,16 +76,17 @@ const codeKey = (code) => String(code || "").replace(/^(Key|Digit)/, "").toLower
 export function matches(bind, event) {
   if (!bind || !event.key || bind.includes(" ")) return false
 
-  const parts = bind.match(/^((?:(?:Ctrl\/Cmd|Alt|Shift)\+)*)(.+)$/)
+  const parts = bind.match(/^((?:(?:Ctrl\/Cmd|Ctrl|Alt|Shift)\+)*)(.+)$/)
   if (!parts) return false
 
   const [, mods, rawKey] = parts
-  const mod = mods.includes("Ctrl/Cmd+")
+  const strictCtrl = mods.includes("Ctrl+")
+  const mod = mods.includes("Ctrl/Cmd+") || strictCtrl
   const key = rawKey.toLowerCase()
   const shift = mods.includes("Shift+")
   const chord = mod || mods.includes("Alt+")
 
-  if ((event.metaKey || event.ctrlKey) !== mod) return false
+  if (strictCtrl ? !event.ctrlKey || event.metaKey : (event.metaKey || event.ctrlKey) !== mod) return false
   if (event.altKey !== mods.includes("Alt+")) return false
   // Shift is implicit for symbols like "?", so only letters/digits/named keys must match it.
   if (shift ? !event.shiftKey : event.shiftKey && /^[a-z0-9]|^.{2,}$/.test(key)) return false
