@@ -5,12 +5,18 @@ pin "@hotwired/turbo-rails", to: "turbo.min.js", preload: true
 pin "@hotwired/stimulus", to: "stimulus.min.js", preload: true
 pin "@hotwired/stimulus-loading", to: "stimulus-loading.js", preload: true
 pin_all_from "app/javascript/controllers", under: "controllers"
+pin "lib/field_draft", to: "lib/field_draft.mjs"
 pin "lib/idea_draft_store", to: "lib/idea_draft_store.mjs"
 pin "lib/shortcut_bindings", to: "lib/shortcut_bindings.mjs"
 pin "lib/kb_anchor", to: "lib/kb_anchor.mjs"
+pin "lib/kb_selection_menu", to: "lib/kb_selection_menu.mjs"
 pin "lib/app_dialog", to: "lib/app_dialog.mjs"
 pin "lib/kb_order", to: "lib/kb_order.mjs"
 pin "lib/kb_clip_time", to: "lib/kb_clip_time.mjs"
+pin "lib/kb_zoom", to: "lib/kb_zoom.mjs"
+pin "lib/kb_seek_preview", to: "lib/kb_seek_preview.mjs"
+pin "lib/kb_video_swap", to: "lib/kb_video_swap.mjs"
+pin "lib/emoji_grid", to: "lib/emoji_grid.mjs"
 pin "lib/kb_ocr_select", to: "lib/kb_ocr_select.mjs"
 pin "lib/excalidraw_loader", to: "lib/excalidraw_loader.mjs"
 pin "lib/periodic_table/elements", to: "lib/periodic_table/elements.mjs"

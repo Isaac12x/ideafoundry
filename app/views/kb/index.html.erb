@@ -23,6 +23,7 @@
        data-controller="kb-icon-picker kb-job"
        data-action="kb-job:open->kb-job#open"
        data-kb-icon-picker-update-url-value="<%= kb_fs_preference_path %>"
+       data-kb-icon-picker-emoji-url-value="<%= asset_path("emoji.json") %>"
        data-kb-job-create-url-value="<%= kb_fs_jobs_path %>">
 
   <%= turbo_stream_from @user, "kb_tree" %>
@@ -68,7 +69,31 @@
       </div>
       <button type="button" class="kb-drawer-scrim" aria-label="Close files" tabindex="-1" data-action="kb-sidebar#closeDrawer"></button>
       <aside class="kb-sidebar" id="kb-sidebar-panel" data-kb-sidebar-target="panel" data-action="click->kb-sidebar#maybeClose">
-        <div class="kb-tree-head">
+        <div class="kb-tree-head" data-controller="kb-tree-filter">
+          <button type="button" class="kb-sort-toggle kb-sidebar-collapse" aria-label="Hide files" title="Hide files" aria-expanded="true" aria-controls="kb-sidebar-panel"
+                  data-kb-sidebar-target="collapse" data-action="kb-sidebar#toggleCollapse">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="9" y1="4" x2="9" y2="20"/></svg>
+          </button>
+          <input type="search" class="kb-tree-filter-input" hidden placeholder="Filter files" autocomplete="off" spellcheck="false"
+                 aria-label="Filter files and folders" data-kb-tree-filter-target="input"
+                 data-action="input->kb-tree-filter#apply keydown->kb-tree-filter#key">
+          <button type="button" class="kb-sort-toggle kb-tree-filter-toggle" aria-label="Filter files" title="Filter files" aria-expanded="false"
+                  data-shortcut-role="search-reveal" data-kb-tree-filter-target="toggle" data-action="kb-tree-filter#toggle">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          </button>
+          <%# One root: no root row, its actions live here (several roots keep their rows as tree nodes). %>
+          <% if @folders.one? && @folders.first[:exists] %>
+            <button type="button" class="kb-sort-toggle kb-tree-filter-toggle" aria-label="Collapse all folders" title="Collapse all folders" data-action="kb-tree#collapseAll">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="7 13 12 18 17 13"/><polyline points="7 6 12 11 17 6"/></svg>
+            </button>
+            <button type="button" class="kb-sort-toggle kb-tree-filter-toggle" aria-label="Uncollapse all folders" title="Uncollapse all folders" data-action="kb-tree#expandAll">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="7 11 12 6 17 11"/><polyline points="7 18 12 13 17 18"/></svg>
+            </button>
+            <button type="button" class="kb-sort-toggle kb-tree-filter-toggle" aria-label="New file or folder" title="New file or folder…"
+                    data-action="click->kb-tree#show" data-kb-tree-type-param="root" data-kb-tree-src-param="<%= @folders.first[:index] %>">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            </button>
+          <% end %>
           <%= render "kb/sort", mode: Kb::TreeBuilder.sort_mode_for(@user) %>
         </div>
         <div class="kb-sidebar-inner">
@@ -93,9 +118,13 @@
 
       <main class="kb-content-area">
         <%# Deep links (e.g. from an idea) open a project page in the pane. %>
-        <turbo-frame id="kb-content" <%= tag.attributes(src: kb_project_path(src: params[:src], path: params[:project])) if params[:project].present? %>>
-          <%= render "kb/content", content: @content, selected_file: @selected_file %>
-        </turbo-frame>
+        <% if @kb_pane %>
+          <%= render template: @kb_pane %>
+        <% else %>
+          <turbo-frame id="kb-content" <%= tag.attributes(src: kb_project_path(src: params[:src], path: params[:project])) if params[:project].present? %>>
+            <%= render "kb/content", content: @content, selected_file: @selected_file %>
+          </turbo-frame>
+        <% end %>
       </main>
     </div>
 
@@ -297,7 +326,7 @@
         <input type="text" class="kb-context-menu-input kb-clip-input" name="clip_end" placeholder="End 7:10" autocomplete="off" aria-label="Clip end (mm:ss, hh:mm:ss or seconds)" data-kb-tree-target="clipEnd">
       </div>
       <div class="kb-note-field" data-kb-tree-target="note" hidden>
-        <textarea class="kb-context-menu-input kb-note-field__input" name="note" rows="2" maxlength="10000" placeholder="Why are you saving this? (optional)" aria-label="Why are you saving this? (optional)" data-kb-tree-target="noteInput"></textarea>
+        <textarea class="kb-context-menu-input kb-note-field__input" name="note" data-draft-skip rows="2" maxlength="10000" placeholder="Why are you saving this? (optional)" aria-label="Why are you saving this? (optional)" data-kb-tree-target="noteInput"></textarea>
       </div>
     </form>
   </div>
@@ -329,11 +358,7 @@
       </div>
 
       <div class="kb-icon-panel" data-kb-icon-picker-target="emojiPanel">
-        <div class="kb-emoji-grid">
-          <% %w[📁 📚 🧠 🔬 🧭 🗂️ 🧪 🧱 🌱 💡 🛰️ 🗃️ 📝 🎨 🧬 🛠️].each do |emoji| %>
-            <button type="button" class="kb-emoji-choice" data-emoji="<%= emoji %>" data-action="kb-icon-picker#chooseEmoji" aria-label="Use <%= emoji %>"><%= emoji %></button>
-          <% end %>
-        </div>
+        <div class="kb-emoji-picker" data-kb-icon-picker-target="grid"></div>
       </div>
 
       <div class="kb-icon-panel" data-kb-icon-picker-target="imagePanel" hidden>

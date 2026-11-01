@@ -1,0 +1,19 @@
+<%# Uploader's description (sidecar .source.json); a toggle in the file header row, links made clickable by Kb::Source.linked_html. %>
+<% if content.description.present? %>
+  <details class="kb-description" data-controller="popover">
+    <summary class="kb-meta-toggle" title="Description">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="14" y2="18"/></svg>
+      Description
+    </summary>
+    <div class="kb-description__body"><%= Kb::Source.linked_html(content.description) %></div>
+  </details>
+<% end %>
+<%# Older downloads: pull the description from the source link on demand. Missing yt-dlp is a disabled state, not an error. %>
+<% if content.description.blank? && content.source_url && %i[video audio].include?(content.kind) && !content.private_project %>
+  <% tool = KbDownloadJob.yt_dlp_bin.present? %>
+  <% hint = { "failed" => "Could not fetch a description. Try again.", "missing_tool" => "yt-dlp is not installed." }[params[:desc]] %>
+  <%= button_to "Fetch description", kb_description_path(src: content.src, file: content.rel),
+        class: "kb-meta-toggle", form_class: "kb-description-fetch", disabled: !tool,
+        title: (tool ? hint || "Fetch the description from the source link" : "yt-dlp is not installed"),
+        data: { turbo_frame: "kb-content" } %>
+<% end %>

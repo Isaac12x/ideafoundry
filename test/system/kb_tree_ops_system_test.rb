@@ -78,7 +78,7 @@ class KbTreeOpsSystemTest < ApplicationSystemTestCase
 
   test "root: new project, name it, then it stays" do
     visit kb_path
-    find(".kb-folder-header").right_click
+    find("button[aria-label='New file or folder']").click
     find("[data-menu-item=newProject]").click
     input = find(".kb-node.is-naming .kb-node-name-input")
     input.send_keys([ :command, "a" ], "Alpha", :enter)

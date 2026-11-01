@@ -136,17 +136,17 @@ class KbLinksControllerTest < ActionDispatch::IntegrationTest
 
   test "References only for a saved page that still sits at its download path" do
     get kb_file_path(src: @src, file: "a/note.md")
-    assert_select "a", text: /References/, count: 0
+    assert_select "a[aria-label^=References]", count: 0
 
     dl = @user.kb_downloads.create!(url: "https://example.com/p", source_index: @src, source_path: @kb_dir, dir: "a", filename: "note.md", status: "done")
     get kb_file_path(src: @src, file: "a/note.md")
-    assert_select "a", text: /References/
+    assert_select "a[aria-label^=References]"
 
     patch kb_fs_rename_path, params: { src: @src, path: "a/note.md", name: "renamed" }
     assert_equal "a/renamed.md", dl.reload.file_rel
     File.write(File.join(@kb_dir, "a", "note.md"), "a stranger")
     get kb_file_path(src: @src, file: "a/note.md")
-    assert_select "a", text: /References/, count: 0
+    assert_select "a[aria-label^=References]", count: 0
   end
 
   test "alias rows carry canonical info and context-menu params" do
