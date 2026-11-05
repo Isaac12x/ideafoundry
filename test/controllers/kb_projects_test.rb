@@ -27,6 +27,18 @@ class KbProjectsTest < ActionDispatch::IntegrationTest
     assert_select ".kb-project-row"
   end
 
+  test "a URL download aimed at the root lands in the project being viewed" do
+    make_project
+    FileUtils.mkdir_p(File.join(@kb_dir, "Ferment", "raw"))
+    { { view_rel: "Ferment" } => "Ferment", { view_rel: "Ferment/raw/a.txt" } => "Ferment",
+      { sel_src: 0, sel_file: "Ferment/raw/a.txt" } => "Ferment", {} => "" }.each do |view, expected|
+      assert_difference -> { KbDownload.count }, 1 do
+        post kb_fs_create_path, params: { src: 0, dir: "", kind: "file", name: "https://example.com/a.pdf" }.merge(view)
+      end
+      assert_equal expected, KbDownload.order(:id).last.dir, view.inspect
+    end
+  end
+
   test "converts an existing folder in place" do
     FileUtils.mkdir_p(File.join(@kb_dir, "old"))
     post kb_project_convert_path, params: { src: 0, path: "old" }
@@ -221,6 +233,21 @@ class KbProjectsTest < ActionDispatch::IntegrationTest
     project.create_test!(name: "Cold")
     patch kb_project_tests_path, params: { src: 0, path: "Ferment/Tests/Cold", stage: "Test" }
     assert_equal "Test", project.tests.first.stage
+  end
+
+  test "a hand-made test folder without metadata can be edited and logged against" do
+    project = make_project
+    FileUtils.mkdir_p(File.join(project.abs, "Tests", "By hand"))
+    rel = "Ferment/Tests/By hand"
+
+    patch kb_project_tests_path, params: { src: 0, path: rel, objective: "Edited", verdict: "supported" }
+    test = project.tests.find { |t| t.name == "By hand" }
+    assert_equal "Edited", test.objective
+    assert_equal "supported", test.verdict
+
+    post kb_project_findings_path, params: { src: 0, path: rel, text: "Seen" }
+    post kb_project_runs_path, params: { src: 0, path: rel, date: "2026-10-06", result: "ok" }
+    assert_equal 1, project.tests.find { |t| t.name == "By hand" }.runs.size
   end
 
   test "updates brief, concluded_on via status, and test verdict" do
@@ -446,7 +473,7 @@ class KbProjectsTest < ActionDispatch::IntegrationTest
       project.update!(stage: stage)
       get kb_project_path(src: 0, path: "Ferment")
       assert_select "select", minimum: 4
-      assert_select "select:not([data-controller=select-menu])", 0, stage
+      assert_select "turbo-frame#kb-content select:not([data-controller=select-menu])", 0, stage
     end
     assert_select "select.kbp-status option[data-tone=success]"
   end

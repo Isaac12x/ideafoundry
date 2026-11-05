@@ -1,58 +1,56 @@
+<%# One compact row: name, then small toggles (related, note, description) that reveal on click, then icon-only actions. %>
 <header class="kb-file-meta">
-  <div class="kb-file-meta__identity" title="<%= content.rel %>">
-    <span class="kb-file-meta__name"><%= content.filename %></span>
-  </div>
-
-  <dl class="kb-file-meta__dates">
-    <div>
-      <dt>Created</dt>
-      <dd>
-        <time datetime="<%= content.created_at.iso8601 %>">
-          <%= content.created_at.in_time_zone.strftime("%d %b %Y, %H:%M") %>
-        </time>
-      </dd>
-    </div>
-    <div>
-      <dt>Modified</dt>
-      <dd>
-        <time datetime="<%= content.modified_at.iso8601 %>">
-          <%= content.modified_at.in_time_zone.strftime("%d %b %Y, %H:%M") %>
-        </time>
-      </dd>
-    </div>
-  </dl>
+  <span class="kb-file-meta__name" title="<%= content.rel %>"><%= content.filename %></span>
 
   <%= render "kb/related", src: content.src.to_i, rel: content.rel %>
+  <%= render "kb/note_panel", content: content unless content.kind == :markdown %>
+  <%= render "kb/description", content: content %>
 
   <div class="kb-file-meta__actions">
-    <%= link_to kb_edit_path(src: content.src, file: content.rel),
-          data: { turbo_frame: "kb-content" }, class: "kb-content-edit-link",
-          aria: { label: "Edit #{content.filename}" } do %>
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-        Edit
-    <% end %>
+    <dl class="kb-file-meta__dates" title="Created <%= content.created_at.in_time_zone.strftime('%d %b %Y, %H:%M') %> · Modified <%= content.modified_at.in_time_zone.strftime('%d %b %Y, %H:%M') %>">
+      <div class="sr-only">
+        <dt>Created</dt>
+        <dd><time datetime="<%= content.created_at.iso8601 %>"><%= content.created_at.in_time_zone.strftime("%d %b %Y, %H:%M") %></time></dd>
+      </div>
+      <div>
+        <dt class="sr-only">Modified</dt>
+        <dd><time datetime="<%= content.modified_at.iso8601 %>"><%= content.modified_at.in_time_zone.strftime("%d %b %Y") %></time></dd>
+      </div>
+    </dl>
 
     <% page_download = @user.kb_downloads.for_file(content.src.to_i, content.rel).first %>
-    <% if page_download&.url&.match?(%r{\Ahttps?://}) && !page_download.video? && %i[pdf markdown embed].include?(content.kind) && page_download.references_state != "skip" %>
-      <%= link_to kb_download_references_path(page_download), class: "kb-content-edit-link",
-            data: { turbo_stream: true }, title: "Pull the sources this page cites" do %>
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007 0l3-3a5 5 0 00-7-7l-1 1"/><path d="M14 11a5 5 0 00-7 0l-3 3a5 5 0 007 7l1-1"/></svg>
-        References
-      <% end %>
-    <% end %>
     <% if page_download&.clip? %>
       <span class="kb-file-meta__clip" title="Only this part of the video was downloaded">clip <%= page_download.clip_label %></span>
     <% end %>
 
+    <% if content.source_url %>
+      <a class="kb-file-meta__source kb-content-edit-link kb-icon-btn" href="<%= content.source_url %>" target="_blank" rel="noopener noreferrer"
+         title="Downloaded from <%= content.source_url %>"
+         aria-label="Open source: <%= content.source_url.sub(%r{\Ahttps?://(www\.)?}i, "").truncate(60) %>">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+      </a>
+    <% end %>
+
+    <% if page_download&.url&.match?(%r{\Ahttps?://}) && !page_download.video? && %i[pdf markdown embed].include?(content.kind) && page_download.references_state != "skip" %>
+      <%= link_to kb_download_references_path(page_download), class: "kb-content-edit-link kb-icon-btn",
+            data: { turbo_stream: true }, title: "Pull the sources this page cites", aria: { label: "References: pull the sources this page cites" } do %>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M10 13a5 5 0 007 0l3-3a5 5 0 00-7-7l-1 1"/><path d="M14 11a5 5 0 00-7 0l-3 3a5 5 0 007 7l1-1"/></svg>
+      <% end %>
+    <% end %>
+
     <% if %i[image video audio].include?(content.kind) %>
-      <button type="button"
-              class="kb-media-copy-btn"
-              data-action="click->kb-media-copy#copy"
+      <button type="button" class="kb-media-copy-btn kb-icon-btn" data-action="click->kb-media-copy#copy"
               title="Copy <%= content.kind %>">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
-        <span data-kb-media-copy-target="label">Copy <%= content.kind %></span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+        <span class="sr-only" data-kb-media-copy-target="label">Copy <%= content.kind %></span>
       </button>
       <span class="sr-only" aria-live="polite" data-kb-media-copy-target="status"></span>
+    <% end %>
+
+    <%= link_to kb_edit_path(src: content.src, file: content.rel),
+          data: { turbo_frame: "kb-content" }, class: "kb-content-edit-link kb-icon-btn", title: "Edit",
+          aria: { label: "Edit #{content.filename}" } do %>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
     <% end %>
   </div>
 </header>

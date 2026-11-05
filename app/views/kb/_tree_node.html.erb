@@ -142,6 +142,7 @@
                 action: "click->kb-tree#toggleMulti click->kb-notes#trackFile click->kb-tree#markSeen",
                 "kb-notes-file-param": node[:rel],
                 "kb-notes-src-param": folder_index,
+                "kb-video": (kb_serve_path(src: folder_index, file: node[:rel], v: (node[:mtime].to_f * 1000).to_i) if Kb::MediaTypes::VIDEO_EXTENSIONS.include?(ext)),
               },
               class: "kb-file-link #{active ? 'is-active' : ''}" %>
         <input type="text" class="kb-node-name-input" autocomplete="off" spellcheck="false"

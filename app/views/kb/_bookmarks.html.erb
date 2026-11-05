@@ -4,27 +4,31 @@
      data-kb-bookmarks-url-value="<%= kb_bookmarks_path %>"
      data-kb-bookmarks-src-value="<%= src %>"
      data-kb-bookmarks-file-value="<%= rel %>"
-     data-action="kb-pdf:outline->kb-bookmarks#outline kb-pdf:page->kb-bookmarks#page kb-book:toc->kb-bookmarks#toc kb-book:location->kb-bookmarks#location kb-comic:page->kb-bookmarks#page">
+     data-action="kb-pdf:outline->kb-bookmarks#outline kb-pdf:page->kb-bookmarks#page kb-book:toc->kb-bookmarks#toc kb-book:location->kb-bookmarks#location kb-comic:page->kb-bookmarks#page kb-annotate:marks@window->kb-bookmarks#highlighted">
   <div class="kb-bookmarks-main"><%= yield %></div>
   <button type="button" class="kb-bookmarks-toggle" aria-label="Bookmarks" title="Bookmarks"
-          aria-controls="kb-bookmarks-panel" aria-expanded="true"
+          aria-controls="kb-bookmarks-panel" aria-expanded="false"
           data-kb-bookmarks-target="toggle" data-action="kb-bookmarks#toggle">
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 3h12v18l-6-4-6 4z"/></svg>
   </button>
-  <nav class="kb-bookmarks" id="kb-bookmarks-panel" aria-label="Bookmarks" data-kb-bookmarks-target="panel"
+  <nav class="kb-bookmarks" id="kb-bookmarks-panel" aria-label="Bookmarks" data-kb-bookmarks-target="panel" hidden
        data-action="click->kb-bookmarks#click keydown.esc->kb-bookmarks#close">
     <section class="kb-bookmarks__section" data-kb-bookmarks-target="contents" hidden>
       <h3 class="kb-bookmarks__title">Contents</h3>
       <ul class="kb-bookmarks__list" aria-label="Contents" data-kb-bookmarks-target="outline"></ul>
     </section>
+    <section class="kb-bookmarks__section" data-kb-bookmarks-target="highlights" hidden>
+      <h3 class="kb-bookmarks__title">Your highlights</h3>
+      <ul class="kb-bookmarks__list" aria-label="Your highlights" data-kb-bookmarks-target="highlightList"></ul>
+    </section>
     <section class="kb-bookmarks__section">
       <div class="kb-bookmarks__head">
-        <h3 class="kb-bookmarks__title">Your bookmarks</h3>
+        <h3 class="kb-bookmarks__title">Pages</h3>
         <button type="button" class="btn btn-sm" aria-keyshortcuts="B" disabled
-                data-kb-bookmarks-target="add" data-action="kb-bookmarks#add">Add bookmark</button>
+                data-kb-bookmarks-target="add" data-action="kb-bookmarks#add">Add page</button>
       </div>
-      <p class="kb-bookmarks__empty" data-kb-bookmarks-target="empty">None yet. Press B to bookmark where you are.</p>
-      <ul class="kb-bookmarks__list" aria-label="Your bookmarks" data-kb-bookmarks-target="list"></ul>
+      <p class="kb-bookmarks__empty" data-kb-bookmarks-target="empty"><%= kind == :pdf ? "Select text and press B to bookmark it, or press B alone for this page." : "None yet. Press B to bookmark where you are." %></p>
+      <ul class="kb-bookmarks__list" aria-label="Bookmarked pages" data-kb-bookmarks-target="list"></ul>
     </section>
     <p class="sr-only" role="status" aria-live="polite" data-kb-bookmarks-target="status"></p>
   </nav>
