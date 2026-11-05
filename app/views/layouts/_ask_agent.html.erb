@@ -4,15 +4,16 @@
     ask_agent_body_class.include?("typing-lock-page") ||
     controller_path.to_s.start_with?("typing_locks") ||
     controller_path.to_s == "recovery_secrets"
-  ask_agent_live = @user&.local_agent_live?
+  ask_agent_enabled = @user&.local_agent_enabled?
+  ask_agent_live = ask_agent_enabled && @user.local_agent_live?
 %>
 
-<% if !ask_agent_lock_screen && ask_agent_live %>
-<% agent_threads = ask_agent_question_threads %>
+<% if !ask_agent_lock_screen && ask_agent_enabled %>
 
 <div class="ask-agent-shell"
      id="ask-agent"
      data-controller="ask-agent"
+     data-ask-agent-questions-url-value="<%= settings_local_agent_questions_path %>"
      data-action="pointermove@window->ask-agent#resize pointerup@window->ask-agent#stopResize keydown@window->ask-agent#closeOnEscape">
   <button type="button"
           class="ask-agent-launcher"
@@ -142,6 +143,7 @@
     </template>
     <span class="sr-only">Ask Agent</span>
   </button>
+  <span class="sr-only" aria-live="polite" data-ask-agent-target="status"></span>
 
   <div class="ask-agent-backdrop"
        data-ask-agent-target="backdrop"
@@ -166,8 +168,8 @@
     <header class="ask-agent-sidebar__header">
       <div>
         <h2 id="ask_agent_title">Ask Agent</h2>
-        <span class="ask-agent-sidebar__status ask-agent-sidebar__status--enabled">
-          Ready
+        <span class="ask-agent-sidebar__status ask-agent-sidebar__status--<%= ask_agent_live ? "enabled" : "disabled" %>">
+          <%= ask_agent_live ? "Ready" : "Not running" %>
         </span>
       </div>
 
@@ -181,45 +183,15 @@
       </button>
     </header>
 
-    <div class="ask-agent-sidebar__messages" data-ask-agent-target="messages">
-      <% if agent_threads.any? %>
-        <% agent_threads.each do |thread| %>
-          <% question = thread[:question] %>
-          <% answer = thread[:answer] %>
-          <article class="ask-agent-thread">
-            <div class="ask-agent-message ask-agent-message--user">
-              <div class="ask-agent-message__meta">
-                <span>You</span>
-                <time><%= time_ago_in_words(question.created_at) %> ago</time>
-              </div>
-              <p><%= question.payload&.dig("question").presence || question.summary %></p>
-            </div>
+    <% unless ask_agent_live %>
+      <p class="ask-agent-sidebar__notice">The answer will appear here once the agent starts. <%= link_to "Agent settings", settings_local_agent_path %></p>
+    <% end %>
 
-            <% if answer %>
-              <div class="ask-agent-message ask-agent-message--agent">
-                <div class="ask-agent-message__meta">
-                  <span>Agent</span>
-                  <time><%= time_ago_in_words(answer.created_at) %> ago</time>
-                </div>
-                <p><%= answer.payload&.dig("answer").presence || answer.summary %></p>
-              </div>
-            <% else %>
-              <div class="ask-agent-message ask-agent-message--pending">
-                <div class="ask-agent-message__meta">
-                  <span>Agent</span>
-                  <time>Pending</time>
-                </div>
-                <p>Waiting for an answer.</p>
-              </div>
-            <% end %>
-          </article>
-        <% end %>
-      <% else %>
-        <p class="ask-agent-sidebar__empty">No questions yet.</p>
-      <% end %>
+    <div class="ask-agent-sidebar__messages" data-ask-agent-target="messages">
+      <%= render "layouts/ask_agent_threads" %>
     </div>
 
-    <%= form_with url: settings_local_agent_questions_path, method: :post, local: true, class: "ask-agent-sidebar__form" do %>
+    <%= form_with url: settings_local_agent_questions_path, method: :post, local: true, class: "ask-agent-sidebar__form", data: { action: "submit->ask-agent#send" } do %>
       <%= hidden_field_tag :return_to, ask_agent_return_path %>
 
       <div class="form-group">
@@ -233,6 +205,8 @@
               required: true,
               data: { ask_agent_target: "body" } %>
       </div>
+
+      <p class="ask-agent-sidebar__notice ask-agent-sidebar__error" role="alert" data-ask-agent-target="error" hidden></p>
 
       <div class="ask-agent-sidebar__actions">
         <%= submit_tag "Send", class: "btn btn-primary" %>

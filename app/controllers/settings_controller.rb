@@ -191,6 +191,14 @@ class SettingsController < ApplicationController
     redirect_to settings_local_agent_path, notice: "Local agent cycle requested."
   end
 
+  # Threads HTML for the Ask Agent sidebar poll (ask_agent_controller.js).
+  def local_agent_questions
+    return head :forbidden unless @user.local_agent_enabled?
+
+    response.headers["Cache-Control"] = "no-store"
+    render partial: "layouts/ask_agent_threads", layout: false
+  end
+
   def create_local_agent_question
     unless @user.local_agent_enabled?
       # JSON callers (KB selection menu) get a state they can show, not a redirect.
@@ -862,6 +870,11 @@ class SettingsController < ApplicationController
 
   def local_agent_question_params
     params.fetch(:agent_question, {}).permit(:body)
+  end
+
+  # The sidebar poll is background traffic: it must not count as activity, or an unanswered question would keep the typing lock open forever.
+  def touch_typing_session_activity!
+    super unless action_name == "local_agent_questions"
   end
 
   def local_agent_question_return_path(anchor: true)

@@ -7,7 +7,7 @@ import { clampMenu, fieldSelection, nextIndex, quoteAfterSelection, selectionPro
 //   Expand  queues the "expand this" question with the local agent (same endpoint as the Ask Agent form, by fetch:
 //           no reload, scroll and selection stay) and shows it pending in the Ask Agent panel.
 //   Ask AI  opens Ask Agent with the quoted selection, cursor ready for the question.
-//   Agent off (no Ask Agent shell, or the agent is disabled): the items stay, and say so with a link to Settings.
+//   Agent off (no Ask Agent shell): the items stay, and say so with a link to Settings. Not running still lands in the panel.
 // Styling reuses .idea-context-menu.
 export default class extends Controller {
   static values = { file: String, questionsUrl: String, settingsUrl: String }
@@ -113,7 +113,7 @@ export default class extends Controller {
   }
 
   ask() {
-    if (!document.getElementById("ask-agent")) return this.notice("The Ask Agent panel is not available: the local agent is not running.", "Set up the agent")
+    if (!document.getElementById("ask-agent")) return this.notice("The local agent is turned off, so Ask AI is unavailable.", "Set up the agent")
     window.dispatchEvent(new CustomEvent("ask-agent:prefill", { detail: { text: selectionPrompt("ask", this.text, this.fileValue) } }))
   }
 
@@ -132,8 +132,8 @@ export default class extends Controller {
       return this.notice("Could not reach the server, so Expand was not sent. Try again.")
     }
     if (!result.ok) return this.notice(result.error === "disabled" ? "The local agent is turned off, so Expand cannot run." : "Expand was not sent.", "Enable the agent")
-    if (document.getElementById("ask-agent")) return window.dispatchEvent(new CustomEvent("ask-agent:queued", { detail: { question } }))
-    this.notice(result.live ? "Expand queued with the local agent." : "Expand queued, but the local agent is not running yet. It will answer once it starts.", "Agent settings")
+    if (document.getElementById("ask-agent")) return window.dispatchEvent(new CustomEvent("ask-agent:queued"))
+    this.notice("Expand queued with the local agent.", "Agent settings")
   }
 
   // Small status toast with a link to the agent settings; replaces any previous one.

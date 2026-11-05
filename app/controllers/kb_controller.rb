@@ -54,6 +54,13 @@ class KbController < ApplicationController
     @maxims = @user.maxims.recent
   end
 
+  # Capture destinations for the Chrome extension: every project in every source (locked ones flagged).
+  def projects
+    response.headers["Cache-Control"] = "no-store"
+    found = build_folder_tree.flat_map { |folder| project_nodes(folder[:tree]).map { |node| { source: folder[:index], rel: node[:rel], name: File.basename(node[:rel]), locked: node[:project][:locked] } } }
+    render json: { projects: found }
+  end
+
   def file
     folder_index = params[:src].to_i
     rel_path = params[:file]
@@ -734,6 +741,10 @@ class KbController < ApplicationController
 
   def build_folder_tree
     Kb::TreeBuilder.build(@user)
+  end
+
+  def project_nodes(children)
+    children.values.flat_map { |node| node[:type] == :dir ? (node[:project] ? [ node ] : []) + project_nodes(node[:children]) : [] }
   end
 
   def kb_sources
