@@ -3237,6 +3237,8 @@ html.kb-linking, html.kb-linking * { cursor: grabbing !important; user-select: n
   margin-inline: auto;
   background: var(--bg-surface, #111);
   color: var(--text-secondary);
+  /* one grey for inactive lines and unfilled karaoke words */
+  --cue-dim: var(--text-secondary); /* the grey cues already had; finished cues return to it */
   font-size: 0.875rem;
 }
 
@@ -3302,6 +3304,7 @@ html.kb-linking, html.kb-linking * { cursor: grabbing !important; user-select: n
   margin: 0;
   padding: 0 0.25rem 0.5rem;
   overflow-y: auto;
+  position: relative; /* offsetParent for centering the active cue */
   user-select: text;
 }
 
@@ -3315,6 +3318,7 @@ html.kb-linking, html.kb-linking * { cursor: grabbing !important; user-select: n
   border-left: 2px solid transparent;
   border-radius: 3px;
   line-height: 1.5;
+  color: var(--cue-dim);
   cursor: pointer;
 }
 
@@ -3324,7 +3328,18 @@ html.kb-linking, html.kb-linking * { cursor: grabbing !important; user-select: n
 .kb-cue.is-active {
   border-left-color: var(--accent);
   background: color-mix(in srgb, var(--accent) 12%, transparent);
-  color: var(--text-primary);
+}
+
+/* Karaoke fill: --p (0..1, set from JS) paints each word grey -> accent left to right. */
+.kb-cue.is-active .kb-cue__w {
+  background: linear-gradient(90deg, var(--accent-hover) calc(var(--p, 0) * 100%), var(--cue-dim) calc(var(--p, 0) * 100%));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+@media (forced-colors: active) {
+  .kb-cue.is-active .kb-cue__w { background: none; color: CanvasText; }
 }
 
 .kb-cue__time {
