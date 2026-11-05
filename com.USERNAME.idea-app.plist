@@ -47,6 +47,9 @@
   <key>RunAtLoad</key>
   <true/>
 
+  <key>ProcessType</key>
+  <string>Interactive</string>
+
   <key>KeepAlive</key>
   <true/>
 

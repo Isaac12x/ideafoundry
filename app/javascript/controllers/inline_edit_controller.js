@@ -25,7 +25,7 @@ export default class extends Controller {
 
     requestAnimationFrame(() => {
       const item = document.getElementById(`build_item_${id}`)
-      const input = item?.querySelector("input[name='build_item[title]']")
+      const input = item?.querySelector("[name='build_item[title]']")
       item?.scrollIntoView({ block: "nearest" })
       input?.focus({ preventScroll: true })
     })

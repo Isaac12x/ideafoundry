@@ -1,8 +1,17 @@
 import { Controller } from "@hotwired/stimulus"
+import { mountEmojiGrid } from "lib/emoji_grid"
 
 export default class extends Controller {
-  static targets = ["dialog", "form", "src", "path", "entryType", "kind", "emoji", "title", "emojiTab", "imageTab", "emojiPanel", "imagePanel", "image"]
-  static values = { updateUrl: String }
+  static targets = ["dialog", "form", "src", "path", "entryType", "kind", "emoji", "title", "emojiTab", "imageTab", "emojiPanel", "imagePanel", "image", "grid"]
+  static values = { updateUrl: String, emojiUrl: String }
+
+  connect() {
+    this.unmount = mountEmojiGrid(this.gridTarget, { url: this.emojiUrlValue, onPick: (emoji) => this.pick(emoji) })
+  }
+
+  disconnect() {
+    this.unmount?.()
+  }
 
   open(event) {
     event.preventDefault()
@@ -14,6 +23,7 @@ export default class extends Controller {
     this.titleTarget.textContent = `Personalise ${params.label}`
     this.kindTarget.value = "emoji"
     this.emojiTarget.value = "📁"
+    this.gridTarget.querySelector(".is-selected")?.classList.remove("is-selected")
     this.imageTarget.value = ""
     this.showEmoji()
     this.dialogTarget.showModal()
@@ -45,13 +55,9 @@ export default class extends Controller {
     this.imageTabTarget.classList.add("is-active")
   }
 
-  chooseEmoji(event) {
-    event.preventDefault()
+  pick(emoji) {
     this.kindTarget.value = "emoji"
-    this.emojiTarget.value = event.currentTarget.dataset.emoji
-    this.element.querySelectorAll(".kb-icon-dialog .kb-emoji-choice").forEach((button) => {
-      button.classList.toggle("is-selected", button === event.currentTarget)
-    })
+    this.emojiTarget.value = emoji
   }
 
   imageChanged() {

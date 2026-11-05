@@ -16,7 +16,7 @@ class KbProjectSystemTest < ApplicationSystemTestCase
 
   test "create a project, add a test, log two runs and compare them" do
     visit kb_path
-    find(".kb-folder-header", match: :first).right_click
+    find("button[aria-label='New file or folder']", match: :first).click
     find("[data-menu-item=newProject]").click
 
     find(".kb-node.is-naming .kb-node-name-input").send_keys([ :command, "a" ], "Cold chain", :enter)

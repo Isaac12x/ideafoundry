@@ -52,6 +52,7 @@ class KbDownloadJob < ApplicationJob
     # ponytail: yt-dlp and cut_clip (direct media) cut clips; articles come whole, so don't claim a clip.
     dl.assign_attributes(clip_start: nil, clip_end: nil) unless @clipped
     save_note(dl, path)
+    save_source(dl, path)
     dl.update!(status: "done", filename: File.basename(path), error: nil)
     dl.queue_transcript
   rescue => e
@@ -69,6 +70,18 @@ class KbDownloadJob < ApplicationJob
     dl.note = nil
   rescue SystemCallError, ArgumentError => e
     Rails.logger.warn("KbDownloadJob #{dl.id}: note not saved: #{e.message}")
+  end
+
+  # The link it came from (+ yt-dlp's video description) -> the file's hidden .source.json sidecar.
+  def save_source(dl, path)
+    if @from_yt_dlp # only then is "<stem>.description" ours, not a user's file next to an HTTP download
+      desc_file = path.sub(/\.[^.\/]+\z/, ".description")
+      description = File.read(desc_file).scrub if File.file?(desc_file)
+      FileUtils.rm_f(desc_file)
+    end
+    Kb::Source.write!(path, url: dl.url, description: description)
+  rescue SystemCallError, ArgumentError => e
+    Rails.logger.warn("KbDownloadJob #{dl.id}: source not saved: #{e.message}")
   end
 
   def fetch(dl, dir)
@@ -160,9 +173,12 @@ class KbDownloadJob < ApplicationJob
     bin = yt_dlp_bin
     return fail!(dl, "yt-dlp is not installed.") if bin.nil?
 
-    out, status = capture(self.class.yt_dlp_args(bin, dl, dir, kind))
+    # chdir: whatever yt-dlp writes without an explicit path (default template, partials) can only land in the
+    # target folder, never in the server's cwd (the repo root).
+    out, status = self.class.capture(self.class.yt_dlp_args(bin, dl, dir, kind), chdir: dir)
     return nil unless status&.success?
     @clipped = dl.clip?
+    @from_yt_dlp = true
     out.to_s.lines.map(&:strip).reject(&:empty?).last
   end
 
@@ -174,7 +190,7 @@ class KbDownloadJob < ApplicationJob
       from = Kb::ClipTime.slug(dl.clip_start || 0)
       name += " [clip #{dl.clip_end ? "#{from}-#{Kb::ClipTime.slug(dl.clip_end)}" : "from #{from}"}]"
     end
-    args = [ bin, "--no-playlist", "--no-overwrites", "--no-simulate",
+    args = [ bin, "--no-playlist", "--no-overwrites", "--no-simulate", "--write-description",
             "--print", "after_move:filepath", "-P", dir, "-o", "#{name}.%(ext)s" ]
     args += [ "--download-sections", Kb::ClipTime.section(dl.clip_start, dl.clip_end), "--force-keyframes-at-cuts" ] if dl.clip?
     case dl.format
@@ -235,6 +251,8 @@ class KbDownloadJob < ApplicationJob
     end
     return nil unless src
 
+    return nil unless Pathname.new(src[:path].to_s).absolute? # "" or "." would expand to the process cwd
+
     base = File.expand_path(src[:path])
     FileUtils.mkdir_p(base) if src[:native] && !Dir.exist?(base)
     Dir.exist?(base) ? base : nil
@@ -283,11 +301,12 @@ class KbDownloadJob < ApplicationJob
   end
 
   # Shared with Kb::VideoTranscript.
-  def self.capture(args)
-    out, err, status = Open3.capture3(*args)
+  # timeout: wall-clock limit for callers inside a web request; the process group is killed (Kb::Subprocess).
+  def self.capture(args, timeout: nil, chdir: nil)
+    out, err, status = timeout ? Kb::Subprocess.capture(*args, timeout: timeout) : Open3.capture3(*args, **(chdir ? { chdir: chdir } : {}))
     Rails.logger.info("yt-dlp: #{err}") unless status.success?
     [ out, status ]
-  rescue Errno::ENOENT
+  rescue Errno::ENOENT, Kb::Subprocess::Timeout
     [ nil, nil ]
   end
 
