@@ -103,13 +103,14 @@ class KbLinksControllerTest < ActionDispatch::IntegrationTest
     assert_response :unprocessable_content
 
     get kb_file_path(src: @src, file: "a/note.md")
-    assert_select ".kb-related__item a", text: "b/other.md"
+    assert_select ".kb-related__item a", text: "other.md"
+    assert_select ".kb-related__item .kb-related__where", text: "· b"
     get kb_file_path(src: @src, file: "b/other.md")
-    assert_select ".kb-related__item a", text: "a/note.md"
+    assert_select ".kb-related__item a", text: "note.md"
 
     patch kb_fs_rename_path, params: { src: @src, path: "b/other.md", name: "moved.md" }
     get kb_file_path(src: @src, file: "a/note.md")
-    assert_select ".kb-related__item a", text: "b/moved.md"
+    assert_select ".kb-related__item a", text: "moved.md"
 
     delete kb_related_link_path(@user.kb_links.related.first), as: :turbo_stream
     assert_equal 0, @user.kb_links.count
@@ -135,17 +136,17 @@ class KbLinksControllerTest < ActionDispatch::IntegrationTest
 
   test "References only for a saved page that still sits at its download path" do
     get kb_file_path(src: @src, file: "a/note.md")
-    assert_select "a", text: /References/, count: 0
+    assert_select "a[aria-label^=References]", count: 0
 
     dl = @user.kb_downloads.create!(url: "https://example.com/p", source_index: @src, source_path: @kb_dir, dir: "a", filename: "note.md", status: "done")
     get kb_file_path(src: @src, file: "a/note.md")
-    assert_select "a", text: /References/
+    assert_select "a[aria-label^=References]"
 
     patch kb_fs_rename_path, params: { src: @src, path: "a/note.md", name: "renamed" }
     assert_equal "a/renamed.md", dl.reload.file_rel
     File.write(File.join(@kb_dir, "a", "note.md"), "a stranger")
     get kb_file_path(src: @src, file: "a/note.md")
-    assert_select "a", text: /References/, count: 0
+    assert_select "a[aria-label^=References]", count: 0
   end
 
   test "alias rows carry canonical info and context-menu params" do

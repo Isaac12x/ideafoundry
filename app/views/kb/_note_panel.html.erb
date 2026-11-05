@@ -1,24 +1,29 @@
-<%# "Why I saved this": sidecar "<file>.note.md" (Kb::Note); driven by kb_note_controller.js. %>
+<%# "Why I saved this": sidecar "<file>.note.md" (Kb::Note); driven by kb_note_controller.js. The toggle (with a first-line
+    preview) sits in the file header row; the panel opens full width under it. %>
 <section class="kb-note" aria-label="Why I saved this" hidden
          data-controller="kb-note"
          data-kb-note-url-value="<%= kb_note_path(src: content.src, file: content.rel) %>">
-  <div class="kb-note__bar">
-    <h3 class="kb-note__title">Why I saved this</h3>
-    <span class="kb-note__status" role="status" aria-live="polite" data-kb-note-target="status"></span>
-    <button type="button" class="btn btn-sm" hidden data-kb-note-target="edit" data-action="kb-note#edit">Edit</button>
-  </div>
-  <div class="kb-note__body rich-text-content" hidden data-kb-note-target="view"></div>
-  <button type="button" class="kb-note__more" hidden aria-expanded="false" data-kb-note-target="more" data-action="kb-note#toggleMore">more</button>
-  <button type="button" class="kb-note__empty" hidden data-kb-note-target="empty" data-action="kb-note#edit">
-    Add a note: why are you keeping this?
+  <button type="button" class="kb-meta-toggle kb-note__toggle" aria-expanded="false" title="Why I saved this"
+          data-kb-note-target="toggle" data-action="kb-note#toggle">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/></svg>
+    <span class="kb-note__preview" data-kb-note-target="preview">Add note</span>
   </button>
-  <form class="kb-note__form" hidden data-kb-note-target="form" data-action="submit->kb-note#save keydown->kb-note#key">
-    <textarea class="kb-note__input" rows="4" name="text" aria-label="Why I saved this (markdown)"
-              placeholder="The reason, the angle, what to look for…" data-kb-note-target="input"></textarea>
-    <div class="kb-note__actions">
-      <button type="submit" class="btn btn-primary btn-sm">Save</button>
-      <button type="button" class="btn btn-sm" data-action="kb-note#cancel">Cancel</button>
-      <span class="kb-note__hint">Markdown. <kbd>Ctrl/Cmd</kbd>+<kbd>Enter</kbd> saves, <kbd>Esc</kbd> cancels.</span>
+  <div class="kb-note__panel" hidden data-kb-note-target="panel">
+    <div class="kb-note__bar">
+      <span class="kb-note__status" role="status" aria-live="polite" data-kb-note-target="status"></span>
+      <button type="button" class="btn btn-sm" hidden data-kb-note-target="edit" data-action="kb-note#edit">Edit</button>
     </div>
-  </form>
+    <div class="kb-note__body rich-text-content" hidden data-kb-note-target="view" data-action="click->kb-note#seekStamp"></div>
+    <button type="button" class="kb-note__more" hidden aria-expanded="false" data-kb-note-target="more" data-action="kb-note#toggleMore">more</button>
+    <form class="kb-note__form" hidden data-kb-note-target="form" data-action="submit->kb-note#save keydown->kb-note#key">
+      <textarea class="kb-note__input" rows="4" name="text" aria-label="Why I saved this (markdown)"
+                placeholder="The reason, the angle, what to look for…" data-kb-note-target="input" data-draft-manual></textarea>
+      <div class="kb-note__actions">
+        <button type="submit" class="btn btn-primary btn-sm">Save</button>
+        <button type="button" class="btn btn-sm" data-action="kb-note#cancel">Cancel</button>
+        <button type="button" class="btn btn-sm" hidden data-kb-note-target="stamp" data-action="kb-note#stamp" title="Insert the current playback time">Stamp time</button>
+        <span class="kb-note__hint">Markdown. <kbd>Ctrl/Cmd</kbd>+<kbd>Enter</kbd> saves, <kbd>Esc</kbd> cancels.</span>
+      </div>
+    </form>
+  </div>
 </section>

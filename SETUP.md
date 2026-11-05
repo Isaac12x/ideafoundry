@@ -5,19 +5,11 @@
 - **Ruby** 4.0.7 (use [rbenv](https://github.com/rbenv/rbenv) or [asdf](https://asdf-vm.com/))
 - **Node.js** 20+ and npm (for esbuild graph bundle)
 - **SQLite3** (usually pre-installed on macOS/Linux)
-- **SQLCipher** (required for production/encrypted SQLite databases)
-  - macOS: `brew install sqlcipher`
-  - Debian/Ubuntu: `apt-get install libsqlcipher-dev sqlcipher`
-- **libvips** (for image processing)
-  - macOS: `brew install vips`
-  - Debian/Ubuntu: `apt-get install libvips`
-- **Local media toolchain** (for knowledge-base video, audio, image metadata, and PDF editing)
-  - macOS: `brew install ffmpeg imagemagick ghostscript pdftk-java poppler`
-  - Debian/Ubuntu: `apt-get install ffmpeg imagemagick ghostscript pdftk-java poppler-utils`
-  - `bin/install` installs missing tools automatically on macOS; the production Docker image includes them.
-- **yt-dlp** with `curl_cffi` (KB video links: Vimeo, TED, etc.; needs a recent build, TED broke on stable 2026.08.19)
-  - `pipx install yt-dlp && pipx inject yt-dlp curl_cffi`; if a site errors, `pipx runpip yt-dlp install -U --pre yt-dlp` (nightly). Keep it current.
-  - Found via `YT_DLP_BIN`, `~/.local/bin/yt-dlp`, or `$PATH`. DRM-only Vimeo videos can't be fetched.
+- **System tools** (SQLCipher, libvips, Caddy, ffmpeg, ImageMagick, Ghostscript, pdftk, poppler, pandoc, tesseract, DjVuLibre, 7z, whisper, yt-dlp, Calibre, Chrome) are declared in the root **`Brewfile`**, the single source of truth.
+  - macOS: `brew bundle --file=Brewfile` (`bin/install` and `bin/setup` run it for you)
+  - Debian/Ubuntu: `apt-get install libsqlcipher-dev sqlcipher libvips`; the `Dockerfile` final stage lists the other apt equivalents (Calibre, whisper, yt-dlp and Chrome are left out; those features show as "not installed")
+  - Adding a new shell-out tool? Declare it in the `Brewfile` (and `Dockerfile`); `test/brewfile_test.rb` fails otherwise.
+- **yt-dlp** for TED/Vimeo needs a recent build with `curl_cffi`; the Brewfile build works, or `pipx install yt-dlp && pipx inject yt-dlp curl_cffi` (`~/.local/bin/yt-dlp` wins over Homebrew). `YT_DLP_BIN` overrides. DRM-only Vimeo videos can't be fetched.
 
 ## Local Development Setup
 

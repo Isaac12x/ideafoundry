@@ -102,6 +102,15 @@ class Kb::TreeBuilderTest < ActiveSupport::TestCase
     assert_equal %w[a b], tree["y"][:children].keys
   end
 
+  test "the download source sidecar is hidden" do
+    File.binwrite(@root.join("clip.mp4"), "x")
+    File.write(@root.join("clip.mp4.source.json"), "{}")
+
+    rels = @builder.send(:scan_filesystem_entries, @root.to_s)[:files].map { |f| f[:rel] }
+    assert_includes rels, "clip.mp4"
+    refute_includes rels, "clip.mp4.source.json"
+  end
+
   test "same-stem .vtt next to media is hidden and marks the media with cc" do
     File.binwrite(@root.join("clip.mp4"), "x")
     File.write(@root.join("clip.vtt"), "WEBVTT")

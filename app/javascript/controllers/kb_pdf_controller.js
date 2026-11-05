@@ -2,29 +2,28 @@ import { Controller } from "@hotwired/stimulus"
 
 // Inline PDF viewer: continuous scroll, pages lazily rendered near the
 // viewport, remembers the last-read page per file (localStorage,
-// "kb-resume:<src>:<rel>") and reopens there. pdf.js is lazy-loaded from CDN
-// only when a PDF is viewed. Each page gets pdf.js' invisible text layer on
+// "kb-resume:<src>:<rel>") and reopens there. pdf.js is a local bundle (kb_viewers/pdf.js), lazy-loaded
+// only when a PDF is viewed; its worker is created once and reused by every PDF viewed afterwards. Each page gets pdf.js' invisible text layer on
 // top of the canvas so text can be selected and copied. Each rendered text
 // layer is announced as "kb-pdf:page-text" so kb-annotate can paint marks.
 // Bookmarks panel hooks: emits "kb-pdf:outline" ([{ label, page, depth }]) and "kb-pdf:page"
 // ({ page, pages }); accepts a "kb-pdf:goto" event (detail = page number) or goToPage(n).
+// Engine URLs are layout metas, so every viewer (KB, editor, attachments, DjVu) finds them without passing them.
 // ponytail: no in-page search or zoom controls; add if they turn out to matter.
-const PDFJS_VERSION = "4.10.38"
-const PDFJS_URL = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${PDFJS_VERSION}/build/pdf.min.mjs`
-const WORKER_URL = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${PDFJS_VERSION}/build/pdf.worker.min.mjs`
+let pdfjsReady
+let teardown = Promise.resolve() // pdf.js refuses a new document on the shared worker while the last one is still being destroyed
 
-let workerReady
+const metaContent = (name) => document.querySelector(`meta[name="${name}"]`)?.content
 
-async function loadPdfjs() {
-  const pdfjs = await import(PDFJS_URL)
-  // Same-origin blob so pdf.js can spawn a real worker; falls back to the
-  // main-thread "fake worker" if the fetch fails.
-  workerReady ??= fetch(WORKER_URL)
-    .then((r) => r.blob())
-    .then((blob) => URL.createObjectURL(blob))
-    .catch(() => WORKER_URL)
-  pdfjs.GlobalWorkerOptions.workerSrc = await workerReady
-  return pdfjs
+function loadPdfjs() {
+  pdfjsReady ??= import(metaContent("kb-pdf-bundle")).then((pdfjs) => {
+    pdfjs.GlobalWorkerOptions.workerPort = new Worker(metaContent("kb-pdf-worker"), { type: "module" })
+    return pdfjs
+  }).catch((error) => {
+    pdfjsReady = null // a later viewer may retry
+    throw error
+  })
+  return pdfjsReady
 }
 
 export default class extends Controller {
@@ -36,12 +35,11 @@ export default class extends Controller {
     this.element.addEventListener("kb-pdf:goto", this._onGoto)
     this.element.classList.add("is-loading")
 
-    const pdfjs = await loadPdfjs()
-    if (!this.element.isConnected) return
-    this._pdfjs = pdfjs
-
-    this._task = pdfjs.getDocument({ url: this.urlValue })
     try {
+      const [pdfjs] = await Promise.all([loadPdfjs(), teardown])
+      if (!this.element.isConnected) return
+      this._pdfjs = pdfjs
+      this._task = pdfjs.getDocument({ url: this.urlValue, disableAutoFetch: true }) // ranges only: never pull the whole file in the background
       this._pdf = await this._task.promise
     } catch (e) {
       this.element.classList.remove("is-loading")
@@ -60,7 +58,9 @@ export default class extends Controller {
     this._resizeObserver?.disconnect()
     this._scroller?.removeEventListener("scroll", this._onScroll, true)
     clearTimeout(this._scrollTimer)
-    this._task?.destroy()
+    this._layers = []
+    this.element.querySelectorAll("canvas").forEach((canvas) => { canvas.width = canvas.height = 0 }) // free bitmap memory now
+    teardown = Promise.allSettled([teardown, this._task?.destroy()]) // aborts the download and ends the worker's document
   }
 
   async _buildPages() {
@@ -80,9 +80,11 @@ export default class extends Controller {
       this._holders.push(holder)
     }
 
+    // Pages within a screen of the viewport render; pages that scroll more than 3 screens away release their
+    // bitmap (a 500-page scan would otherwise hold hundreds of canvases).
     this._observer = new IntersectionObserver(
-      (entries) => entries.forEach((e) => e.isIntersecting && this._renderHolder(e.target)),
-      { root: this.element.closest("[data-pdf-scroller], .kb-content-area"), rootMargin: "100% 0px" }
+      (entries) => entries.forEach((e) => (e.isIntersecting ? this._renderHolder(e.target) : this._releaseHolder(e.target))),
+      { root: this.element.closest("[data-pdf-scroller], .kb-content-area"), rootMargin: "300% 0px" }
     )
     this._holders.forEach((h) => this._observer.observe(h))
 
@@ -132,10 +134,19 @@ export default class extends Controller {
     }
   }
 
+  _releaseHolder(holder) {
+    if (!holder.firstChild) return
+    this._layers = this._layers.filter((layer) => layer.holder !== holder)
+    holder.querySelectorAll("canvas").forEach((canvas) => { canvas.width = canvas.height = 0 })
+    holder.replaceChildren()
+  }
+
   _renderHolder(holder) {
-    this._observer.unobserve(holder)
+    if (holder.firstChild || holder._rendering) return
+    holder._rendering = true
     const pageNum = parseInt(holder.dataset.page, 10)
     this._pdf.getPage(pageNum).then(async (page) => {
+      if (!this.element.isConnected) return
       const scale = holder.clientWidth / page.getViewport({ scale: 1 }).width
       const viewport = page.getViewport({ scale })
       holder.style.aspectRatio = `${viewport.width} / ${viewport.height}`
@@ -166,7 +177,7 @@ export default class extends Controller {
         }).promise,
         textLayer.render().then(() => this.dispatch("page-text", { detail: { page: pageNum, root: textLayerDiv } }))
       ])
-    }).catch(() => {})
+    }).catch(() => {}).finally(() => { holder._rendering = false })
   }
 
   _onResize() {

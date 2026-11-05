@@ -292,4 +292,49 @@ class KbDownloadJobDirectClipTest < ActiveJob::TestCase
     assert_match(/Could not cut the clip/, dl.error)
     assert File.exist?(@path)
   end
+
+  test "capture with a timeout kills the child and returns nil" do
+    started = Time.now
+    assert_equal [ nil, nil ], KbDownloadJob.capture([ "sleep", "30" ], timeout: 0.3)
+    assert_operator Time.now - started, :<, 5
+  end
+end
+
+# An untracked yt-dlp-named mp4 once turned up in the repo root: the process cwd must never be an output dir.
+class KbDownloadJobCwdTest < ActiveJob::TestCase
+  setup do
+    @user = User.first || User.create!(email: "test@example.com", name: "Test")
+    @dir = Rails.root.join("tmp", "kb-cwd-test-#{SecureRandom.hex(6)}").to_s
+    FileUtils.mkdir_p(@dir)
+    @settings = @user.settings.deep_dup
+  end
+
+  teardown do
+    @user.update!(settings: @settings)
+    FileUtils.rm_rf(@dir)
+  end
+
+  test "yt-dlp runs inside the target folder: stray default-template output cannot reach the cwd" do
+    fake = File.join(@dir, "fake-yt-dlp")
+    File.write(fake, "#!/bin/sh\nprintf x > \"stray [id].mp4\"\npwd\n") # ignores -o/-P like a default-template run
+    File.chmod(0o755, fake)
+    sub = File.join(@dir, "Proj", "Inbox")
+    FileUtils.mkdir_p(sub)
+    @user.update_kb_folders([ @dir ])
+    dl = @user.kb_downloads.create!(source_index: 1, source_path: @dir, dir: "Proj/Inbox", url: "https://www.youtube.com/watch?v=abc", format: "auto", status: "pending")
+    before = Dir.children(Rails.root.to_s).grep(/stray/)
+    ENV["YT_DLP_BIN"] = fake
+    KbDownloadJob.perform_now(dl.id)
+    assert_empty Dir.children(Rails.root.to_s).grep(/stray/) - before, "yt-dlp wrote into the server cwd"
+    assert File.exist?(File.join(sub, "stray [id].mp4"))
+  ensure
+    ENV.delete("YT_DLP_BIN")
+    FileUtils.rm_f(Dir[Rails.root.join("stray*").to_s] - (before ? before.map { |f| Rails.root.join(f).to_s } : []))
+  end
+
+  test "a blank or relative source path never resolves to the process cwd" do
+    dl = @user.kb_downloads.create!(source_index: 0, source_path: "", dir: "", url: "https://x.com/f.pdf", format: "auto", status: "pending")
+    KbSource.stub(:list, [ { path: "", native: false } ]) { KbDownloadJob.perform_now(dl.id) }
+    assert_equal "failed", dl.reload.status
+  end
 end
