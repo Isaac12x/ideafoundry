@@ -57,6 +57,7 @@ class SettingsController < ApplicationController
     if valid_scoring_weights?(weights)
       @user.update_scoring_weights(weights)
       @user.update_scoring_systems(scoring_system_params) if params.key?(:scoring_systems)
+      @user.update_custom_scoring_systems(params[:custom_scoring_systems] || {}) if params[:custom_scoring_systems_present]
 
       # Recalculate all idea scores with new weights
       recalculate_all_scores
@@ -301,6 +302,10 @@ class SettingsController < ApplicationController
   def topologies
     @topology_settings = @user.topology_settings
     @topologies = @user.topologies.ordered
+  end
+
+  def themes
+    @themes = @user.themes.ordered.left_joins(:idea_themes).group(:id).select("themes.*, COUNT(idea_themes.id) AS ideas_count")
   end
 
   def lists

@@ -9,6 +9,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Markdown: `->`, `<-`, `<->` and `=>` render as real arrows, and fenced `mermaid` blocks render as diagrams (local, sandboxed).
+- Knowledge base build plans: a project kind for "I want to build X and need to know these methods", with a methods checklist instead of research tests.
+- Knowledge base media notes: a "Why I saved this" note per file, stored in a hidden `<file>.note.md` sidecar so the media and its note show as one item (note field in the download form, tree marker with the note's first line as tooltip, brief "Saved" state, notes are searchable from the idea-link picker).
+- Knowledge base viewers: rotate/zoom 3D models (STL, OBJ, glTF/GLB, PLY, STEP/IGES/BREP; `.f3d`/`.sldprt`/`.blend` show an export hint plus any embedded preview), zip/7z/rar/tar archive trees, comics (`.cbz`/`.cbr`/`.cb7`/`.cbt`) and ebooks (`.epub` natively; `.mobi`, `.azw3`, `.fb2`, … via Calibre `ebook-convert`, `.djvu` via `ddjvu`; missing tools show a notice). Animated GIFs get a pause/play toggle (Space or click) and start paused under `prefers-reduced-motion`. One shared control bar and notice style across book, comic and 3D viewers.
+- Knowledge base bookmarks: right-hand panel with the document's contents and your saved places for PDFs, ebooks and comics (`B` adds one, named after the current chapter or page, with page or % shown, inline 5s Undo on delete).
+- Scoring: a Cost scorecard (cost to test / make / sell, lower is better and inverted into points) and user-defined scorecards with weights, scales and work thresholds (Settings > Scoring). The idea form labels the weighted score and each scorecard, and hints at enabling scorecards the template leaves off.
+- Knowledge base: password-lockable projects (the whole project, including media history, becomes one AES-256 7z archive with encrypted names; locking and unlocking run in the background with a visible working state).
+- Knowledge base downloads: a start/end time in a video link (including `t=`/`start=`/`end=` and links wrapped inside another URL such as a suspended-tab page) downloads only that clip; the download prompt shows it as a chip.
+- Knowledge base media: cut parts out of video and audio (`I`/`O` mark a cut, applied on save), screenshot a video frame (`S`) and attach it to an idea, selectable text in images (local OCR overlay, Text panel, Copy), time-coded selectable transcripts with captions, and image edits that show immediately after saving.
+- Knowledge base structure: drag to re-arrange and persist order, sort by name, type, date, added or size (ascending/descending, per folder override), "also in" aliases for one file in several folders (Alt-drag or context menu; `Alt`+`Up`/`Down` reorders), and bidirectional Related links in the file header.
+- Knowledge base web pages: Wikipedia pages keep Wikipedia's look in the saved PDF, reader-mode PDFs are cleaner, and references can be pulled later from the file header.
+- Ideas: themes (tokenized picker on the idea form, Settings > Themes to rename/recolor/delete) and a "Group ideas by theme" view in list and grid; create a topology inline from the idea form; link KB projects, folders and files to an idea at creation and on edit.
+- Shared toast, keyboard-hint and entrance-motion styles for the new knowledge base and idea surfaces (`prefers-reduced-motion` respected).
 - Local agent distills YouTube transcripts into hidden, searchable fact digests (`MediaDigest`, tools `write_media_digest` / `search_media_digests`; work derived from DB state so it survives agent downtime). First iteration uses captions only (YouTube and other sites; videos without English captions or direct video files wait as `awaiting_audio`); audio STT + frame vision (`av_v1`) will supersede it.
 - Knowledge-base web page downloads (Wikipedia, Grokipedia, …) with citations pop a reference picker dialog as soon as the page is saved; picking any moves the page into its own `{title}/` folder with the sources in `{title}/{title}-references/`.
 - Knowledge-base **Basics** tab with an interactive periodic table: series/trend heatmaps, live temperature state-of-matter, discovery timeline with discoverers, electron shells/orbitals/valence, isotopes, oxidation states, nuclear-relevance notes, wide/compact layouts, keyboard navigation, and a print-ready reference sheet.
@@ -76,6 +89,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- The new-idea page's right-hand scoring sidebar scrolls on its own instead of only once the page reaches the bottom.
+- Knowledge base reference picker no longer re-opens over an unrelated page: it only opens by itself on the saved page's own file, and otherwise arrives as a non-blocking "Pick references" toast.
+- Idea form topology picker no longer auto-checks parents and siblings or stacks highlight boxes, and uses accent-coloured controls.
+- Sort, Related and Attach-to-idea popovers close on `Escape` and (sort, related) outside click, returning focus; popover text meets 4.5:1 contrast.
 - Periodic table data: standard atomic weights (Li 6.94, not 7), corrected discovery history (e.g. fluorine — Moissan 1886; aluminium — Ørsted 1825; promethium — Marinsky, Glendenin & Coryell; radon — Halle), unbound-resonance widths no longer shown as half-lives, and full-precision isotope abundances.
 - The backlog side-door on the lock screen now works in the packaged app: it was gated on `!Rails.env.production?` while `bin/start` defaults to production, so it never appeared. `BACKLOG_ENABLED` is the only gate now.
 - The lock, fingerprint-setup, authenticator, and score screens fit one screenful with scrolling disabled, and no longer repeat the wordmark above the heading.

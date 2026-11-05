@@ -10,13 +10,17 @@ module IdeaKbLinksHelper
       abs = base && File.join(base, link.relative_path)
       exists = abs && !File.symlink?(abs) && File.exist?(abs)
       project = (Kb::Project.at(base, link.relative_path) if exists && link.entry_type == "project")
-      { link: link, index: index, missing: !exists, project: project,
+      # A file/folder inside a locked project is encrypted, not gone.
+      locked = (Kb::Project.containing(base, link.relative_path) if base && !exists)
+      locked = nil unless locked&.locked?
+      { link: link, index: index, missing: !exists && !locked, project: project, locked: locked,
         name: File.basename(link.relative_path), dir: link.relative_path.include?("/") ? File.dirname(link.relative_path) : nil }
     end
   end
 
   def idea_kb_link_href(entry)
     link = entry[:link]
+    return kb_path(src: entry[:index], project: entry[:locked].rel) if entry[:locked]
     return kb_path(src: entry[:index], file: link.relative_path) if link.entry_type == "file"
 
     return kb_path(src: entry[:index], project: link.relative_path) if link.entry_type == "project"
