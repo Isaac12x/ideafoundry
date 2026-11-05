@@ -119,6 +119,7 @@
       editing = editing_rel.present? && editing_src == folder_index && editing_rel == node[:rel]
       file_url = kb_file_path(file: node[:rel], src: folder_index)
       display_name = File.basename(node[:rel])
+      tree_label = Kb::VideoShots.label(display_name, File.basename(File.dirname(node[:rel])))
     %>
     <div class="kb-node kb-file-row <%= 'is-active' if active %> <%= 'is-new' if node[:new] %>" draggable="true"
          role="treeitem" tabindex="-1" aria-label="<%= display_name %>" aria-selected="<%= active ? 'true' : 'false' %>"<%= ' aria-current="page"'.html_safe if active %>
@@ -133,8 +134,9 @@
       <span class="kb-node-twisty" aria-hidden="true"></span>
       <span class="kb-node-glyph kb-file-type-icon"><%= render "kb/file_icon", extension: ext %></span>
       <span class="kb-node-name">
-        <%= link_to display_name, file_url,
+        <%= link_to tree_label, file_url,
               draggable: "false",
+              title: (display_name unless tree_label == display_name),
               data: {
                 turbo_frame: "kb-content",
                 action: "click->kb-tree#toggleMulti click->kb-notes#trackFile click->kb-tree#markSeen",

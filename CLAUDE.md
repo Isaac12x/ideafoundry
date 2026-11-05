@@ -19,6 +19,10 @@ Any LLM session making a change in this repo: if "Last updated" above is >30 day
 3. `yarn build` + `npm run verify:excalidraw-local-only` (no remote connectors may leak) + `bin/ci`.
 4. Bump "Last updated" line (date + version). If `next` is broken, stay on current pin, note why here, still bump date.
 
+## System dependencies
+
+Root `Brewfile` is the source of truth for every external CLI/library (`bin/install` + `bin/setup` run `brew bundle`). New shell-out tool → add it to `Brewfile`, the Dockerfile final-stage apt list (manual sync), and `PACKAGES` in `test/brewfile_test.rb` (CI fails otherwise).
+
 ## Audio service (built: local whisper + sidecar .vtt)
 
 - `Kb::Transcript` + `KbTranscribeJob`: local `whisper` CLI (`WHISPER_BIN`, `WHISPER_MODEL` default `base`, downloads on first use) writes `<media>.vtt` next to any KB audio/video. The sidecar is the source of truth: it works for files dropped straight into the KB (no `kb_downloads` row needed), shows in the tree/Finder, and survives DB loss. `kb_downloads.transcript` (captions, `MM:SS - text`) is only the fallback.

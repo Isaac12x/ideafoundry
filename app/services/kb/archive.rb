@@ -179,7 +179,7 @@ module Kb
     end
 
     def require_seven_zip
-      seven_zip || raise(MissingTool, "7z is not installed. Install it with `brew install 7zip` (or set SEVEN_ZIP_BIN).")
+      seven_zip || raise(MissingTool, "7z is not installed. Install it with `brew install p7zip` (or set SEVEN_ZIP_BIN).")
     end
 
     def parse_time(value) = (Time.zone.parse(value.to_s) if value.present?)

@@ -1772,30 +1772,48 @@ body.has-notes-bar.kb-page .kb-content-area {
 .kb-related__remove:focus-visible,
 .kb-alias-remove:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 
-/* Header-inline: trigger sits in the file header row, chips wrap to a line below it. */
-.kb-related { display: contents; font-size: 0.74rem; }
+/* Related: handle + chips are always one full row under the header, handle first, so the handle never moves
+   when links are added and the row never fights name/dates/actions for width. */
+/* easing shared by the Related chips, overlay and tree rows */
+:root { --rl-ease: cubic-bezier(0.165, 0.84, 0.44, 1); }
+.kb-related {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 0.3rem 0.5rem; min-width: 0; font-size: 0.74rem;
+  flex: 1 1 100%; order: 10; position: relative;
+}
 .kb-related__add { position: relative; flex-shrink: 0; }
 .kb-related__trigger {
-  list-style: none; cursor: pointer; color: var(--text-muted); padding: 0.15rem 0.4rem; border-radius: 4px;
+  list-style: none; display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.15rem 0.5rem 0.15rem 0.4rem;
+  color: var(--text-secondary); border: 1px dashed var(--border-default); border-radius: 999px;
+  cursor: grab; user-select: none; touch-action: none; /* handle only: the rest of the row scrolls normally */
+  transition: color 140ms var(--rl-ease), border-color 140ms var(--rl-ease);
 }
 .kb-related__trigger::-webkit-details-marker { display: none; }
 .kb-related__trigger:hover,
-.kb-related__add[open] .kb-related__trigger { color: var(--accent); }
+.kb-related__add[open] .kb-related__trigger { color: var(--accent); border-color: var(--accent); }
+.kb-related__trigger:active { cursor: grabbing; }
 .kb-related__trigger:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.kb-related__grip { fill: currentColor; opacity: 0.85; }
 .kb-related__count { color: var(--text-primary); font-weight: 600; }
+/* First visit only: the grip nudges right twice. The hint itself is the handle's title + a visually hidden description. */
+.kb-related.is-hinted .kb-related__grip { animation: kb-related-nudge 700ms var(--rl-ease) 500ms 2 backwards; }
+@keyframes kb-related-nudge { 50% { transform: translateX(3px); } }
 .kb-related__pop {
-  position: absolute; z-index: 20; top: calc(100% + 0.25rem); right: 0; width: 20rem; max-width: 80vw; margin: 0;
+  position: absolute; z-index: 20; top: calc(100% + 0.3rem); left: 0; width: 20rem; max-width: calc(100vw - 2rem); margin: 0;
   padding: 0.5rem; background: var(--bg-elevated); border: 1px solid var(--border-default); border-radius: 6px;
 }
 .kb-related__hint { margin: 0.45rem 0 0; font-size: 0.7rem; line-height: 1.4; color: var(--text-secondary); }
-.kb-related__list { flex: 0 0 100%; order: 10; display: flex; flex-wrap: wrap; gap: 0.3rem; list-style: none; margin: 0; padding: 0; }
+.kb-related__list { display: flex; flex-wrap: wrap; gap: 0.3rem; list-style: none; margin: 0; padding: 0; min-width: 0; }
 .kb-related__item {
-  display: inline-flex; align-items: center; gap: 0.25rem; max-width: 16rem; padding: 0.1rem 0.2rem 0.1rem 0.5rem;
+  display: inline-flex; align-items: center; gap: 0.25rem; min-width: 0; max-width: min(16rem, 100%); padding: 0.1rem 0.2rem 0.1rem 0.5rem;
   border: 1px solid var(--border-subtle); border-radius: 999px; color: var(--text-muted);
-  transition: border-color 140ms cubic-bezier(0.25, 1, 0.5, 1);
+  transition: border-color 140ms var(--rl-ease), background-color 140ms var(--rl-ease);
 }
-.kb-related__item:hover { border-color: var(--border-emphasis); }
-.kb-related__item a { color: var(--text-secondary); text-decoration: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.kb-related__item:hover,
+.kb-related__item:focus-within { border-color: var(--accent); background: var(--accent-muted); }
+.kb-related__item.is-new { animation: kb-related-in 420ms var(--rl-ease) both; }
+@keyframes kb-related-in { from { opacity: 0; transform: translateX(-10px) scale(0.96); } }
+.kb-related__item a { flex: 0 1 auto; min-width: 3ch; color: var(--text-secondary); text-decoration: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.kb-related__where { flex: 0 100 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-muted); }
 .kb-related__item a:hover { color: var(--accent); }
 .kb-related__item.is-missing span { text-decoration: line-through; color: var(--text-muted); }
 .kb-related__form { margin: 0; display: inline-flex; }
@@ -1810,12 +1828,61 @@ body.has-notes-bar.kb-page .kb-content-area {
   background: var(--bg-surface); border: 1px solid var(--border-default); border-radius: 6px;
 }
 .kb-related__results button {
-  width: 100%; text-align: left; padding: 0.25rem 0.4rem; font-size: 0.78rem; color: var(--text-secondary);
+  width: 100%; text-align: left; padding: 0.25rem 0.4rem; font: inherit; font-size: 0.78rem; color: var(--text-secondary);
   background: none; border: 0; border-radius: 4px; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .kb-related__results button:hover,
 .kb-related__results button:focus-visible { color: var(--accent); background: var(--bg-elevated); }
 .kb-related__results button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+/* Line overlay (drag-to-link + hover lines), drawn by kb_related_controller.js. */
+.kb-related-lines { position: fixed; inset: 0; width: 100vw; height: 100vh; z-index: 90; pointer-events: none; overflow: visible; }
+.kb-related-lines g { transition: opacity 240ms var(--rl-ease); }
+.kb-related-lines g.is-out { opacity: 0; }
+.kb-rl__line { fill: none; stroke: var(--accent); stroke-width: 1.5; stroke-linecap: round; }
+.kb-rl__line.is-live { opacity: 0.9; stroke-width: 2; }
+.kb-rl__peek .kb-rl__line {
+  opacity: 0.55; stroke-dasharray: 1; animation: kb-rl-draw 360ms var(--rl-ease) both;
+  transition: opacity 160ms var(--rl-ease), stroke-width 160ms var(--rl-ease);
+}
+.kb-rl__peek .kb-rl__line.is-strong { opacity: 1; stroke-width: 2; }
+.kb-rl__peek .kb-rl__line.is-dim,
+.kb-rl__dot.is-dim,
+.kb-rl__label.is-dim { opacity: 0.18; }
+.kb-rl__label { fill: var(--accent); font-size: 10px; font-weight: 600; text-anchor: end; transition: opacity 160ms var(--rl-ease); }
+.kb-rl__dot.is-via { fill: var(--bg-surface); stroke: var(--accent); stroke-width: 1.5; }
+@keyframes kb-rl-draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+.kb-rl__dot {
+  fill: var(--accent); transform-box: fill-box; transform-origin: center;
+  transition: transform 200ms var(--rl-ease), fill 140ms var(--rl-ease);
+}
+.kb-rl__dot.is-snapped { transform: scale(1.7); animation: kb-rl-pulse 420ms var(--rl-ease) 1; } /* one pulse on snap */
+.kb-rl__dot.is-denied { fill: var(--danger); transform: scale(1.3); }
+.kb-rl__dot.is-done { transform: scale(1.4); }
+@keyframes kb-rl-pulse { 0% { transform: scale(1); } 55% { transform: scale(2.1); } 100% { transform: scale(1.7); } }
+html.kb-linking, html.kb-linking * { cursor: grabbing !important; user-select: none; }
+.kb-node.is-link-target,
+.kb-node.is-related-hint,
+.kb-node.is-link-done { background: var(--accent-muted); outline: 1px solid var(--accent); outline-offset: -1px; border-radius: 4px; }
+.kb-node.is-related-hint:not(.is-link-target) { outline-color: color-mix(in srgb, var(--accent) 45%, transparent); }
+.kb-node.is-link-denied { outline: 1px solid var(--danger); outline-offset: -1px; border-radius: 4px; cursor: not-allowed; opacity: 0.6; }
+.kb-node.is-link-done { transition: background-color 700ms var(--rl-ease); }
+/* Dwell on a collapsed folder: the underline fills over the 600ms before it opens. */
+.kb-node.is-dwelling { position: relative; }
+.kb-node.is-dwelling::after {
+  content: ""; position: absolute; left: 8px; right: 8px; bottom: 3px; height: 2px; border-radius: 1px; background: var(--accent);
+  transform-origin: left; animation: kb-rl-dwell 600ms linear both; pointer-events: none;
+}
+@keyframes kb-rl-dwell { from { transform: scaleX(0); } }
+@media (prefers-reduced-motion: reduce) {
+  .kb-related__item.is-new,
+  .kb-related.is-hinted .kb-related__grip,
+  .kb-node.is-dwelling::after,
+  .kb-rl__peek .kb-rl__line,
+  .kb-rl__dot.is-snapped { animation: none; }
+  .kb-related-lines g,
+  .kb-rl__dot { transition: none; }
+}
 
 /* ── Markdown editor ─────────────────────────────────────────────────── */
 .kb-editor {
@@ -3082,11 +3149,77 @@ body.has-notes-bar.kb-page .kb-content-area {
   font: inherit;
   cursor: pointer;
   text-decoration: underline;
+  white-space: nowrap;
+  flex: none;
 }
 
 .kb-video-shot-toast[hidden] { display: none; }
 .kb-video-shot-toast a:focus-visible,
 .kb-video-shot-toast button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
+
+/* ── Video screenshot strip ───────────────────────────────────────────── */
+.kb-shots { min-width: 0; padding: 8px 12px 10px; border-top: 1px solid var(--border-subtle); }
+.kb-shots:not(:has(.kb-shot)) { display: none; }
+.kb-shots__list {
+  display: flex;
+  gap: 8px;
+  margin: 0;
+  padding: 0 0 6px;
+  list-style: none;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+  scroll-padding-inline: 12px;
+}
+.kb-shot { position: relative; flex: none; scroll-snap-align: start; }
+.kb-shot__seek {
+  display: block;
+  padding: 0;
+  border: 1px solid var(--border-subtle);
+  border-radius: 3px;
+  background: var(--bg-elevated);
+  color: var(--text-muted);
+  cursor: pointer;
+  overflow: hidden;
+  transition: border-color 160ms cubic-bezier(0.16, 1, 0.3, 1), color 160ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.kb-shot__seek img { display: block; height: 72px; width: auto; max-width: 160px; object-fit: cover; }
+.kb-shot__time {
+  display: block;
+  padding: 2px 6px;
+  font-size: 0.6875rem;
+  font-variant-numeric: tabular-nums;
+  text-align: left;
+}
+.kb-shot__seek:hover { border-color: color-mix(in srgb, var(--accent) 50%, var(--border-subtle)); color: var(--text-primary); }
+.kb-shot__seek[aria-current] { border-color: var(--accent); color: var(--text-primary); }
+.kb-shot__seek[aria-current] .kb-shot__time { color: var(--accent); }
+.kb-shot__open {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  display: grid;
+  place-items: center;
+  min-width: 36px;
+  min-height: 28px;
+  padding: 0 8px;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--bg-elevated) 90%, transparent);
+  color: var(--text-primary);
+  font-size: 0.75rem;
+  text-decoration: none;
+  opacity: 0;
+  transition: opacity 160ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.kb-shot:hover .kb-shot__open,
+.kb-shot:focus-within .kb-shot__open { opacity: 1; }
+@media (hover: none) { .kb-shot__open { opacity: 1; } }
+.kb-shot__seek:focus-visible,
+.kb-shot__open:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+@keyframes kb-shot-in { from { opacity: 0; transform: translateY(8px) scale(0.96); } }
+@media (prefers-reduced-motion: no-preference) {
+  .kb-shot--new { animation: kb-shot-in 360ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+}
 
 /* Captions sidecar mark on media rows in the tree */
 .kb-cc-mark {

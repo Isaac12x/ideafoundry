@@ -1,10 +1,14 @@
 <%# Related entries for one file: bidirectional, stored as KbLink rows. src = source index, rel = file path. %>
 <% related = kb_related_peers(src, rel) %>
 <div id="kb-related" class="kb-related" data-controller="kb-related"
+     data-kb-related-src-value="<%= src %>" data-kb-related-rel-value="<%= rel %>"
      data-kb-related-search-url-value="<%= ideas_kb_link_search_path %>">
   <details class="kb-related__add" data-controller="popover" data-kb-related-target="details" data-action="toggle->kb-related#opened">
-    <summary class="kb-related__trigger" aria-label="Related entries<%= ", #{related.size} linked" if related.any? %>. Add one" title="Link entries that belong together">
-      Related<% if related.any? %> <span class="kb-related__count"><%= related.size %></span><% end %> <span aria-hidden="true">+</span>
+    <summary class="kb-related__trigger" aria-label="Related entries<%= ", #{related.size} linked" if related.any? %>. Search to add one"
+             data-kb-related-target="handle" aria-describedby="kb-related-hint" title="Drag onto a file to relate"
+             data-action="pointerdown->kb-related#down pointermove->kb-related#move pointerup->kb-related#up pointercancel->kb-related#cancelPointer lostpointercapture->kb-related#cancelPointer keydown->kb-related#key click->kb-related#guard mouseenter->kb-related#peek mouseleave->kb-related#unpeek focus->kb-related#peek blur->kb-related#unpeek">
+      <svg class="kb-related__grip" width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><circle cx="2.5" cy="2.5" r="1.1"/><circle cx="2.5" cy="7.5" r="1.1"/><circle cx="7.5" cy="5" r="1.1"/></svg>
+      Related<% if related.any? %> <span class="kb-related__count"><%= related.size %></span><% end %>
     </summary>
     <%= form_with url: kb_related_links_path, class: "kb-related__pop", data: { kb_related_target: "form" } do %>
       <%= hidden_field_tag :src, src %>
@@ -17,17 +21,23 @@
       <p class="kb-related__hint">Link entries that belong together. To put one file in several folders, use “Also in another folder…” on the tree instead.</p>
     <% end %>
   </details>
+  <span id="kb-related-hint" class="sr-only" data-kb-related-target="hint">Drag onto a file in the tree to relate it, or press Down arrow to pick one with the keyboard. Enter searches.</span>
+  <span class="sr-only" role="status" aria-live="polite" data-kb-related-target="live"></span>
   <% if related.any? %>
     <ul class="kb-related__list" aria-label="Related entries">
       <% related.each do |peer| %>
-        <li class="kb-related__item<%= ' is-missing' if peer.kind == :missing %>">
+        <li class="kb-related__item<%= ' is-missing' if peer.kind == :missing %>"
+            data-kb-related-target="chip" data-peer-src="<%= peer.src %>" data-peer-path="<%= peer.rel %>"
+            data-action="mouseenter->kb-related#peek mouseleave->kb-related#unpeek focusin->kb-related#peek focusout->kb-related#unpeek">
           <% case peer.kind %>
           <% when :missing %>
             <span title="This entry no longer exists"><%= peer.rel %></span>
           <% when :file %>
-            <%= link_to peer.rel, kb_file_path(src: peer.src, file: peer.rel), title: peer.rel, data: { turbo_frame: "kb-content" } %>
+            <%= link_to File.basename(peer.rel), kb_file_path(src: peer.src, file: peer.rel), title: peer.rel, data: { turbo_frame: "kb-content", action: "click->kb-related#hop" } %>
+            <% if (where = kb_related_where(peer.rel)) %><span class="kb-related__where" aria-hidden="true">· <%= where %></span><% end %>
           <% else %>
-            <%= link_to "#{peer.rel}/", kb_path(src: peer.src, folder: peer.rel), title: peer.rel %>
+            <%= link_to "#{File.basename(peer.rel)}/", kb_path(src: peer.src, folder: peer.rel), title: peer.rel %>
+            <% if (where = kb_related_where(peer.rel)) %><span class="kb-related__where" aria-hidden="true">· <%= where %></span><% end %>
           <% end %>
           <%= button_to kb_related_link_path(peer.link), method: :delete, class: "kb-related__remove",
                 form: { class: "kb-related__form" }, "aria-label": "Remove related link to #{peer.rel}", title: "Remove link" do %>×<% end %>
