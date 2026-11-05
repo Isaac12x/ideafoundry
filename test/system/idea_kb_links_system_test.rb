@@ -36,6 +36,7 @@ class IdeaKbLinksSystemTest < ApplicationSystemTestCase
 
     find(".idea-kb-links__item", text: "Ferment").find("a", text: "Ferment").click
     assert_selector "#kb-content .kbp-title", text: "Ferment"
+    click_button "Linked from ideas" # section is collapsed by default
     assert_text "Probiotic jar" # backlink from the project page
   end
 

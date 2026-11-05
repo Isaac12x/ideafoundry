@@ -7,7 +7,8 @@ export default class extends Controller {
     "trimStart", "trimEnd", "scrubber", "clock", "speed", "speedOutput",
     "volume", "volumeOutput", "mute", "brightness", "brightnessOutput",
     "contrast", "contrastOutput", "saturation", "saturationOutput",
-    "grayscale", "rotate", "flipHorizontal", "flipVertical", "cropAspect"
+    "grayscale", "rotate", "flipHorizontal", "flipVertical", "cropAspect",
+    "cutTrack", "cutList", "cutsField", "cutPending", "saveAsCopy"
   ]
 
   static values = {
@@ -25,6 +26,8 @@ export default class extends Controller {
     this.imageRecipe = []
     this.pointerActive = false
     this.pollTimer = null
+    this.cuts = []
+    this.cutStart = null
     this.abortController = new AbortController()
 
     if (this.hasImageSourceTarget && this.imageSourceTarget.complete) this.loadImage()
@@ -285,6 +288,7 @@ export default class extends Controller {
     if (this.hasTrimEndTarget) this.trimEndTarget.max = duration
     if (this.hasTrimStartTarget) this.trimStartTarget.max = duration
     if (this.hasScrubberTarget) this.scrubberTarget.max = duration
+    this.renderCuts()
     this.preview()
   }
 
@@ -293,6 +297,8 @@ export default class extends Controller {
     const current = this.mediaTarget.currentTime
     if (this.hasClockTarget) this.clockTarget.textContent = this.formatTime(current)
     if (this.hasScrubberTarget) this.scrubberTarget.value = current
+    const cut = this.cuts.find(([from, to]) => current >= from && current < to)
+    if (cut && !this.mediaTarget.paused) this.mediaTarget.currentTime = cut[1] // preview: play over removed ranges
     if (this.hasTrimEndTarget && current >= Number(this.trimEndTarget.value)) {
       this.mediaTarget.pause()
       this.mediaTarget.currentTime = Number(this.trimStartTarget.value || 0)
@@ -316,6 +322,73 @@ export default class extends Controller {
   seekToIn() {
     this.validateTrim()
     if (this.hasMediaTarget) this.mediaTarget.currentTime = Number(this.trimStartTarget.value || 0)
+  }
+
+  // Cuts (ranges removed on save) -------------------------------------------
+
+  key(event) {
+    if (!this.hasCutListTarget || event.metaKey || event.ctrlKey || event.altKey) return
+    if (event.target.closest("input:not([type=range]), textarea, select, [contenteditable]")) return
+    const key = event.key.toLowerCase()
+    if (key === "i") { event.preventDefault(); this.cutIn() }
+    if (key === "o") { event.preventDefault(); this.cutOut() }
+  }
+
+  cutIn() {
+    if (!this.hasMediaTarget) return
+    this.cutStart = this.mediaTarget.currentTime
+    this.renderCuts()
+  }
+
+  cutOut() {
+    if (!this.hasMediaTarget || this.cutStart === null) return
+    const end = this.mediaTarget.currentTime
+    if (end - this.cutStart >= 0.05) this.addCut(this.cutStart, end)
+    this.cutStart = null
+    this.renderCuts()
+  }
+
+  // Merges overlaps so the list stays a set of disjoint ranges.
+  addCut(from, to) {
+    const merged = []
+    for (const [a, b] of [...this.cuts, [from, to]].sort((x, y) => x[0] - y[0])) {
+      const last = merged[merged.length - 1]
+      if (last && a <= last[1]) last[1] = Math.max(last[1], b)
+      else merged.push([a, b])
+    }
+    this.cuts = merged
+  }
+
+  removeCut(event) {
+    this.cuts.splice(event.params.index, 1)
+    this.renderCuts()
+  }
+
+  renderCuts() {
+    if (!this.hasCutListTarget) return
+    const duration = this.mediaTarget?.duration || this.durationValue || 1
+    this.cutsFieldTarget.value = this.cuts.length ? JSON.stringify(this.cuts.map(([a, b]) => [Number(a.toFixed(3)), Number(b.toFixed(3))])) : ""
+    this.cutListTarget.replaceChildren(...this.cuts.map(([from, to], index) => {
+      const item = document.createElement("li")
+      const label = document.createElement("span")
+      label.textContent = `${this.formatTime(from)} – ${this.formatTime(to)}`
+      const button = document.createElement("button")
+      button.type = "button"
+      button.className = "btn btn-sm"
+      button.textContent = "Remove"
+      button.setAttribute("aria-label", `Remove cut ${label.textContent}`)
+      button.dataset.action = "kb-media-editor#removeCut"
+      button.dataset.kbMediaEditorIndexParam = index
+      item.append(label, button)
+      return item
+    }))
+    this.cutTrackTarget.replaceChildren(...this.cuts.map(([from, to]) => {
+      const mark = document.createElement("span")
+      mark.style.left = `${(from / duration) * 100}%`
+      mark.style.width = `${((to - from) / duration) * 100}%`
+      return mark
+    }))
+    this.cutPendingTarget.textContent = this.cutStart === null ? "" : `Cut starts at ${this.formatTime(this.cutStart)} — press O to end it`
   }
 
   validateTrim() {
@@ -406,6 +479,7 @@ export default class extends Controller {
   async save(event) {
     event.preventDefault()
     if (!this.element.reportValidity() || !this.validateTrim()) return
+    if (this.hasSaveAsCopyTarget && !this.saveAsCopyTarget.checked && !(await window.AppDialog?.confirm("Overwrite the original file? The previous version stays in revision history.", { confirmLabel: "Overwrite" }) ?? true)) return
 
     this.setSavingState(true, "Preparing local edit…")
     try {

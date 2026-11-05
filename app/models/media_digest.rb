@@ -8,8 +8,9 @@
 # rows via `MediaDigest.record!`. The audio service should pick up kb_downloads
 # with transcript_status "awaiting_audio" (no captions / non-English / direct
 # video files) and also re-process "done" ones for the better av_v1 digest.
-# Video files placed in the KB directly (not via a KbDownload) have no row yet:
-# the audio service will need to create one (media_digests.kb_download_id is NOT NULL).
+# Local whisper (Kb::Transcript) now covers the transcript part: it writes a sidecar
+# .vtt beside the media. Video files placed in the KB directly (not via a KbDownload)
+# have no row yet: digests for them still need one (media_digests.kb_download_id is NOT NULL).
 class MediaDigest < ApplicationRecord
   belongs_to :user
   belongs_to :kb_download

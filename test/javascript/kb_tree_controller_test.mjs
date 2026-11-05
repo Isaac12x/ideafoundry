@@ -248,6 +248,8 @@ test("deleting a folder named like a number submits its path (Stimulus casts the
   controller.menuTarget = {
     classList: { add() {}, remove() {} },
     style: {},
+    querySelectorAll: () => [],
+    querySelector: () => ({ dataset: {}, querySelectorAll: () => [], querySelector: () => ({ querySelector: () => ({}), setAttribute() {} }), setAttribute() {} }),
     getBoundingClientRect: () => ({ left: 0, top: 0 }),
     offsetWidth: 0,
     offsetHeight: 0
@@ -292,8 +294,9 @@ async function loadController() {
     .replace(/^import .*$/gm, "")
     .replace("export default class extends Controller", "return class KbTreeController extends Controller")
   const { confirmDialog, alertDialog } = await import("../../app/javascript/lib/app_dialog.mjs")
+  const { dropZone, insertNear, shift } = await import("../../app/javascript/lib/kb_order.mjs")
 
-  return new Function("Controller", "confirmDialog", "alertDialog", runnableSource)(class {}, confirmDialog, alertDialog)
+  return new Function("Controller", "confirmDialog", "alertDialog", "dropZone", "insertNear", "shift", runnableSource)(class {}, confirmDialog, alertDialog, dropZone, insertNear, shift)
 }
 
 test("a file loaded into kb-content from any link moves the active highlight", async () => {
@@ -359,4 +362,64 @@ test("dropping a project child on a role shelf sends only its role, scoped to th
     controller.roleDrop(shelf("working"))
     assert.equal(sent, undefined, `${drag.rel} must not be re-roled`)
   }
+})
+
+test("dropping between siblings reorders in place, and across folders sends the new order with the move", async () => {
+  const Controller = await loadController()
+  const controller = new Controller()
+  controller.orderUrlValue = "/order"
+  controller.moveUrlValue = "/move"
+  const sent = []
+  controller._submitForm = (url, method, fields) => sent.push({ url, fields })
+  const target = (rel) => ({
+    params: { type: "file", rel, src: 0 },
+    clientY: 0,
+    currentTarget: {
+      getBoundingClientRect: () => ({ top: 0, height: 20 }),
+      classList: { add() {}, remove() {} },
+      matches: () => false,
+      parentElement: { children: ["a.md", "b.md", "c.md"].map((n) => ({
+        matches: (sel) => sel.includes(".kb-file-row"), dataset: { kbTreeRelParam: `d/${n}` } })) }
+    },
+    dataTransfer: { types: [] },
+    preventDefault() {}
+  })
+
+  controller._drag = { type: "file", rel: "d/a.md", src: 0 }
+  controller.drop(target("d/c.md")) // clientY 0 = top half = before c
+  assert.deepEqual(sent[0], { url: "/order", fields: { src: 0, dir: "d", names: ["b.md", "a.md", "c.md"] } })
+
+  controller._drag = { type: "file", rel: "x/z.md", src: 0 }
+  controller.drop(target("d/b.md"))
+  assert.deepEqual(sent[1], { url: "/move", fields: { src: 0, path: "x/z.md", dest_src: 0, dest_dir: "d", names: ["a.md", "z.md", "b.md", "c.md"] } })
+
+  controller._drag = { type: "dir", rel: "d", src: 0 }
+  assert.equal(controller._canDrop({ type: "file", rel: "d/b.md", src: 0 }, "before"), false, "no dropping a folder beside its own child")
+})
+
+test("sortPick: field keeps direction, direction row flips, Use default clears, global sends no folder", async () => {
+  const Controller = await loadController()
+  const controller = new Controller()
+  const sent = []
+  controller._submitForm = (url, method, fields) => sent.push({ url, method, fields })
+  controller.sortUrlValue = "/sort"
+  controller._node = { type: "dir", rel: "notes", src: 2 }
+  const click = (scope, sort, dataset) => controller.sortPick({
+    stopPropagation() {},
+    currentTarget: { dataset, closest: () => ({ dataset: { sortMenu: scope, sort } }) }
+  })
+
+  click("folder", "name_desc", { sortField: "size" })
+  click("folder", "name_desc", { sortFlip: "" })
+  click("folder", "name_desc", { sortField: "" })
+  click("global", "date_asc", { sortFlip: "" })
+  click("folder", "", { sortField: "type" })
+
+  assert.deepEqual(sent.map((s) => s.fields), [
+    { src: 2, path: "notes", mode: "size_desc" },
+    { src: 2, path: "notes", mode: "name_asc" },
+    { src: 2, path: "notes", mode: "" },
+    { mode: "date_desc" },
+    { src: 2, path: "notes", mode: "type_asc" }
+  ])
 })

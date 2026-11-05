@@ -76,7 +76,7 @@ storage/                # SQLite DBs + Active Storage files
 ### Running the Dev Server
 
 ```bash
-bin/dev                          # Rails + esbuild watcher; picks a free port from 3000
+bin/dev                          # Rails + esbuild watcher + Solid Queue worker (downloads, transcripts, OCR); picks a free port from 3000
 PORT=4000 bin/dev                # Start scanning for a free port at 4000
 bin/dev -p 4000                  # Require an explicit Foreman port
 BACKLOG_ENABLED=true bin/dev     # Enable the optional backlog while developing
@@ -208,3 +208,9 @@ For recurring jobs, add to `config/recurring.yml`.
 - **Dual JS pipelines** — Importmap for lightweight Stimulus controllers (no build step), esbuild only for the heavy Three.js graph bundle.
 - **Version snapshots as JSON** — Full idea state serialized to JSON on each save. Enables diff and restore without complex schema versioning.
 - **Topology = hierarchical tags** — Self-referential tree structure with color and type. More expressive than flat tags.
+
+## KB viewers: 3D, archives, books
+
+- 3D (`.stl .obj .ply .gltf/.glb .3mf .fbx .dae`, `.step/.stp/.iges/.igs/.brep`): three.js and occt-import-js (wasm) are lazy esbuild bundles in `app/assets/builds/kb_viewers/` (`yarn build` also copies the wasm). Proprietary CAD (`.f3d .f3z .sldprt .ipt .blend`) shows an export hint only.
+- Archives / comics (`.zip .7z .rar .tar .tgz .tar.gz`, `.cbz .cbr .cb7 .cbt`): listed and streamed entry by entry, never extracted to disk. zip/tar use Ruby; 7z/rar need `7z` (`brew install 7zip`; override `SEVEN_ZIP_BIN`).
+- Books: `.epub` renders in-app. Other formats (`.mobi .azw3 .fb2 ...`) convert to a hidden `.<name>.epub` sidecar with Calibre: `brew install --cask calibre` (`EBOOK_CONVERT_BIN` overrides; the macOS app bundle is found automatically). `.djvu` converts to PDF with `ddjvu` (`brew install djvulibre`, `DDJVU_BIN`).

@@ -394,6 +394,8 @@ module LocalAgent
     # Hidden system knowledge distilled from KB videos; no UI exposes it.
     def tool_write_media_digest(args)
       download = user.kb_downloads.find(args.fetch("kb_download_id"))
+      raise ActiveRecord::RecordNotFound, "KbDownload not found" if download.private_project?
+
       digest = MediaDigest.record!(user: user, kb_download: download, body: args.fetch("body"),
                                    pipeline: args["pipeline"].presence || MediaDigest::PIPELINES.first)
 
@@ -403,7 +405,8 @@ module LocalAgent
 
     def tool_search_media_digests(args)
       limit = (args["limit"].presence || MediaDigest::SEARCH_LIMIT).to_i.clamp(1, 50)
-      ok(media_digests: user.media_digests.search(args["query"], limit: limit).includes(:kb_download).map { |d| serialize_digest(d) })
+      digests = user.media_digests.search(args["query"], limit: limit).includes(:kb_download).reject { |d| d.kb_download.private_project? }
+      ok(media_digests: digests.map { |d| serialize_digest(d) })
     end
 
     def serialize_digest(digest)
@@ -539,7 +542,7 @@ module LocalAgent
       when "BuildItem"
         user.build_items.find(id)
       when "KbDownload"
-        user.kb_downloads.find(id)
+        user.kb_downloads.find(id).tap { |d| raise ActiveRecord::RecordNotFound, "KbDownload not found" if d.private_project? }
       when "Fact"
         user.facts.find(id)
       when "Maxim"

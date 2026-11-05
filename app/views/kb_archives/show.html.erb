@@ -1,0 +1,49 @@
+<%# Frame content for archives, comics and Fusion archives; see KbArchivesController. %>
+<% entry_url = ->(entry) { kb_archive_entry_path(src: @file[:src], file: @file[:rel], entry: entry.path) } %>
+<turbo-frame id="kb-archive" class="kb-archive-frame">
+  <% if @error %>
+    <p class="kb-viewer-notice kb-viewer-notice--error" role="alert"><%= @error %></p>
+  <% elsif @kind == :comic %>
+    <% if @pages.empty? %>
+      <p class="kb-viewer-notice">No image pages were found in this archive.</p>
+    <% else %>
+      <%= render layout: "kb/bookmarks", locals: { kind: :comic, src: @file[:src], rel: @file[:rel] } do %>
+      <div class="kb-comic" tabindex="0" aria-label="Comic reader"
+           data-controller="kb-comic"
+           data-kb-comic-pages-value="<%= @pages.map { |page| entry_url.call(page) }.to_json %>"
+           data-kb-comic-key-value="<%= @file[:src] %>:<%= @file[:rel] %>">
+        <div class="kb-comic__stage" data-kb-comic-target="stage">
+          <img class="kb-comic__page" alt="" data-kb-comic-target="page" draggable="false">
+        </div>
+        <div class="kb-viewer-bar">
+          <button type="button" class="btn btn-sm" data-action="kb-comic#previous" aria-keyshortcuts="ArrowLeft" data-kb-comic-target="previous">Previous</button>
+          <span class="kb-viewer-bar__text" role="status" aria-live="polite" data-kb-comic-target="count"></span>
+          <button type="button" class="btn btn-sm" data-action="kb-comic#next" aria-keyshortcuts="ArrowRight" data-kb-comic-target="next">Next</button>
+        </div>
+      </div>
+      <% end %>
+    <% end %>
+  <% elsif @kind == :cad %>
+    <% if @preview %>
+      <figure class="kb-cad-preview">
+        <img src="<%= entry_url.call(@preview) %>" alt="Embedded preview of <%= @file[:rel].split('/').last %>">
+        <figcaption>Preview image stored inside the file. This is not the 3D geometry.</figcaption>
+      </figure>
+    <% end %>
+    <details class="kb-archive-contents">
+      <summary>Contents: <%= pluralize(@listing.files.size, "file") %>, <%= number_to_human_size(@listing.total_size) %></summary>
+      <ul class="kb-archive-tree"><%= render "kb_archives/nodes", nodes: Kb::Archive.tree(@listing.entries), entry_url: entry_url %></ul>
+    </details>
+  <% else %>
+    <p class="kb-archive-summary">
+      <strong><%= pluralize(@listing.files.size, "file") %></strong>
+      <span><%= number_to_human_size(@listing.total_size) %> uncompressed</span>
+      <% if @listing.truncated %><span>Showing the first <%= Kb::Archive::MAX_ENTRIES %> entries.</span><% end %>
+    </p>
+    <% if @listing.entries.empty? %>
+      <p class="kb-viewer-notice">This archive is empty.</p>
+    <% else %>
+      <ul class="kb-archive-tree" role="tree" aria-label="Archive contents"><%= render "kb_archives/nodes", nodes: Kb::Archive.tree(@listing.entries), entry_url: entry_url %></ul>
+    <% end %>
+  <% end %>
+</turbo-frame>

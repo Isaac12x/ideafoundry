@@ -15,9 +15,9 @@ class KbController < ApplicationController
   LONG_DOC_EXTENSIONS   = Kb::MediaTypes::LONG_DOC_EXTENSIONS
 
   SERVE_EXTENSIONS      = (PDF_EXTENSIONS + IMAGE_EXTENSIONS + VIDEO_EXTENSIONS + AUDIO_EXTENSIONS).freeze
-  EXTRACTABLE_EXTENSIONS = (PDF_EXTENSIONS + IMAGE_EXTENSIONS + LONG_DOC_EXTENSIONS).freeze
+  EXTRACTABLE_EXTENSIONS = (PDF_EXTENSIONS + Kb::MediaTypes::OCR_EXTENSIONS + LONG_DOC_EXTENSIONS).freeze
   KB_EXTENSIONS         = (MARKDOWN_EXTENSIONS + EMBED_EXTENSIONS).freeze
-  ALL_EXTENSIONS        = (KB_EXTENSIONS + SERVE_EXTENSIONS + LONG_DOC_EXTENSIONS).freeze
+  ALL_EXTENSIONS        = (KB_EXTENSIONS + SERVE_EXTENSIONS + LONG_DOC_EXTENSIONS + Kb::MediaTypes::VIEWER_EXTENSIONS).freeze
 
   EMBED_CSP = "default-src 'none'; img-src data:; style-src 'unsafe-inline'; font-src data:".freeze
 
@@ -30,7 +30,7 @@ class KbController < ApplicationController
   KbContent = Struct.new(
     :kind, :html, :raw_url, :serve_url, :rel, :src, :filename,
     :created_at, :modified_at,
-    :extraction, :output_rel, :mime_type,
+    :extraction, :output_rel, :mime_type, :captions_url, :private_project,
     keyword_init: true
   )
 
@@ -38,10 +38,15 @@ class KbController < ApplicationController
   # Only the KB section page is feature-gated; file/tree/serve endpoints also
   # back the notes bar and stay available.
   before_action -> { require_feature(:kb) }, only: [ :index ]
+  before_action :block_locking_writes, only: %i[fs_save fs_create fs_upload fs_rename fs_move fs_delete]
 
   def index
     @folders = build_folder_tree
     @selected_folder_index, @selected_file = initial_document_selection
+    # A file inside a locked project (remembered, linked or the first one): show the locked page instead.
+    if (locked = locked_project_at(@selected_folder_index, @selected_file))
+      return redirect_to kb_path(src: @selected_folder_index, project: locked.rel)
+    end
 
     @content = render_file(@selected_folder_index, @selected_file)
     remember_document(@selected_folder_index, @selected_file) if displayable_content?(@content)
@@ -52,6 +57,10 @@ class KbController < ApplicationController
   def file
     folder_index = params[:src].to_i
     rel_path = params[:file]
+    if (locked = locked_project_at(folder_index, rel_path))
+      return redirect_to kb_project_path(src: folder_index, path: locked.rel)
+    end
+
     @content = render_file(folder_index, rel_path)
     @selected_file = rel_path
     @selected_folder_index = folder_index
@@ -75,18 +84,21 @@ class KbController < ApplicationController
     return head(:not_found) if abs.nil?
 
     ext = File.extname(abs).downcase
-    unless SERVE_EXTENSIONS.include?(ext)
+    unless SERVE_EXTENSIONS.include?(ext) || ext == ".vtt" # .vtt: sidecar captions for <track>
       return send_file(abs, filename: File.basename(abs), disposition: "attachment", type: "application/octet-stream")
     end
 
-    return unless stale?(last_modified: File.mtime(abs))
+    return unless stale?(last_modified: File.mtime(abs), etag: [ (File.mtime(abs).to_f * 1000).to_i, File.size(abs) ])
 
-    mime = MIME_TYPES[ext] || "application/octet-stream"
+    mime = ext == ".vtt" ? "text/vtt" : MIME_TYPES[ext] || "application/octet-stream"
 
     # Rack::Files (unlike send_file) answers Range requests with 206, which
     # video/audio seeking, resume and Safari playback all require.
     status, headers, body = Rack::Files.new(File.dirname(abs)).serving(request, abs)
     headers["content-type"] = mime
+    # SVG can carry script: it is only ever shown via <img>, and opened directly it is sandboxed and inert.
+    headers["content-security-policy"] = "sandbox; default-src 'none'; style-src 'unsafe-inline'" if ext == ".svg"
+    headers["x-content-type-options"] = "nosniff" if ext == ".svg"
     headers["cache-control"] = "private, max-age=0, must-revalidate"
     headers.each { |name, value| response.set_header(name, value) }
     self.status = status
@@ -147,6 +159,9 @@ class KbController < ApplicationController
 
     name = params[:name].to_s.strip
     return project_create(parent, name) if params[:kind] == "project"
+    # Pasted wrapper links (suspended tab, redirectors) reduce to the real URL.
+    unwrapped = Kb::UrlNormalizer.call(name)
+    name = unwrapped if url?(unwrapped)
 
     folder = params[:kind] == "folder"
 
@@ -161,8 +176,11 @@ class KbController < ApplicationController
 
         return respond_fs(notice: "Sent to the browser extension. It will save the conversation here within about 30 seconds.")
       end
+      return fs_error("Project is locked. Unlock it first.") if Kb::ProjectLock.write_block(base, params[:dir]) == :locked
+
       KbDownload.enqueue(user: @user, source_index: params[:src].to_i,
-                         dir: params[:dir].to_s, url: name, format: params[:format].to_s)
+                         dir: params[:dir].to_s, url: name, format: params[:format].to_s,
+                         clip_start: params[:clip_start], clip_end: params[:clip_end], note: params[:note])
       return respond_fs
     end
 
@@ -234,10 +252,15 @@ class KbController < ApplicationController
     dest = File.join(File.dirname(abs), name)
     return fs_error("\"#{name}\" already exists.") if File.exist?(dest) && dest != abs
 
+    side = Kb::Transcript.sidecar_for(abs)
+    note = Kb::Note.sidecar_for(abs)
     File.rename(abs, dest)
+    FileUtils.mv(side, Kb::Transcript.sidecar(dest)) if side && !File.exist?(Kb::Transcript.sidecar(dest)) # captions follow their media
+    Kb::Note.carry!(note, dest)
     rel = dest.delete_prefix("#{base}/")
     parent_rel = File.dirname(params[:path].to_s)
     Kb::Project.at(base, parent_rel)&.rename_material!(File.basename(params[:path].to_s), name) unless parent_rel == "."
+    reorder_child(base, params[:path], to: name)
     KbEntryPreference.move_subtree!(
       user: @user,
       source_path: base,
@@ -252,6 +275,13 @@ class KbController < ApplicationController
       new_source_path: base,
       new_relative_path: rel
     )
+    KbLink.move_subtree!(
+      user: @user,
+      source_path: base,
+      old_relative_path: params[:path],
+      new_source_path: base,
+      new_relative_path: rel
+    )
     KbAnnotation.move_subtree!(
       user: @user,
       source_path: base,
@@ -259,6 +289,15 @@ class KbController < ApplicationController
       new_source_path: base,
       new_relative_path: rel
     )
+    KbBookmark.move_subtree!(
+      user: @user,
+      source_path: base,
+      old_relative_path: params[:path],
+      new_source_path: base,
+      new_relative_path: rel
+    )
+    KbDownload.move_subtree!(user: @user, source_index: params[:src].to_i, old_relative_path: params[:path],
+                             new_source_index: params[:src].to_i, new_relative_path: rel)
 
     # Inline naming patches the one row it changed, so it wants the new path
     # back rather than a fresh tree. The cached scan must still be dropped, or
@@ -293,7 +332,12 @@ class KbController < ApplicationController
     target = File.join(dest_dir, File.basename(abs))
     return fs_error("\"#{File.basename(abs)}\" already exists in the target folder.") if File.exist?(target)
 
+    side = Kb::Transcript.sidecar_for(abs)
+    note = Kb::Note.sidecar_for(abs)
     FileUtils.mv(abs, target)
+    FileUtils.mv(side, Kb::Transcript.sidecar(target)) if side && !File.exist?(Kb::Transcript.sidecar(target))
+    Kb::Note.carry!(note, target)
+    reorder_child(base, params[:path])
     KbEntryPreference.move_subtree!(
       user: @user,
       source_path: base,
@@ -308,6 +352,13 @@ class KbController < ApplicationController
       new_source_path: dest_base,
       new_relative_path: target.delete_prefix("#{dest_base}/")
     )
+    KbLink.move_subtree!(
+      user: @user,
+      source_path: base,
+      old_relative_path: params[:path],
+      new_source_path: dest_base,
+      new_relative_path: target.delete_prefix("#{dest_base}/")
+    )
     KbAnnotation.move_subtree!(
       user: @user,
       source_path: base,
@@ -315,6 +366,16 @@ class KbController < ApplicationController
       new_source_path: dest_base,
       new_relative_path: target.delete_prefix("#{dest_base}/")
     )
+    KbBookmark.move_subtree!(
+      user: @user,
+      source_path: base,
+      old_relative_path: params[:path],
+      new_source_path: dest_base,
+      new_relative_path: target.delete_prefix("#{dest_base}/")
+    )
+    KbDownload.move_subtree!(user: @user, source_index: params[:src].to_i, old_relative_path: params[:path],
+                             new_source_index: dest_index, new_relative_path: target.delete_prefix("#{dest_base}/"))
+    apply_drop_order(dest_base, dest_dir, File.basename(target))
     if File.file?(target)
       respond_fs(src: dest_index, file: target.delete_prefix("#{dest_base}/"))
     else
@@ -329,10 +390,16 @@ class KbController < ApplicationController
     abs = safe_abs(base, params[:path])
     return fs_error("Not found.") if abs.nil? || abs == base || !File.exist?(abs)
 
+    side = Kb::Transcript.sidecar_for(abs)
+    note = Kb::Note.sidecar_for(abs)
     File.directory?(abs) ? FileUtils.rm_r(abs) : File.delete(abs)
+    FileUtils.rm_f([ side, note ].compact)
+    reorder_child(base, params[:path])
     KbEntryPreference.delete_subtree!(user: @user, source_path: base, relative_path: params[:path])
     IdeaKbLink.delete_subtree!(user: @user, source_path: base, relative_path: params[:path])
+    KbLink.delete_subtree!(user: @user, source_path: base, relative_path: params[:path])
     KbAnnotation.delete_subtree!(user: @user, source_path: base, relative_path: params[:path])
+    KbBookmark.delete_subtree!(user: @user, source_path: base, relative_path: params[:path])
     respond_fs
   end
 
@@ -361,7 +428,7 @@ class KbController < ApplicationController
 
       preference.set_icon!(kind: params[:icon_kind], emoji: params[:emoji], image: params[:icon_image])
     end
-    preference.destroy! if !preference.favorite? && preference.icon_kind == "default" && !preference.icon_image.attached?
+    preference.destroy! if preference.blank_preference?
 
     # Favouriting is toggled optimistically in the tree; acknowledging is
     # enough, and a banner for a starred file is noise.
@@ -403,12 +470,20 @@ class KbController < ApplicationController
     )
   end
 
+  # Global default (user.settings), or one folder's override when src is given
+  # (blank mode clears it). Overrides live on the folder's KbEntryPreference.
   def sort
     mode = params[:mode].to_s
-    return fs_error("Unsupported sort order.") unless Kb::TreeBuilder::SORT_MODES.include?(mode)
+    folder_scope = params.key?(:src)
+    return fs_error("Unsupported sort order.") unless Kb::TreeBuilder::SORT_MODES.include?(mode) || (folder_scope && mode.blank?)
 
-    @user.settings = (@user.settings || {}).deep_merge("kb" => { "sort" => mode })
-    @user.save!
+    if folder_scope
+      error = save_folder_pref(params[:src].to_i, params[:path]) { |pref| pref.sort_mode = mode.presence }
+      return fs_error(error) if error
+    else
+      @user.settings = (@user.settings || {}).deep_merge("kb" => { "sort" => mode })
+      @user.save!
+    end
     return head(:no_content) if request.format.json?
     return redirect_to(kb_path) unless request.format.turbo_stream?
 
@@ -418,11 +493,77 @@ class KbController < ApplicationController
     @selected_folder_index, @selected_file = remembered_document
     render turbo_stream: [
       turbo_stream.replace("kb-sidebar-tree", partial: "kb/tree"),
-      turbo_stream.replace("kb-sort", partial: "kb/sort", locals: { mode: mode })
+      turbo_stream.replace("kb-sort", partial: "kb/sort", locals: { mode: Kb::TreeBuilder.sort_mode_for(@user) })
     ]
   end
 
+  # Persists a drag/keyboard reorder: params[:names] is the full sibling order
+  # as displayed. Switches the folder to manual (ascending) so it sticks; files untouched.
+  def order
+    names = Array(params[:names]).map(&:to_s).uniq
+    error = save_folder_pref(params[:src].to_i, params[:dir]) do |pref, dir_abs|
+      pref.sort_mode = "manual_asc"
+      pref.manual_order = existing_children(dir_abs, params[:dir], names).to_json
+    end
+    return fs_error(error) if error
+
+    respond_fs
+  end
+
   private
+
+  # Names that are real entries of the folder or alias slots shown in it.
+  def existing_children(dir_abs, dir_rel, names)
+    base = File.expand_path(dir_abs.to_s)
+    source = kb_sources.map { |src| File.expand_path(src[:path]) }.find { |path| base == path || base.start_with?("#{path}/") }
+    slots = source ? KbLink.aliases_in(@user, source).pluck(:peer_relative_path).to_set : Set.new
+    rel = KbEntryPreference.normalize_relative_path(dir_rel)
+    names.select { |n| valid_node_name?(n) && (File.exist?(File.join(dir_abs, n)) || slots.include?(rel.empty? ? n : "#{rel}/#{n}")) }
+  end
+
+  # Yields (folder preference, absolute dir) for a source folder, saves it, drops it if blank
+  # and busts the tree cache. Returns an error string or nil.
+  def save_folder_pref(source_index, dir_rel)
+    base = writable_base(source_index)
+    return "Folder is not available." if base.nil?
+
+    dir_abs = resolve_dir(base, dir_rel.to_s)
+    return "Target folder not found." if dir_abs.nil?
+
+    pref = KbEntryPreference.folder_pref(@user, base, dir_rel)
+    yield pref, dir_abs
+    pref.save!
+    pref.destroy! if pref.blank_preference?
+    Kb::TreeBuilder.bust_cache!(@user)
+    nil
+  rescue ActiveRecord::RecordInvalid => error
+    error.message
+  end
+
+  # A drop between siblings of another folder sends that folder's order (params[:names]);
+  # otherwise the moved entry lands last in a manual folder.
+  def apply_drop_order(dest_base, dest_dir, name)
+    rel = dest_dir.delete_prefix(dest_base).delete_prefix("/")
+    given = Array(params[:names]).map(&:to_s)
+    if given.include?(name)
+      save_folder_pref(params[:dest_src].presence&.to_i || params[:src].to_i, rel) do |pref, dir_abs|
+        pref.sort_mode = "manual_asc"
+        pref.manual_order = existing_children(dir_abs, rel, given).to_json
+      end
+    else
+      KbEntryPreference.edit_order!(@user, dest_base, rel) { |names| names + [ name ] }
+    end
+  end
+
+  # Keeps a folder's manual order in step with a child being renamed (to: new name),
+  # moved out or deleted (to: nil).
+  def reorder_child(base, path, to: nil)
+    dir = File.dirname(path.to_s)
+    old = File.basename(path.to_s)
+    KbEntryPreference.edit_order!(@user, base, dir == "." ? "" : dir) do |names|
+      names.filter_map { |name| name == old ? to : name }
+    end
+  end
 
   # "New folder" with several files picked: move them (siblings only) into the fresh folder.
   def move_into_folder(base, folder, rels)
@@ -433,9 +574,11 @@ class KbController < ApplicationController
       target = File.join(folder, File.basename(abs))
       next if File.exist?(target)
 
+      note = Kb::Note.sidecar_for(abs)
       FileUtils.mv(abs, target)
+      Kb::Note.carry!(note, target)
       new_rel = target.delete_prefix("#{base}/")
-      [ KbEntryPreference, IdeaKbLink, KbAnnotation ].each do |model|
+      [ KbEntryPreference, IdeaKbLink, KbLink, KbAnnotation, KbBookmark ].each do |model|
         model.move_subtree!(user: @user, source_path: base, old_relative_path: rel,
                             new_source_path: base, new_relative_path: new_rel)
       end
@@ -487,6 +630,19 @@ class KbController < ApplicationController
       end
     end
     render "kb/fs_stream"
+  end
+
+  # No writes into (or around) a project while it locks/unlocks: the archive
+  # would miss them or the move would hit a half-empty folder.
+  def block_locking_writes
+    base = writable_base(params[:src].to_i) or return
+    dest_base = writable_base((params[:dest_src].presence || params[:src]).to_i) || base
+    paths = %i[path file dir].filter_map { |key| params[key].presence }.map { |rel| File.join(base, rel) }
+    paths += Array(params[:move]).map { |rel| File.join(base, rel.to_s) }
+    paths << File.join(dest_base, params[:dest_dir].to_s) if params[:dest_dir].present?
+    return unless paths.any? { |path| Kb::ProjectLock.busy_path?(path) }
+
+    fs_error("A project in that folder is locking or unlocking. Try again in a moment.")
   end
 
   # Base directory of a KB source, only if it can be written to.
@@ -547,10 +703,19 @@ class KbController < ApplicationController
       return remembered
     end
 
-    folder = @folders.find { |candidate| candidate[:files].any? }
+    # Locked projects only hold their .7z + stub: never auto-open those.
+    folder = @folders.find { |candidate| candidate[:files].any? { |f| !locked_project_at(candidate[:index], f[:rel]) } }
     return [ 0, nil ] unless folder
 
-    [ folder[:index], folder[:files].first[:rel] ]
+    [ folder[:index], folder[:files].find { |f| !locked_project_at(folder[:index], f[:rel]) }[:rel] ]
+  end
+
+  def locked_project_at(folder_index, rel)
+    source = (@lock_sources ||= kb_sources)[folder_index] unless folder_index.to_i.negative?
+    return unless source && rel.present?
+
+    project = Kb::Project.containing(File.expand_path(source[:path]), rel)
+    project if project&.locked?
   end
 
   def remembered_document
@@ -592,7 +757,7 @@ class KbController < ApplicationController
       KbContent.new(
         **metadata,
         kind: :pdf,
-        serve_url: kb_serve_path(src: folder_index, file: rel_path),
+        serve_url: versioned_serve_path(abs, folder_index, rel_path),
         extraction: KnowledgeExtraction.where(kb_path: abs).recent.first,
         output_rel: output_rel_for(abs, rel_path)
       )
@@ -600,7 +765,7 @@ class KbController < ApplicationController
       KbContent.new(
         **metadata,
         kind: :image,
-        serve_url: kb_serve_path(src: folder_index, file: rel_path),
+        serve_url: versioned_serve_path(abs, folder_index, rel_path),
         mime_type: MIME_TYPES[ext],
         extraction: KnowledgeExtraction.where(kb_path: abs).recent.first,
         output_rel: output_rel_for(abs, rel_path)
@@ -609,14 +774,15 @@ class KbController < ApplicationController
       KbContent.new(
         **metadata,
         kind: :video,
-        serve_url: kb_serve_path(src: folder_index, file: rel_path),
-        mime_type: MIME_TYPES[ext]
+        serve_url: versioned_serve_path(abs, folder_index, rel_path),
+        mime_type: MIME_TYPES[ext],
+        captions_url: (side = Kb::Transcript.sidecar_for(abs)) && versioned_serve_path(side, folder_index, Kb::Transcript.sidecar(rel_path))
       )
     elsif AUDIO_EXTENSIONS.include?(ext)
       KbContent.new(
         **metadata,
         kind: :audio,
-        serve_url: kb_serve_path(src: folder_index, file: rel_path),
+        serve_url: versioned_serve_path(abs, folder_index, rel_path),
         mime_type: MIME_TYPES[ext]
       )
     elsif LONG_DOC_EXTENSIONS.include?(ext)
@@ -629,11 +795,17 @@ class KbController < ApplicationController
     else
       KbContent.new(
         **metadata,
-        kind: :generic,
-        serve_url: kb_serve_path(src: folder_index, file: rel_path),
+        kind: Kb::MediaTypes.kind_for(abs), # :generic, or a viewer kind (model, archive, book, comic, cad) fetched via serve
+        serve_url: versioned_serve_path(abs, folder_index, rel_path),
         mime_type: "application/octet-stream"
       )
     end
+  end
+
+  # The mtime param busts browser image/media caches when an edit rewrites a
+  # file in place (same URL otherwise reuses the old bytes until navigation).
+  def versioned_serve_path(abs, folder_index, rel_path)
+    kb_serve_path(src: folder_index, file: rel_path, v: (File.mtime(abs).to_f * 1000).to_i)
   end
 
   def file_metadata(abs, folder_index, rel_path)
@@ -642,6 +814,7 @@ class KbController < ApplicationController
       rel: rel_path,
       src: folder_index,
       filename: File.basename(abs),
+      private_project: Kb::Privacy.private?(File.expand_path(kb_sources[folder_index][:path]), rel_path), # attach 403s here
       created_at: file_created_at(stat),
       modified_at: stat.mtime
     }
@@ -699,18 +872,7 @@ class KbController < ApplicationController
   end
 
   def render_markdown(raw)
-    renderer = Redcarpet::Render::HTML.new(
-      hard_wrap: true,
-      link_attributes: { target: "_blank", rel: "noopener" }
-    )
-    md = Redcarpet::Markdown.new(renderer,
-      autolink: true,
-      tables: true,
-      fenced_code_blocks: true,
-      strikethrough: true,
-      no_intra_emphasis: true
-    )
-    md.render(raw).html_safe
+    Kb::MarkdownRenderer.render(raw)
   end
 
   def sanitized_upload_name(filename)

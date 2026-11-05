@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_10_18_100000) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_20_131500) do
   create_table "action_mailbox_inbound_emails", force: :cascade do |t|
     t.integer "status", default: 0, null: false
     t.string "message_id", null: false
@@ -285,6 +285,16 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_18_100000) do
     t.index ["list_id"], name: "index_idea_lists_on_list_id"
   end
 
+  create_table "idea_themes", force: :cascade do |t|
+    t.integer "idea_id", null: false
+    t.integer "theme_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["idea_id", "theme_id"], name: "index_idea_themes_on_idea_id_and_theme_id", unique: true
+    t.index ["idea_id"], name: "index_idea_themes_on_idea_id"
+    t.index ["theme_id"], name: "index_idea_themes_on_theme_id"
+  end
+
   create_table "idea_topologies", force: :cascade do |t|
     t.integer "idea_id", null: false
     t.integer "topology_id", null: false
@@ -364,6 +374,20 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_18_100000) do
     t.index ["user_id"], name: "index_kb_annotations_on_user_id"
   end
 
+  create_table "kb_bookmarks", force: :cascade do |t|
+    t.integer "user_id", null: false
+    t.string "source_path", null: false
+    t.string "relative_path", null: false
+    t.string "label", null: false
+    t.integer "page"
+    t.string "cfi"
+    t.float "progress"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["user_id", "source_path", "relative_path"], name: "index_kb_bookmarks_on_user_and_path"
+    t.index ["user_id"], name: "index_kb_bookmarks_on_user_id"
+  end
+
   create_table "kb_downloads", force: :cascade do |t|
     t.integer "user_id", null: false
     t.integer "source_index", null: false
@@ -387,6 +411,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_18_100000) do
     t.integer "transcript_attempts", default: 0, null: false
     t.string "transcript_error"
     t.datetime "opened_at"
+    t.integer "clip_start"
+    t.integer "clip_end"
+    t.text "note"
     t.index ["transcript_status"], name: "index_kb_downloads_on_transcript_status"
     t.index ["user_id", "status"], name: "index_kb_downloads_on_user_id_and_status"
     t.index ["user_id"], name: "index_kb_downloads_on_user_id"
@@ -402,6 +429,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_18_100000) do
     t.string "emoji"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "sort_mode"
+    t.text "manual_order"
     t.index ["user_id", "source_path", "relative_path", "entry_type"], name: "index_kb_entry_preferences_on_entry", unique: true
     t.index ["user_id"], name: "index_kb_entry_preferences_on_user_id"
   end
@@ -426,6 +455,19 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_18_100000) do
     t.index ["user_id"], name: "index_kb_fs_jobs_on_user_id"
   end
 
+  create_table "kb_links", force: :cascade do |t|
+    t.integer "user_id", null: false
+    t.string "kind", null: false
+    t.text "source_path", null: false
+    t.text "relative_path", null: false
+    t.text "peer_source_path", null: false
+    t.text "peer_relative_path", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["user_id", "kind", "source_path", "relative_path", "peer_source_path", "peer_relative_path"], name: "index_kb_links_on_pair", unique: true
+    t.index ["user_id"], name: "index_kb_links_on_user_id"
+  end
+
   create_table "kb_media_edits", force: :cascade do |t|
     t.integer "user_id", null: false
     t.integer "source_index", null: false
@@ -442,6 +484,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_18_100000) do
     t.datetime "finished_at"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "result_relative_path"
     t.index ["source_path", "relative_path"], name: "index_kb_media_edits_on_source_path_and_relative_path"
     t.index ["user_id", "source_path", "relative_path"], name: "index_active_kb_media_edits_on_path", unique: true, where: "status IN ('pending', 'running')"
     t.index ["user_id", "status"], name: "index_kb_media_edits_on_user_id_and_status"
@@ -617,6 +660,16 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_18_100000) do
     t.index ["user_id"], name: "index_templates_on_user_id"
   end
 
+  create_table "themes", force: :cascade do |t|
+    t.integer "user_id", null: false
+    t.string "name", null: false
+    t.string "color"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["user_id", "name"], name: "index_themes_on_user_id_and_name", unique: true
+    t.index ["user_id"], name: "index_themes_on_user_id"
+  end
+
   create_table "todo_items", force: :cascade do |t|
     t.integer "idea_id", null: false
     t.string "title", null: false
@@ -686,15 +739,19 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_18_100000) do
   add_foreign_key "idea_kb_links", "ideas"
   add_foreign_key "idea_lists", "ideas"
   add_foreign_key "idea_lists", "lists"
+  add_foreign_key "idea_themes", "ideas"
+  add_foreign_key "idea_themes", "themes"
   add_foreign_key "idea_topologies", "ideas"
   add_foreign_key "idea_topologies", "topologies"
   add_foreign_key "ideas", "templates"
   add_foreign_key "ideas", "users"
   add_foreign_key "kanban_boards", "users"
   add_foreign_key "kb_annotations", "users"
+  add_foreign_key "kb_bookmarks", "users"
   add_foreign_key "kb_downloads", "users"
   add_foreign_key "kb_entry_preferences", "users"
   add_foreign_key "kb_fs_jobs", "users"
+  add_foreign_key "kb_links", "users"
   add_foreign_key "kb_media_edits", "users"
   add_foreign_key "knowledge_extractions", "ideas"
   add_foreign_key "licensor_contacts", "licensors"
@@ -711,6 +768,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_18_100000) do
   add_foreign_key "submissions", "ideas"
   add_foreign_key "submissions", "users"
   add_foreign_key "templates", "users"
+  add_foreign_key "themes", "users"
   add_foreign_key "todo_items", "ideas"
   add_foreign_key "topologies", "topologies", column: "parent_id"
   add_foreign_key "topologies", "users"

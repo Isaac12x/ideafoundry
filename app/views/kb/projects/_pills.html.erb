@@ -1,0 +1,26 @@
+<% status_tones = { "active" => "success", "paused" => "warning", "concluded" => "muted" } %>
+<%= form_with url: kb_project_path, method: :patch, class: "kbp-inline" do %>
+  <%= ids %>
+  <%= hidden_field_tag :private, project.private? ? "1" : "0", id: nil %>
+  <button type="button" class="kbp-private <%= 'is-private' if project.private? %>"
+          data-next="<%= project.private? ? '0' : '1' %>"
+          data-action="click->kb-project#togglePrivate"
+          title="<%= project.private? ? 'Private: hidden from AI, agents and extraction. Click to change.' : 'Not private. Click to make private.' %>">
+    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><% if project.private? %><path d="M8 11V7a4 4 0 018 0v4"/><% else %><path d="M8 11V7a4 4 0 017.5-1.9"/><% end %></svg>
+    <%= project.private? ? "Private" : "Not private" %>
+  </button>
+<% end %>
+<%= form_with url: kb_project_path, method: :patch, class: "kbp-inline" do %>
+  <%= ids %>
+  <select name="status" class="kbp-pill kbp-status" aria-label="Status" data-tone="<%= status_tones[project.status] %>"
+          data-controller="select-menu" data-action="change->kb-project#submit">
+    <% Kb::Project::STATUSES.each do |status| %>
+      <%= tag.option status.capitalize, value: status, selected: status == project.status, data: { tone: status_tones[status] } %>
+    <% end %>
+  </select>
+<% end %>
+<button type="button" class="kbp-private" aria-expanded="false" aria-controls="kbp-lockpanel" data-action="click->kb-project#toggleLock"
+        title="Encrypt this project into a password-protected 7z archive">
+  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg>
+  Lock with password
+</button>

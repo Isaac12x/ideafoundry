@@ -16,6 +16,7 @@ class CaptureJob < ApplicationRecord
 
   validates :url, presence: true, length: { maximum: 2048 }
   validate :url_is_http
+  before_validation { self.url = Kb::UrlNormalizer.call(url) if url.present? }
   validates :file_format, inclusion: { in: FORMATS }
   validates :state, inclusion: { in: STATES }
   validate :queue_not_full, on: :create

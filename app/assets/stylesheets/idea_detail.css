@@ -1441,8 +1441,8 @@
 /* Knowledge: linked KB entries + inline link combobox */
 .idea-kb-links { margin-top: 1.5rem; }
 .idea-kb-links__list { list-style: none; margin: 0 0 0.75rem; padding: 0; display: grid; gap: 0.4rem; }
-.idea-kb-links__item { display: flex; gap: 0.6rem; align-items: flex-start; padding: 0.5rem 0.65rem; border: 1px solid var(--border); border-radius: 8px; }
-.idea-kb-links__item.is-missing { opacity: 0.55; }
+.idea-kb-links__item { display: flex; gap: 0.6rem; align-items: flex-start; padding: 0.5rem 0.65rem; border: 1px solid var(--border-default); border-radius: var(--radius-md); }
+.idea-kb-links__item.is-missing { opacity: 0.75; }
 .idea-kb-links__body { flex: 1; display: flex; flex-direction: column; min-width: 0; }
 .idea-kb-links__name { font-weight: 600; }
 .idea-kb-links__meta, .idea-kb-links__goal, .idea-kb-links__empty { color: var(--text-muted); font-size: 0.78rem; }
@@ -1469,3 +1469,75 @@
 .idea-kb-links__option:hover,
 .idea-kb-links__option[aria-selected="true"] { background: var(--accent-muted); }
 .idea-kb-links__option.is-empty { cursor: default; color: var(--text-muted); }
+
+/* ---- Themes (idea page, form, grouped index) ---- */
+.theme-tokens__list { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+/* Chips take --theme-color from the theme (falls back to the accent). Native checkbox hidden; state = fill + dot. */
+.theme-chip {
+  --theme-color: var(--accent);
+  position: relative; display: inline-flex; align-items: center; gap: 7px; padding: 4px 12px 4px 10px; font-size: 0.82rem; line-height: 1.2; cursor: pointer;
+  border: 1px solid var(--border-default); border-radius: 999px; color: var(--text-secondary); transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+/* .form-group label { display: block } would flatten the chip flex layout */
+.form-group label.theme-chip { display: inline-flex; margin: 0; font-weight: 400; }
+.theme-chip:hover { border-color: var(--border-emphasis); color: var(--text-primary); }
+.theme-chip input { position: absolute; opacity: 0; width: 1px; height: 1px; margin: 0; pointer-events: none; }
+.theme-chip__dot { width: 8px; height: 8px; border-radius: 50%; border: 1.5px solid var(--theme-color); box-sizing: border-box; flex: none; }
+.theme-chip:has(input:checked) {
+  background: color-mix(in srgb, var(--theme-color) 14%, transparent); border-color: var(--theme-color); color: var(--text-primary);
+}
+.theme-chip:has(input:checked) .theme-chip__dot { background: var(--theme-color); }
+.theme-chip:has(:focus-visible) { outline: 2px solid var(--accent); outline-offset: 1px; }
+.theme-tokens__input { max-width: none; }
+.idea-themes { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 8px; }
+.theme-badge {
+  --theme-color: var(--accent);
+  display: inline-flex; align-items: center; gap: 6px; font-size: 0.78rem; padding: 2px 10px; border-radius: 999px; text-decoration: none;
+  background: color-mix(in srgb, var(--theme-color) 14%, transparent); color: var(--text-primary); border: 1px solid color-mix(in srgb, var(--theme-color) 40%, transparent);
+}
+.theme-badge::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--theme-color); }
+.idea-themes__edit summary { cursor: pointer; font-size: 0.8rem; color: var(--text-muted); }
+.idea-themes__edit[open] { flex-basis: 100%; }
+.idea-themes__edit form { margin-top: 8px; }
+.idea-card-themes { display: flex; flex-wrap: wrap; gap: 4px; }
+
+/* Grouped ideas view */
+.theme-toolbar { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 14px; color: var(--text-muted); font-size: 0.85rem; }
+.theme-toolbar a { color: var(--accent); text-decoration: none; }
+.theme-toolbar a:hover { text-decoration: underline; }
+.theme-group { --theme-color: var(--accent); margin-bottom: 28px; }
+.theme-group__header {
+  display: flex; align-items: baseline; gap: 12px; cursor: pointer; padding: 4px 0 8px; margin-bottom: 12px;
+  border-bottom: 1px solid color-mix(in srgb, var(--theme-color) 35%, var(--border-subtle)); list-style: none;
+}
+.theme-group__header::-webkit-details-marker { display: none; }
+.theme-group__mark { align-self: center; width: 10px; height: 10px; border-radius: 3px; background: var(--theme-color); flex: none; }
+.theme-group__name { font-family: var(--font-display); font-style: italic; font-weight: 400; font-size: 1.6rem; line-height: 1.1; color: var(--text-primary); }
+.theme-group--none { --theme-color: var(--text-muted); }
+.theme-group--none .theme-group__name { color: var(--text-secondary); }
+.theme-group__count { font-size: 0.78rem; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.theme-group__chev { margin-left: auto; align-self: center; color: var(--text-muted); font-size: 0.9rem; transition: transform 0.15s; }
+.theme-group:not([open]) .theme-group__chev { transform: rotate(-90deg); }
+.theme-group__header:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.theme-hint { margin: 0 0 20px; padding: 12px 14px; border: 1px dashed var(--border-emphasis); border-radius: var(--radius-md); color: var(--text-secondary); font-size: 0.9rem; }
+.theme-hint strong { font-family: var(--font-display); font-style: italic; font-weight: 400; font-size: 1.15rem; color: var(--text-primary); display: block; margin-bottom: 2px; }
+
+/* Settings > Themes */
+.theme-manage { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.theme-manage__row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border-subtle); }
+.theme-manage__form { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; flex: 1 1 auto; margin: 0; }
+.theme-manage__name { max-width: 240px; }
+.theme-manage__count { font-size: 0.8rem; color: var(--text-muted); min-width: 64px; }
+.theme-manage__delete { margin: 0; }
+.theme-swatches { display: flex; gap: 6px; border: 0; padding: 0; margin: 0; }
+.theme-swatch { position: relative; width: 22px; height: 22px; border-radius: 50%; background: var(--swatch); cursor: pointer; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.3); }
+.theme-swatch input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; }
+.theme-swatch:has(input:checked) { outline: 2px solid var(--text-primary); outline-offset: 2px; }
+.theme-swatch:has(:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
+.pick-chip {
+  display: inline-flex; align-items: center; gap: 6px; margin: 0 6px 6px 0; padding: 3px 4px 3px 10px; font-size: 0.82rem;
+  border: 1px solid var(--border-default); border-radius: 999px;
+}
+.pick-chip button { background: none; border: 0; cursor: pointer; color: var(--text-muted); padding: 0 6px; }
+.kb-link-picks { position: relative; }
+.kb-link-picks__existing { font-size: 0.82rem; color: var(--text-muted); margin: 0 0 6px; }
