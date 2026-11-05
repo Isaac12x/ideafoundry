@@ -58,7 +58,7 @@ class IdeaKbLinksController < ApplicationController
           visited += 1
           rel = dir.empty? ? name : "#{dir}/#{name}"
           abs = File.join(base, rel)
-          next if File.symlink?(abs) || Kb::Note.sidecar?(name) # the note rides on its file's row
+          next if File.symlink?(abs) || Kb::Note.sidecar?(name) || Kb::Source.sidecar?(name) # the note rides on its file's row
 
           is_dir = File.directory?(abs)
           queue << rel if is_dir

@@ -3,6 +3,7 @@ import { createRoot, Root } from "react-dom/client";
 import { Excalidraw, exportToBlob, CaptureUpdateAction } from "@excalidraw/excalidraw";
 import type { ExcalidrawImperativeAPI } from "@excalidraw/excalidraw/types";
 import "@excalidraw/excalidraw/index.css";
+import { binding, matches } from "../lib/shortcut_bindings.mjs";
 
 // Fonts live in public/excalidraw-assets/<version> (esbuild.config.mjs); never let Excalidraw reach a CDN.
 declare const __EXCALIDRAW_ASSET_PATH__: string;
@@ -254,7 +255,7 @@ function ExcalidrawApp({ container, session, register }: Props) {
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "s" && isVisible(container)) {
+      if (matches(binding("save"), e) && isVisible(container)) {
         e.preventDefault();
         void save(true);
       }

@@ -30,7 +30,7 @@ class KbController < ApplicationController
   KbContent = Struct.new(
     :kind, :html, :raw_url, :serve_url, :rel, :src, :filename,
     :created_at, :modified_at,
-    :extraction, :output_rel, :mime_type, :captions_url, :private_project, :shots,
+    :extraction, :output_rel, :mime_type, :captions_url, :private_project, :shots, :source_url, :description,
     keyword_init: true
   )
 
@@ -66,6 +66,9 @@ class KbController < ApplicationController
     @selected_folder_index = folder_index
     remember_document(folder_index, rel_path) if displayable_content?(@content)
     mark_download_opened(folder_index, rel_path) if @content&.kind != :missing
+    return if turbo_frame_request?
+
+    render_kb_shell
   end
 
   def raw
@@ -99,7 +102,14 @@ class KbController < ApplicationController
     # SVG can carry script: it is only ever shown via <img>, and opened directly it is sandboxed and inert.
     headers["content-security-policy"] = "sandbox; default-src 'none'; style-src 'unsafe-inline'" if ext == ".svg"
     headers["x-content-type-options"] = "nosniff" if ext == ".svg"
-    headers["cache-control"] = "private, max-age=0, must-revalidate"
+    # pdf.js only issues range requests when the server advertises them.
+    headers["accept-ranges"] = "bytes"
+    # Viewer URLs carry ?v=<mtime> (versioned_serve_path), so a hit is immutable: reuse it with no round trip.
+    # Only when v is the file's current token; any other value revalidates. Still private (auth-gated, never shared caches); an edit changes v and busts it.
+    # Files inside a project never get max-age: the project can be locked later (Clear-Site-Data can't run when the background lock finishes), and a cached copy would replay for the hour.
+    base = File.expand_path(kb_sources[params[:src].to_i][:path])
+    reusable = params[:v].to_s == mtime_token(abs).to_s && Kb::Project.containing(base, params[:file]).nil?
+    headers["cache-control"] = reusable ? "private, max-age=3600" : "private, max-age=0, must-revalidate"
     headers.each { |name, value| response.set_header(name, value) }
     self.status = status
     self.response_body = body
@@ -129,7 +139,7 @@ class KbController < ApplicationController
 
     if MARKDOWN_EXTENSIONS.include?(File.extname(abs).downcase)
       @raw_content = File.read(abs)
-      return render :edit
+      return render_kb_pane("kb/edit")
     end
 
     @content = render_file(folder_index, @selected_file)
@@ -137,7 +147,7 @@ class KbController < ApplicationController
     if %w[.html .htm].include?(File.extname(abs).downcase)
       @source_content = File.read(abs)
     end
-    render :media_edit
+    render_kb_pane("kb/media_edit")
   end
 
   def fs_save
@@ -169,17 +179,18 @@ class KbController < ApplicationController
     # background" (yt-dlp for media, HTTP otherwise). URLs contain "/" so this
     # must run before valid_node_name?, which rejects them.
     if !folder && url?(name)
+      dir = download_dir(base, params[:dir].to_s)
       if CaptureJob.extension_url?(name)
         job = @user.capture_jobs.create(url: name, file_format: "md",
-                                        source_index: params[:src].to_i, dir: params[:dir].to_s)
+                                        source_index: params[:src].to_i, dir: dir)
         return fs_error(job.errors.full_messages.to_sentence) unless job.persisted?
 
         return respond_fs(notice: "Sent to the browser extension. It will save the conversation here within about 30 seconds.")
       end
-      return fs_error("Project is locked. Unlock it first.") if Kb::ProjectLock.write_block(base, params[:dir]) == :locked
+      return fs_error("Project is locked. Unlock it first.") if Kb::ProjectLock.write_block(base, dir) == :locked
 
       KbDownload.enqueue(user: @user, source_index: params[:src].to_i,
-                         dir: params[:dir].to_s, url: name, format: params[:format].to_s,
+                         dir: dir, url: name, format: params[:format].to_s,
                          clip_start: params[:clip_start], clip_end: params[:clip_end], note: params[:note])
       return respond_fs
     end
@@ -207,6 +218,15 @@ class KbController < ApplicationController
       File.write(abs, "")
       respond_fs(file: abs.delete_prefix("#{base}/"))
     end
+  end
+
+  # A download aimed at the tree root (blank dir) while the user is inside a project lands in that
+  # project's folder (its Inbox = unsorted top level), whether they view a project page, a file or a nested folder.
+  def download_dir(base, dir)
+    return dir if dir.present?
+
+    viewed = params[:view_rel].presence || (params[:sel_file].presence if params[:sel_src].to_i == params[:src].to_i)
+    Kb::Project.containing(base, viewed)&.rel || dir
   end
 
   def fs_upload
@@ -254,9 +274,11 @@ class KbController < ApplicationController
 
     side = Kb::Transcript.sidecar_for(abs)
     note = Kb::Note.sidecar_for(abs)
+    source = Kb::Source.sidecar_for(abs)
     File.rename(abs, dest)
     FileUtils.mv(side, Kb::Transcript.sidecar(dest)) if side && !File.exist?(Kb::Transcript.sidecar(dest)) # captions follow their media
     Kb::Note.carry!(note, dest)
+    Kb::Source.carry!(source, dest)
     Kb::VideoShots.carry!(abs, dest) if Kb::MediaTypes.kind_for(dest) == :video
     rel = dest.delete_prefix("#{base}/")
     parent_rel = File.dirname(params[:path].to_s)
@@ -335,9 +357,11 @@ class KbController < ApplicationController
 
     side = Kb::Transcript.sidecar_for(abs)
     note = Kb::Note.sidecar_for(abs)
+    source = Kb::Source.sidecar_for(abs)
     FileUtils.mv(abs, target)
     FileUtils.mv(side, Kb::Transcript.sidecar(target)) if side && !File.exist?(Kb::Transcript.sidecar(target))
     Kb::Note.carry!(note, target)
+    Kb::Source.carry!(source, target)
     Kb::VideoShots.carry!(abs, target) if Kb::MediaTypes.kind_for(target) == :video
     reorder_child(base, params[:path])
     KbEntryPreference.move_subtree!(
@@ -394,8 +418,9 @@ class KbController < ApplicationController
 
     side = Kb::Transcript.sidecar_for(abs)
     note = Kb::Note.sidecar_for(abs)
+    source = Kb::Source.sidecar_for(abs)
     File.directory?(abs) ? FileUtils.rm_r(abs) : File.delete(abs)
-    FileUtils.rm_f([ side, note ].compact)
+    FileUtils.rm_f([ side, note, source ].compact)
     reorder_child(base, params[:path])
     KbEntryPreference.delete_subtree!(user: @user, source_path: base, relative_path: params[:path])
     IdeaKbLink.delete_subtree!(user: @user, source_path: base, relative_path: params[:path])
@@ -514,6 +539,21 @@ class KbController < ApplicationController
 
   private
 
+  # Deep link / reload / new tab: full KB shell with this pane open, as if clicked.
+  def render_kb_shell
+    @folders = build_folder_tree
+    @facts = @user.facts.recent
+    @maxims = @user.maxims.recent
+    render :index
+  end
+
+  def render_kb_pane(template)
+    return render(template) if turbo_frame_request?
+
+    @kb_pane = template
+    render_kb_shell
+  end
+
   # Names that are real entries of the folder or alias slots shown in it.
   def existing_children(dir_abs, dir_rel, names)
     base = File.expand_path(dir_abs.to_s)
@@ -577,8 +617,10 @@ class KbController < ApplicationController
       next if File.exist?(target)
 
       note = Kb::Note.sidecar_for(abs)
+      source = Kb::Source.sidecar_for(abs)
       FileUtils.mv(abs, target)
       Kb::Note.carry!(note, target)
+      Kb::Source.carry!(source, target)
       Kb::VideoShots.carry!(abs, target) if Kb::MediaTypes.kind_for(target) == :video
       new_rel = target.delete_prefix("#{base}/")
       [ KbEntryPreference, IdeaKbLink, KbLink, KbAnnotation, KbBookmark ].each do |model|
@@ -818,8 +860,10 @@ class KbController < ApplicationController
   # The mtime param busts browser image/media caches when an edit rewrites a
   # file in place (same URL otherwise reuses the old bytes until navigation).
   def versioned_serve_path(abs, folder_index, rel_path)
-    kb_serve_path(src: folder_index, file: rel_path, v: (File.mtime(abs).to_f * 1000).to_i)
+    kb_serve_path(src: folder_index, file: rel_path, v: mtime_token(abs))
   end
+
+  def mtime_token(abs) = (File.mtime(abs).to_f * 1000).to_i
 
   def file_metadata(abs, folder_index, rel_path)
     stat = File.stat(abs)
@@ -830,7 +874,14 @@ class KbController < ApplicationController
       private_project: Kb::Privacy.private?(File.expand_path(kb_sources[folder_index][:path]), rel_path), # attach 403s here
       created_at: file_created_at(stat),
       modified_at: stat.mtime
-    }
+    }.merge(source_info(abs, folder_index, rel_path))
+  end
+
+  # Download link + description: the sidecar, else (older downloads) the kb_downloads row's url.
+  def source_info(abs, folder_index, rel_path)
+    info = Kb::Source.read(abs)
+    url = info["url"].presence || @user.kb_downloads.for_file(folder_index, rel_path).first&.url
+    { source_url: Kb::Source.safe_url(url), description: info["description"].presence }
   end
 
   def file_created_at(stat)
@@ -852,7 +903,7 @@ class KbController < ApplicationController
     nil
   end
 
-  # Clears the sidebar "new download" dot; rebroadcasts only if a row changed.
+  # Clears the sidebar "new download" dot; tells the open tabs (after the response) only if a row changed.
   def mark_download_opened(folder_index, rel_path)
     source = kb_sources[folder_index] unless folder_index.negative?
     return unless source && rel_path.present?
@@ -864,7 +915,8 @@ class KbController < ApplicationController
                    .update_all(opened_at: Time.current)
     return if changed.zero?
 
-    Kb::TreeBroadcaster.call(@user) # busts the tree cache itself
+    Kb::TreeBuilder.bust_cache!(@user)
+    KbTreeSeenJob.perform_later(@user.id, folder_index, rel_path)
   end
 
   def resolve_kb_path(folder_index, rel_path, extensions: KB_EXTENSIONS)

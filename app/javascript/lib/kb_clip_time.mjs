@@ -44,3 +44,10 @@ export function formatClip(sec) {
   const pad = (n) => String(n).padStart(2, "0")
   return h ? `${h}:${pad(m)}:${pad(s)}` : `${m}:${pad(s)}`
 }
+
+// "[1:23]" stamps in a video note: text split into plain strings and { seconds, label } entries.
+export function splitStamps(text) {
+  return String(text).split(/\[(\d+(?::\d{2}){1,2})\]/).map((part, i) => (i % 2 ? { seconds: parseClip(part), label: `[${part}]` } : part))
+}
+
+export const stampFor = (sec) => `[${formatClip(Math.floor(sec))}]`

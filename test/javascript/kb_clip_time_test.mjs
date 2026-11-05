@@ -26,3 +26,11 @@ test("parse/format", () => {
   assert.equal(formatClip(354), "5:54")
   assert.equal(formatClip(3723), "1:02:03")
 })
+
+test("note stamps split out of text and format back", async () => {
+  const { splitStamps, stampFor } = await import("../../app/javascript/lib/kb_clip_time.mjs")
+  assert.deepEqual(splitStamps("see [1:05] and [1:02:03] but not [x] or [5]"), [
+    "see ", { seconds: 65, label: "[1:05]" }, " and ", { seconds: 3723, label: "[1:02:03]" }, " but not [x] or [5]"
+  ])
+  assert.equal(stampFor(65.9), "[1:05]")
+})

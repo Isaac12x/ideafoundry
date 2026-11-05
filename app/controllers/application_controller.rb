@@ -129,8 +129,14 @@ class ApplicationController < ActionController::Base
     else
       session.delete(LEGACY_TYPING_UNLOCK_SESSION_KEY)
       session.delete(TYPING_ACTIVITY_SESSION_KEY)
+      clear_browser_cache
       false
     end
+  end
+
+  # Authenticated media (private max-age) must not outlive the lock; "cache" only, so encrypted localStorage drafts survive.
+  def clear_browser_cache
+    response.set_header("Clear-Site-Data", '"cache"')
   end
 
   def unlock_typing_session!
@@ -145,6 +151,7 @@ class ApplicationController < ActionController::Base
     session.delete(TYPING_ACTIVITY_SESSION_KEY)
     clear_typing_authenticator_challenge!
     clear_voice_id_challenge!
+    clear_browser_cache
   end
 
   def begin_typing_authenticator_challenge!(return_to)

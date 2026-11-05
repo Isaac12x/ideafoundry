@@ -9,6 +9,8 @@ import { describe, locate, rootText, unwrap, wrap } from "lib/kb_anchor"
 //   pdf       - each page's pdf.js text layer, announced by kb-pdf as it renders
 // Selecting text pops a marker toolbar; clicking a mark lets you recolour,
 // restyle or erase it. Marks are saved per user + file (KbAnnotation).
+// The Bookmarks panel lists them: "kb-annotate:marks" on window goes out (saved marks in reading
+// order), "kb-bookmarks:reveal" / "kb-bookmarks:erase" (detail = id) and "kb-bookmarks:mark" come in.
 const TOOL_KEY = "kb-annotate-tool"
 
 const MARK_CSS = `
@@ -43,6 +45,9 @@ export default class extends Controller {
     this.listen(document, "pointerdown", (event) => this.dismissIfOutside(event))
     this.listen(document, "keydown", (event) => event.key === "Escape" && this.hide())
     this.listen(this.element.closest(".kb-content-area") || window, "scroll", () => this.hide(), true)
+    this.listen(window, "kb-bookmarks:reveal", ({ detail }) => this.reveal(detail))
+    this.listen(window, "kb-bookmarks:erase", ({ detail }) => { this.editing = this.marks.find((m) => m.id === detail); this.erase(); this.editing = null })
+    this.listen(window, "kb-bookmarks:mark", (event) => { if (this.pending) { event.preventDefault(); this.paint({ params: { color: "yellow" } }) } })
 
     const article = this.element.querySelector(".kb-markdown")
     if (article) this.addRoot(article, null)
@@ -92,7 +97,7 @@ export default class extends Controller {
     this.hide()
 
     this.request("POST", this.collectionUrl(), { annotation: { ...anchor, page, style: mark.style, color } })
-      .then((saved) => { mark.id = saved.id; mark.elements.forEach((el) => { el.dataset.id = saved.id }) })
+      .then((saved) => { mark.id = saved.id; mark.elements.forEach((el) => { el.dataset.id = saved.id }); this.announce() })
       .catch(() => this.forget(mark))
   }
 
@@ -102,6 +107,27 @@ export default class extends Controller {
     this.forget(mark)
     this.hide()
     if (mark.id) this.request("DELETE", `${this.urlValue}/${mark.id}`).catch(() => {})
+  }
+
+  // Jump to a mark; a PDF page not rendered yet is scrolled to, and apply() finishes the job when it paints.
+  reveal(id) {
+    const mark = this.marks.find((m) => m.id === id)
+    if (!mark) return
+    this.revealing = mark
+    if (mark.elements?.[0]?.isConnected) return this.finishReveal(mark)
+    if (mark.page) this.element.querySelector('[data-controller~="kb-pdf"]')?.dispatchEvent(new CustomEvent("kb-pdf:goto", { detail: mark.page }))
+  }
+
+  finishReveal(mark) {
+    this.revealing = null
+    this.clearActive()
+    mark.elements[0].scrollIntoView({ block: "center" })
+    mark.elements.forEach((el) => el.classList.add("is-active"))
+  }
+
+  announce() {
+    const order = (a, b) => (a.page ?? 0) - (b.page ?? 0) || a.start_offset - b.start_offset
+    window.dispatchEvent(new CustomEvent("kb-annotate:marks", { detail: this.marks.filter((m) => m.id).sort(order) }))
   }
 
   // ── surfaces ────────────────────────────────────────────────────────────
@@ -140,6 +166,7 @@ export default class extends Controller {
     for (const root of this.roots) {
       this.marks.filter((mark) => onRoot(mark, root)).forEach((mark) => this.apply(mark, root.element, root.doc))
     }
+    this.announce()
   }
 
   apply(mark, rootElement, doc, { fresh = false } = {}) {
@@ -154,11 +181,13 @@ export default class extends Controller {
       return el
     })
     if (fresh) mark.elements.forEach((el, i) => { el.style.animationDelay = `${Math.min(i, 8) * 45}ms` })
+    if (mark === this.revealing && mark.elements[0]) this.finishReveal(mark)
   }
 
   forget(mark) {
     unwrap(mark.elements || [])
     this.marks = this.marks.filter((other) => other !== mark)
+    this.announce()
   }
 
   restyle(mark, changes) {
@@ -174,6 +203,7 @@ export default class extends Controller {
 
   handleSelection(doc, event) {
     if (this.toolbarTarget.contains(event.target)) return
+    if (event.button === 2 || document.querySelector(".kb-selection-menu")) return // the app's right-click menu owns the selection
     const selection = doc.getSelection()
     const range = selection?.rangeCount ? selection.getRangeAt(0) : null
 
