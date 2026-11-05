@@ -103,7 +103,7 @@ class KbReferencesControllerTest < ActionDispatch::IntegrationTest
   test "file view offers References for a saved page, and not for skipped ones" do
     @download.update!(references_state: "dismissed")
     get kb_file_path(src: 1, file: "people/Albert Einstein.pdf")
-    assert_select "a[href=?]", kb_download_references_path(@download), text: /References/
+    assert_select "a[href=?][aria-label^=?][title=?]", kb_download_references_path(@download), "References", "Pull the sources this page cites"
     @download.update!(references_state: "skip")
     get kb_file_path(src: 1, file: "people/Albert Einstein.pdf")
     assert_select "a[href=?]", kb_download_references_path(@download), count: 0

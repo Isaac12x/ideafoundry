@@ -12,12 +12,14 @@ class KbLayoutStylesTest < ActiveSupport::TestCase
     assert_includes view, 'data-tab-panel="maxims" class="kb-panel-full kb-maxims-panel-full hidden"'
 
     body_rule = css_rule(css, "body.kb-page")
-    assert_includes body_rule, "min-height: 100dvh;"
+    assert_includes body_rule, "height: 100dvh;"
     assert_includes body_rule, "overflow: hidden;"
 
     app_main_rule = css_rule(css, "body.kb-page .app-main")
-    assert_includes app_main_rule, "height: calc(100dvh - 60px);"
-    assert_includes app_main_rule, "min-height: calc(100dvh - 60px);"
+    # The workspace takes what the header, quote banner and notes bar leave: no hard-coded chrome heights.
+    assert_includes app_main_rule, "flex: 1 1 0;"
+    assert_includes app_main_rule, "min-height: 0;"
+    assert_not_includes app_main_rule, "60px"
     assert_includes app_main_rule, "width: 100%;"
     assert_includes app_main_rule, "display: flex;"
     assert_includes app_main_rule, "flex-direction: column;"

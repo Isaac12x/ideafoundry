@@ -6,7 +6,7 @@
 #
 default: &default
   adapter: sqlite3
-  pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 6 } %>
+  pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 8 } %>
   # `timeout` makes Rails install a busy handler that releases the GVL between
   # retries. Do NOT express the same wait as a `busy_timeout` pragma: PRAGMA
   # busy_timeout replaces that handler with SQLite's own, which sleeps holding

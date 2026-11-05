@@ -1,10 +1,13 @@
 import * as esbuild from "esbuild";
 import fs from "node:fs";
 import path from "node:path";
+import zlib from "node:zlib";
 
 const watch = process.argv.includes("--watch");
+// --dev: the watcher's one-shot build (bin/prepare), so dev never flips between prod and dev output.
+const dev = watch || process.argv.includes("--dev");
 const nodeEnv =
-  process.env.NODE_ENV || (watch ? "development" : "production");
+  process.env.NODE_ENV || (dev ? "development" : "production");
 
 const common = {
   bundle: true,
@@ -81,12 +84,113 @@ function findExcalidrawConnectorEnvChunks() {
   return chunks;
 }
 
+// The whole editor build (code-split JS/CSS, precompressed siblings, manifest and fonts) is served from
+// public/, not the digesting asset pipeline: relative chunk imports must resolve, and Excalidraw resolves
+// "fonts/<Family>/<file>" against window.EXCALIDRAW_ASSET_PATH (its own fallback is a CDN).
+// The directory is versioned so the long public cache busts when @excalidraw/excalidraw is upgraded.
+const EXCALIDRAW_VERSION = JSON.parse(
+  fs.readFileSync(path.join("node_modules", "@excalidraw", "excalidraw", "package.json"), "utf8")
+).version;
+const EXCALIDRAW_PUBLIC_ROOT = "public/excalidraw-assets";
+const EXCALIDRAW_PUBLIC_DIR = `${EXCALIDRAW_PUBLIC_ROOT}/${EXCALIDRAW_VERSION}`;
+const EXCALIDRAW_PUBLIC_URL = `/excalidraw-assets/${EXCALIDRAW_VERSION}`;
+
+// The editor build is emitted into a staging dir (tmp/), then published into the versioned public dir:
+// hashed files first, manifest.json last via rename. So public/ always holds a manifest plus every file
+// it references: a failed build or a watch rebuild never leaves the editor without a working build.
+// Chunk and entry names carry content hashes; manifest.json maps the entry for the Rails helper.
+const EXCALIDRAW_STAGING_DIR = "tmp/excalidraw-staging";
+
+function prepareExcalidrawStagingDir() {
+  fs.rmSync(EXCALIDRAW_STAGING_DIR, { recursive: true, force: true });
+  fs.mkdirSync(EXCALIDRAW_STAGING_DIR, { recursive: true });
+  fs.cpSync(
+    path.join("node_modules", "@excalidraw", "excalidraw", "dist", "prod", "fonts"),
+    path.join(EXCALIDRAW_STAGING_DIR, "fonts"),
+    { recursive: true }
+  );
+  // The old digested output is no longer used.
+  fs.rmSync("app/assets/builds/excalidraw_app", { recursive: true, force: true });
+}
+
+function listFiles(dir, rel = "") {
+  return fs.readdirSync(path.join(dir, rel), { withFileTypes: true }).flatMap((e) =>
+    e.isDirectory() ? listFiles(dir, path.join(rel, e.name)) : [path.join(rel, e.name)]
+  );
+}
+
+function publishExcalidrawBuild() {
+  const staged = listFiles(EXCALIDRAW_STAGING_DIR);
+  fs.mkdirSync(EXCALIDRAW_PUBLIC_DIR, { recursive: true });
+  for (const rel of staged) {
+    if (rel === "manifest.json") continue;
+    const dest = path.join(EXCALIDRAW_PUBLIC_DIR, rel);
+    if (fs.existsSync(dest)) continue; // hashed names: same name, same content
+    fs.mkdirSync(path.dirname(dest), { recursive: true });
+    fs.copyFileSync(path.join(EXCALIDRAW_STAGING_DIR, rel), dest);
+  }
+  const manifest = path.join(EXCALIDRAW_PUBLIC_DIR, "manifest.json");
+  const next = fs.readFileSync(path.join(EXCALIDRAW_STAGING_DIR, "manifest.json"));
+  if (!fs.existsSync(manifest) || !fs.readFileSync(manifest).equals(next)) {
+    fs.writeFileSync(`${manifest}.tmp`, next);
+    fs.renameSync(`${manifest}.tmp`, manifest); // atomic: last, after everything it references exists
+  }
+  // Only now prune: stale files (including precompressed siblings of an earlier prod build) and old versions.
+  const keep = new Set(staged);
+  for (const rel of listFiles(EXCALIDRAW_PUBLIC_DIR)) if (!keep.has(rel)) fs.rmSync(path.join(EXCALIDRAW_PUBLIC_DIR, rel), { force: true });
+  for (const name of fs.readdirSync(EXCALIDRAW_PUBLIC_ROOT)) {
+    if (name !== EXCALIDRAW_VERSION) fs.rmSync(path.join(EXCALIDRAW_PUBLIC_ROOT, name), { recursive: true, force: true });
+  }
+}
+
+function writeExcalidrawManifest(metafile) {
+  const outputs = metafile.outputs;
+  const entry = Object.keys(outputs).find((o) => outputs[o].entryPoint?.endsWith("excalidraw_app/index.tsx"));
+  // Entry plus every chunk it imports statically: what a click needs, so what to preload.
+  const preload = [];
+  const walk = (out) => {
+    if (preload.includes(out) || !outputs[out]) return;
+    preload.push(out);
+    for (const imp of outputs[out].imports) if (imp.kind === "import-statement") walk(imp.path);
+  };
+  walk(entry);
+  const base = (o) => path.basename(o);
+  fs.writeFileSync(
+    path.join(EXCALIDRAW_STAGING_DIR, "manifest.json"),
+    JSON.stringify({ js: base(entry), css: base(outputs[entry].cssBundle), preload: preload.map(base) }, null, 2)
+  );
+}
+
+// Precompressed siblings: ActionDispatch::Static serves .br/.gz when the client accepts them.
+function precompressExcalidrawAssets() {
+  for (const name of fs.readdirSync(EXCALIDRAW_STAGING_DIR)) {
+    if (!/\.(js|css)$/.test(name)) continue;
+    const file = path.join(EXCALIDRAW_STAGING_DIR, name);
+    const data = fs.readFileSync(file);
+    fs.writeFileSync(`${file}.br`, zlib.brotliCompressSync(data, { params: { [zlib.constants.BROTLI_PARAM_QUALITY]: 9, [zlib.constants.BROTLI_PARAM_SIZE_HINT]: data.length } }));
+    fs.writeFileSync(`${file}.gz`, zlib.gzipSync(data, { level: 9 }));
+  }
+}
+
 function excalidrawLocalOnlyPlugin() {
   const connectorEnvChunks = findExcalidrawConnectorEnvChunks();
 
   return {
     name: "excalidraw-local-only",
     setup(build) {
+      // Point Excalidraw's built-in CDN font fallback (esm.sh) at our own origin (it sits inside a template literal): local-only, no remote.
+      build.onLoad({ filter: /node_modules\/@excalidraw\/excalidraw\/dist\/.*\.js$/ }, (args) => {
+        const source = fs.readFileSync(args.path, "utf8");
+        if (!source.includes("https://esm.sh/")) return undefined;
+        return { contents: source.replaceAll("https://esm.sh/", "${window.location.origin}" + `${EXCALIDRAW_PUBLIC_URL}/-/`), loader: "js" };
+      });
+      build.onEnd((result) => {
+        if (!result.metafile || result.errors.length) return; // failed build: keep the last good one published
+        writeExcalidrawManifest(result.metafile);
+        if (!dev) precompressExcalidrawAssets();
+        publishExcalidrawBuild();
+      });
+
       build.onResolve({ filter: /^(?:\.{1,2}\/)+chunk-.*\.js$/ }, (args) => {
         if (
           args.importer.includes("node_modules/@excalidraw/excalidraw/dist/") &&
@@ -109,15 +213,24 @@ const builds = [
     ...common,
     entryPoints: ["app/javascript/graph/index.js"],
     outdir: "app/assets/builds/graph",
-    minify: !watch,
+    minify: !dev,
     splitting: false,
   },
   {
     ...common,
     entryPoints: ["app/javascript/excalidraw_app/index.tsx"],
-    outdir: "app/assets/builds/excalidraw_app",
-    minify: !watch,
-    splitting: false,
+    outdir: EXCALIDRAW_STAGING_DIR,
+    entryNames: "index-[hash]",
+    chunkNames: "chunk-[hash]",
+    publicPath: EXCALIDRAW_PUBLIC_URL,
+    metafile: true,
+    // Split: mermaid, locales and other lazy imports become chunks fetched only when used. Served from
+    // public/ (no digest rewriting), so relative chunk imports resolve.
+    splitting: true,
+    // No map: it is huge and publicPath would point its URL at a 404.
+    sourcemap: dev ? "inline" : false,
+    define: { ...common.define, __EXCALIDRAW_ASSET_PATH__: JSON.stringify(`${EXCALIDRAW_PUBLIC_URL}/`) },
+    minify: !dev,
     plugins: [excalidrawLocalOnlyPlugin()],
   },
   {
@@ -127,24 +240,24 @@ const builds = [
     ...common,
     entryPoints: ["app/javascript/mermaid_app/index.js"],
     outdir: "app/assets/builds/mermaid_app",
-    minify: !watch,
+    minify: !dev,
     splitting: false,
   },
   {
     ...common,
     entryPoints: ["app/javascript/typing_unlock_animation/index.js"],
     outdir: "app/assets/builds/typing_unlock_animation",
-    minify: !watch,
+    minify: !dev,
     splitting: false,
   },
   {
     // Lazy viewers: imported on demand by kb_model / kb_book controllers (three.js + occt, epub.js).
     ...common,
-    entryPoints: ["app/javascript/kb_viewers/model.js", "app/javascript/kb_viewers/book.js"],
+    entryPoints: ["app/javascript/kb_viewers/model.js", "app/javascript/kb_viewers/book.js", "app/javascript/kb_viewers/pdf.js"],
     outdir: "app/assets/builds/kb_viewers",
-    minify: !watch,
+    minify: !dev,
     splitting: false,
-    external: ["path"], // occt-import-js only requires it on its node code path
+    external: ["path", "fs", "module", "canvas", "@napi-rs/canvas"], // node-only code paths (occt-import-js, pdf.js)
   },
 ];
 
@@ -154,6 +267,14 @@ fs.copyFileSync(
   path.join("node_modules", "occt-import-js", "dist", "occt-import-js.wasm"),
   "app/assets/builds/kb_viewers/occt-import-js.wasm"
 );
+
+// pdf.js runs its parser in a module Worker loaded by URL, so it ships as a plain asset next to the bundle.
+fs.copyFileSync(
+  path.join("node_modules", "pdfjs-dist", "build", "pdf.worker.min.mjs"),
+  "app/assets/builds/kb_viewers/pdf.worker.js"
+);
+
+prepareExcalidrawStagingDir();
 
 if (watch) {
   for (const cfg of builds) {

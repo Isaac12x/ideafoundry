@@ -1,0 +1,10 @@
+<%# One captured frame; also cloned client-side (kb_video_shot_controller) from an empty render. %>
+<% tenths = (time * 10).round %>
+<% stamp = format("%d:%02d", tenths / 600, tenths % 600 / 10) + (tenths % 10).then { |d| d.zero? ? "" : ".#{d}" } %>
+<li class="kb-shot" data-time="<%= format("%.1f", time) %>">
+  <button type="button" class="kb-shot__seek" data-action="kb-video-shot#seek" title="Jump to <%= stamp %>">
+    <img src="<%= serve_url %>" alt="Frame at <%= stamp %>" loading="lazy" decoding="async">
+    <span class="kb-shot__time"><%= stamp %></span>
+  </button>
+  <%= link_to "Open", kb_file_path(src: src, file: rel), class: "kb-shot__open", title: "Open #{name}", aria: { label: "Open frame at #{stamp}" }, data: { turbo_frame: "kb-content" } %>
+</li>

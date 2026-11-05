@@ -15,9 +15,13 @@ Last updated: 2026-10-12 (0.18.0-143b5b6)
 
 Any LLM session making a change in this repo: if "Last updated" above is >30 days old, also do this update in the same change:
 1. `npm view @excalidraw/excalidraw dist-tags` → pin `next` version exactly in package.json, reinstall (yarn).
-2. Fix API breaks in `app/javascript/excalidraw_app/index.tsx`; keep the sanitized-env plugin in `esbuild.config.mjs` matching new chunk names.
+2. Fix API breaks in `app/javascript/excalidraw_app/index.tsx`; keep the sanitized-env plugin in `esbuild.config.mjs` matching new chunk names (the editor is built code-split with `.br`/`.gz` siblings into `public/excalidraw-assets/<pkg version>/`; it also rewrites Excalidraw's `esm.sh` font fallback to our origin and copies `dist/prod/fonts` there (cache-busts on upgrade; old versions are cleaned; gitignored), where `window.EXCALIDRAW_ASSET_PATH` points; check no font errors in the console).
 3. `yarn build` + `npm run verify:excalidraw-local-only` (no remote connectors may leak) + `bin/ci`.
 4. Bump "Last updated" line (date + version). If `next` is broken, stay on current pin, note why here, still bump date.
+
+## System dependencies
+
+Root `Brewfile` is the source of truth for every external CLI/library (`bin/install` + `bin/setup` run `brew bundle`). New shell-out tool → add it to `Brewfile`, the Dockerfile final-stage apt list (manual sync), and `PACKAGES` in `test/brewfile_test.rb` (CI fails otherwise).
 
 ## Audio service (built: local whisper + sidecar .vtt)
 
@@ -31,6 +35,8 @@ Any LLM session making a change in this repo: if "Last updated" above is >30 day
 - `<file>.note.md` (`Kb::Note`) is a file's "why I saved this" note: any non-markdown file, hidden in the tree (marker + first-line tooltip), carried on move/rename via `Kb::Note.carry!`. Source of truth is the sidecar, like `.vtt`.
 - Non-EPUB ebooks convert to a hidden `.<name>.epub` with `ebook-convert` (`EBOOK_CONVERT_BIN`, Calibre.app fallback), `.djvu` to `.pdf` with `ddjvu` (`DDJVU_BIN`); missing tools are a UI state, not an error (`Kb::BookConversion`).
 - Viewer chrome is shared: `.kb-viewer-bar` (controls) and `.kb-viewer-notice` (loading/error/missing tool); new viewers reuse them.
+- `<file>.source.json` (`Kb::Source`, hidden like `.note.md`, carried with the file) holds a download's origin: `{"url", "description"}` (uploader description for video). Sidecar is the source of truth; older downloads fall back to their `kb_downloads` row. `KbDescriptionsController` ("Fetch description", yt-dlp, http(s) only, never for private files) fills a missing description; `_description.html.erb` shows it.
+- Lock cover (`typing_activity_controller.js`): covers synchronously, pauses media, waits for drafts at most 300ms, and never comes off. Offline it shows a quiet "Locked. Offline, retrying" line and retries with backoff (and on `online`); a plain form post fallback is skipped while offline (it would only swap in the browser error page). Served KB media (`?v=` matches) is `private, max-age=3600` for speed, EXCEPT files inside a project (any project can be locked later, and Clear-Site-Data can't fire when the background lock finishes): those always revalidate. Session expiry/manual lock also sends `Clear-Site-Data: "cache"`.
 
 <!-- code-review-graph MCP tools -->
 ## MCP Tools: code-review-graph

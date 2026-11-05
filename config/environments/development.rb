@@ -73,6 +73,9 @@ Rails.application.configure do
   # Suppress logger output for asset requests.
   config.assets.quiet = true
 
+  # Always serve live assets: a leftover public/assets manifest (bin/start's precompile) must never win in dev.
+  config.assets.resolve_with = [ :environment ]
+
   # Highlight code that triggered redirect in logs.
   config.action_dispatch.verbose_redirect_logs = true
 

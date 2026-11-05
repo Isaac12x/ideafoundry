@@ -1,10 +1,17 @@
 import { Controller } from "@hotwired/stimulus"
+import { mountEmojiGrid } from "lib/emoji_grid"
 
 export default class extends Controller {
-  static targets = ["emojiPanel", "imagePanel", "emojiTab", "imageTab", "kind", "emoji", "image", "preview"]
+  static targets = ["emojiPanel", "imagePanel", "emojiTab", "imageTab", "kind", "emoji", "image", "preview", "grid"]
+  static values = { emojiUrl: String }
 
   connect() {
     this.showEmojiTab()
+    this.unmount = mountEmojiGrid(this.gridTarget, { url: this.emojiUrlValue, selected: this.emojiTarget.value, onPick: (emoji) => this.pick(emoji) })
+  }
+
+  disconnect() {
+    this.unmount?.()
   }
 
   showEmojiTab(event) {
@@ -23,16 +30,11 @@ export default class extends Controller {
     this.imageTabTarget.classList.add("is-active")
   }
 
-  chooseEmoji(event) {
-    event.preventDefault()
-    const emoji = event.currentTarget.dataset.emoji
+  pick(emoji) {
     this.kindTarget.value = "emoji"
     this.emojiTarget.value = emoji
     this.previewTarget.textContent = emoji
     this.previewTarget.classList.remove("has-image")
-    this.element.querySelectorAll(".kb-emoji-choice").forEach((button) => {
-      button.classList.toggle("is-selected", button === event.currentTarget)
-    })
     this.notifyChange()
   }
 

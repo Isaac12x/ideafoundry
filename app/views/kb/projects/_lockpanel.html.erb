@@ -1,6 +1,6 @@
 <%# Opened from "Lock with password" in the eyebrow; sits under the title and goal, not between the pills and the title. %>
 <%= form_with url: kb_project_lock_path, method: :post, id: "kbp-lockpanel", class: "kbp-lockpanel",
-              html: { hidden: true }, data: { action: "keydown.esc->kb-project#closeLock" } do %>
+              html: { hidden: true }, data: { shortcut_skip: true, action: "keydown.esc->kb-project#closeLock" } do %>
   <%= ids %>
   <p class="kbp-lock-note">Everything in this project, including its media history, becomes one encrypted archive that runs in the background. Lose the password, lose the project.</p>
   <div class="kbp-lock-fields">

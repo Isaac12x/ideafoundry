@@ -30,7 +30,7 @@ class KbIdeaAttachmentsControllerTest < ActionDispatch::IntegrationTest
     assert_equal "shot.png", attachment.filename.to_s
     assert_equal "image/png", attachment.content_type
     assert_equal File.binread(File.join(@kb_dir, "shot.png")), attachment.download
-    assert_not @idea.hero_image.attached?
+    assert_not @idea.hero_images.attached?
   end
 
   test "optionally sets it as the hero image too" do
@@ -38,8 +38,15 @@ class KbIdeaAttachmentsControllerTest < ActionDispatch::IntegrationTest
 
     assert_response :created
     assert response.parsed_body["hero"]
-    assert @idea.reload.hero_image.attached?
+    assert @idea.reload.hero_images.attached?
     assert_equal 1, @idea.attachments.count
+  end
+
+  test "hero attach appends to the hero set instead of replacing it" do
+    @idea.hero_images.attach(io: File.open(file_fixture("ocr_sample.png")), filename: "first.png", content_type: "image/png")
+    post kb_attach_to_idea_path, params: { src: 0, file: "shot.png", idea_id: @idea.id, hero: "1" }
+
+    assert_equal %w[first.png shot.png], @idea.reload.hero_images.map { |a| a.filename.to_s }.sort
   end
 
   test "rejects private projects, non-images, unknown ideas and traversal" do

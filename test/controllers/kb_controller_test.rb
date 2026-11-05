@@ -1,6 +1,8 @@
 require "test_helper"
 
 class KbControllerTest < ActionDispatch::IntegrationTest
+  include ActiveJob::TestHelper
+
   setup do
     @user = User.first || User.create!(email: "test@example.com", name: "Test")
     @original_settings = @user.settings.deep_dup
@@ -39,7 +41,7 @@ class KbControllerTest < ActionDispatch::IntegrationTest
     get kb_path
 
     assert_response :success
-    assert_select ".kb-folder-label", text: "App KB"
+    assert_select ".kb-folder-header", 0 # single root: no root row
     assert_select ".kb-file-link", text: filename
 
     get kb_file_path(src: 0, file: filename)
@@ -80,6 +82,23 @@ class KbControllerTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "<h1>Available</h1>"
   end
 
+  test "viewer shows the download link and description from the sidecar, or the row url for older downloads" do
+    use_isolated_kb_folder
+    File.binwrite(File.join(@kb_dir, "v.mp4"), "x")
+    Kb::Source.write!(File.join(@kb_dir, "v.mp4"), url: "https://example.com/watch?v=1", description: "<b>hi</b> https://a.com")
+    @user.kb_downloads.create!(source_index: 0, source_path: @kb_dir, dir: "", url: "https://old.example/x", status: "done", filename: "old.mp4")
+    File.binwrite(File.join(@kb_dir, "old.mp4"), "x")
+
+    get kb_path(src: 0, file: "v.mp4")
+    assert_select "a.kb-file-meta__source[href=?][rel=?]", "https://example.com/watch?v=1", "noopener noreferrer"
+    assert_select ".kb-description__body a[href=?]", "https://a.com"
+    assert_select ".kb-description__body b", count: 0
+
+    get kb_path(src: 0, file: "old.mp4")
+    assert_select "a.kb-file-meta__source[href=?]", "https://old.example/x"
+    assert_select ".kb-description", count: 0
+  end
+
   test "selected files show extensions and filesystem dates in the content header" do
     use_isolated_kb_folder
     path = File.join(@kb_dir, "research-note.md")
@@ -99,7 +118,7 @@ class KbControllerTest < ActionDispatch::IntegrationTest
     assert_in_delta modified_at.to_f, Time.iso8601(rendered_modified_at).to_f, 1
   end
 
-  test "folder headers expose collapse and uncollapse all actions" do
+  test "single root puts collapse, uncollapse and new in the toolbar, with no root row" do
     use_isolated_kb_folder
     FileUtils.mkdir_p(File.join(@kb_dir, "research", "sources"))
     File.write(File.join(@kb_dir, "research", "sources", "note.md"), "# Nested")
@@ -107,8 +126,27 @@ class KbControllerTest < ActionDispatch::IntegrationTest
     get kb_path
 
     assert_response :success
-    assert_select 'button[aria-label="Collapse all folders"][data-action="click->kb-folder#collapseAll"]'
-    assert_select 'button[aria-label="Uncollapse all folders"][data-action="click->kb-folder#expandAll"]'
+    assert_select ".kb-tree-head" do
+      assert_select 'button[aria-label="Collapse all folders"][data-action="kb-tree#collapseAll"]'
+      assert_select 'button[aria-label="Uncollapse all folders"][data-action="kb-tree#expandAll"]'
+      assert_select 'button[aria-label="New file or folder"][data-kb-tree-type-param=root]'
+    end
+    assert_select ".kb-folder-header", 0
+    assert_select ".kb-tree--solo[data-kb-tree-type-param=root][data-action*='drop->kb-tree#drop']"
+  end
+
+  test "several roots keep a labelled row each and no toolbar root actions" do
+    use_isolated_kb_folder
+    second = Rails.root.join("tmp", "kb-second-#{SecureRandom.hex(4)}").to_s
+    FileUtils.mkdir_p(second)
+    @user.update!(settings: @user.settings.deep_merge("kb" => { "folders" => [ @kb_dir, second ] }))
+
+    get kb_path
+
+    assert_select ".kb-folder-header", 2
+    assert_select ".kb-tree-head button[aria-label='New file or folder']", 0
+  ensure
+    FileUtils.rm_rf(second) if second
   end
 
   test "knowledge base includes a maxims panel for high importance reminders" do
@@ -233,6 +271,35 @@ class KbControllerTest < ActionDispatch::IntegrationTest
 
     get kb_path
     assert_select ".kb-new-dot", count: 0
+  end
+
+  test "opening a new download tells the open tabs from a job, never by rebuilding the tree inside the request" do
+    use_isolated_kb_folder
+    File.write(File.join(@kb_dir, "fresh.md"), "# Fresh")
+    KbDownload.create!(user: @user, source_index: 0, url: "https://example.com/x", status: "done", source_path: File.expand_path(@kb_dir), dir: "", filename: "fresh.md")
+
+    built = 0
+    Kb::TreeBuilder.stub(:build, ->(*) { built += 1; [] }) do
+      assert_enqueued_with(job: KbTreeSeenJob, args: [ @user.id, 0, "fresh.md" ]) do
+        get kb_file_path(src: 0, file: "fresh.md"), headers: { "Turbo-Frame" => "kb-content" }
+      end
+    end
+    assert_equal 0, built, "the tree was rebuilt inside the file request"
+  end
+
+  test "full file GET renders the KB shell, frame request only the document" do
+    use_isolated_kb_folder
+    File.write(File.join(@kb_dir, "doc.md"), "# Deep Link")
+
+    get kb_file_path(src: 0, file: "doc.md")
+    assert_select "body.kb-page"
+    assert_select ".kb-shell .kb-file-link", text: "doc.md"
+    assert_includes response.body, "<h1>Deep Link</h1>"
+
+    get kb_file_path(src: 0, file: "doc.md"), headers: { "Turbo-Frame" => "kb-content" }
+    assert_includes response.body, "<h1>Deep Link</h1>"
+    assert_select ".kb-shell", 0
+    assert_select "body.kb-page", 0
   end
 
   test "sort persists a whitelisted mode and rejects others" do

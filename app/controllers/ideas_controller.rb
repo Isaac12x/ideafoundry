@@ -522,8 +522,10 @@ class IdeasController < ApplicationController
       :trl, :difficulty, :opportunity, :timing,
       :difficulty_explanation, :opportunity_explanation, :timing_explanation,
       :description,
-      :hero_image,
       :napkin_calculations,
+      hero_images: [],
+      hero_order: [],
+      remove_hero_image_ids: [],
       topology_ids: [],
       metadata: {}
     )

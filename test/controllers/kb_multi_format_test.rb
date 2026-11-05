@@ -112,6 +112,58 @@ class KbMultiFormatTest < ActionDispatch::IntegrationTest
     assert_match %r{bytes 2-5/10}, response.headers["Content-Range"]
   end
 
+  test "serve advertises ranges and caches only versioned urls, always private" do
+    File.write(File.join(@kb_dir, "clip.mp4"), "0123456789")
+
+    get kb_serve_path(src: src_index, file: "clip.mp4")
+    assert_equal "bytes", response.headers["Accept-Ranges"]
+    assert_includes response.headers["Cache-Control"], "must-revalidate"
+
+    get kb_serve_path(src: src_index, file: "clip.mp4", v: 123)
+    assert_includes response.headers["Cache-Control"], "must-revalidate"
+
+    v = (File.mtime(File.join(@kb_dir, "clip.mp4")).to_f * 1000).to_i
+    get kb_serve_path(src: src_index, file: "clip.mp4", v: v)
+    assert_includes response.headers["Cache-Control"], "max-age=3600"
+    assert_includes response.headers["Cache-Control"], "private"
+    assert_not_includes response.headers["Cache-Control"], "public"
+  end
+
+  test "serve never gives project files a max-age (a later lock must not replay from cache)" do
+    Kb::Project.create!(base: @kb_dir, parent_rel: "", name: "Ferment")
+    File.write(File.join(@kb_dir, "Ferment", "clip.mp4"), "0123456789")
+    v = (File.mtime(File.join(@kb_dir, "Ferment", "clip.mp4")).to_f * 1000).to_i
+
+    get kb_serve_path(src: src_index, file: "Ferment/clip.mp4", v: v)
+
+    assert_response :success
+    assert_includes response.headers["Cache-Control"], "must-revalidate"
+    assert_not_includes response.headers["Cache-Control"], "max-age=3600"
+  end
+
+  test "video renders the custom control bar, not native controls" do
+    File.write(File.join(@kb_dir, "clip.mp4"), "0123456789")
+
+    get kb_file_path(src: src_index, file: "clip.mp4")
+    assert_select ".kb-vplayer .kb-vplayer__bar"
+    assert_select "video[controls]", false
+    assert_select "video[data-kb-transcript-target=media][data-kb-video-shot-target=video]"
+  end
+
+  test "fetch description button shows for a sourced video and the endpoint reloads the file" do
+    abs = File.join(@kb_dir, "clip.mp4")
+    File.write(abs, "0123456789")
+    Kb::Source.write!(abs, url: "https://example.com/v")
+
+    get kb_file_path(src: src_index, file: "clip.mp4")
+    assert_select "form.kb-description-fetch"
+
+    KbDownloadJob.stub(:yt_dlp_bin, nil) do
+      post kb_description_path(src: src_index, file: "clip.mp4")
+    end
+    assert_redirected_to kb_file_path(src: src_index, file: "clip.mp4", desc: "missing_tool")
+  end
+
   test "serve endpoint revalidates with 304 for unchanged files" do
     File.write(File.join(@kb_dir, "clip.mp4"), "0123456789")
 
