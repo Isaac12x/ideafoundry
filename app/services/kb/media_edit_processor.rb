@@ -1,4 +1,5 @@
 require "digest"
+require "json"
 require "fileutils"
 require "open3"
 require "securerandom"
@@ -39,15 +40,17 @@ module Kb
       replacement_path.present? ? copy_replacement(temporary) : process_media(temporary)
       raise Error, "The editor produced an empty file." unless File.file?(temporary) && File.size(temporary).positive?
 
-      revision = preserve_revision(original_sha)
+      copy = truthy?("save_as_copy") # new sibling file; the original stays untouched, so no revision
+      target = copy ? copy_path : path
+      revision = preserve_revision(original_sha) unless copy
       File.chmod(File.stat(path).mode & 0o777, temporary)
-      File.rename(temporary, path)
+      File.rename(temporary, target)
 
       {
         original_sha256: original_sha,
-        result_sha256: sha256(path),
-        revision_path: revision.delete_prefix("#{source_root}/")
-      }
+        result_sha256: sha256(target),
+        revision_path: revision&.delete_prefix("#{source_root}/")
+      }.tap { |result| result[:relative_path] = target.delete_prefix("#{source_root}/") if copy }
     ensure
       FileUtils.rm_f(temporary) if defined?(temporary) && temporary
     end
@@ -66,6 +69,15 @@ module Kb
         current = File.join(current, segment)
         raise Error, "Symbolic links cannot be edited." if File.symlink?(current)
       end
+    end
+
+    def copy_path
+      extension = File.extname(path)
+      stem = "#{File.basename(path, extension)} (edited)"
+      candidate = File.join(File.dirname(path), "#{stem}#{extension}")
+      number = 1
+      candidate = File.join(File.dirname(path), "#{stem} #{number += 1}#{extension}") while File.exist?(candidate)
+      candidate
     end
 
     def temporary_path
@@ -98,33 +110,90 @@ module Kb
       raise Error, "The out point must be after the in point." unless finish_at > start_at
 
       speed = decimal("speed", 1.0, min: 0.5, max: 2.0)
-      edited_duration = (finish_at - start_at) / speed
-      # -t is deliberately an input option (before -i). As an output option it
-      # would truncate slowed-down media before atempo/setpts can extend it.
-      command = [ "ffmpeg", "-y", "-hide_banner", "-loglevel", "error", "-ss", number(start_at),
-                 "-t", number(finish_at - start_at), "-i", path, "-map_metadata", "0" ]
+      segments = keep_segments(start_at, finish_at)
+      edited_duration = segments.sum { |from, to| to - from } / speed
+      video_filters = video ? build_video_filters(speed, edited_duration) : []
+      audio_filters = build_audio_filters(speed, edited_duration)
+      use_audio = video ? !truthy?("mute") && info[:has_audio] : true
 
-      if video
-        video_filters = build_video_filters(speed, edited_duration)
-        audio_filters = build_audio_filters(speed, edited_duration)
-        command.concat([ "-map", "0:v:0", "-map", "0:a?" ])
-        command.concat([ "-vf", video_filters.join(",") ]) if video_filters.any?
-        if truthy?("mute")
-          command << "-an"
-        elsif audio_filters.any? && info[:has_audio]
-          command.concat([ "-af", audio_filters.join(",") ])
-        end
-        command.concat(VIDEO_CODECS.fetch(File.extname(path).downcase))
+      command = if cut_ranges.any?
+        cut_command(segments, video_filters, audio_filters, video: video, audio: use_audio)
       else
-        audio_filters = build_audio_filters(speed, edited_duration)
-        command << "-vn"
-        command.concat([ "-af", audio_filters.join(",") ]) if audio_filters.any?
-        command.concat([ "-ac", "1" ]) if truthy?("mono")
-        command.concat(AUDIO_CODECS.fetch(File.extname(path).downcase))
+        # -t is deliberately an input option (before -i). As an output option it
+        # would truncate slowed-down media before atempo/setpts can extend it.
+        trim_command(start_at, finish_at, video_filters, audio_filters, video: video, use_audio: use_audio)
       end
-
+      command.concat((video ? VIDEO_CODECS : AUDIO_CODECS).fetch(File.extname(path).downcase))
+      command.concat([ "-ac", "1" ]) if !video && truthy?("mono")
       command << destination
       run!(*command)
+    end
+
+    def trim_command(start_at, finish_at, video_filters, audio_filters, video:, use_audio:)
+      command = [ "ffmpeg", "-y", "-hide_banner", "-loglevel", "error", "-ss", number(start_at),
+                 "-t", number(finish_at - start_at), "-i", path, "-map_metadata", "0" ]
+      if video
+        command.concat([ "-map", "0:v:0", "-map", "0:a?" ])
+        command.concat([ "-vf", video_filters.join(",") ]) if video_filters.any?
+        if !use_audio
+          command << "-an"
+        elsif audio_filters.any?
+          command.concat([ "-af", audio_filters.join(",") ])
+        end
+      else
+        command << "-vn"
+        command.concat([ "-af", audio_filters.join(",") ]) if audio_filters.any?
+      end
+      command
+    end
+
+    # Accurate cut: trim each kept segment on decoded frames, concat, then run
+    # the usual filters over the joined stream. Always re-encodes.
+    def cut_command(segments, video_filters, audio_filters, video:, audio:)
+      parts = []
+      segments.each_with_index do |(from, to), index|
+        window = "start=#{number(from)}:end=#{number(to)}"
+        parts << "[0:v:0]trim=#{window},setpts=PTS-STARTPTS[v#{index}]" if video
+        parts << "[0:a:0]atrim=#{window},asetpts=PTS-STARTPTS[a#{index}]" if audio
+      end
+      labels = segments.each_index.map { |index| "#{'[v' + index.to_s + ']' if video}#{'[a' + index.to_s + ']' if audio}" }.join
+      parts << "#{labels}concat=n=#{segments.size}:v=#{video ? 1 : 0}:a=#{audio ? 1 : 0}#{'[cv]' if video}#{'[ca]' if audio}"
+      parts << "[cv]#{video_filters.any? ? video_filters.join(',') : 'null'}[v]" if video
+      parts << "[ca]#{audio_filters.any? ? audio_filters.join(',') : 'anull'}[a]" if audio
+
+      command = [ "ffmpeg", "-y", "-hide_banner", "-loglevel", "error", "-i", path, "-map_metadata", "0",
+                 "-filter_complex", parts.join(";") ]
+      command.concat([ "-map", "[v]" ]) if video
+      command.concat([ "-map", "[a]" ]) if audio
+      command << "-an" if video && !audio
+      command
+    end
+
+    # Cuts are [from, to] pairs to REMOVE; returns the ranges to KEEP within the trim window.
+    def cut_ranges
+      @cut_ranges ||= begin
+        raw = operations["cuts"]
+        list = raw.is_a?(String) ? (JSON.parse(raw) rescue []) : Array(raw)
+        list.filter_map do |pair|
+          from, to = Array(pair).first(2).map { |value| Float(value) rescue nil }
+          [ from, to ] if from && to && to > from && from >= 0
+        end.sort
+      end
+    end
+
+    def keep_segments(start_at, finish_at)
+      segments = []
+      cursor = start_at
+      cut_ranges.each do |from, to|
+        next if to <= cursor
+        segments << [ cursor, [ from, finish_at ].min ] if from > cursor
+        cursor = [ cursor, to ].max
+        break if cursor >= finish_at
+      end
+      segments << [ cursor, finish_at ] if cursor < finish_at
+      raise Error, "The cuts remove the whole clip." if segments.empty?
+
+      segments.select { |from, to| to - from >= 0.01 }.presence || raise(Error, "The cuts remove the whole clip.")
     end
 
     def build_video_filters(speed, duration)

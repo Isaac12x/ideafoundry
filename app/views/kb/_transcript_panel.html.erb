@@ -1,0 +1,9 @@
+<%# Selectable, time-coded transcript; driven by kb_transcript_controller.js on the parent. %>
+<section class="kb-transcript" aria-label="Transcript">
+  <div class="kb-transcript__bar">
+    <h3 class="kb-transcript__title">Transcript</h3>
+    <span class="kb-transcript__status" role="status" aria-live="polite" data-kb-transcript-target="status"></span>
+    <button type="button" class="btn btn-sm" hidden data-kb-transcript-target="button" data-action="kb-transcript#transcribe">Transcribe</button>
+  </div>
+  <ol class="kb-transcript__list" hidden data-kb-transcript-target="list"></ol>
+</section>

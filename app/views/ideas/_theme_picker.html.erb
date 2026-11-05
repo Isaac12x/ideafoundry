@@ -1,0 +1,17 @@
+<%# Tokenized theme multi-select. Params: idea[theme_ids][] (existing) + idea[new_theme_names][] (created on save). %>
+<% auto_submit = local_assigns.fetch(:auto_submit, false) %>
+<div class="theme-tokens" data-controller="theme-tokens" data-theme-tokens-auto-submit-value="<%= auto_submit %>"
+     data-action="idea-draft:restore@window->theme-tokens#restore">
+  <%= hidden_field_tag "idea[theme_ids][]", "", id: nil %>
+  <div class="theme-tokens__list" data-theme-tokens-target="list" role="group" aria-label="Themes">
+    <% themes.each do |theme| %>
+      <label class="theme-chip" style="<%= "--theme-color: #{theme.color}" if theme.color.present? %>">
+        <%= check_box_tag "idea[theme_ids][]", theme.id, idea.theme_ids.include?(theme.id), id: "theme_#{idea.id || 'new'}_#{theme.id}",
+              data: { action: "change->theme-tokens#changed" } %>
+        <span class="theme-chip__dot" aria-hidden="true"></span><%= theme.name %>
+      </label>
+    <% end %>
+  </div>
+  <input type="text" class="form-control theme-tokens__input" placeholder="Add a theme (Enter)…" maxlength="60" aria-label="Add a theme"
+         data-theme-tokens-target="input" data-action="keydown->theme-tokens#keydown">
+</div>

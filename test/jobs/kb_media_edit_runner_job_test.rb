@@ -36,6 +36,28 @@ class KbMediaEditRunnerJobTest < ActiveJob::TestCase
     assert_equal edit.revision_path, activity.details["revision_path"]
   end
 
+  test "save as copy keeps the source path and records the copy separately" do
+    edit = build_edit
+    edit.update!(operations: { "save_as_copy" => true })
+    edit.replacement_file.attach(io: StringIO.new("edited-artifact"), filename: "artifact.xyz", content_type: "application/octet-stream")
+
+    KbMediaEditRunnerJob.perform_now(edit.id)
+
+    edit.reload
+    assert edit.done?
+    assert_equal "artifact.xyz", edit.relative_path
+    assert_equal "artifact (edited).xyz", edit.result_relative_path
+    assert_equal "original-artifact", File.binread(File.join(@kb_dir, "artifact.xyz"))
+    assert_equal "edited-artifact", File.binread(File.join(@kb_dir, "artifact (edited).xyz"))
+  end
+
+  test "in-place edit reports the source as the result path" do
+    edit = build_edit
+    edit.replacement_file.attach(io: StringIO.new("x"), filename: "artifact.xyz", content_type: "application/octet-stream")
+    KbMediaEditRunnerJob.perform_now(edit.id)
+    assert_equal "artifact.xyz", edit.reload.result_relative_path
+  end
+
   test "fails safely when the source leaves the configured vault" do
     edit = build_edit
     edit.replacement_file.attach(io: StringIO.new("edited"), filename: "artifact.xyz", content_type: "application/octet-stream")

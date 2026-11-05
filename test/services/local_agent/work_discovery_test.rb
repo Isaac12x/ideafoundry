@@ -19,4 +19,13 @@ class LocalAgent::WorkDiscoveryTest < ActiveSupport::TestCase
     @dl.update!(transcript_status: "pending")
     assert_empty digest_work
   end
+
+  test "private-project transcript is not work" do
+    base = Dir.mktmpdir
+    Kb::Project.create!(base: base, parent_rel: "", name: "Secret")
+    @dl.update!(source_path: base, dir: "Secret", filename: "v.mp4")
+    assert_empty digest_work
+  ensure
+    FileUtils.rm_rf(base)
+  end
 end
