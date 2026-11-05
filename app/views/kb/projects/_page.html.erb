@@ -13,32 +13,12 @@
 }[mode] %>
 <%# Every form posts src+path so the server re-resolves inside the source. %>
 <% ids = capture do %><%= hidden_field_tag :src, @src, id: nil %><%= hidden_field_tag :path, project.rel, id: nil %><% end %>
-<% status_tones = { "active" => "success", "paused" => "warning", "concluded" => "muted" } %>
 <div class="kbp kbp--<%= mode %>" data-controller="kb-project kb-materials" data-kb-materials-key-value="<%= project.rel %>"
      data-kb-project-key-value="<%= @src %>:<%= project.rel %>" data-action="submit->kb-project#remember">
   <header class="kbp-head">
     <div class="kbp-eyebrow"><span><%= mode == "conclude" ? "Project report" : "Project" %></span>
       <span class="kbp-eyebrow-sep" aria-hidden="true"></span>
-      <%= form_with url: kb_project_path, method: :patch, class: "kbp-inline" do %>
-        <%= ids %>
-        <%= hidden_field_tag :private, project.private? ? "1" : "0", id: nil %>
-        <button type="button" class="kbp-private <%= 'is-private' if project.private? %>"
-                data-next="<%= project.private? ? '0' : '1' %>"
-                data-action="click->kb-project#togglePrivate"
-                title="<%= project.private? ? 'Private: hidden from AI, agents and extraction. Click to change.' : 'Not private. Click to make private.' %>">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><% if project.private? %><path d="M8 11V7a4 4 0 018 0v4"/><% else %><path d="M8 11V7a4 4 0 017.5-1.9"/><% end %></svg>
-          <%= project.private? ? "Private" : "Not private" %>
-        </button>
-      <% end %>
-      <%= form_with url: kb_project_path, method: :patch, class: "kbp-inline" do %>
-        <%= ids %>
-        <select name="status" class="kbp-pill kbp-status" aria-label="Status" data-tone="<%= status_tones[project.status] %>"
-                data-controller="select-menu" data-action="change->kb-project#submit">
-          <% Kb::Project::STATUSES.each do |status| %>
-            <%= tag.option status.capitalize, value: status, selected: status == project.status, data: { tone: status_tones[status] } %>
-          <% end %>
-        </select>
-      <% end %>
+      <%= render "kb/projects/pills", project: project, ids: ids %>
       <% if project.status == "concluded" && project.concluded_on %>
         <span class="kbp-concluded">Concluded <time datetime="<%= project.concluded_on.iso8601 %>"><%= project.concluded_on.strftime("%-d %B %Y") %></time></span>
       <% end %>
@@ -56,6 +36,7 @@
              placeholder="Goal: what am I trying to find out?" aria-label="Goal"
              data-action="change->kb-project#submit">
     <% end %>
+    <%= render "kb/projects/lockpanel", project: project, ids: ids %>
     <% todo = kb_project_next(project, @entries, mode) %>
     <% unsettled = mode == "conclude" ? kb_unsettled_tests(project) : [] %>
     <% todo = [] if project.status == "concluded" %>

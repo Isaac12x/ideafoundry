@@ -21,7 +21,10 @@ class KbMediaEditRunnerJob < ApplicationJob
       ).call
     end
 
-    edit.update!(result.merge(status: "done", finished_at: Time.current))
+    # relative_path stays the source; a save-as-copy lands in result_relative_path.
+    edit.update!(result.except(:relative_path).merge(result_relative_path: result[:relative_path] || edit.relative_path,
+                                                     status: "done", finished_at: Time.current))
+    Kb::TreeBroadcaster.call(edit.user) if result[:relative_path] # save-as-copy added a file
     ActivityLog.record!(
       user: edit.user,
       actor: "user",

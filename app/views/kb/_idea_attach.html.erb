@@ -1,0 +1,12 @@
+<%# Inline "Attach to idea…" panel; driven by kb_idea_attach_controller.js on the parent. %>
+<div class="kb-idea-attach" hidden role="group" aria-labelledby="kb-idea-attach-label" data-kb-idea-attach-target="panel"
+     data-action="keydown.esc->kb-idea-attach#close">
+  <label class="kb-idea-attach__label" id="kb-idea-attach-label" for="kb-idea-attach-q">Attach <span data-kb-idea-attach-target="name"></span> to idea</label>
+  <input type="search" id="kb-idea-attach-q" class="kb-idea-attach__input" autocomplete="off" placeholder="Search ideas…"
+         data-kb-idea-attach-target="input" data-action="input->kb-idea-attach#search">
+  <label class="kb-idea-attach__hero">
+    <input type="checkbox" data-kb-idea-attach-target="hero"> Also use as the hero image
+  </label>
+  <ul class="kb-idea-attach__results" data-kb-idea-attach-target="results"></ul>
+  <p class="kb-idea-attach__status" role="status" aria-live="polite" data-kb-idea-attach-target="status"></p>
+</div>

@@ -1,7 +1,7 @@
 module Kb
   class TreeBuilder
     CACHE_GENERATION_KEY = "kb/tree/generation"
-    SORT_MODES = %w[name_asc name_desc type_asc type_desc date_asc date_desc].freeze
+    SORT_MODES = %w[name type date added size manual].product(%w[asc desc]).map { |f, d| "#{f}_#{d}" }.freeze
     DEFAULT_SORT = "name_asc".freeze
 
     class << self
@@ -30,31 +30,41 @@ module Kb
 
       # Reorders every sibling group in place: download/job placeholders first,
       # then favourites, then the rest, each ordered by mode ("name_asc", ...).
-      def sort_tree(tree, mode = DEFAULT_SORT)
+      # A folder's own preference overrides the mode for its direct children;
+      # "manual" follows the folder's stored name list (unlisted entries last, by name).
+      def sort_tree(tree, mode = DEFAULT_SORT, preference = nil)
         mode = DEFAULT_SORT unless SORT_MODES.include?(mode)
-        field, direction = mode.split("_")
-        groups = tree.partition { |_, node| %i[download job].include?(node[:type]) }
-        placeholders, entries = groups
-        favorites, others = entries.partition { |_, node| node[:preference]&.favorite? }
+        own = preference&.sort_mode.presence
+        effective = SORT_MODES.include?(own) ? own : mode
+        field, direction = effective.split("_")
+        manual = field == "manual" ? preference&.order_names.to_a : nil
+        placeholders, entries = tree.partition { |_, node| %i[download job].include?(node[:type]) }
+        # ponytail: manual order ignores favourites, otherwise pinned stars would fight the drag order.
+        favorites, others = manual ? [ [], entries ] : entries.partition { |_, node| node[:preference]&.favorite? }
         ordered = [ favorites, others ].flat_map do |group|
-          sorted = group.sort_by { |name, node| sort_key(field, name, node) }
+          sorted = group.sort_by { |name, node| sort_key(field, name, node, manual) }
           direction == "desc" ? sorted.reverse : sorted
         end
-        sorted_pairs = placeholders + ordered
-        tree.replace(sorted_pairs.to_h)
-        tree.each_value { |node| sort_tree(node[:children], mode) if node[:type] == :dir }
+        tree.replace((placeholders + ordered).to_h)
+        tree.each_value { |node| sort_tree(node[:children], mode, node[:preference]) if node[:type] == :dir }
         tree
       end
 
       private
 
-      def sort_key(field, name, node)
+      def sort_key(field, name, node, manual = nil)
         natural = name.downcase.scan(/\d+|\D+/).map { |part| part.match?(/\A\d/) ? [ 0, part.to_i ] : [ 1, part ] }
         case field
         when "type"
           [ node[:type] == :dir ? 0 : 1, node[:type] == :dir ? "" : File.extname(name).downcase, natural, name ]
         when "date"
           [ node[:mtime].to_f, natural, name ]
+        when "added"
+          [ (node[:btime] || node[:mtime]).to_f, natural, name ]
+        when "size"
+          [ node[:type] == :dir ? 0 : 1, node[:size].to_i, natural, name ]
+        when "manual"
+          [ manual.index(name) || manual.size, natural, name ]
         else
           [ natural, name ]
         end
@@ -75,6 +85,7 @@ module Kb
       downloads_by_source = active_downloads_by_source(sources)
       jobs_by_source = user.kb_fs_jobs.visible_in_tree.recent.group_by(&:source_path)
       unseen = unseen_download_keys
+      aliases_by_source = user.kb_links.aliases.group_by(&:peer_source_path)
 
       sources.each_with_index.map do |source, index|
         source_path = File.expand_path(source[:path])
@@ -89,7 +100,8 @@ module Kb
         mark_unseen(tree, source_path, unseen)
         inject_downloads(tree, downloads_by_source[source_path] || [])
         inject_jobs(tree, jobs_by_source[source_path] || [])
-        self.class.sort_tree(tree, sort_mode)
+        inject_aliases(tree, source_path, sources, aliases_by_source[source_path] || [])
+        self.class.sort_tree(tree, sort_mode, preferences_by_key[[ source_path, "", "root" ]])
 
         {
           index: index,
@@ -117,7 +129,7 @@ module Kb
 
     def cached_filesystem_entries(base)
       generation = self.class.cache_generation(user.id)
-      Rails.cache.fetch([ "kb/tree/fs-v2", user.id, base, generation ]) do
+      Rails.cache.fetch([ "kb/tree/fs-v6", user.id, base, generation ]) do
         scan_filesystem_entries(base)
       end
     end
@@ -134,12 +146,39 @@ module Kb
         next if hidden_path?(rel)
 
         if File.directory?(path)
-          dirs << { rel: rel, mtime: File.mtime(path).to_f }
+          dirs << { rel: rel, mtime: File.mtime(path).to_f, btime: birthtime(path) }
         elsif File.file?(path)
-          files << { rel: rel, abs: path, mtime: File.mtime(path).to_f }
+          files << { rel: rel, abs: path, mtime: File.mtime(path).to_f, btime: birthtime(path), size: File.size(path) }
         end
       end
+      hide_sidecars(files)
       { files: files, dirs: dirs }
+    end
+
+    # "<stem>.vtt" next to same-stem media is the media's captions: hidden, shown as a CC mark on the media row.
+    def hide_sidecars(files)
+      rels = files.to_h { |f| [ f[:rel], f ] }
+      hidden = files.filter_map do |f|
+        next unless Kb::Transcript.media?(f[:abs]) && (side = Kb::Transcript.sidecar(f[:rel])) && rels.key?(side)
+
+        f[:cc] = true
+        side
+      end
+      # "<file>.note.md" is that file's "why I saved this" note (any non-markdown file): hidden, marked.
+      hidden += files.filter_map do |f|
+        next unless Kb::Note.eligible?(f[:rel]) && rels.key?(side = Kb::Note.sidecar(f[:rel]))
+
+        f[:note] = Kb::Note.preview(f[:abs]) || "Note"
+        side
+      end
+      files.reject! { |f| hidden.include?(f[:rel]) }
+    end
+
+    # Not every filesystem records a birth time; fall back to mtime.
+    def birthtime(path)
+      File.birthtime(path).to_f
+    rescue NotImplementedError, SystemCallError
+      File.mtime(path).to_f
     end
 
     def hidden_path?(relative_path)
@@ -149,7 +188,9 @@ module Kb
     def build_nested_tree(files, dirs, source_path, preferences)
       root = {}
       dirs.each do |dir|
-        dir_node_for(root, dir[:rel].split("/"), source_path, preferences)[:mtime] = dir[:mtime]
+        node = dir_node_for(root, dir[:rel].split("/"), source_path, preferences)
+        node[:mtime] = dir[:mtime]
+        node[:btime] = dir[:btime]
       end
       files.each do |file|
         parts = file[:rel].split("/")
@@ -163,6 +204,10 @@ module Kb
           rel: file[:rel],
           abs: file[:abs],
           mtime: file[:mtime],
+          btime: file[:btime],
+          size: file[:size],
+          cc: file[:cc],
+          note: file[:note],
           preference: preferences[[ source_path, file[:rel], "file" ]]
         }
       end
@@ -196,8 +241,10 @@ module Kb
         if project
           node[:project] = { id: project.id, status: project.status, private: project.private?,
                              stage: project.stage, stage_index: project.stages.index(project.stage) || 0,
-                             stage_count: project.stages.size, roles: material_roles(project, node[:children]) }
+                             stage_count: project.stages.size, locked: project.locked?, kind: project.kind,
+                             progress: (project.progress unless project.locked? || !project.build?), roles: material_roles(project, node[:children]) }
         end
+        node[:children].clear if project&.locked? # only the .7z + stub on disk; show nothing
         private_here = inherited_private || project&.private? || false
         node[:private] = true if private_here
         annotate_projects(node[:children], base, private_here) if node[:type] == :dir
@@ -245,6 +292,37 @@ module Kb
 
         children["~job-#{job.id}"] = { type: :job, job: job }
       end
+    end
+
+    # "Also in" rows: the entry lives elsewhere; the row only points at it. Skipped inside locked
+    # projects and when a real entry already has the name. Broken when the canonical file is gone.
+    # Nothing here touches the alias's bytes, so AI tools (which read real paths) never see through it.
+    def inject_aliases(tree, source_path, sources, aliases)
+      bases = sources.map { |s| File.expand_path(s[:path]) }
+      aliases.each do |link|
+        children = alias_children(tree, File.dirname(link.peer_relative_path).sub(/\A\.\z/, ""))
+        name = File.basename(link.peer_relative_path)
+        next if children.nil? || children.key?(name)
+
+        target_src = bases.index(link.source_path)
+        exists = target_src && Dir.exist?(link.source_path) && File.file?(File.join(link.source_path, link.relative_path))
+        children[name] = { type: :alias, rel: link.peer_relative_path, link_id: link.id, target_src: target_src,
+                           target_rel: link.relative_path, broken: !exists,
+                           private: exists && Kb::Privacy.private?(link.source_path, link.relative_path) }
+      end
+    end
+
+    def alias_children(tree, relative_dir)
+      return tree if relative_dir.blank?
+
+      current = tree
+      relative_dir.split("/").each do |segment|
+        node = current[segment]
+        return nil unless node&.dig(:type) == :dir && !node.dig(:project, :locked)
+
+        current = node[:children]
+      end
+      current
     end
 
     def children_for(tree, relative_dir)

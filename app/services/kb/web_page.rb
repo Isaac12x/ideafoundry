@@ -18,11 +18,22 @@ module Kb
     ].freeze
     JUNK_SELECTORS = %w[
       script style noscript iframe form button input select textarea nav aside
-      footer template link meta svg [hidden] [aria-hidden=true]
+      footer template link meta svg [hidden]
+      [aria-hidden=true]:not(.mwe-math-fallback-image-inline):not(.mwe-math-fallback-image-display)
       .mw-editsection .mw-jump-link .navbox .vertical-navbox .sistersitebox
       .noprint .mw-empty-elt #toc .toc .metadata .ambox
+      .mw-authority-control .printfooter .catlinks .mw-indicators .shortdescription #siteSub #contentSub
+      .mw-collapsible-toggle .sr-only .visually-hidden
+      [role=banner] [role=navigation] [role=complementary] [role=dialog] [aria-modal=true]
+      [style*='display:none'] [style*='visibility:hidden']
+      [class~=ad] [class~=ads] [class~=advert] [class~=advertisement] [class~=sponsored] [id^=google_ads]
+      [class*=cookie] [id*=cookie] [class*=consent] [id*=consent] [class*=newsletter] [class*=social-share]
+      [class*=share-buttons] [class*=related-posts] [class*=breadcrumb] [id=comments] [class~=comments]
     ].join(", ").freeze
-    KEEP_ATTRS = %w[href src alt title colspan rowspan].freeze
+    # class/id/width/height keep Wikipedia's markup stylable and footnote anchors alive.
+    KEEP_ATTRS = %w[href src alt title colspan rowspan class id width height lang typeof].freeze
+    WIKIPEDIA = /(\A|\.)wikipedia\.org\z/i
+    LAZY_SRC = %w[data-src data-lazy-src data-original].freeze
     REFERENCE_HEADING = /\A\s*(references|sources|citations|notes|bibliography|works cited|footnotes)\s*\z/i
     REFERENCE_LISTS = "ol.references > li, #references li, .reflist li, .refbegin li".freeze
     WIKI_FAMILY = /(\A|\.)(wikipedia|wikimedia|wikisource|wikidata|wikiquote|wiktionary|wikibooks|mediawiki)\.org\z/i
@@ -90,6 +101,9 @@ module Kb
 
     def host = URI.parse(url).host.to_s.delete_prefix("www.")
 
+    # Any *.wikipedia.org page (not the wider WIKI_FAMILY): gets Wikipedia's look.
+    def wikipedia? = host.match?(WIKIPEDIA)
+
     def text_length = article&.text.to_s.squish.length
 
     def article? = text_length >= MIN_ARTICLE_CHARS
@@ -112,18 +126,23 @@ module Kb
     def reader_html(source: url, fetched_at: Time.current)
       body = article&.inner_html.to_s
       site = URI.parse(source).host.to_s.delete_prefix("www.")
+      h = ERB::Util.method(:h)
+      meta = %(<a href="#{h[source]}">#{h[source]}</a>#{" · via #{h[host]}" if source != url} · retrieved #{fetched_at.strftime('%-d %B %Y')})
+      head = if wikipedia?
+        tagline = host.start_with?("en.") || host.start_with?("simple.") ? %(<p class="tagline">From Wikipedia, the free encyclopedia</p>) : ""
+        %(<header class="wp-head"><h1>#{h[title]}</h1>#{tagline}<p class="source">#{meta}</p></header>)
+      else
+        %(<header><p class="kicker">#{h[site]}</p><h1>#{h[title]}</h1><p class="source">#{meta}</p></header>)
+      end
       <<~HTML
         <!doctype html>
-        <html lang="en"><head><meta charset="utf-8">
-        <title>#{ERB::Util.h(title)}</title>
-        <style>#{READER_CSS}</style></head>
+        <html lang="#{h[@doc.at_css('html')&.[]('lang').presence || 'en']}"><head><meta charset="utf-8">
+        <title>#{h[title]}</title>
+        <style>#{wikipedia? ? ReaderStyles::WIKIPEDIA : ReaderStyles::READER}
+        #{ReaderStyles.footer(title)}</style></head>
         <body><main>
-          <header>
-            <p class="kicker">#{ERB::Util.h(site)}</p>
-            <h1>#{ERB::Util.h(title)}</h1>
-            <p class="source"><a href="#{ERB::Util.h(source)}">#{ERB::Util.h(source)}</a>#{" · via #{ERB::Util.h(host)}" if source != url} · retrieved #{fetched_at.strftime('%-d %B %Y')}</p>
-          </header>
-          #{body}
+          #{head}
+          <div class="mw-parser-output">#{body}</div>
         </main></body></html>
       HTML
     end
@@ -137,24 +156,54 @@ module Kb
       @article = node && clean(node.dup)
     end
 
-    # Fallback: the element holding the most paragraph text.
+    # Fallback: the element holding the most paragraph text; for <br>-and-<font>
+    # era pages (no <p>s) the element with the most loose text of its own.
     def densest_block
-      @doc.css("p").group_by(&:parent).max_by { |_, ps| ps.sum { |p| p.text.length } }&.first
+      best = @doc.css("p").group_by(&:parent).max_by { |_, ps| ps.sum { |p| p.text.length } }&.first
+      return best if best && best.text.squish.length >= MIN_ARTICLE_CHARS
+      loose = @doc.css("td, div, font, section, body").max_by { |n| n.xpath("./text()").sum { |t| t.text.squish.length } }
+      loose && loose.text.squish.length > (best&.text.to_s.squish.length || 0) ? loose : best
     end
 
     def clean(node)
       node.css(JUNK_SELECTORS).remove
-      node.css("h1").each { |h| h.remove if h.text.squish == title }
+      node.css("[style]").each { |n| n.remove if n["style"].match?(/display:\s*none|visibility:\s*hidden/i) }
+      node.css("h1, h2").each { |h| h.remove if h.text.squish == title }
+      # Heading anchors (Rails guides, Substack...) are chrome, not links.
+      node.css("h1 a, h2 a, h3 a, h4 a, h5 a, h6 a").each { |a| a.replace(a.children) }
+      tidy_breaks(node)
       node.css("img").each do |img|
-        src = img["data-src"].presence || img["src"]
+        src = LAZY_SRC.filter_map { |a| img[a].presence }.first || img["src"].presence || biggest_srcset(img["data-srcset"] || img["srcset"])
         src.present? ? img["src"] = absolute(src) : img.remove
       end
-      node.css("a[href]").each { |a| a["href"] = absolute(a["href"]) }
+      node.css("a[href]").each { |a| a["href"] = absolute(a["href"]) unless a["href"].start_with?("#") }
       node.traverse do |n|
         next unless n.element?
-        n.attribute_nodes.each { |attr| attr.remove unless KEEP_ATTRS.include?(attr.name) }
+        # math fallback images carry their size (in ex) only in style.
+        keep = n["class"].to_s.include?("mwe-math-fallback") ? KEEP_ATTRS + %w[style] : KEEP_ATTRS
+        n.attribute_nodes.each { |attr| attr.remove unless keep.include?(attr.name) }
       end
       node
+    end
+
+    BLOCKS = %w[div p ul ol dl table blockquote h1 h2 h3 h4 h5 h6 pre figure].freeze
+
+    # <br> runs (spacer gaps on <br>-era pages) collapse to one blank line; a <br>
+    # touching a block or a cell edge only adds stray space (infobox "Born" rows).
+    def tidy_breaks(node)
+      node.css("br").each do |br|
+        prev = br.previous_sibling
+        prev = prev.previous_sibling while prev&.text? && prev.text.blank?
+        nxt = br.next_sibling
+        nxt = nxt.next_sibling while nxt&.text? && nxt.text.blank?
+        next br.remove if prev.nil? || nxt.nil? || BLOCKS.include?(prev.name) || BLOCKS.include?(nxt.name)
+        br.remove if prev.name == "br" && nxt.name == "br"
+      end
+    end
+
+    # "a.jpg 1x, b.jpg 2x" / "a.jpg 400w, b.jpg 800w" -> the largest candidate's URL.
+    def biggest_srcset(set)
+      set.to_s.split(",").map { |c| c.split }.select(&:any?).max_by { |u, d| d.to_f }&.first
     end
 
     def reference_items
@@ -211,32 +260,5 @@ module Kb
     rescue URI::Error, ArgumentError
       href.to_s
     end
-
-    READER_CSS = <<~CSS.freeze
-      @page { size: A4; margin: 22mm 20mm 24mm; }
-      html { -webkit-print-color-adjust: exact; }
-      body { margin: 0; color: #1f1b16;
-             font: 11.5pt/1.62 "Iowan Old Style", Charter, "Palatino Linotype", Georgia, serif; }
-      main { max-width: 38em; margin: 0 auto; padding: 2.5em 0; }
-      header { border-bottom: 0.5pt solid #d9cfbf; margin-bottom: 2em; padding-bottom: 1.2em; }
-      .kicker { font: 600 8pt/1 -apple-system, "Helvetica Neue", sans-serif; letter-spacing: .16em;
-                text-transform: uppercase; color: #a0672a; margin: 0 0 1em; }
-      h1 { font-size: 26pt; line-height: 1.1; font-weight: 600; margin: 0 0 .5em; letter-spacing: -.01em; }
-      .source { font-size: 8.5pt; color: #7d7263; margin: 0; word-break: break-all; }
-      .source a { color: inherit; }
-      h2 { font-size: 16pt; margin: 1.8em 0 .5em; break-after: avoid; }
-      h3, h4 { font-size: 12.5pt; margin: 1.4em 0 .4em; break-after: avoid; }
-      p, li { orphans: 3; widows: 3; }
-      a { color: #8a5320; text-decoration: none; }
-      img { max-width: 100%; height: auto; break-inside: avoid; }
-      figure, tr { break-inside: avoid; }
-      figure { margin: 1.4em 0; } figcaption { font-size: 9pt; color: #7d7263; }
-      table { border-collapse: collapse; font-size: 9.5pt; margin: 1.2em 0; max-width: 100%; }
-      th, td { border-bottom: 0.5pt solid #e4dccf; padding: .3em .5em; vertical-align: top; text-align: left; }
-      blockquote { margin: 1.2em 0; padding-left: 1em; border-left: 2pt solid #d9cfbf; color: #4d443a; }
-      pre, code { font-size: 9pt; white-space: pre-wrap; }
-      sup { font-size: 7pt; line-height: 0; }
-      ol.references, #references ol { font-size: 9pt; }
-    CSS
   end
 end

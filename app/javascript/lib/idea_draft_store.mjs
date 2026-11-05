@@ -52,6 +52,7 @@ export async function stableDraftDigest(draft) {
 export function hasMeaningfulDraft(draft) {
   const defaultValues = {
     "idea[state]": "idea_new",
+    "idea[for_licensing]": "0",
     "idea[trl]": "0",
     "idea[difficulty]": "0",
     "idea[opportunity]": "0",
@@ -62,7 +63,9 @@ export function hasMeaningfulDraft(draft) {
     if (["authenticity_token", "_method", "utf8"].includes(name)) return false;
     if (name.endsWith("[]") && Array.isArray(value)) return value.some((item) => String(item).trim() !== "");
 
-    const normalizedValue = String(value ?? "").trim();
+    // The editor serializes an untouched description as "<p></p>"; that is not content.
+    const text = name === "idea[description]" && !/<img/i.test(String(value)) ? String(value).replace(/<[^>]*>/g, "") : value;
+    const normalizedValue = String(text ?? "").trim();
     if (normalizedValue === "") return false;
     if (Object.prototype.hasOwnProperty.call(defaultValues, name) && normalizedValue === defaultValues[name]) return false;
 
@@ -190,6 +193,8 @@ export function restoreDraftFields(form, draft) {
   Object.entries(draft || {}).forEach(([name, value]) => {
     const fields = Array.from(form.querySelectorAll(`[name="${CSS.escape(name)}"]`));
     fields.forEach((field) => {
+      // Hidden "[]" fields are Rails sentinels (idea[theme_ids][]="") or restored by the chip controllers below.
+      if (field.type === "hidden" && name.endsWith("[]")) return;
       if (field.type === "checkbox") {
         field.checked = Array.isArray(value) ? value.includes(field.value) : String(value) === field.value;
       } else if (field.type === "radio") {
@@ -201,6 +206,9 @@ export function restoreDraftFields(form, draft) {
       field.dispatchEvent(new Event("change", { bubbles: true }));
     });
   });
+
+  // Chips built client-side (new themes, KB picks) have no markup to fill: let their controllers rebuild them.
+  form.dispatchEvent(new CustomEvent("idea-draft:restore", { bubbles: true, detail: { draft: draft || {} } }));
 
   const description = draft?.["idea[description]"];
   if (description !== undefined) {

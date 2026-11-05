@@ -2,6 +2,7 @@
 class KbAnnotationsController < ApplicationController
   before_action :set_user
   before_action :set_file, only: [ :index, :create ]
+  before_action :block_locking, only: :create
 
   def index
     render json: @user.kb_annotations.for_file(@source_path, @relative_path).in_reading_order
@@ -18,6 +19,8 @@ class KbAnnotationsController < ApplicationController
 
   def update
     mark = @user.kb_annotations.find(params[:id])
+    return if locking?(mark.source_path, mark.relative_path)
+
     if mark.update(annotation_params.slice(:style, :color))
       render json: mark
     else
@@ -26,11 +29,26 @@ class KbAnnotationsController < ApplicationController
   end
 
   def destroy
-    @user.kb_annotations.find(params[:id]).destroy!
+    mark = @user.kb_annotations.find(params[:id])
+    return if locking?(mark.source_path, mark.relative_path)
+
+    mark.destroy!
     head :no_content
   end
 
   private
+
+  # A project that is locking would lose (or leak) a mark made now.
+  def block_locking
+    locking?(@source_path, @relative_path)
+  end
+
+  def locking?(base, rel)
+    return false unless Kb::ProjectLock.busy_path?(File.join(base, rel))
+
+    render json: { error: "This project is locking or unlocking. Try again in a moment." }, status: :conflict
+    true
+  end
 
   def set_file
     source = KbSource.list(@user)[params[:src].to_i]
