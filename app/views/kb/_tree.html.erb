@@ -34,6 +34,7 @@
                  data-kb-tree-type-param="root"
                  data-kb-tree-src-param="<%= folder[:index] %>"
                  data-kb-tree-rel-param=""
+                 data-kb-tree-sort-param="<%= folder[:preference]&.sort_mode %>"
                  data-kb-tree-favorite-param="<%= root_favorite %>"
                <% end %>>
             <button type="button" class="kb-node-glyph kb-entry-icon-button" title="Personalise folder icon"
@@ -49,6 +50,7 @@
                     fallback: folder[:drive] ? "drive" : "folder" %>
             </button>
             <span class="kb-node-name kb-folder-label" title="<%= folder[:path] %>"><%= folder[:label] %></span>
+            <% if folder[:preference]&.sort_mode.present? %><span class="kb-sort-flag" title="Own sort: <%= folder[:preference].sort_mode.tr('_', ' ') %>" aria-label="Own sort order"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" aria-hidden="true"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="15" y2="12"/><line x1="4" y1="18" x2="10" y2="18"/></svg></span><% end %>
             <div class="kb-tree-folder-actions">
               <% if has_directories %>
                 <button type="button" class="kb-tree-action-btn" title="Collapse all folders"

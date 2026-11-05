@@ -1,21 +1,20 @@
 # Links an idea to KB projects, folders and files. Created from the idea page.
 class IdeaKbLinksController < ApplicationController
   before_action :set_user
-  before_action :set_idea
+  before_action :set_idea, except: :search # search is idea-independent (also used by the new-idea form)
 
   SEARCH_LIMIT = 30
   SEARCH_VISIT_CAP = 5000 # ponytail: bounded walk, index if KBs outgrow this
 
   def search
+    # Blank query lists projects only, so the picker shows them on focus.
     query = params[:q].to_s.strip.downcase
-    return render json: { results: [] } if query.blank?
-
     render json: { results: search_entries(query) }
   end
 
   def create
     source = KbSource.list(@user)[params[:src].to_i] unless params[:src].to_i.negative?
-    entry = source && resolve_entry(File.expand_path(source[:path]), params[:path])
+    entry = source && IdeaKbLink.resolve_entry(File.expand_path(source[:path]), params[:path])
     return head(:unprocessable_content) unless entry
 
     @idea.kb_links.find_or_create_by!(source_path: source[:path], relative_path: entry[:rel]) do |link|
@@ -42,27 +41,13 @@ class IdeaKbLinksController < ApplicationController
     end
   end
 
-  # { rel:, type: } for an existing, non-hidden, symlink-free entry inside base.
-  def resolve_entry(base, rel)
-    rel = IdeaKbLink.normalize_relative_path(rel)
-    parts = rel.split("/")
-    return if parts.empty? || parts.any? { |p| p.start_with?(".") || p == ".." }
-
-    abs = File.expand_path(File.join(base, rel))
-    return unless abs.start_with?("#{base}/")
-    return if parts.each_with_index.any? { |_, i| File.symlink?(File.join(base, *parts.first(i + 1))) }
-    return unless File.exist?(abs)
-
-    type = Kb::Project.at(base, rel) ? "project" : (File.directory?(abs) ? "dir" : "file")
-    { rel: rel, type: type }
-  end
-
   def search_entries(query)
     found = []
-    visited = 0
     KbSource.list(@user).each_with_index do |source, index|
       base = File.expand_path(source[:path])
       next unless File.directory?(base)
+
+      visited = 0 # per source so one big KB can't starve the others
 
       queue = [ "" ]
       until queue.empty? || visited > SEARCH_VISIT_CAP
@@ -73,13 +58,15 @@ class IdeaKbLinksController < ApplicationController
           visited += 1
           rel = dir.empty? ? name : "#{dir}/#{name}"
           abs = File.join(base, rel)
-          next if File.symlink?(abs)
+          next if File.symlink?(abs) || Kb::Note.sidecar?(name) # the note rides on its file's row
 
           is_dir = File.directory?(abs)
           queue << rel if is_dir
-          next unless rel.downcase.include?(query)
+          next unless rel.downcase.include?(query) || (!query.empty? && !is_dir && Kb::Note.read(abs).downcase.include?(query))
 
           type = is_dir ? (Kb::Project.at(base, rel) ? "project" : "dir") : "file"
+          next if query.empty? && type != "project"
+
           found << { src: index, path: rel, name: name, type: type, source: source[:label],
                      rank: [ { "project" => 0, "dir" => 1, "file" => 2 }[type], name.downcase.include?(query) ? 0 : 1 ] }
         end
