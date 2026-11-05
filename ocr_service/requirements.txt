@@ -1,6 +1,6 @@
 fastapi==0.115.6
 uvicorn[standard]==0.34.0
 beautifulsoup4>=4.12,<5
-pillow==12.3.0
+pillow==13.0.0
 pymupdf==1.25.1
 surya-ocr==0.20.0
