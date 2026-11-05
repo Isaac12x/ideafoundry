@@ -135,14 +135,18 @@ class SettingsControllerTest < ActionDispatch::IntegrationTest
     assert_no_match(/Open Ask Agent/, response.body)
   end
 
-  test "layout hides global ask agent form when local agent is enabled but not live" do
+  test "layout renders the ask agent sidebar as Not running when the agent is enabled but not live" do
     @user.update_local_agent_settings("enabled" => "1")
+    @user.agent_runs.delete_all
 
     get ideas_path
 
     assert_response :success
-    assert_select ".ask-agent-shell", count: 0
-    assert_no_match(/Open Ask Agent/, response.body)
+    assert_select ".ask-agent-shell[data-ask-agent-questions-url-value=?]", settings_local_agent_questions_path
+    assert_select ".ask-agent-sidebar__status", text: /Not running/
+    assert_select ".ask-agent-sidebar__notice a[href=?]", settings_local_agent_path
+    assert_select ".ask-agent-sidebar__status", text: /Ready/, count: 0
+    assert_select ".ask-agent-shell [aria-live=polite][data-ask-agent-target=status]", count: 1
   end
 
   test "layout renders global ask agent form when local agent is live" do
@@ -530,6 +534,64 @@ class SettingsControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_select ".local-agent-questions", count: 0
     assert_select ".ask-agent-shell", count: 0
+  end
+
+  test "GET settings/ai-agents/questions renders pending and answered threads only, without the layout" do
+    @user.update_local_agent_settings("enabled" => "1")
+    answered = @user.agent_events.create!(event_type: "question", summary: "First?", payload: { "question" => "First?" })
+    @user.agent_events.create!(event_type: "answer", summary: "x", target: answered, payload: { "answer" => "One.\nTwo <b>&</b>" })
+    @user.agent_events.create!(event_type: "question", summary: "Second?", payload: { "question" => "Second?" })
+    other = User.create!(email: "other-#{SecureRandom.hex(3)}@example.com", name: "Other")
+    other.agent_events.create!(event_type: "question", summary: "Not yours", payload: { "question" => "Not yours" })
+
+    get settings_local_agent_questions_path
+
+    assert_response :success
+    assert_equal "no-store", response.headers["Cache-Control"]
+    assert_no_match(/<html|<body|ask-agent-shell/, response.body)
+    assert_select ".ask-agent-thread", count: 2
+    assert_includes response.body, "One.\nTwo &lt;b&gt;&amp;&lt;/b&gt;" # escaped, newline kept for pre-wrap
+    assert_select ".ask-agent-message--pending", count: 1
+    assert_no_match(/Not yours/, response.body)
+  ensure
+    other&.agent_events&.delete_all
+    other&.destroy
+  end
+
+  test "GET settings/ai-agents/questions is forbidden while the agent is disabled" do
+    @user.update_local_agent_settings("enabled" => "0")
+    @user.agent_events.create!(event_type: "question", summary: "Q", payload: { "question" => "Q" })
+
+    get settings_local_agent_questions_path
+
+    assert_response :forbidden
+    assert_no_match(/ask-agent-thread/, response.body)
+  end
+
+  test "a question unanswered for over 10 minutes keeps the pending class but says so" do
+    @user.update_local_agent_settings("enabled" => "1")
+    @user.agent_events.create!(event_type: "question", summary: "Old?", payload: { "question" => "Old?" }, created_at: 11.minutes.ago)
+    @user.agent_events.create!(event_type: "question", summary: "New?", payload: { "question" => "New?" })
+
+    get settings_local_agent_questions_path
+
+    assert_select ".ask-agent-message--pending", count: 2
+    assert_select ".ask-agent-message--pending p", text: /No answer yet. The agent may not be running/, count: 1
+    assert_select ".ask-agent-message--pending p", text: "Waiting for an answer.", count: 1
+  end
+
+  test "POST settings/ai-agents/questions as JSON queues the question and the next poll shows it pending" do
+    @user.update_local_agent_settings("enabled" => "1")
+
+    assert_difference -> { @user.agent_events.where(event_type: "question").count }, 1 do
+      post settings_local_agent_questions_path, params: { agent_question: { body: "Expand this" } }, as: :json
+    end
+    assert_response :success
+    assert_equal true, response.parsed_body["ok"]
+
+    get settings_local_agent_questions_path
+    assert_select ".ask-agent-message--user p", text: "Expand this"
+    assert_select ".ask-agent-message--pending", count: 1
   end
 
   test "POST settings/ai-agents/questions queues a local agent question" do

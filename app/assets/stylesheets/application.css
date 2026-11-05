@@ -266,6 +266,18 @@ a:hover {
     display: none;
 }
 
+.ask-agent-launcher[data-unread]::after {
+    content: "";
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--success);
+    border: 2px solid var(--bg-base);
+}
+
 .ask-agent-launcher {
     position: fixed;
     right: 1.15rem;
@@ -657,6 +669,10 @@ body.ask-agent-resizing {
     letter-spacing: 0.02em;
 }
 
+.ask-agent-message p {
+    white-space: pre-wrap;
+}
+
 .ask-agent-message p,
 .ask-agent-sidebar__empty,
 .ask-agent-sidebar__notice {
@@ -664,6 +680,16 @@ body.ask-agent-resizing {
     color: var(--text-secondary);
     line-height: 1.5;
     overflow-wrap: anywhere;
+}
+
+.ask-agent-sidebar__notice {
+    padding: 0.75rem 1.25rem 0;
+    font-size: 0.82rem;
+}
+
+.ask-agent-sidebar__error {
+    padding: 0;
+    color: var(--danger);
 }
 
 .ask-agent-sidebar__empty {

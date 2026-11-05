@@ -1,8 +1,10 @@
 import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
-  static targets = ["backdrop", "body", "invention", "launcher", "messages", "panel"]
+  static targets = ["backdrop", "body", "error", "invention", "launcher", "messages", "panel", "status"]
+  static values = { questionsUrl: String }
   static inventionVariants = ["bulb", "engine", "magnet", "gyro"]
+  static errors = { disabled: "The local agent is turned off.", blank: "Enter a question." }
   static inventionStorageKey = "idea-foundry:ask-agent:invention"
 
   connect() {
@@ -17,6 +19,12 @@ export default class extends Controller {
     this.onQueued = ({ detail }) => this.queued(detail)
     window.addEventListener("ask-agent:prefill", this.onPrefill)
     window.addEventListener("ask-agent:queued", this.onQueued)
+    this.onVisibility = () => (document.visibilityState === "visible" ? this.refresh() : this.stopPolling())
+    document.addEventListener("visibilitychange", this.onVisibility)
+    this.seq = 0
+    this.gone = false
+    this.markChange()
+    this.schedule() // a question asked just before a reload is still pending
     this.inventionIndex = this.initialInventionIndex()
     this.showCurrentInvention({ immediate: true })
     this.startInventionCycle()
@@ -32,6 +40,9 @@ export default class extends Controller {
   disconnect() {
     window.removeEventListener("ask-agent:prefill", this.onPrefill)
     window.removeEventListener("ask-agent:queued", this.onQueued)
+    document.removeEventListener("visibilitychange", this.onVisibility)
+    this.gone = true
+    this.stopPolling()
     this.stopResize()
     this.stopInventionCycle()
     window.clearTimeout(this.swapTimer)
@@ -50,6 +61,7 @@ export default class extends Controller {
       this.launcherTarget.setAttribute("aria-expanded", "true")
     }
     document.body.classList.add("ask-agent-open")
+    this.clearUnread()
     this.scrollMessages()
 
     if (focus && this.hasBodyTarget) {
@@ -65,18 +77,132 @@ export default class extends Controller {
     this.bodyTarget.setSelectionRange(text.length, text.length)
   }
 
-  // "ask-agent:queued" { question }: a question was sent without a page load (KB "Expand"); show it as pending.
+  // "ask-agent:queued": a question was sent without a page load (KB "Expand"); fetch the threads so it shows as pending.
   // The panel opens without taking focus, so the reader's selection and scroll position stay put.
-  queued({ question }) {
-    if (!this.hasMessagesTarget) return
-    this.messagesTarget.querySelector(".ask-agent-sidebar__empty")?.remove()
-    const article = document.createElement("article")
-    article.className = "ask-agent-thread"
-    article.innerHTML = `<div class="ask-agent-message ask-agent-message--user"><div class="ask-agent-message__meta"><span>You</span><time>just now</time></div><p></p></div>
-      <div class="ask-agent-message ask-agent-message--pending"><div class="ask-agent-message__meta"><span>Agent</span><time>Pending</time></div><p>Waiting for an answer.</p></div>`
-    article.querySelector("p").textContent = question
-    this.messagesTarget.appendChild(article)
+  queued() {
+    this.markChange()
     this.open(null, { focus: false })
+    return this.refresh({ scroll: true })
+  }
+
+  // Sidebar form: post by fetch (the plain form post stays as the no-JS fallback), then show the new thread.
+  async send(event) {
+    event.preventDefault()
+    const form = event.currentTarget
+    const button = form.querySelector("[type=submit]")
+    if (button.disabled) return
+    this.markChange()
+    button.disabled = true
+    this.showError("")
+    try {
+      const response = await fetch(form.action, {
+        method: "POST", body: new FormData(form), credentials: "same-origin",
+        headers: { Accept: "application/json", "X-CSRF-Token": document.querySelector('meta[name="csrf-token"]')?.content || "" }
+      })
+      const result = response.redirected ? {} : await response.json().catch(() => ({}))
+      if (!response.ok || response.redirected) throw new Error(this.constructor.errors[result.error] || "The question was not sent.")
+      this.halted = false
+      this.bodyTarget.value = ""
+      this.bodyTarget.focus()
+      await this.refresh({ scroll: true })
+    } catch (error) {
+      this.showError(error instanceof TypeError ? "Could not reach the server. Your question is still here; try again." : error.message)
+    } finally {
+      button.disabled = false
+    }
+  }
+
+  showError(message) {
+    if (!this.hasErrorTarget) return
+    this.errorTarget.textContent = message
+    this.errorTarget.hidden = !message
+  }
+
+  // ponytail: fixed 3s poll, only while a question is pending and the tab is visible; no backoff. Ceiling: one small
+  // query per 3s per open tab. Upgrade to ActionCable once cable.yml is not `async` and the cable connection checks the session.
+  schedule() {
+    this.stopPolling()
+    if (this.gone || this.halted || document.visibilityState !== "visible" || !(this.pending() || this.deferred)) return
+    // A question that stays unanswered is never given up on (a late answer must appear), but it backs off to 30s after 2 minutes.
+    const idle = Date.now() - this.changedAt > 120000
+    this.pollTimer = window.setTimeout(() => this.refresh(), idle ? 30000 : 3000)
+  }
+
+  markChange() {
+    this.changedAt = Date.now()
+    this.pendingCount = this.countPending(this.hasMessagesTarget ? this.messagesTarget.innerHTML : "")
+  }
+
+  countPending(html) {
+    return (html.match(/ask-agent-message--pending/g) || []).length
+  }
+
+  clearUnread() {
+    if (!this.hasLauncherTarget) return
+    delete this.launcherTarget.dataset.unread
+    this.launcherTarget.setAttribute("aria-label", "Open Ask Agent")
+    if (this.hasStatusTarget) this.statusTarget.textContent = ""
+  }
+
+  stopPolling() {
+    window.clearTimeout(this.pollTimer)
+    this.pollTimer = null
+  }
+
+  pending() {
+    return this.hasMessagesTarget && !!this.messagesTarget.querySelector(".ask-agent-message--pending")
+  }
+
+  // Locked (cover up) or hidden: no answer text may reach the DOM.
+  locked() {
+    return !!document.getElementById("typing-lock-cover") || this.element.hidden
+  }
+
+  async refresh({ scroll = false } = {}) {
+    if (this.gone || !this.hasMessagesTarget || this.locked() || (this.halted && !scroll)) return
+    if (!this.pending() && !this.deferred && !scroll) return this.schedule()
+    const id = ++this.seq
+    try {
+      const response = await fetch(this.questionsUrlValue, { credentials: "same-origin", cache: "no-store", headers: { Accept: "text/html" } })
+      // A redirect (lock/login page), 401 or 403 means the session is gone or the agent is off: stop, and never inject that page.
+      if (response.redirected || response.status === 401 || response.status === 403) return (this.halted = true)
+      if (!response.ok) return
+      const html = await response.text()
+      if (id === this.seq && !this.locked()) this.render(html, scroll)
+    } catch (_error) {
+      // Network failure: keep what is shown; the next tick retries.
+    } finally {
+      if (id === this.seq) this.schedule()
+    }
+  }
+
+  // Touch the DOM only when the markup changed beyond the relative-time labels, and never under a selection in the messages
+  // (retried next tick via `deferred`). Stay put unless the reader was at the bottom.
+  render(html, scroll) {
+    const next = document.createElement("div")
+    next.innerHTML = html
+    const box = this.messagesTarget
+    const bare = (markup) => markup.replace(/<time>.*?<\/time>/g, "")
+    if (bare(next.innerHTML) === bare(box.innerHTML)) return (this.deferred = false)
+    const selection = document.getSelection?.()
+    if (selection && !selection.isCollapsed && box.contains(selection.anchorNode)) return (this.deferred = true)
+    this.deferred = false
+    const atBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 80
+    const before = this.pendingCount
+    box.replaceChildren(...next.childNodes)
+    this.pendingCount = this.countPending(box.innerHTML)
+    if (this.pendingCount !== before) this.changedAt = Date.now()
+    if (this.pendingCount < before && !this.isOpen()) this.markUnread()
+    if (scroll || atBottom) this.scrollMessages()
+  }
+
+  // Answer landed while the panel is closed: dot on the launcher plus a polite announcement; the panel is never opened for the reader.
+  markUnread() {
+    if (this.hasLauncherTarget) {
+      this.launcherTarget.dataset.unread = ""
+      this.launcherTarget.setAttribute("aria-label", "Open Ask Agent (new answer)")
+    }
+    if (this.hasStatusTarget) this.statusTarget.textContent = "Ask Agent has a new answer."
   }
 
   close() {
