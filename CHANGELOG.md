@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Knowledge base transcript: karaoke view. The current line stays centered (smooth, none under reduced motion, paused briefly while you scroll) and its words fill with the accent in step with playback; finished lines go back to grey. Text stays selectable.
+- Ask Agent sidebar: Expand and Ask AI always land in the right-hand bar (also when the agent is not running, which it says). Sending a question and the agent's answer update live, no reload; answers keep their line breaks. The sidebar polls every 3s only while an answer is pending and the tab is visible, and polling never counts as typing-lock activity.
 - Markdown: `->`, `<-`, `<->` and `=>` render as real arrows, and fenced `mermaid` blocks render as diagrams (local, sandboxed).
 - Knowledge base build plans: a project kind for "I want to build X and need to know these methods", with a methods checklist instead of research tests.
 - Knowledge base media notes: a "Why I saved this" note per file, stored in a hidden `<file>.note.md` sidecar so the media and its note show as one item (note field in the download form, tree marker with the note's first line as tooltip, brief "Saved" state, notes are searchable from the idea-link picker).

@@ -688,4 +688,44 @@ class KbProjectsTest < ActionDispatch::IntegrationTest
     patch kb_project_path, params: { src: 0, path: "Ferment", items: "[]" }
     assert_equal "Only build plans have a checklist.", flash[:alert]
   end
+
+  test "the project page still renders HTML and the JSON list lives on its own path" do
+    make_project
+    assert_equal "/knowledge-base/project-list", kb_projects_path
+    get kb_project_path(src: 0, path: "Ferment")
+    assert_response :success
+    assert_equal "text/html", response.media_type
+    assert_no_match(/\A\s*\{/, response.body)
+  end
+
+  test "projects JSON lists projects with lock state for the extension" do
+    make_project
+    Kb::Project.create!(base: @kb_dir, parent_rel: "", name: "Sealed")
+    FileUtils.mkdir_p(File.join(@kb_dir, "Plain"))
+    Kb::Project.create!(base: @kb_dir, parent_rel: "Plain", name: "Nested")
+
+    get kb_projects_path
+    assert_response :success
+    assert_equal "no-store", response.headers["Cache-Control"]
+    rows = response.parsed_body["projects"]
+    assert_equal [ "Ferment", "Plain/Nested", "Sealed" ], rows.map { |r| r["rel"] }.sort
+    assert_equal [ "Nested" ], rows.select { |r| r["rel"] == "Plain/Nested" }.map { |r| r["name"] }
+    assert rows.all? { |r| r["source"] == 0 && r["locked"] == false }
+  end
+
+  test "projects JSON flags locked projects and uses the right source index" do
+    other = Rails.root.join("tmp", "kb-projects-other-#{SecureRandom.hex(6)}").to_s
+    FileUtils.mkdir_p(other)
+    @user.update!(settings: @user.settings.merge("kb" => { "folders" => [ @kb_dir, other ], "hide_native" => true }))
+    make_project
+    Kb::Project.create!(base: other, parent_rel: "", name: "Elsewhere")
+    File.write(File.join(@kb_dir, "Ferment", Kb::Project::META_FILE), { "locked" => true }.to_yaml)
+    get kb_projects_path
+    rows = response.parsed_body["projects"].index_by { |r| r["rel"] }
+    assert_equal 1, rows["Elsewhere"]["source"]
+    assert_equal false, rows["Elsewhere"]["locked"]
+    assert_equal true, rows["Ferment"]["locked"]
+  ensure
+    FileUtils.rm_rf(other)
+  end
 end

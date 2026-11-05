@@ -120,24 +120,63 @@ class KbSelectionMenuSystemTest < ApplicationSystemTestCase
     assert_equal 0, @user.agent_events.where(event_type: "question").count
   end
 
-  test "agent enabled but not running: Expand queues it and says the agent is not running yet" do
-    @user.agent_runs.delete_all
+  def answer!(question, text)
+    @user.agent_events.create!(event_type: "answer", summary: text.truncate(160), target: question, payload: { "answer" => text })
+  end
+
+  test "Expand: the answer appears in the sidebar without a reload" do
     visit kb_path(src: 0, file: "note.md")
-    assert_no_selector "#ask-agent"
     stub_supervisor do
       select_and_right_click
       item("Expand").click
-      assert_selector ".kb-selection-notice", text: "not running yet", wait: 5
+      assert_selector "#ask_agent_sidebar .ask-agent-message--pending", wait: 8
     end
+    question = @user.agent_events.where(event_type: "question").last
+    answer!(question, "First paragraph.\n\nSecond paragraph <b>escaped</b>.")
+    assert_selector "#ask_agent_sidebar .ask-agent-message--agent p", text: "First paragraph.", wait: 10
+    assert_no_selector "#ask_agent_sidebar .ask-agent-message--pending"
+    assert_includes find("#ask_agent_sidebar .ask-agent-message--agent p").text, "<b>escaped</b>"
+    assert_equal "same-document", page.evaluate_script("window.__page"), "the page reloaded"
+  end
+
+  test "sidebar Send: queued without a reload, box cleared, answer appears without a reload" do
+    visit kb_path(src: 0, file: "note.md")
+    page.execute_script("window.__page = 'same-document'")
+    find(".ask-agent-launcher").click
+    stub_supervisor do
+      fill_in "global_agent_question_body", with: "What is fermentation?"
+      click_button "Send"
+      assert_selector "#ask_agent_sidebar .ask-agent-message--user p", text: "What is fermentation?", wait: 8
+      assert_selector "#ask_agent_sidebar .ask-agent-message--pending"
+    end
+    assert_equal "", find("#global_agent_question_body").value
+    assert_equal "global_agent_question_body", page.evaluate_script("document.activeElement.id")
+    answer!(@user.agent_events.where(event_type: "question").last, "Sugars to acid.")
+    assert_selector "#ask_agent_sidebar .ask-agent-message--agent p", text: "Sugars to acid.", wait: 10
+    assert_equal "same-document", page.evaluate_script("window.__page"), "the page reloaded"
+  end
+
+  test "agent enabled but not running: Expand lands in the sidebar, which says Not running" do
+    @user.agent_runs.delete_all
+    visit kb_path(src: 0, file: "note.md")
+    assert_selector "#ask-agent"
+    stub_supervisor do
+      select_and_right_click
+      item("Expand").click
+      assert_selector "#ask_agent_sidebar .ask-agent-message--pending", wait: 8
+    end
+    assert_selector "#ask_agent_sidebar .ask-agent-sidebar__status", text: "Not running"
+    assert_selector "#ask_agent_sidebar .ask-agent-sidebar__notice a[href='#{settings_local_agent_path}']"
     assert_equal 1, @user.agent_events.where(event_type: "question").count
   end
 
-  test "agent not running: Ask AI explains instead of doing nothing" do
+  test "agent not running: Ask AI still opens the sidebar with the passage" do
     @user.agent_runs.delete_all
     visit kb_path(src: 0, file: "note.md")
     select_and_right_click
     item("Ask AI").click
-    assert_selector ".kb-selection-notice", text: "not running", wait: 5
+    assert_selector "#ask_agent_sidebar", visible: true, wait: 5
+    assert_includes find("#global_agent_question_body").value, "> #{PASSAGE}"
   end
 
   test "editor: right-click on selected textarea text opens the menu; Add as quote works" do

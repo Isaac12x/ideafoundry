@@ -52,6 +52,25 @@ class TypingLocksControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
   end
 
+  test "the Ask Agent poll never moves the session's activity timestamp" do
+    @user.update_local_agent_settings("enabled" => "1")
+    text = TypingTextLibrary.enrollment_text("early-workshop")
+    post typing_lock_enrollment_path, params: { challenge_id: "early-workshop", timing_payload: timing_events_for(text).to_json, return_to: ideas_path }
+    key = ApplicationController::TYPING_ACTIVITY_SESSION_KEY
+    started = session[key]
+    assert started.present?
+
+    travel 20.seconds do
+      get settings_local_agent_questions_path
+      assert_response :success
+      assert_equal started, session[key], "polling counted as activity"
+
+      get ideas_path
+      assert_response :success
+      assert_operator session[key], :>, started, "a real page request still counts"
+    end
+  end
+
   test "enrollment page does not ask to store or choose another sample" do
     get enroll_typing_lock_path
 
