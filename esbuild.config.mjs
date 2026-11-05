@@ -253,11 +253,11 @@ const builds = [
   {
     // Lazy viewers: imported on demand by kb_model / kb_book controllers (three.js + occt, epub.js).
     ...common,
-    entryPoints: ["app/javascript/kb_viewers/model.js", "app/javascript/kb_viewers/book.js"],
+    entryPoints: ["app/javascript/kb_viewers/model.js", "app/javascript/kb_viewers/book.js", "app/javascript/kb_viewers/pdf.js"],
     outdir: "app/assets/builds/kb_viewers",
     minify: !dev,
     splitting: false,
-    external: ["path"], // occt-import-js only requires it on its node code path
+    external: ["path", "fs", "module", "canvas", "@napi-rs/canvas"], // node-only code paths (occt-import-js, pdf.js)
   },
 ];
 
@@ -266,6 +266,12 @@ fs.mkdirSync("app/assets/builds/kb_viewers", { recursive: true });
 fs.copyFileSync(
   path.join("node_modules", "occt-import-js", "dist", "occt-import-js.wasm"),
   "app/assets/builds/kb_viewers/occt-import-js.wasm"
+);
+
+// pdf.js runs its parser in a module Worker loaded by URL, so it ships as a plain asset next to the bundle.
+fs.copyFileSync(
+  path.join("node_modules", "pdfjs-dist", "build", "pdf.worker.min.mjs"),
+  "app/assets/builds/kb_viewers/pdf.worker.js"
 );
 
 prepareExcalidrawStagingDir();

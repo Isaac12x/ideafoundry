@@ -1,4 +1,5 @@
 import { Controller } from "@hotwired/stimulus"
+import { browserReserved, isMac } from "lib/shortcut_bindings"
 
 const NAMED_KEYS = /^(Enter|Arrow(Up|Down|Left|Right)|F([1-9]|1[0-2]))$/
 
@@ -9,17 +10,28 @@ export default class extends Controller {
     if (!(event.ctrlKey || event.metaKey || event.altKey)) return
     if (["Control", "Meta", "Alt", "Shift"].includes(event.key)) return
 
-    event.preventDefault()
     // Alt rewrites the character on macOS, so read the physical key.
     const key = event.altKey && /^(Key|Digit)/.test(event.code) ? event.code.slice(-1) : event.key
     const named = NAMED_KEYS.test(key)
     if (!named && (key.length !== 1 || key === " ")) {
+      event.preventDefault()
       this.element.setCustomValidity(`"${key}" can't be used; try a letter, digit, symbol, Enter, an arrow or F1-F12`)
       this.element.reportValidity()
       this.element.setCustomValidity("")
       return
     }
 
+    // The browser's own key (Cmd+S on Mac, Ctrl+S elsewhere) stays the browser's.
+    const browserOwned = isMac() ? event.metaKey && !event.ctrlKey : event.ctrlKey && !event.altKey
+    if (!named && browserOwned && !event.altKey && browserReserved(key)) {
+      const [own, use] = isMac() ? ["Cmd", "Ctrl"] : ["Ctrl", "Alt"]
+      this.element.setCustomValidity(`${own}+${key.toUpperCase()} is a browser shortcut; press ${use}+${key.toUpperCase()} instead`)
+      this.element.reportValidity()
+      this.element.setCustomValidity("")
+      return
+    }
+
+    event.preventDefault()
     this.element.setCustomValidity("")
     // Shift is implied by symbols ("?"), so only letters, digits and named keys record it.
     const shift = event.shiftKey && (named || /[a-z0-9]/i.test(key))

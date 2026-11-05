@@ -802,6 +802,7 @@ class SettingsControllerTest < ActionDispatch::IntegrationTest
       { lock: "x" } => "needs Ctrl/Cmd or Alt",
       { search: "g x" } => "needs Ctrl/Cmd or Alt",
       { lock: "Ctrl/Cmd+S" } => "share",
+      { save: "Alt+L" } => "share",                             # Ctrl/Cmd+L is Alt+L on Windows/Linux
       { lock: "Ctrl/Cmd+Enter" } => "share",
       { lock: "Shift+Ctrl/Cmd+Y" } => "not a valid binding",   # canonical modifier order only
       { edit: "Alt+1" } => "reserved",

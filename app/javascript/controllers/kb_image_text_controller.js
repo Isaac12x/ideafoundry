@@ -1,8 +1,8 @@
 import { Controller } from "@hotwired/stimulus"
 import { nearestLine } from "lib/kb_ocr_select"
 
-// "Live Text" for KB images: fetches OCR line boxes (local tesseract, see
-// Kb::ImageOcr) and lays transparent, drag-selectable text over the image.
+// "Live Text" for KB images: on the first "Text" click, fetches OCR line boxes (local tesseract, see
+// Kb::ImageOcr; never on view, it saturates the CPU) and lays transparent, drag-selectable text over the image.
 // The same text is available as a plain selectable panel.
 export default class extends Controller {
   static targets = ["image", "layer", "status", "toggle", "panel", "text"]
@@ -13,7 +13,7 @@ export default class extends Controller {
     if (!this.urlValue) return // view-only format (svg, ico, avif): no OCR
     this.resizer = new ResizeObserver(() => this.layout())
     this.resizer.observe(this.imageTarget)
-    this.poll(0)
+    this.toggleTarget.hidden = false // OCR (CPU-heavy tesseract) only runs once the user asks for the text
   }
 
   disconnect() {
@@ -147,6 +147,7 @@ export default class extends Controller {
   }
 
   togglePanel() {
+    if (!this.requested) { this.requested = true; this.poll(0) }
     const open = this.panelTarget.hidden
     this.panelTarget.hidden = !open
     this.toggleTarget.setAttribute("aria-pressed", String(open))
