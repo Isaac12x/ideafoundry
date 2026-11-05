@@ -93,8 +93,8 @@ export default class extends Controller {
     this.error.setAttribute("role", "alert")
     const msg = document.createElement("strong")
     msg.textContent = "Diagram could not be rendered"
-    const detail = document.createElement("p")
-    detail.textContent = String(error?.message || error).split("\n")[0]
+    const detail = document.createElement("pre")
+    detail.textContent = String(error?.message || error)
     this.error.append(msg, detail)
     this.element.prepend(this.error)
     this.pre.hidden = false
