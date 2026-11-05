@@ -17,3 +17,13 @@ test("alias fences get their keyword unless the body already opens with one", ()
   assert.equal(mermaidSource("sequenceDiagram", "Alice->>Bob: hi"), "sequenceDiagram\nAlice->>Bob: hi")
   assert.equal(mermaidSource("", "graph TD\nA"), "graph TD\nA")
 })
+
+test("fail() shows the full multi-line parse error in a <pre> via textContent", () => {
+  const made = []
+  globalThis.document = { createElement: (tag) => { const el = { tag, remove() {}, setAttribute() {}, append(...k) { this.kids = k } }; made.push(el); return el } }
+  const ctl = Object.assign(new Diagram(), { element: { prepend() {} }, pre: {}, toggle: {} })
+  ctl.fail(new Error("Parse error on line 2:\nA-->>\n---^\nExpecting X"), { remove() {} })
+  delete globalThis.document
+  const detail = made.find((el) => el.tag === "pre")
+  assert.equal(detail.textContent, "Parse error on line 2:\nA-->>\n---^\nExpecting X")
+})

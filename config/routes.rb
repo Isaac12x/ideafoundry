@@ -342,5 +342,5 @@ Rails.application.routes.draw do
   # "/" forever. Exclude Rails internals and assets so missing assets/source maps 404
   # cleanly instead of returning the home page's HTML (which breaks dynamic imports).
   get "*path", to: redirect("/", status: 302),
-      constraints: ->(req) { !req.path.start_with?("/rails/", "/assets/") }
+      constraints: ->(req) { !req.path.start_with?("/rails/", "/assets/", "/dev-assets/") }
 end
