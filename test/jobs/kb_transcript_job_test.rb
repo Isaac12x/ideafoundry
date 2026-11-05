@@ -15,6 +15,17 @@ class KbTranscriptJobTest < ActiveJob::TestCase
     dl.reload
   end
 
+  test "stays pending and writes nothing while the project is locking" do
+    base = Dir.mktmpdir
+    Kb::ProjectLock::STATE[File.expand_path(base)] = { op: :lock }
+    dl = video(source_path: File.expand_path(base))
+    run_with(->(_) { flunk "must not fetch" }, dl)
+    assert_equal [ "pending", nil ], [ dl.transcript_status, dl.transcript ]
+  ensure
+    Kb::ProjectLock::STATE.clear
+    FileUtils.rm_rf(base)
+  end
+
   test "stores the transcript" do
     dl = run_with(->(_) { [ "abc", "00:00 - hi\n" ] }, video)
     assert_equal [ "done", "abc", "00:00 - hi\n" ], [ dl.transcript_status, dl.video_id, dl.transcript ]

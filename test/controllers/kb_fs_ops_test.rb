@@ -255,4 +255,39 @@ class KbFsOpsTest < ActionDispatch::IntegrationTest
   ensure
     File.chmod(0o755, File.join(@kb_dir, "locked"))
   end
+
+  test "captions sidecar follows its media on rename, move and delete" do
+    FileUtils.mkdir_p(File.join(@kb_dir, "sub"))
+    File.binwrite(File.join(@kb_dir, "clip.mp4"), "x")
+    File.write(File.join(@kb_dir, "clip.vtt"), "WEBVTT\n")
+
+    patch kb_fs_rename_path, params: { src: @src, path: "clip.mp4", name: "talk" }
+    assert File.file?(File.join(@kb_dir, "talk.mp4"))
+    assert File.file?(File.join(@kb_dir, "talk.vtt"))
+    refute File.exist?(File.join(@kb_dir, "clip.vtt"))
+
+    patch kb_fs_move_path, params: { src: @src, path: "talk.mp4", dest_dir: "sub" }
+    assert File.file?(File.join(@kb_dir, "sub", "talk.vtt"))
+    refute File.exist?(File.join(@kb_dir, "talk.vtt"))
+
+    delete kb_fs_delete_path, params: { src: @src, path: "sub/talk.mp4" }
+    assert_empty Dir.children(File.join(@kb_dir, "sub"))
+  end
+
+  test "note sidecar follows its file on rename, move and delete" do
+    FileUtils.mkdir_p(File.join(@kb_dir, "sub"))
+    File.binwrite(File.join(@kb_dir, "clip.mp4"), "x")
+    File.write(File.join(@kb_dir, "clip.mp4.note.md"), "why\n")
+
+    patch kb_fs_rename_path, params: { src: @src, path: "clip.mp4", name: "talk" }
+    assert File.file?(File.join(@kb_dir, "talk.mp4.note.md"))
+    refute File.exist?(File.join(@kb_dir, "clip.mp4.note.md"))
+
+    patch kb_fs_move_path, params: { src: @src, path: "talk.mp4", dest_dir: "sub" }
+    assert File.file?(File.join(@kb_dir, "sub", "talk.mp4.note.md"))
+    refute File.exist?(File.join(@kb_dir, "talk.mp4.note.md"))
+
+    delete kb_fs_delete_path, params: { src: @src, path: "sub/talk.mp4" }
+    assert_empty Dir.children(File.join(@kb_dir, "sub"))
+  end
 end

@@ -14,6 +14,11 @@ default: &default
       threads: <%= ENV.fetch("LONG_OCR_CONCURRENCY", 1) %>
       processes: 1
       polling_interval: 0.5
+    # Local whisper: one at a time, off the main worker so long media can't starve it.
+    - queues: transcribe
+      threads: 1
+      processes: 1
+      polling_interval: 2
 
 # SQLite has a single writer, so pollers contend at BEGIN IMMEDIATE. One thread
 # and a 1s poll costs a little latency and keeps the writes serialised.
@@ -32,6 +37,10 @@ development:
       threads: 1
       processes: 1
       polling_interval: 2
+    - queues: transcribe
+      threads: 1
+      processes: 1
+      polling_interval: 2
 
 test:
   <<: *default
@@ -47,6 +56,10 @@ production:
       processes: 1
       polling_interval: 1
     - queues: long_ocr
+      threads: 1
+      processes: 1
+      polling_interval: 2
+    - queues: transcribe
       threads: 1
       processes: 1
       polling_interval: 2

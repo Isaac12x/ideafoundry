@@ -125,6 +125,17 @@
           Created <%= time_ago_in_words(@idea.created_at) %> ago
         </span>
       </div>
+      <div class="idea-themes">
+        <% @idea.themes.each do |theme| %>
+          <%= link_to theme.name, ideas_path(theme_id: theme.id), class: "theme-badge", style: ("--theme-color: #{theme.color}" if theme.color.present?) %>
+        <% end %>
+        <details class="idea-themes__edit">
+          <summary>Themes</summary>
+          <%= form_with url: set_themes_idea_path(@idea), method: :patch, local: true do %>
+            <%= render "ideas/theme_picker", idea: @idea, themes: @user.themes.ordered, auto_submit: true %>
+          <% end %>
+        </details>
+      </div>
     </div>
   </div>
 
@@ -392,11 +403,13 @@
               <div class="scorecard-detail-grid">
                 <% breakdown[:criteria].each do |criterion| %>
                   <% value = breakdown[:values][criterion['key']] %>
+                  <% max = (criterion['scale_max'] || breakdown[:scale_max]).to_i %>
                   <div class="metric-card">
-                    <span class="metric-card-label"><%= criterion['label'] %></span>
+                    <span class="metric-card-label"><%= criterion['label'] %><%= " (lower is better)" if criterion['direction'] == 'lower_better' %></span>
                     <span class="metric-card-value"><%= value %></span>
+                    <% if criterion['description'].present? %><small class="metric-card-hint"><%= criterion['description'] %></small><% end %>
                     <div class="metric-card-bar">
-                      <div class="metric-card-bar-fill" style="width: <%= value.to_f / breakdown[:scale_max] * 100 %>%"></div>
+                      <div class="metric-card-bar-fill" style="width: <%= breakdown[:points][criterion['key']].to_f / max * 100 %>%"></div>
                     </div>
                   </div>
                 <% end %>

@@ -26,7 +26,7 @@ class KbNamingSystemTest < ApplicationSystemTestCase
 
     input = find(".kb-file-row.is-naming .kb-node-name-input")
     input.send_keys([ :command, "a" ], "renam")
-    sleep 4.5
+    wait_for_tree_rerender
     input = find(".kb-file-row.is-naming .kb-node-name-input")
     assert_equal "renam", input.value
     assert_equal input, page.active_element
@@ -42,7 +42,7 @@ class KbNamingSystemTest < ApplicationSystemTestCase
     find("[data-menu-item=newFile]").click
 
     find(".kb-node.is-naming .kb-node-name-input").send_keys([ :command, "a" ], "fre")
-    sleep 4.5
+    wait_for_tree_rerender
     input = find(".kb-node.is-naming .kb-node-name-input")
     assert_equal "fre", input.value
     assert_equal input, page.active_element
@@ -50,5 +50,13 @@ class KbNamingSystemTest < ApplicationSystemTestCase
 
     assert_selector ".kb-file-row", text: "fresh.md"
     assert File.exist?(File.join(@kb_dir, "notes", "fresh.md"))
+  end
+
+  private
+
+  # Tag the tree, then wait until a kb-tree-sync re-render swaps it out (tag disappears).
+  def wait_for_tree_rerender
+    page.execute_script("document.querySelector('.kb-dir-header').dataset.stale = '1'")
+    assert_no_selector "[data-stale]", wait: 10
   end
 end

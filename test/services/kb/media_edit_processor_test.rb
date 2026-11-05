@@ -92,6 +92,62 @@ class KbMediaEditProcessorTest < ActiveSupport::TestCase
 
   private
 
+  test "cuts become a filter_complex concat of the kept ranges" do
+    source = File.join(@root, "clip.mp4")
+    File.binwrite(source, "video")
+    commands = []
+    runner = lambda do |*command|
+      commands << command
+      if command.first == "ffprobe"
+        [ '{"format":{"duration":"12.0"},"streams":[{"codec_type":"video","width":640,"height":360},{"codec_type":"audio","channels":2}]}', "", success_status ]
+      else
+        File.binwrite(command.last, "rendered-video")
+        [ "", "", success_status ]
+      end
+    end
+
+    Kb::MediaEditProcessor.new(
+      path: source, source_root: @root, runner: runner,
+      operations: { "cuts" => "[[2,3],[5,6.5],[2.5,4]]" }
+    ).call
+
+    ffmpeg = commands.find { |command| command.first == "ffmpeg" }
+    graph = ffmpeg[ffmpeg.index("-filter_complex") + 1]
+    assert_includes graph, "trim=start=0:end=2,"
+    assert_includes graph, "trim=start=4:end=5,"
+    assert_includes graph, "trim=start=6.5:end=12,"
+    assert_includes graph, "concat=n=3:v=1:a=1[cv][ca]"
+    refute_includes ffmpeg, "-ss"
+  end
+
+  test "cuts covering the whole clip are rejected" do
+    source = File.join(@root, "clip.mp4")
+    File.binwrite(source, "video")
+    runner = ->(*_command) { [ '{"format":{"duration":"4.0"},"streams":[{"codec_type":"video"}]}', "", success_status ] }
+
+    error = assert_raises(Kb::MediaEditProcessor::Error) do
+      Kb::MediaEditProcessor.new(path: source, source_root: @root, runner: runner, operations: { "cuts" => [ [ 0, 4 ] ] }).call
+    end
+    assert_includes error.message, "whole clip"
+  end
+
+  test "real ffmpeg removes a middle range and can save as a copy" do
+    skip "ffmpeg unavailable" unless system("ffmpeg -version", out: File::NULL, err: File::NULL)
+    source = File.join(@root, "tiny.mp4")
+    system("ffmpeg", "-y", "-loglevel", "error", "-f", "lavfi", "-i", "testsrc=duration=3:size=64x64:rate=10",
+           "-f", "lavfi", "-i", "sine=duration=3", "-shortest", "-c:v", "libx264", "-c:a", "aac", source, exception: true)
+
+    result = Kb::MediaEditProcessor.new(
+      path: source, source_root: @root,
+      operations: { "cuts" => "[[1,2]]", "save_as_copy" => "1" }
+    ).call
+
+    assert_equal "tiny (edited).mp4", result[:relative_path]
+    assert_nil result[:revision_path]
+    assert_in_delta 3.0, Kb::MediaInspector.new(source).call[:duration], 0.2 # original untouched
+    assert_in_delta 2.0, Kb::MediaInspector.new(File.join(@root, result[:relative_path])).call[:duration], 0.3
+  end
+
   def success_status
     Object.new.tap { |status| status.define_singleton_method(:success?) { true } }
   end
