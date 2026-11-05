@@ -54,7 +54,7 @@ module Kb
           %(data-kb-diagram-keyword-value="#{DIAGRAM_LANGS[lang]}"><pre class="kb-diagram-src"><code>#{src}</code></pre></div>\n)
         "<p>#{token}</p>\n"
       elsif UNSUPPORTED_DIAGRAMS.include?(lang)
-        %(<figure class="kb-diagram-unsupported"><figcaption>#{ERB::Util.html_escape(lang)} diagrams are not rendered; source shown.</figcaption>) +
+        %(<figure class="kb-diagram-unsupported"><figcaption>#{ERB::Util.html_escape(lang)} diagram not rendered: drawing it would need an outside service. Source shown.</figcaption>) +
           %(<pre><code class="#{lang}">#{src}</code></pre></figure>\n)
       else
         cls = lang.empty? ? "" : %( class="#{ERB::Util.html_escape(lang)}")
