@@ -11,6 +11,6 @@
     <button type="button" class="btn btn-sm" hidden data-kb-transcript-target="button" data-action="kb-transcript#transcribe">Transcribe</button>
   </div>
   <div class="kb-transcript__body" data-kb-collapse-target="body"<%= " hidden" unless open %>>
-    <ol class="kb-transcript__list" hidden data-kb-transcript-target="list"></ol>
+    <ol class="kb-transcript__list" hidden data-kb-transcript-target="list" data-action="wheel->kb-transcript#userScrolled:passive touchmove->kb-transcript#userScrolled:passive"></ol>
   </div>
 </section>
