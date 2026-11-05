@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_10_20_131500) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_21_120000) do
   create_table "action_mailbox_inbound_emails", force: :cascade do |t|
     t.integer "status", default: 0, null: false
     t.string "message_id", null: false
@@ -334,6 +334,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_20_131500) do
     t.integer "version_number"
     t.boolean "version_primary", default: false, null: false
     t.boolean "for_licensing", default: false, null: false
+    t.json "hero_order", default: [], null: false
     t.index ["computed_score"], name: "index_ideas_on_computed_score"
     t.index ["cool_off_until"], name: "index_ideas_on_cool_off_until"
     t.index ["discarded_at"], name: "index_ideas_on_discarded_at"

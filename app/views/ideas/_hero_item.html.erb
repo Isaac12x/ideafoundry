@@ -1,0 +1,31 @@
+<%# One hero tile. item: nil renders the blank template cloned by idea_drawings_controller for fresh drawings. %>
+<% key = item&.key.to_s %>
+<li class="hero-item" draggable="true" data-hero-set-target="item" data-hero-key="<%= key %>"
+    <% if item.nil? || item.drawing? %>data-drawing-item data-drawing-id="<%= item&.record&.id %>"<% end %>
+    data-action="dragstart->hero-set#dragStart dragover->hero-set#dragOver drop->hero-set#drop dragend->hero-set#dragEnd">
+  <input type="hidden" name="idea[hero_order][]" value="<%= key %>" data-slot="order">
+  <div class="hero-item__media" data-slot="media">
+    <% if item&.media %>
+      <%= image_tag item.media, alt: item.title, draggable: false, loading: "lazy" %>
+    <% else %>
+      <span class="hero-item__placeholder">No preview</span>
+    <% end %>
+  </div>
+  <div class="hero-item__bar">
+    <span class="hero-item__label" data-slot="title"><%= item&.title %></span>
+    <span class="hero-item__actions">
+      <button type="button" class="hero-item__btn" aria-label="Move earlier" data-action="click->hero-set#earlier">&larr;</button>
+      <button type="button" class="hero-item__btn" aria-label="Move later" data-action="click->hero-set#later">&rarr;</button>
+      <% if item.nil? || item.drawing? %>
+        <button type="button" class="hero-item__btn hero-item__btn--text" data-slot="edit"
+                data-action="click->idea-drawings#edit" data-drawing-id="<%= item&.record&.id %>"
+                data-drawing-title="<%= item&.title %>">Edit</button>
+        <button type="button" class="hero-item__btn hero-item__btn--text" data-slot="delete"
+                data-action="click->idea-drawings#delete" data-drawing-id="<%= item&.record&.id %>">Delete</button>
+      <% else %>
+        <button type="button" class="hero-item__btn hero-item__btn--text" data-blob-id="<%= item.record.blob_id %>"
+                data-action="click->hero-set#removeImage">Remove</button>
+      <% end %>
+    </span>
+  </div>
+</li>

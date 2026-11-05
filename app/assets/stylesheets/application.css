@@ -1262,18 +1262,6 @@ body.typing-lock-page .app-quote-banner {
     font-weight: 600;
 }
 
-.dropzone__preview-hero {
-    margin-top: 1rem;
-}
-
-.dropzone__preview-hero img {
-    max-width: 100%;
-    max-height: 200px;
-    border-radius: var(--radius-sm);
-    border: 1px solid var(--border-default);
-    object-fit: cover;
-}
-
 .dropzone__preview-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));

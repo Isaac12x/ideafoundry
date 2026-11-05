@@ -1,5 +1,5 @@
 # "Attach to idea…" for a KB image (video screenshots, edited images, any PNG/JPG):
-# copies the file into the idea's attachments, optionally also as its hero image.
+# copies the file into the idea's attachments, optionally also appended to its hero set.
 class KbIdeaAttachmentsController < ApplicationController
   include KbFileLookup
 
@@ -19,7 +19,7 @@ class KbIdeaAttachmentsController < ApplicationController
     attachment = nil
     Idea.without_history_tracking do
       attachment = attach(idea, file[:abs])
-      idea.hero_image.attach(attachment.blob) if hero
+      idea.hero_images.attach(attachment.blob) if hero
     end
     idea.record_history!("Updated media", automatic: true)
 

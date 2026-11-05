@@ -51,7 +51,7 @@ class IdeaHistoryTest < ActiveSupport::TestCase
       position: 2,
       content: { "elements" => [ { "id" => "one" } ] }
     )
-    @idea.hero_image.attach(io: StringIO.new("hero-one"), filename: "hero-one.txt", content_type: "text/plain")
+    @idea.hero_images.attach(io: StringIO.new("hero-one"), filename: "hero-one.txt", content_type: "text/plain")
     @idea.attachments.attach(io: StringIO.new("attachment-one"), filename: "attachment-one.txt", content_type: "text/plain")
     drawing.rendered_png.attach(io: StringIO.new("png-one"), filename: "drawing-one.png", content_type: "image/png")
 
@@ -66,7 +66,7 @@ class IdeaHistoryTest < ActiveSupport::TestCase
     assert_equal [ drawing.title ], snapshot["drawings"].map { |item| item["title"] }
     assert_equal [ topology.id ], snapshot["topology_ids"]
     assert_equal [ list.id ], snapshot["list_memberships"].map { |item| item["list_id"] }
-    assert_equal @idea.hero_image.blob_id, snapshot.dig("media", "hero_image", "blob_id")
+    assert_equal [ @idea.hero_images.first.blob_id ], snapshot.dig("media", "hero_images").map { |item| item["blob_id"] }
     assert_equal [ @idea.attachments.first.blob_id ], snapshot.dig("media", "attachments").map { |item| item["blob_id"] }
     assert_equal drawing.rendered_png.blob_id, snapshot.dig("drawings", 0, "rendered_png", "blob_id")
 
@@ -84,7 +84,7 @@ class IdeaHistoryTest < ActiveSupport::TestCase
     @idea.notes.destroy_all
     @idea.idea_entries.destroy_all
     @idea.drawings.destroy_all
-    @idea.hero_image.detach
+    @idea.hero_images.detach
     @idea.attachments.detach
 
     version.restore_to_idea!
@@ -101,8 +101,8 @@ class IdeaHistoryTest < ActiveSupport::TestCase
     assert_equal [ "Baseline note" ], @idea.notes.map(&:body)
     assert_equal [ "Baseline tool" ], @idea.idea_entries.map(&:name)
     assert_equal [ "Baseline drawing" ], @idea.drawings.map(&:title)
-    assert @idea.hero_image.attached?
-    assert_equal "hero-one.txt", @idea.hero_image.filename.to_s
+    assert @idea.hero_images.attached?
+    assert_equal "hero-one.txt", @idea.hero_images.first.filename.to_s
     assert_equal [ "attachment-one.txt" ], @idea.attachments.map { |attachment| attachment.filename.to_s }
     assert @idea.drawings.first.rendered_png.attached?
   end
