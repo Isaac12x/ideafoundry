@@ -120,7 +120,7 @@
                 src: content.serve_url, mime: content.mime_type, captions_url: content.captions_url, selectable: true,
                 video_data: {
                   kb_video_shot_target: "video", kb_transcript_target: "media",
-                  action: "click->kb-media-copy#select keydown->kb-media-copy#copyFromShortcut timeupdate->kb-transcript#highlight seeked->kb-transcript#highlight timeupdate->kb-video-shot#track seeked->kb-video-shot#track",
+                  action: "click->kb-media-copy#select keydown->kb-media-copy#copyFromShortcut timeupdate->kb-transcript#highlight seeked->kb-transcript#highlight play->kb-transcript#follow pause->kb-transcript#stop ended->kb-transcript#stop timeupdate->kb-video-shot#track seeked->kb-video-shot#track",
                   controller: "kb-resume", kb_resume_key_value: "#{content.src}:#{content.rel}"
                 } } do %>
             <button type="button" class="kb-vplayer__btn" data-action="kb-video-shot#capture" title="Save current frame as PNG (S)" aria-label="Save current frame as PNG" aria-keyshortcuts="S">
@@ -148,7 +148,7 @@
                  tabindex="0"
                  title="Select, then press Ctrl/Cmd+C to copy"
                  data-kb-transcript-target="media"
-                 data-action="click->kb-media-copy#select keydown->kb-media-copy#copyFromShortcut timeupdate->kb-transcript#highlight seeked->kb-transcript#highlight"
+                 data-action="click->kb-media-copy#select keydown->kb-media-copy#copyFromShortcut timeupdate->kb-transcript#highlight seeked->kb-transcript#highlight play->kb-transcript#follow pause->kb-transcript#stop ended->kb-transcript#stop"
                  data-controller="kb-resume"
                  data-kb-resume-key-value="<%= content.src %>:<%= content.rel %>">
             <source src="<%= content.serve_url %>" type="<%= content.mime_type %>">
