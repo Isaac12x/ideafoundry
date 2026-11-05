@@ -553,6 +553,70 @@
   object-fit: cover;
 }
 
+/* Drawings keep their whole frame (contain) on a flat backdrop instead of being cropped. */
+.idea-hero-cap__img--drawing,
+.idea-hero-cap__tile--drawing .idea-hero-cap__img {
+  object-fit: contain;
+  background: var(--bg-overlay); /* lighter than photo tiles and the exported canvas, so a drawing's frame reads */
+}
+
+/* Several hero items: at most 5 cells, laid out by named areas so the grid is always full.
+   The first item leads; hairline gaps come from the container background showing through. */
+.idea-hero-cap--mosaic {
+  display: grid;
+  gap: 1px;
+  background: var(--border-default);
+}
+.idea-hero-cap--mosaic > :nth-child(1) { grid-area: a; }
+.idea-hero-cap--mosaic > :nth-child(2) { grid-area: b; }
+.idea-hero-cap--mosaic > :nth-child(3) { grid-area: c; }
+.idea-hero-cap--mosaic > :nth-child(4) { grid-area: d; }
+.idea-hero-cap--mosaic > :nth-child(5) { grid-area: e; }
+.idea-hero-cap__tile {
+  display: block;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+  background: var(--bg-base);
+}
+.idea-hero-cap--mosaic .idea-hero-cap__img { height: 100%; max-height: none; }
+
+.idea-hero-cap__more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  font-family: var(--font-display);
+  font-size: 2rem;
+  text-decoration: none;
+}
+.idea-hero-cap__more:hover { color: var(--accent); background: var(--bg-elevated); }
+.idea-hero-cap__more:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+@media (min-width: 641px) {
+  .idea-hero-cap--mosaic { height: 340px; }
+  .idea-hero-cap--mosaic[data-cells="2"] { grid-template-columns: 3fr 2fr; grid-template-areas: "a b"; }
+  /* Cells stay close to 1:1 to 1.4:1 so square images are never cropped into strips. */
+  .idea-hero-cap--mosaic[data-cells="3"] { grid-template-columns: 2fr 1fr 1fr; grid-template-areas: "a b c"; }
+  .idea-hero-cap--mosaic[data-cells="4"] { grid-template-columns: 2fr 1fr 1fr; grid-template-rows: 1fr 1fr; grid-template-areas: "a b c" "a b d"; }
+  .idea-hero-cap--mosaic[data-cells="5"] { grid-template-columns: 2fr 1fr 1fr; grid-template-rows: 1fr 1fr; grid-template-areas: "a b c" "a d e"; }
+}
+/* Phones: the lead takes a full row, the rest pair up; an odd one out spans the row. */
+@media (max-width: 640px) {
+  .idea-hero-cap { max-height: none; }
+  .idea-hero-cap--mosaic { grid-template-columns: 1fr 1fr; grid-auto-rows: 150px; grid-template-rows: auto; }
+  .idea-hero-cap--mosaic > :first-child { aspect-ratio: 4 / 3; }
+  .idea-hero-cap--mosaic[data-cells="2"] { grid-template-areas: "a a" "b b"; }
+  .idea-hero-cap--mosaic[data-cells="3"] { grid-template-areas: "a a" "b c"; }
+  .idea-hero-cap--mosaic[data-cells="4"] { grid-template-areas: "a a" "b c" "d d"; }
+  .idea-hero-cap--mosaic[data-cells="5"] { grid-template-areas: "a a" "b c" "d e"; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .idea-hero-cap__tile:not(.idea-hero-cap__tile--drawing) .idea-hero-cap__img { transition: transform 0.4s ease; }
+  .idea-hero-cap--mosaic .idea-hero-cap__tile:not(.idea-hero-cap__tile--drawing):hover .idea-hero-cap__img { transform: scale(1.02); }
+}
+
 .detail-hero-image {
   width: 100%;
   height: 100%;

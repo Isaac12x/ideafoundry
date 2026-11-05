@@ -1,7 +1,12 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { createRoot, Root } from "react-dom/client";
-import { Excalidraw, exportToBlob } from "@excalidraw/excalidraw";
+import { Excalidraw, exportToBlob, CaptureUpdateAction } from "@excalidraw/excalidraw";
+import type { ExcalidrawImperativeAPI } from "@excalidraw/excalidraw/types";
 import "@excalidraw/excalidraw/index.css";
+
+// Fonts live in public/excalidraw-assets/<version> (esbuild.config.mjs); never let Excalidraw reach a CDN.
+declare const __EXCALIDRAW_ASSET_PATH__: string;
+(window as any).EXCALIDRAW_ASSET_PATH = __EXCALIDRAW_ASSET_PATH__;
 
 const LOCAL_ONLY_UI_OPTIONS = {
   canvasActions: {
@@ -68,133 +73,207 @@ async function renderPngDataUrl(scene: Scene): Promise<string | null> {
   }
 }
 
-function useDebouncedCallback<T extends (...args: any[]) => void>(
-  callback: T,
-  delayMs: number
-): T {
-  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const cbRef = useRef(callback);
-  useEffect(() => {
-    cbRef.current = callback;
-  }, [callback]);
-
-  return useCallback(
-    ((...args: any[]) => {
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
-      timeoutRef.current = setTimeout(() => cbRef.current(...args), delayMs);
-    }) as T,
-    [delayMs]
-  );
-}
-
-type Props = {
-  container: HTMLElement;
-  initialId: number | null;
-  initialTitle: string;
-  initialContent: Scene | null;
-  initialRole: string;
+type Session = {
+  nonce: number;
+  id: number | null;
+  title: string;
+  content: Scene | null;
+  role: string;
   createUrl: string;
   showUrlPattern: string;
 };
 
-function ExcalidrawApp({
-  container,
-  initialId,
-  initialTitle,
-  initialContent,
-  initialRole,
-  createUrl,
-  showUrlPattern,
-}: Props) {
-  const [drawingId, setDrawingId] = useState<number | null>(initialId);
-  const [title, setTitle] = useState(initialTitle);
+const SAVE_DELAY_MS = 2000;
+
+// Cheap change signature: any edit bumps an element version or the element count.
+function sceneSignature(elements: readonly any[]): string {
+  let sum = 0;
+  for (const el of elements) sum += el.version ?? 0;
+  return `${elements.length}:${sum}`;
+}
+
+function sceneFrom(content: Scene | null): Scene {
+  return {
+    elements: content?.elements ?? [],
+    appState: { ...(content?.appState ?? {}), theme: "dark" },
+    files: content?.files ?? {},
+  };
+}
+
+// The container lives in a hidden modal between openings; ignore the editor then.
+function isVisible(el: HTMLElement): boolean {
+  return el.getClientRects().length > 0;
+}
+
+type Props = {
+  container: HTMLElement;
+  session: Session;
+  register: (flush: () => Promise<void>) => void;
+};
+
+function ExcalidrawApp({ container, session, register }: Props) {
+  const [title, setTitle] = useState(session.title);
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
 
-  const sceneRef = useRef<Scene>({
-    elements: initialContent?.elements ?? [],
-    appState: { ...(initialContent?.appState ?? {}), theme: "dark" },
-    files: initialContent?.files ?? {},
-  });
+  const apiRef = useRef<ExcalidrawImperativeAPI | null>(null);
+  const sessionRef = useRef(session);
+  const idRef = useRef<number | null>(session.id);
+  const sceneRef = useRef<Scene>(sceneFrom(session.content));
+  const savedSigRef = useRef(sceneSignature(sceneRef.current.elements));
+  const savedTitleRef = useRef(session.title || "Untitled");
   const titleRef = useRef(title);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const chainRef = useRef<Promise<void>>(Promise.resolve());
+  const appliedNonce = useRef(session.nonce);
+
   useEffect(() => {
     titleRef.current = title;
   }, [title]);
 
-  const showUrlFor = (id: number) => showUrlPattern.replace(/__ID__|:id/, String(id));
+  const isDirty = () =>
+    sceneSignature(sceneRef.current.elements) !== savedSigRef.current ||
+    (titleRef.current || "Untitled") !== savedTitleRef.current;
 
-  const save = useCallback(async () => {
+  const showUrlFor = (id: number) => sessionRef.current.showUrlPattern.replace(/__ID__|:id/, String(id));
+
+  const doSave = async () => {
+    const owner = sessionRef.current;
+    const scene = sceneRef.current;
+    const sig = sceneSignature(scene.elements);
+    const currentTitle = titleRef.current || "Untitled";
     setSaveStatus("saving");
     try {
-      const payload = sceneRef.current;
-      const currentTitle = titleRef.current || "Untitled";
-      const pngDataUrl = await renderPngDataUrl(payload);
-
+      const pngDataUrl = await renderPngDataUrl(scene);
+      const { collaborators: _omit, ...appState } = scene.appState;
       const body: Record<string, any> = {
         drawing: {
           title: currentTitle,
-          content: payload,
-          role: initialRole,
+          content: { elements: scene.elements, appState, files: scene.files },
+          role: owner.role,
         },
       };
       if (pngDataUrl) body.drawing.png_data_url = pngDataUrl;
 
-      let res: Response;
-      if (drawingId) {
-        res = await postJSON(showUrlFor(drawingId), "PATCH", body);
-      } else {
-        res = await postJSON(createUrl, "POST", body);
-      }
+      const id = idRef.current;
+      const res = id
+        ? await postJSON(showUrlFor(id), "PATCH", body)
+        : await postJSON(owner.createUrl, "POST", body);
       if (!res.ok) throw new Error(`Save failed: ${res.status}`);
       const result: SaveResponse = await res.json();
-      if (!drawingId) {
-        setDrawingId(result.id);
-        // Only update URL bar if we own the page (full-page editor, not modal).
-        if (container.dataset.standalone === "true") {
-          window.history.replaceState({}, "", showUrlFor(result.id));
+
+      // The editor may have moved on to another drawing while this save was in flight.
+      if (sessionRef.current === owner) {
+        if (!id) {
+          idRef.current = result.id;
+          if (container.dataset.standalone === "true") {
+            window.history.replaceState({}, "", showUrlFor(result.id));
+          }
         }
+        savedSigRef.current = sig;
+        savedTitleRef.current = currentTitle;
+        setSaveStatus("saved");
       }
-      setSaveStatus("saved");
-      container.dispatchEvent(
-        new CustomEvent("drawing:saved", { detail: result, bubbles: true })
-      );
+      container.dispatchEvent(new CustomEvent("drawing:saved", { detail: result, bubbles: true }));
     } catch (e) {
       console.error("Drawing save failed:", e);
-      setSaveStatus("error");
+      if (sessionRef.current === owner) setSaveStatus("error");
     }
-  }, [drawingId, createUrl, showUrlPattern, container, initialRole]);
+  };
 
-  const debouncedSave = useDebouncedCallback(save, 2000);
+  // Saves run one at a time so a slow first POST can't be followed by a second create.
+  const save = useCallback((force = false): Promise<void> => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+    chainRef.current = chainRef.current.then(() => (force || isDirty() ? doSave() : undefined));
+    return chainRef.current;
+  }, []);
+
+  useEffect(() => {
+    register(() => save(false));
+  }, [register, save]);
+
+  // Re-opening with another drawing swaps the scene in place; the editor stays mounted.
+  useEffect(() => {
+    if (appliedNonce.current === session.nonce) return;
+    appliedNonce.current = session.nonce;
+    sessionRef.current = session;
+    idRef.current = session.id;
+    sceneRef.current = sceneFrom(session.content);
+    savedSigRef.current = sceneSignature(sceneRef.current.elements);
+    savedTitleRef.current = session.title || "Untitled";
+    titleRef.current = session.title;
+    setTitle(session.title);
+    setSaveStatus("idle");
+
+    const api = apiRef.current;
+    if (!api) return;
+    const scene = sceneRef.current;
+    api.resetScene();
+    api.addFiles(Object.values(scene.files));
+    api.updateScene({
+      elements: scene.elements as any,
+      appState: { ...scene.appState, collaborators: new Map() } as any,
+      captureUpdate: CaptureUpdateAction.NEVER,
+    });
+    api.history.clear();
+    const live = scene.elements.filter((el) => !el.isDeleted);
+    if (live.length) requestAnimationFrame(() => api.setViewport({ target: live as any, fit: "scale-down" }));
+  }, [session]);
+
+  // Tell the host the editor shows the requested drawing (open-latency measurement).
+  useEffect(() => {
+    const raf = requestAnimationFrame(() =>
+      container.dispatchEvent(new CustomEvent("drawing:ready", { bubbles: true }))
+    );
+    return () => cancelAnimationFrame(raf);
+  }, [container, session.nonce]);
+
+  // Flush on unmount (standalone page navigations) so a pending edit is not lost.
+  useEffect(() => () => void save(false), [save]);
 
   const handleChange = useCallback(
     (elements: readonly any[], appState: any, files: any) => {
+      if (!isVisible(container)) return;
       sceneRef.current = { elements, appState, files };
+      if (!isDirty()) return;
       setSaveStatus((prev) => (prev === "saved" ? "idle" : prev));
-      debouncedSave();
+      if (timerRef.current) clearTimeout(timerRef.current);
+      timerRef.current = setTimeout(() => void save(false), SAVE_DELAY_MS);
     },
-    [debouncedSave]
+    [container, save]
   );
+
+  // Title edits autosave too (the thumbnail label follows).
+  useEffect(() => {
+    if (!isVisible(container) || !isDirty()) return;
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => void save(false), SAVE_DELAY_MS);
+  }, [title, container, save]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "s") {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "s" && isVisible(container)) {
         e.preventDefault();
-        save();
+        void save(true);
       }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [save]);
+  }, [container, save]);
 
-  const initialData = {
-    elements: initialContent?.elements ?? [],
+  // Only the first mount reads initialData; later sessions go through updateScene above.
+  const initialData = useRef({
+    elements: session.content?.elements ?? [],
     appState: {
-      ...(initialContent?.appState ?? {}),
+      ...(session.content?.appState ?? {}),
       theme: "dark",
       collaborators: new Map(),
     },
-    files: initialContent?.files ?? {},
+    files: session.content?.files ?? {},
     scrollToContent: true,
-  };
+  }).current;
 
   return (
     <div style={{ width: "100%", height: "100%", position: "relative" }}>
@@ -205,7 +284,7 @@ function ExcalidrawApp({
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Drawing title…"
         />
-        <button onClick={save} type="button">Save</button>
+        <button onClick={() => void save(true)} type="button">Save</button>
         <span className={`save-status ${saveStatus === "error" ? "error" : ""}`}>
           {saveStatus === "saving" && "Saving…"}
           {saveStatus === "saved" && "✓ Saved"}
@@ -216,6 +295,9 @@ function ExcalidrawApp({
 
       <Excalidraw
         initialData={initialData as any}
+        onExcalidrawAPI={(api) => {
+          apiRef.current = api;
+        }}
         onChange={handleChange as any}
         theme="dark"
         isCollaborating={false}
@@ -246,47 +328,74 @@ function parseInitialContent(raw: string | undefined): Scene | null {
   return null;
 }
 
-const roots = new WeakMap<Element, Root>();
+type Host = {
+  root: Root;
+  setSession: (s: Session) => void;
+  flush: () => Promise<void>;
+  nonce: number;
+};
+const hosts = new WeakMap<Element, Host>();
 
+function readSession(container: HTMLElement, nonce: number): Session {
+  return {
+    nonce,
+    id: container.dataset.drawingId ? parseInt(container.dataset.drawingId, 10) : null,
+    title: container.dataset.drawingTitle || "Untitled",
+    content: parseInitialContent(container.dataset.drawingContent),
+    role: container.dataset.drawingRole || "general",
+    createUrl: container.dataset.createUrl || "",
+    showUrlPattern: container.dataset.showUrlPattern || "",
+  };
+}
+
+function HostRoot({ container, initial, host }: { container: HTMLElement; initial: Session; host: { current: Host | null } }) {
+  const [session, setSession] = useState(initial);
+  const flushRef = useRef<() => Promise<void>>(async () => {});
+  useEffect(() => {
+    if (host.current) host.current.setSession = setSession;
+  }, [host]);
+  const register = useCallback((fn: () => Promise<void>) => {
+    flushRef.current = fn;
+    if (host.current) host.current.flush = fn;
+  }, [host]);
+  return <ExcalidrawApp container={container} session={session} register={register} />;
+}
+
+// First call creates the root; later calls (re-opening the modal) only swap the scene.
 function mount(container: HTMLElement) {
-  if (roots.has(container)) return;
-
-  const initialId = container.dataset.drawingId
-    ? parseInt(container.dataset.drawingId, 10)
-    : null;
-  const initialTitle = container.dataset.drawingTitle || "Untitled";
-  const initialContent = parseInitialContent(container.dataset.drawingContent);
-  const initialRole = container.dataset.drawingRole || "general";
-  const createUrl = container.dataset.createUrl || "";
-  const showUrlPattern = container.dataset.showUrlPattern || "";
+  const existing = hosts.get(container);
+  if (existing) {
+    const next = readSession(container, ++existing.nonce);
+    // Finish any pending save of the previous drawing first.
+    existing.flush().finally(() => existing.setSession(next));
+    return;
+  }
 
   const root = createRoot(container);
-  roots.set(container, root);
-  root.render(
-    <ExcalidrawApp
-      container={container}
-      initialId={initialId}
-      initialTitle={initialTitle}
-      initialContent={initialContent}
-      initialRole={initialRole}
-      createUrl={createUrl}
-      showUrlPattern={showUrlPattern}
-    />
-  );
+  const ref: { current: Host | null } = { current: null };
+  const host: Host = { root, setSession: () => {}, flush: async () => {}, nonce: 0 };
+  ref.current = host;
+  hosts.set(container, host);
+  root.render(<HostRoot container={container} initial={readSession(container, 0)} host={ref} />);
 }
 
 function unmount(container: HTMLElement) {
-  const root = roots.get(container);
-  if (root) {
-    root.unmount();
-    roots.delete(container);
+  const host = hosts.get(container);
+  if (host) {
+    host.root.unmount();
+    hosts.delete(container);
   }
+}
+
+function flush(container: HTMLElement): Promise<void> {
+  return hosts.get(container)?.flush() ?? Promise.resolve();
 }
 
 const w = window as any;
 w.IdeaApp = w.IdeaApp || {};
 w.IdeaApp.mountExcalidraw = mount;
 w.IdeaApp.unmountExcalidraw = unmount;
+w.IdeaApp.flushExcalidraw = flush;
 
 // Notify any Stimulus controllers that were waiting for the bundle.
 document.dispatchEvent(new CustomEvent("excalidraw:ready"));

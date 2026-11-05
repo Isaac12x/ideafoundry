@@ -88,12 +88,25 @@ export default class extends Controller {
     if (this.uploadUrlValue) {
       await this._ajaxUpload(processed)
     } else {
-      this._processingFiles = true
-      this.inputTarget.files = this._buildFileList(processed)
-      this.inputTarget.dispatchEvent(new Event("change", { bubbles: true }))
-      this._processingFiles = false
-      this._renderPreviews(processed)
+      // Multi-file fields accumulate: a second drop adds to the pending files instead of replacing them.
+      const files = this.multipleValue ? (this._pending = [...(this._pending || []), ...processed]) : processed
+      this._syncInput(files)
+      this._renderPreviews(files)
     }
+  }
+
+  _syncInput(files) {
+    this._processingFiles = true
+    this.inputTarget.files = this._buildFileList(files)
+    this.inputTarget.dispatchEvent(new Event("change", { bubbles: true }))
+    this._processingFiles = false
+  }
+
+  _removePending(file) {
+    this._pending = this._pending.filter((f) => f !== file)
+    this._syncInput(this._pending)
+    this._renderGrid(this._pending)
+    if (!this._pending.length && this.hasPlaceholderTarget) this.placeholderTarget.style.display = ""
   }
 
   async _ajaxUpload(files) {
@@ -192,7 +205,23 @@ export default class extends Controller {
         label.textContent = file.name
         thumb.appendChild(label)
       }
+      if (!this._ajax() && this._pending) {
+        const remove = document.createElement("button")
+        remove.type = "button"
+        remove.className = "dropzone__thumb-remove"
+        remove.setAttribute("aria-label", `Remove ${file.name}`)
+        remove.textContent = "×"
+        remove.addEventListener("click", (e) => {
+          e.stopPropagation() // the zone itself opens the file picker on click
+          this._removePending(file)
+        })
+        thumb.appendChild(remove)
+      }
       this.previewTarget.appendChild(thumb)
     })
+  }
+
+  _ajax() {
+    return !!this.uploadUrlValue
   }
 }

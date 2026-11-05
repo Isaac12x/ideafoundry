@@ -75,7 +75,8 @@ class Version < ApplicationRecord
       "idea_entries" => idea.idea_entries.order(:kind, :position, :id).map { |entry| idea_entry_snapshot(entry) },
       "drawings" => idea.drawings.order(:role, :position, :id).map { |drawing| drawing_snapshot(drawing) },
       "media" => {
-        "hero_image" => attachment_snapshot(idea.hero_image),
+        "hero_images" => idea.hero_images.map { |attachment| attachment_snapshot(attachment) },
+        "hero_order" => idea.hero_order,
         "attachments" => idea.attachments.map { |attachment| attachment_snapshot(attachment) }
       }
     }
@@ -454,6 +455,7 @@ class Version < ApplicationRecord
 
   def restore_drawings!
     idea.drawings.destroy_all
+    @drawing_id_map = {}
     Array(snapshot_data["drawings"]).each do |attributes|
       drawing = idea.drawings.create!(
         title: attributes["title"],
@@ -462,12 +464,28 @@ class Version < ApplicationRecord
         content: attributes["content"]
       )
       attach_blob(drawing.rendered_png, attributes["rendered_png"])
+      @drawing_id_map[attributes["id"]] = drawing.id
     end
   end
 
   def restore_media!
-    idea.hero_image.detach
-    attach_blob(idea.hero_image, snapshot_data.dig("media", "hero_image"))
+    idea.hero_images.detach
+    media = snapshot_data["media"] || {}
+    # Older snapshots stored a single "hero_image".
+    Array(media["hero_images"] || media["hero_image"]).each { |data| attach_blob(idea.hero_images, data) }
+    # Restored drawings get new ids; keep the saved interleaving by remapping their keys.
+    # A drawing key with no counterpart in the restore is dropped on purpose.
+    drawing_ids = @drawing_id_map || {}
+    order = Array(media["hero_order"]).filter_map do |key|
+      kind, id = key.to_s.split(":")
+      if kind == "drawing"
+        new_id = drawing_ids[id.to_i]
+        "drawing:#{new_id}" if new_id
+      else
+        key
+      end
+    end
+    idea.update_columns(hero_order: order.grep(Idea::HERO_KEY))
 
     idea.attachments.detach
     Array(snapshot_data.dig("media", "attachments")).each do |attachment_data|
