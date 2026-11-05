@@ -12,12 +12,13 @@
 
   <% all_systems       = (@scoring_systems || @user.available_scoring_systems) %>
   <% legacy_system     = all_systems.find  { |s| s['kind'] == 'legacy_weighted' } %>
-  <% scorecard_systems = all_systems.select { |s| s['kind'] == 'criterion_scorecard' } %>
+  <% scorecard_systems = all_systems.select { |s| s['kind'] == 'criterion_scorecard' && !s['custom'] } %>
+  <% custom_systems    = all_systems.select { |s| s['custom'] } %>
 
   <div class="scoring-config-layout">
 
     <%= form_with url: settings_scoring_path, method: :patch, local: true,
-                  data: { controller: "score settings-autosave", action: "change->settings-autosave#toggleChanged" } do |form| %>
+                  data: { controller: "score settings-autosave scorecard-editor", action: "change->settings-autosave#toggleChanged" } do |form| %>
 
       <%# ──────────────────────────────────────────────────────────────
           PANEL 1 — Weighted Readiness (the main / formula-based score)
@@ -203,11 +204,11 @@
                           system['work_threshold_total'],
                           id: "scoring_systems_#{system['id']}_work_threshold_total",
                           min: 0,
-                          max: system['criteria'].size * system['scale_max'].to_i,
+                          max: @user.scorecard_max_total(system),
                           step: 1,
                           class: "weight-input" %>
                       <span class="weight-range">
-                        / <%= system['criteria'].size * system['scale_max'].to_i %>
+                        / <%= @user.scorecard_max_total(system) %>
                         &nbsp;&middot;&nbsp;
                         <%= number_with_precision(system['work_threshold_normalized'], precision: 2) %>/10
                       </span>
@@ -222,7 +223,10 @@
                   <div class="scorecard-criteria-grid">
                     <% system['criteria'].each do |criterion| %>
                       <div class="scorecard-criterion">
-                        <span><%= criterion['label'] %></span>
+                        <span>
+                          <%= criterion['label'] %><%= " (lower is better)" if criterion['direction'] == 'lower_better' %>
+                          <% if criterion['description'].present? %><small class="scorecard-criterion__hint"><%= criterion['description'] %></small><% end %>
+                        </span>
                         <small><%= system['scale_min'] %>&ndash;<%= system['scale_max'] %></small>
                       </div>
                     <% end %>
@@ -234,6 +238,26 @@
 
         </div>
       <% end %>
+
+      <div class="scoring-scorecards-group">
+        <div class="scoring-scorecards-group__label">
+          <span>Your scorecards</span>
+          <p>Define your own criteria (up to <%= User::MAX_CUSTOM_SCORING_SYSTEMS %> scorecards, <%= User::MAX_CUSTOM_SCORING_CRITERIA %> criteria each), then enable them per template. Deleting a scorecard or criterion ignores existing idea values for it.</p>
+        </div>
+        <%= hidden_field_tag :custom_scoring_systems_present, "1" %>
+        <div class="scoring-system-list" data-scorecard-editor-target="list">
+          <% custom_systems.each_with_index do |system, i| %>
+            <%= render 'settings/custom_scorecard', system: system, idx: i.to_s %>
+          <% end %>
+        </div>
+        <button type="button" class="btn btn-sm" data-action="scorecard-editor#addSystem">Add scorecard</button>
+        <template data-scorecard-editor-target="systemTemplate">
+          <%= render 'settings/custom_scorecard', system: { 'criteria' => [] }, idx: '__S__' %>
+        </template>
+        <template data-scorecard-editor-target="criterionTemplate">
+          <%= render 'settings/custom_criterion', criterion: {}, base: '__BASE__', cidx: '__C__' %>
+        </template>
+      </div>
 
     <% end %>
 

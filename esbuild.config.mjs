@@ -121,13 +121,39 @@ const builds = [
     plugins: [excalidrawLocalOnlyPlugin()],
   },
   {
+    // Lazy-loaded by kb_diagram_controller. No splitting: Sprockets fingerprints
+    // filenames, so relative chunk imports would 404; mermaid's lazy diagram
+    // modules are inlined into this one file instead.
+    ...common,
+    entryPoints: ["app/javascript/mermaid_app/index.js"],
+    outdir: "app/assets/builds/mermaid_app",
+    minify: !watch,
+    splitting: false,
+  },
+  {
     ...common,
     entryPoints: ["app/javascript/typing_unlock_animation/index.js"],
     outdir: "app/assets/builds/typing_unlock_animation",
     minify: !watch,
     splitting: false,
   },
+  {
+    // Lazy viewers: imported on demand by kb_model / kb_book controllers (three.js + occt, epub.js).
+    ...common,
+    entryPoints: ["app/javascript/kb_viewers/model.js", "app/javascript/kb_viewers/book.js"],
+    outdir: "app/assets/builds/kb_viewers",
+    minify: !watch,
+    splitting: false,
+    external: ["path"], // occt-import-js only requires it on its node code path
+  },
 ];
+
+// occt-import-js fetches its wasm by URL (locateFile), so it ships as a plain asset next to the bundle.
+fs.mkdirSync("app/assets/builds/kb_viewers", { recursive: true });
+fs.copyFileSync(
+  path.join("node_modules", "occt-import-js", "dist", "occt-import-js.wasm"),
+  "app/assets/builds/kb_viewers/occt-import-js.wasm"
+);
 
 if (watch) {
   for (const cfg of builds) {

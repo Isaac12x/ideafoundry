@@ -92,6 +92,44 @@ class IdeaTest < ActiveSupport::TestCase
     assert idea.transition_to_first_try!
   end
 
+  test "cost scorecard inverts lower-is-better criteria" do
+    id = User::COST_SCORECARD_SYSTEM_ID
+    system = @user.scoring_system(id)
+    cheap = Idea.new(user: @user, title: "Cheap", metadata: { Idea::SCORE_METADATA_KEY => { id => { "cost_to_test" => 1, "cost_to_make" => 1, "cost_to_sell" => 1 } } })
+    pricey = Idea.new(user: @user, title: "Pricey", metadata: { Idea::SCORE_METADATA_KEY => { id => { "cost_to_test" => 5, "cost_to_make" => 5, "cost_to_sell" => 5 } } })
+
+    assert_equal 15, cheap.scoring_breakdown_for(system)[:total]
+    assert_equal 3, pricey.scoring_breakdown_for(system)[:total]
+    assert_equal 10.0, cheap.scoring_breakdown_for(system)[:normalized] # raw 1/1/1 would be 2.0
+    assert_equal 2.0, pricey.scoring_breakdown_for(system)[:normalized]
+    assert_equal 5, Idea.new(user: @user, title: "Unscored").scoring_breakdown_for(system)[:values]["cost_to_make"]
+  end
+
+  test "custom scorecards are cleaned, weighted, and tolerate deleted criteria" do
+    @user.update_custom_scoring_systems(
+      "0" => { "name" => " Mine ", "scale_max" => "5", "criteria" => {
+        "0" => { "label" => "Fun", "weight" => "2" },
+        "1" => { "label" => "Effort", "direction" => "lower_better" },
+        "2" => { "label" => "" }
+      } },
+      "1" => { "name" => "", "criteria" => { "0" => { "label" => "x" } } }
+    )
+    system = @user.available_scoring_systems.find { |s| s["custom"] }
+
+    assert_equal 1, @user.custom_scoring_systems.size
+    assert_equal "Mine", system["name"]
+    assert_equal 2, system["criteria"].size
+    assert_equal 15, @user.scorecard_max_total(system)
+
+    fun, effort = system["criteria"].map { |c| c["key"] }
+    idea = Idea.new(user: @user, title: "T", metadata: { Idea::SCORE_METADATA_KEY => { system["id"] => { fun => 3, effort => 1, "gone" => 4 } } })
+    assert_equal 11, idea.scoring_breakdown_for(system)[:total] # 3*2 + (1+5-1)
+
+    @user.update_custom_scoring_systems({})
+    assert_empty @user.custom_scoring_systems
+    assert_nil @user.scoring_system(system["id"])
+  end
+
   test "should have valid state enum" do
     Idea.states.each do |state, _|
       @idea.state = state

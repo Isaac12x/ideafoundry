@@ -213,6 +213,27 @@ class LocalAgent::ToolboxTest < ActiveSupport::TestCase
     assert_equal "not_found", toolbox.call("read_record", "target_type" => "KbDownload", "target_id" => foreign.id).fetch(:error)
   end
 
+  test "private-project transcripts and digests are invisible to the agent" do
+    @user.update_local_agent_settings("enabled" => "1")
+    dl = private_download
+    MediaDigest.record!(user: @user, kb_download: dl, body: "- hello secret")
+
+    assert_empty toolbox.call("search_media_digests", "query" => "hello").fetch(:media_digests)
+    assert_equal "not_found", toolbox.call("read_record", "target_type" => "KbDownload", "target_id" => dl.id).fetch(:error)
+    assert_no_difference "MediaDigest.count" do
+      assert_equal "not_found", toolbox.call("write_media_digest", "kb_download_id" => dl.id, "body" => "x").fetch(:error)
+    end
+  ensure
+    FileUtils.rm_rf(@base)
+  end
+
+  def private_download
+    @base = Dir.mktmpdir
+    Kb::Project.create!(base: @base, parent_rel: "", name: "Secret")
+    @user.kb_downloads.create!(source_index: 0, source_path: @base, dir: "Secret", filename: "v.mp4", url: "https://youtu.be/sec",
+                               title: "Hush", status: "done", transcript: "00:01 - hello", transcript_status: "done")
+  end
+
   def toolbox
     LocalAgent::Toolbox.new(user: @user)
   end

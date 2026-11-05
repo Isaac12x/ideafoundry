@@ -5,7 +5,7 @@
         class: "kb-media-editor",
         data: {
           controller: "kb-media-editor",
-          action: "submit->kb-media-editor#save input->kb-media-editor#preview",
+          action: "submit->kb-media-editor#save input->kb-media-editor#preview keydown@document->kb-media-editor#key",
           kb_media_editor_kind_value: @content.kind,
           kb_media_editor_filename_value: @content.filename,
           kb_media_editor_duration_value: @media_info[:duration].to_f,

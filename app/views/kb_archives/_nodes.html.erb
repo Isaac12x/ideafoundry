@@ -1,0 +1,22 @@
+<% nodes.each do |name, node| %>
+  <% if node[:dir] %>
+    <li class="kb-archive-dir" role="treeitem">
+      <details>
+        <summary><%= name %></summary>
+        <ul role="group"><%= render "kb_archives/nodes", nodes: node[:children], entry_url: entry_url %></ul>
+      </details>
+    </li>
+  <% else %>
+    <% entry = node[:entry] %>
+    <li class="kb-archive-file" role="treeitem">
+      <span class="kb-archive-file__name"><%= name %></span>
+      <span class="kb-archive-file__meta"><%= number_to_human_size(entry.size) %><%= " · #{l(entry.mtime, format: :short)}" if entry.mtime %></span>
+      <span class="kb-archive-file__actions">
+        <% if Kb::Archive::PAGE_EXTENSIONS.include?(File.extname(name).downcase) %>
+          <%= link_to "Preview", entry_url.call(entry), target: "_blank", rel: "noopener", data: { turbo: false }, class: "kb-archive-link" %>
+        <% end %>
+        <%= link_to "Download", entry_url.call(entry), download: name, data: { turbo: false }, class: "kb-archive-link" %>
+      </span>
+    </li>
+  <% end %>
+<% end %>

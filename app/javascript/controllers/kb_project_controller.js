@@ -90,6 +90,34 @@ export default class extends Controller {
     this.copyTimer = setTimeout(() => { button.textContent = label }, 1600)
   }
 
+  // "Lock with password": a quiet header action that opens the form panel under the title.
+  toggleLock() {
+    const panel = this.element.querySelector("#kbp-lockpanel")
+    if (!panel) return
+
+    if (panel.hidden) {
+      panel.hidden = false
+      panel.querySelector("input")?.focus()
+    } else {
+      this.closeLock()
+    }
+    this.syncLockToggle(panel)
+  }
+
+  closeLock() {
+    const panel = this.element.querySelector("#kbp-lockpanel")
+    if (!panel) return
+
+    panel.hidden = true
+    panel.reset()
+    this.syncLockToggle(panel)
+    this.element.querySelector('[aria-controls="kbp-lockpanel"]')?.focus()
+  }
+
+  syncLockToggle(panel) {
+    this.element.querySelector('[aria-controls="kbp-lockpanel"]')?.setAttribute("aria-expanded", String(!panel.hidden))
+  }
+
   print() {
     window.print()
   }
