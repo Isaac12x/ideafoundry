@@ -103,7 +103,7 @@ export default class extends Controller {
 
     this._customTabs = this._customTabs.filter(t => t.id !== key)
     this._saveCustomTabs()
-    localStorage.removeItem(`${STORAGE_PREFIX}${key}`)
+    try { localStorage.removeItem(`${STORAGE_PREFIX}${key}`) } catch { /* blocked */ }
 
     if (this._activeKey === key) {
       this._activeKey = "general"
@@ -218,27 +218,30 @@ export default class extends Controller {
 
   _loadContent() {
     if (!this._editor) return
-    const html = localStorage.getItem(`${STORAGE_PREFIX}${this._activeKey}`) || ""
+    let html = ""
+    try { html = localStorage.getItem(`${STORAGE_PREFIX}${this._activeKey}`) || "" } catch { /* blocked */ }
     this._editor.commands.setContent(html || "<p></p>", false)
   }
 
   _saveContent() {
     if (!this._editor) return
     const html = this._editor.getHTML()
-    if (html === "<p></p>" || html === "") {
-      localStorage.removeItem(`${STORAGE_PREFIX}${this._activeKey}`)
-    } else {
-      localStorage.setItem(`${STORAGE_PREFIX}${this._activeKey}`, html)
-    }
+    try {
+      if (html === "<p></p>" || html === "") localStorage.removeItem(`${STORAGE_PREFIX}${this._activeKey}`)
+      else localStorage.setItem(`${STORAGE_PREFIX}${this._activeKey}`, html)
+    } catch { /* storage full or blocked: keep editing */ }
   }
 
+  // Saved state is untrusted: anything but a list of {id, label} strings must not break the bar (it would render no tabs).
   _loadCustomTabs() {
-    try { return JSON.parse(localStorage.getItem(CUSTOM_TABS_KEY) || "[]") }
-    catch { return [] }
+    try {
+      const tabs = JSON.parse(localStorage.getItem(CUSTOM_TABS_KEY) || "[]")
+      return Array.isArray(tabs) ? tabs.filter(t => t && typeof t.id === "string" && typeof t.label === "string") : []
+    } catch { return [] }
   }
 
   _saveCustomTabs() {
-    localStorage.setItem(CUSTOM_TABS_KEY, JSON.stringify(this._customTabs))
+    try { localStorage.setItem(CUSTOM_TABS_KEY, JSON.stringify(this._customTabs)) } catch { /* storage full or blocked */ }
   }
 
   // Collapse notes overlay when KB tab panel is hidden (user switched to facts/maxims)

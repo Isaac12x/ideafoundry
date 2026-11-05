@@ -31,7 +31,7 @@
     </header>
 
     <div class="kb-media-editor__workspace kb-media-editor__workspace--<%= @content.kind %>">
-      <section class="kb-media-editor__stage" aria-label="<%= @content.kind.to_s.humanize %> preview">
+      <section class="kb-media-editor__stage" aria-label="<%= @content.kind.to_s.humanize %> preview" <%= "data-pdf-scroller" if @content.kind == :pdf %>>
         <% if @content.kind == :image %>
           <div class="kb-media-editor__canvas-wrap" data-action="pointerdown->kb-media-editor#pointerDown pointermove->kb-media-editor#pointerMove pointerup->kb-media-editor#pointerUp pointercancel->kb-media-editor#pointerUp">
             <canvas data-kb-media-editor-target="canvas" aria-label="Editable image canvas"></canvas>
@@ -40,9 +40,9 @@
           <img src="<%= @content.serve_url %>" alt="" hidden data-kb-media-editor-target="imageSource" data-action="load->kb-media-editor#loadImage">
 
         <% elsif @content.kind == :video %>
-          <video controls preload="metadata" data-kb-media-editor-target="media" data-action="loadedmetadata->kb-media-editor#mediaReady timeupdate->kb-media-editor#timeChanged">
-            <source src="<%= @content.serve_url %>" type="<%= @content.mime_type %>">
-          </video>
+          <%= render layout: "kb/video_player", locals: {
+                src: @content.serve_url, mime: @content.mime_type,
+                video_data: { kb_media_editor_target: "media", action: "loadedmetadata->kb-media-editor#mediaReady timeupdate->kb-media-editor#timeChanged" } } do %><% end %>
 
         <% elsif @content.kind == :audio %>
           <div class="kb-media-editor__audio-visual">

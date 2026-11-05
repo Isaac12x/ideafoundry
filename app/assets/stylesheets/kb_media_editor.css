@@ -102,6 +102,8 @@
   transform-origin: center;
 }
 
+.kb-media-editor__stage .kb-vplayer { flex: 0 1 100%; max-width: min(1100px, 100%); overflow: visible; }
+
 .kb-media-editor__stage audio {
   position: absolute;
   right: clamp(1rem, 3vw, 2.5rem);
@@ -190,6 +192,9 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* Pages are taller than the stage: centring would clip the top beyond scroll reach. */
+.kb-media-editor__workspace--pdf .kb-media-editor__stage { align-items: flex-start; }
 
 .kb-media-editor__pdf {
   width: min(880px, 100%);

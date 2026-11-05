@@ -1,8 +1,9 @@
 import { Controller } from "@hotwired/stimulus"
+import { binding, matches } from "lib/shortcut_bindings"
 
 export default class extends Controller {
   static values = { searchUrl: String }
-  static targets = ["input", "results"]
+  static targets = ["input", "results", "key"]
 
   connect() {
     this._timer = null
@@ -10,6 +11,7 @@ export default class extends Controller {
     this._boundKeydown = this._globalKeydown.bind(this)
     document.addEventListener("keydown", this._boundKeydown)
     this._showHint()
+    this.keyTargets.forEach((el) => { el.textContent = binding("search") })
   }
 
   disconnect() {
@@ -18,8 +20,7 @@ export default class extends Controller {
   }
 
   _globalKeydown(e) {
-    const key = e.key?.toLowerCase()
-    if ((e.metaKey || e.ctrlKey) && (key === "k" || key === "p")) {
+    if (matches(binding("search"), e)) {
       e.preventDefault()
       this.open()
     }

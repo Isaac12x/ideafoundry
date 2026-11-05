@@ -135,14 +135,18 @@ class SettingsControllerTest < ActionDispatch::IntegrationTest
     assert_no_match(/Open Ask Agent/, response.body)
   end
 
-  test "layout hides global ask agent form when local agent is enabled but not live" do
+  test "layout renders the ask agent sidebar as Not running when the agent is enabled but not live" do
     @user.update_local_agent_settings("enabled" => "1")
+    @user.agent_runs.delete_all
 
     get ideas_path
 
     assert_response :success
-    assert_select ".ask-agent-shell", count: 0
-    assert_no_match(/Open Ask Agent/, response.body)
+    assert_select ".ask-agent-shell[data-ask-agent-questions-url-value=?]", settings_local_agent_questions_path
+    assert_select ".ask-agent-sidebar__status", text: /Not running/
+    assert_select ".ask-agent-sidebar__notice a[href=?]", settings_local_agent_path
+    assert_select ".ask-agent-sidebar__status", text: /Ready/, count: 0
+    assert_select ".ask-agent-shell [aria-live=polite][data-ask-agent-target=status]", count: 1
   end
 
   test "layout renders global ask agent form when local agent is live" do
@@ -532,6 +536,64 @@ class SettingsControllerTest < ActionDispatch::IntegrationTest
     assert_select ".ask-agent-shell", count: 0
   end
 
+  test "GET settings/ai-agents/questions renders pending and answered threads only, without the layout" do
+    @user.update_local_agent_settings("enabled" => "1")
+    answered = @user.agent_events.create!(event_type: "question", summary: "First?", payload: { "question" => "First?" })
+    @user.agent_events.create!(event_type: "answer", summary: "x", target: answered, payload: { "answer" => "One.\nTwo <b>&</b>" })
+    @user.agent_events.create!(event_type: "question", summary: "Second?", payload: { "question" => "Second?" })
+    other = User.create!(email: "other-#{SecureRandom.hex(3)}@example.com", name: "Other")
+    other.agent_events.create!(event_type: "question", summary: "Not yours", payload: { "question" => "Not yours" })
+
+    get settings_local_agent_questions_path
+
+    assert_response :success
+    assert_equal "no-store", response.headers["Cache-Control"]
+    assert_no_match(/<html|<body|ask-agent-shell/, response.body)
+    assert_select ".ask-agent-thread", count: 2
+    assert_includes response.body, "One.\nTwo &lt;b&gt;&amp;&lt;/b&gt;" # escaped, newline kept for pre-wrap
+    assert_select ".ask-agent-message--pending", count: 1
+    assert_no_match(/Not yours/, response.body)
+  ensure
+    other&.agent_events&.delete_all
+    other&.destroy
+  end
+
+  test "GET settings/ai-agents/questions is forbidden while the agent is disabled" do
+    @user.update_local_agent_settings("enabled" => "0")
+    @user.agent_events.create!(event_type: "question", summary: "Q", payload: { "question" => "Q" })
+
+    get settings_local_agent_questions_path
+
+    assert_response :forbidden
+    assert_no_match(/ask-agent-thread/, response.body)
+  end
+
+  test "a question unanswered for over 10 minutes keeps the pending class but says so" do
+    @user.update_local_agent_settings("enabled" => "1")
+    @user.agent_events.create!(event_type: "question", summary: "Old?", payload: { "question" => "Old?" }, created_at: 11.minutes.ago)
+    @user.agent_events.create!(event_type: "question", summary: "New?", payload: { "question" => "New?" })
+
+    get settings_local_agent_questions_path
+
+    assert_select ".ask-agent-message--pending", count: 2
+    assert_select ".ask-agent-message--pending p", text: /No answer yet. The agent may not be running/, count: 1
+    assert_select ".ask-agent-message--pending p", text: "Waiting for an answer.", count: 1
+  end
+
+  test "POST settings/ai-agents/questions as JSON queues the question and the next poll shows it pending" do
+    @user.update_local_agent_settings("enabled" => "1")
+
+    assert_difference -> { @user.agent_events.where(event_type: "question").count }, 1 do
+      post settings_local_agent_questions_path, params: { agent_question: { body: "Expand this" } }, as: :json
+    end
+    assert_response :success
+    assert_equal true, response.parsed_body["ok"]
+
+    get settings_local_agent_questions_path
+    assert_select ".ask-agent-message--user p", text: "Expand this"
+    assert_select ".ask-agent-message--pending", count: 1
+  end
+
   test "POST settings/ai-agents/questions queues a local agent question" do
     @user.update_local_agent_settings("enabled" => "1")
 
@@ -775,6 +837,87 @@ class SettingsControllerTest < ActionDispatch::IntegrationTest
     assert_redirected_to settings_idea_tabs_path
     @user.reload
     assert_equal User::DEFAULT_IDEA_TAB_SETTINGS, @user.idea_tab_settings
+  end
+
+  test "keyboard shortcuts persist per user and are serialized into the page" do
+    get settings_shortcuts_path
+    assert_response :success
+
+    patch settings_shortcuts_path, params: { keyboard_shortcuts: { save: "Ctrl/Cmd+Y", go_plan: "g x", edit: "" } }
+    assert_redirected_to settings_shortcuts_path
+    assert_equal({ "save" => "Ctrl/Cmd+Y", "go_plan" => "g x" }, @user.reload.keyboard_shortcuts)
+    assert_equal "Ctrl/Cmd+Y", @user.shortcut_binding("save")
+    assert_equal "e", @user.shortcut_binding("edit")
+
+    get settings_path
+    assert_select "body[data-shortcut-overrides*='Ctrl/Cmd+Y']"
+  end
+
+  test "keyboard shortcuts reject collisions, bad bindings and unknown ids" do
+    {
+      { save: "Ctrl/Cmd+L" } => "Save the current form",       # collides with the lock default
+      { save: "Ctrl/Cmd+K" } => "Search ideas",                 # collides with another default
+      { save: "ctrl+s" } => "not a valid binding",
+      { save: "Ctrl/Cmd+#{"x" * 40}" } => "not a valid binding",
+      { edit: "g" } => "starts a sequence",
+      { save: "Ctrl/Cmd+Y", submit: "Ctrl/Cmd+Y" } => "share",
+      { lock: "x" } => "needs Ctrl/Cmd or Alt",
+      { search: "g x" } => "needs Ctrl/Cmd or Alt",
+      { lock: "Ctrl/Cmd+S" } => "share",
+      { save: "Alt+L" } => "share",                             # Ctrl/Cmd+L is Alt+L on Windows/Linux
+      { lock: "Ctrl/Cmd+Enter" } => "share",
+      { lock: "Shift+Ctrl/Cmd+Y" } => "not a valid binding",   # canonical modifier order only
+      { edit: "Alt+1" } => "reserved",
+      { edit: "x y z" } => "not a valid binding",
+      { edit: "g x" } => "only for navigation",
+      { edit: "Shift+?" } => "Shift is implied",
+      { edit: "Enter" } => "needs Ctrl/Cmd or Alt",
+      { edit: "ArrowDown" } => "needs Ctrl/Cmd or Alt",
+      { edit: "F5" } => "needs Ctrl/Cmd or Alt"
+    }.each do |params, message|
+      patch settings_shortcuts_path, params: { keyboard_shortcuts: params }
+      assert_response :unprocessable_content
+      assert_includes response.body, message
+      assert_empty @user.reload.keyboard_shortcuts
+    end
+
+    assert_not @user.update_keyboard_shortcuts("bogus" => "Ctrl/Cmd+Y")
+
+    @user.update_keyboard_shortcuts("save" => "Ctrl/Cmd+Y")
+    [ { keyboard_shortcuts: "oops" }, {} ].each do |bad| # non-hash or missing: no 500, nothing wiped
+      patch settings_shortcuts_path, params: bad
+      assert_response :unprocessable_content
+      assert_equal({ "save" => "Ctrl/Cmd+Y" }, @user.reload.keyboard_shortcuts)
+    end
+    @user.update_keyboard_shortcuts({})
+
+    assert @user.update_keyboard_shortcuts("edit" => "X")
+    assert_equal "x", @user.keyboard_shortcuts["edit"]
+
+    patch settings_shortcuts_path, params: { keyboard_shortcuts: { save: "Ctrl/Cmd+K" } }
+    assert_select "input[name='keyboard_shortcuts[save]'][value='Ctrl/Cmd+K']" # typed value survives a 422
+  end
+
+  test "reset all clears custom shortcuts" do
+    @user.update_keyboard_shortcuts("save" => "Ctrl/Cmd+Y")
+    get settings_shortcuts_path
+    assert_select "small", text: /custom/
+    patch settings_shortcuts_path, params: { reset_all: "1" }
+    assert_empty @user.reload.keyboard_shortcuts
+  end
+
+  test "lock can never take the Save or Submit keys, even once those are moved" do
+    assert_not @user.update_keyboard_shortcuts("save" => "Ctrl/Cmd+Y", "lock" => "Ctrl/Cmd+S")
+    assert_not @user.update_keyboard_shortcuts("submit" => "Ctrl/Cmd+Y", "lock" => "Ctrl/Cmd+Enter")
+  end
+
+  test "user can rebind lock and then reuse its default" do
+    assert @user.update_keyboard_shortcuts("lock" => "Ctrl/Cmd+Shift+L", "save" => "Ctrl/Cmd+L")
+    assert_equal "Ctrl/Cmd+Shift+L", @user.shortcut_binding("lock")
+  end
+
+  test "JS default shortcut table is readable by the server" do
+    assert_equal "Ctrl/Cmd+L", User::DEFAULT_SHORTCUTS.dig("lock", "key")
   end
 
   test "GET settings/display renders display page" do

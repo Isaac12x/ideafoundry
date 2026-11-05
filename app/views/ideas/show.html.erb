@@ -234,14 +234,27 @@
 
   <!-- Main Content — Tabbed (hero image caps the card, blending into the tab bar) -->
   <div class="idea-main-content">
-    <% hero_drawing = @idea.hero_drawing %>
-    <% has_hero = @idea.hero_image.attached? || (hero_drawing && hero_drawing.rendered_png.attached?) %>
-    <% if has_hero %>
+    <% hero_media = @idea.hero_items.select(&:media) %>
+    <% if hero_media.one? %>
+      <% item = hero_media.first %>
       <div class="idea-hero-cap">
-        <% if hero_drawing && hero_drawing.rendered_png.attached? %>
-          <%= image_tag hero_drawing.rendered_png, class: "idea-hero-cap__img", alt: hero_drawing.title %>
-        <% else %>
-          <%= image_tag @idea.hero_image, class: "idea-hero-cap__img", alt: @idea.title %>
+        <%= image_tag item.media, class: "idea-hero-cap__img #{'idea-hero-cap__img--drawing' if item.drawing?}", alt: item.title %>
+      </div>
+    <% elsif hero_media.any? %>
+      <%# At most 5 cells: past that, 4 tiles plus a "+N" cell that leads to the hero panel in the editor. %>
+      <% overflow = hero_media.size > 5 ? hero_media.size - 4 : 0 %>
+      <% shown = overflow.zero? ? hero_media : hero_media.first(4) %>
+      <div class="idea-hero-cap idea-hero-cap--mosaic" data-cells="<%= shown.size + (overflow.zero? ? 0 : 1) %>">
+        <% shown.each do |item| %>
+          <div class="idea-hero-cap__tile <%= 'idea-hero-cap__tile--drawing' if item.drawing? %>">
+            <%= image_tag item.media, class: "idea-hero-cap__img", alt: item.title %>
+          </div>
+        <% end %>
+        <% if overflow.positive? %>
+          <%= link_to edit_idea_path(@idea, anchor: "hero"), class: "idea-hero-cap__tile idea-hero-cap__more",
+                aria: { label: "#{overflow} more hero #{'item'.pluralize(overflow)}. Open the editor to manage them." } do %>
+            <span aria-hidden="true">+<%= overflow %></span>
+          <% end %>
         <% end %>
       </div>
     <% end %>

@@ -24,9 +24,10 @@ class Idea < ApplicationRecord
 has_many :kb_links, class_name: "IdeaKbLink", dependent: :destroy
   has_many :mood_images, dependent: :destroy
   has_one :github_repository, dependent: :destroy
-  has_one_attached :hero_image
+  has_many_attached :hero_images
   has_many_attached :attachments
   has_rich_text :description
+  after_save :attach_pending_hero_images, :purge_removed_hero_images
 
   # Lifecycle management
   enum :state, {
@@ -58,6 +59,7 @@ has_many :kb_links, class_name: "IdeaKbLink", dependent: :destroy
   validate :scorecard_values_within_limits
   validate :work_state_requires_scoring_threshold
   validate :napkin_calculations_within_limits
+  validate :resolve_pending_hero_images # keep last: only uploads once everything else is valid
 
   # Callbacks
   before_validation :set_defaults, on: :create
@@ -84,8 +86,42 @@ has_many :kb_links, class_name: "IdeaKbLink", dependent: :destroy
   # Standalone ideas (no versions) plus the primary of each version group — what index/lists should show
   scope :primary_or_standalone, -> { where("version_group_id IS NULL OR version_primary = ?", true) }
 
-  def hero_drawing
-    drawings.hero.first
+  # One entry of the hero set: an uploaded image attachment or a hero drawing (with a rendered PNG).
+  HeroItem = Data.define(:key, :kind, :record) do
+    def image? = kind == :image
+    def drawing? = kind == :drawing
+    def title = drawing? ? record.title : record.filename.to_s
+    # The ActiveStorage attachment to render, nil for a drawing that has no PNG yet.
+    def media = drawing? ? (record.rendered_png if record.rendered_png.attached?) : record
+  end
+
+  HERO_KEY = /\A(image|drawing):\d+\z/
+
+  def hero_order=(keys)
+    super(Array(keys).map(&:to_s).grep(HERO_KEY).uniq)
+  end
+
+  # Rails 8 replaces the whole collection when a has_many_attached is assigned, which would
+  # wipe existing hero images on every upload. Assignment appends on save instead.
+  def hero_images=(files)
+    (@pending_hero_files ||= []).concat(Array(files).compact_blank)
+  end
+
+  def remove_hero_image_ids=(ids)
+    @remove_hero_image_ids = Array(ids).compact_blank.map(&:to_i)
+  end
+
+  # The single source for every view/export: images and drawings interleaved in hero_order.
+  # Items missing from hero_order (new uploads, stale keys dropped) trail in creation order.
+  def hero_items
+    images = hero_images_attachments.includes(:blob).sort_by(&:id).map { |a| HeroItem.new("image:#{a.blob_id}", :image, a) }
+    drawn = drawings.hero.includes(rendered_png_attachment: :blob).order(:id).map { |d| HeroItem.new("drawing:#{d.id}", :drawing, d) }
+    order = Array(hero_order)
+    (images + drawn).each_with_index.sort_by { |item, i| [ order.index(item.key) || order.size, i ] }.map(&:first)
+  end
+
+  def hero_media?
+    hero_items.any?(&:media)
   end
 
   def attachment_drawings
@@ -899,5 +935,48 @@ has_many :kb_links, class_name: "IdeaKbLink", dependent: :destroy
 
   def default_sections
     %w[header stats description media metadata timeline]
+  end
+
+  # Runs as a validation so a bad signed id / failed upload becomes a form error instead of a 500
+  # after the idea row is written, and nothing is uploaded when another validation already failed.
+  def resolve_pending_hero_images
+    return if @pending_hero_files.blank? || errors.any?
+
+    files, @pending_hero_files = @pending_hero_files, nil
+    (@pending_hero_blobs ||= []).concat(files.map { |file| hero_blob_for(file) })
+  rescue StandardError => e
+    Rails.logger.warn("hero image upload failed: #{e.class}: #{e.message}")
+    errors.add(:hero_images, "could not be added. Check they are image files and try again.")
+  end
+
+  def hero_blob_for(file)
+    blob = case file
+    when ActiveStorage::Blob then file
+    when String then ActiveStorage::Blob.find_signed!(file)
+    when Hash then ActiveStorage::Blob.create_and_upload!(**file)
+    else ActiveStorage::Blob.create_and_upload!(io: file.open, filename: file.original_filename, content_type: file.content_type)
+    end
+    # Programmatic callers (KB attach, version restore: Blob/Hash) are trusted; form uploads and signed ids must be images.
+    raise "#{blob.filename} is not an image" unless file.is_a?(ActiveStorage::Blob) || file.is_a?(Hash) || blob.content_type.to_s.start_with?("image/")
+
+    blob
+  end
+
+  # DB-only: blobs are already uploaded. has_many_attached#attach re-assigns the existing blobs plus
+  # the new ones, so skip any already attached.
+  def attach_pending_hero_images
+    blobs, @pending_hero_blobs = @pending_hero_blobs, nil
+    Array(blobs).each do |blob|
+      next if hero_images_attachments.exists?(blob_id: blob.id)
+
+      hero_images_attachments.create!(blob: blob)
+    end
+  end
+
+  def purge_removed_hero_images
+    return if @remove_hero_image_ids.blank?
+
+    hero_images_attachments.where(blob_id: @remove_hero_image_ids).find_each(&:purge)
+    @remove_hero_image_ids = nil
   end
 end

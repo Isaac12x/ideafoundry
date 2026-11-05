@@ -46,6 +46,23 @@ class SettingsController < ApplicationController
     end
   end
 
+  def shortcuts
+  end
+
+  def update_shortcuts
+    overrides = params[:reset_all] ? {} : params.permit(keyboard_shortcuts: User::DEFAULT_SHORTCUTS.keys)[:keyboard_shortcuts]
+    # Only reset_all clears; a missing or non-hash param is rejected and leaves saved overrides alone.
+    if overrides.nil?
+      flash.now[:alert] = "No shortcuts submitted."
+      render :shortcuts, status: :unprocessable_content
+    elsif @user.update_keyboard_shortcuts(overrides)
+      redirect_to settings_shortcuts_path, notice: "Keyboard shortcuts updated."
+    else
+      flash.now[:alert] = @user.errors.full_messages.to_sentence
+      render :shortcuts, status: :unprocessable_content
+    end
+  end
+
   def scoring
     @scoring_systems = @user.available_scoring_systems
   end
@@ -174,14 +191,27 @@ class SettingsController < ApplicationController
     redirect_to settings_local_agent_path, notice: "Local agent cycle requested."
   end
 
+  # Threads HTML for the Ask Agent sidebar poll (ask_agent_controller.js).
+  def local_agent_questions
+    return head :forbidden unless @user.local_agent_enabled?
+
+    response.headers["Cache-Control"] = "no-store"
+    render partial: "layouts/ask_agent_threads", layout: false
+  end
+
   def create_local_agent_question
     unless @user.local_agent_enabled?
+      # JSON callers (KB selection menu) get a state they can show, not a redirect.
+      return render json: { error: "disabled", settings_url: settings_local_agent_path }, status: :unprocessable_content if request.format.json?
+
       redirect_to local_agent_question_return_path(anchor: false), alert: "Enable the local agent before asking a question."
       return
     end
 
     question = local_agent_question_params[:body].to_s.strip
     if question.blank?
+      return render json: { error: "blank" }, status: :unprocessable_content if request.format.json?
+
       redirect_to local_agent_question_return_path, alert: "Enter a question for the local agent."
       return
     end
@@ -195,6 +225,7 @@ class SettingsController < ApplicationController
       }
     )
     LocalAgentSupervisorJob.perform_later(@user.id, run_once: true)
+    return render json: { ok: true, live: @user.local_agent_live?, settings_url: settings_local_agent_path } if request.format.json?
 
     redirect_to local_agent_question_return_path, notice: "Question queued for the local agent."
   end
@@ -839,6 +870,11 @@ class SettingsController < ApplicationController
 
   def local_agent_question_params
     params.fetch(:agent_question, {}).permit(:body)
+  end
+
+  # The sidebar poll is background traffic: it must not count as activity, or an unanswered question would keep the typing lock open forever.
+  def touch_typing_session_activity!
+    super unless action_name == "local_agent_questions"
   end
 
   def local_agent_question_return_path(anchor: true)

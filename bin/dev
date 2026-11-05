@@ -5,6 +5,8 @@ if ! gem list foreman -i --silent; then
   gem install foreman
 fi
 
+bin/prepare || exit $?
+
 # Let an explicit Foreman port option win unchanged.
 for argument in "$@"; do
   case "$argument" in

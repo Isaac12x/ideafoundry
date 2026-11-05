@@ -83,7 +83,7 @@
         <p class="display-section-subhead">Set the default folder character. Individual folders can still be personalised by selecting their icon in the tree.</p>
       </div>
 
-      <div class="display-fields-card kb-default-icon-settings" data-controller="kb-icon-settings">
+      <div class="display-fields-card kb-default-icon-settings" data-controller="kb-icon-settings" data-kb-icon-settings-emoji-url-value="<%= asset_path("emoji.json") %>">
         <%= hidden_field_tag "display_settings[kb_default_icon_kind]", "", data: { kb_icon_settings_target: "kind" } %>
         <%= hidden_field_tag "display_settings[kb_default_folder_emoji]", @kb_default_folder_preference.emoji, data: { kb_icon_settings_target: "emoji" } %>
 
@@ -112,13 +112,7 @@
         </div>
 
         <div class="kb-icon-panel" data-kb-icon-settings-target="emojiPanel">
-          <div class="kb-emoji-grid" aria-label="Choose a default folder emoji">
-            <% %w[📁 📚 🧠 🔬 🧭 🗂️ 🧪 🧱 🌱 💡 🛰️ 🗃️].each do |emoji| %>
-              <button type="button" class="kb-emoji-choice <%= 'is-selected' if @kb_default_folder_preference.emoji == emoji %>"
-                      data-emoji="<%= emoji %>" data-action="kb-icon-settings#chooseEmoji"
-                      aria-label="Use <%= emoji %> as the folder icon"><%= emoji %></button>
-            <% end %>
-          </div>
+          <div class="kb-emoji-picker" aria-label="Choose a default folder emoji" data-kb-icon-settings-target="grid"></div>
         </div>
 
         <div class="kb-icon-panel" data-kb-icon-settings-target="imagePanel" hidden>

@@ -187,6 +187,8 @@ Rails.application.routes.draw do
   patch "settings/features", to: "settings#update_features"
   get "settings/display", to: "settings#display", as: :settings_display
   patch "settings/display", to: "settings#update_display"
+  get "settings/shortcuts", to: "settings#shortcuts", as: :settings_shortcuts
+  patch "settings/shortcuts", to: "settings#update_shortcuts"
   get "settings/scoring", to: "settings#scoring"
   patch "settings/scoring", to: "settings#update_scoring"
   get "settings/scoring/weights", to: "settings#get_scoring_weights"
@@ -200,6 +202,7 @@ Rails.application.routes.draw do
   get "settings/ai-agents", to: "settings#local_agent", as: :settings_local_agent
   patch "settings/ai-agents", to: "settings#update_local_agent"
   post "settings/ai-agents/run-now", to: "settings#run_local_agent_now", as: :settings_local_agent_run_now
+  get "settings/ai-agents/questions", to: "settings#local_agent_questions"
   post "settings/ai-agents/questions", to: "settings#create_local_agent_question", as: :settings_local_agent_questions
   post "settings/ai-agents/recommendations/:id/approve",
        to: "settings#approve_local_agent_recommendation",
@@ -252,6 +255,7 @@ Rails.application.routes.draw do
   get "knowledge-base", to: "kb#index", as: :kb
   get "kb", to: redirect("/knowledge-base")
   get "knowledge-base/file", to: "kb#file", as: :kb_file
+  get "knowledge-base/project-list", to: "kb#projects", as: :kb_projects
   get "kb/file", to: redirect("/knowledge-base/file")
   get "knowledge-base/raw", to: "kb#raw", as: :kb_raw
   get "knowledge-base/serve", to: "kb#serve", as: :kb_serve
@@ -259,6 +263,7 @@ Rails.application.routes.draw do
   get "knowledge-base/ocr", to: "kb_ocr#show", as: :kb_ocr
   get "knowledge-base/transcript", to: "kb_transcripts#show", as: :kb_transcript
   post "knowledge-base/transcript", to: "kb_transcripts#create"
+  post "knowledge-base/description", to: "kb_descriptions#create", as: :kb_description
   get "knowledge-base/note", to: "kb_notes#show", as: :kb_note
   patch "knowledge-base/note", to: "kb_notes#update"
   get "knowledge-base/archive", to: "kb_archives#show", as: :kb_archive

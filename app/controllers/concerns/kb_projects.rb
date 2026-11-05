@@ -204,7 +204,7 @@ module KbProjects
     @lock_error = Kb::ProjectLock.take_error(project.abs)
     @entries = project.locked? || @lock_op || project.build? ? [] : project_entries(project)
     @backlinks = IdeaKbLink.for_path(user: @user, source_path: base, relative_path: project.rel).includes(:idea).order(:id)
-    render "kb/project_show"
+    render_kb_pane("kb/project_show")
   end
 
   # Tests/Run folders change the tree, so those answers refresh it too.
@@ -241,7 +241,8 @@ module KbProjects
     return nil unless rel.start_with?(prefix) && !rel.delete_prefix(prefix).include?("/")
 
     test = Kb::ProjectTest.new(base, rel, project)
-    test.abs && File.file?(File.join(test.abs, Kb::ProjectTest::META_FILE)) ? test : nil
+    # Any real folder under Tests/ is a test (Project#tests lists them all, hand-made ones have no metadata yet).
+    test.abs && File.directory?(test.abs) ? test : nil
   end
 
   def project_run(base, project, rel)
@@ -249,7 +250,7 @@ module KbProjects
     return nil unless test
 
     run = Kb::TestRun.new(base, rel, test)
-    run.abs && File.file?(File.join(run.abs, Kb::TestRun::META_FILE)) ? run : nil
+    run.abs && File.directory?(run.abs) ? run : nil
   end
 
   def run_attrs
