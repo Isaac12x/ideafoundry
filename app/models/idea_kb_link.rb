@@ -12,6 +12,37 @@ class IdeaKbLink < ApplicationRecord
   validates :relative_path, uniqueness: { scope: [ :idea_id, :source_path ] }
 
   class << self
+    # { rel:, type: } for an existing, non-hidden, symlink-free entry inside base, else nil.
+    def resolve_entry(base, rel)
+      rel = normalize_relative_path(rel)
+      parts = rel.split("/")
+      return if parts.empty? || parts.any? { |p| p.start_with?(".") || p == ".." }
+
+      abs = File.expand_path(File.join(base, rel))
+      return unless abs.start_with?("#{base}/")
+      return if parts.each_with_index.any? { |_, i| File.symlink?(File.join(base, *parts.first(i + 1))) }
+      return unless File.exist?(abs)
+
+      type = Kb::Project.at(base, rel) ? "project" : (File.directory?(abs) ? "dir" : "file")
+      { rel: rel, type: type }
+    end
+
+    # "src:path" picks (idea form) -> links; raises on any bad pick so callers roll back.
+    def link_picks!(idea, user, picks)
+      sources = KbSource.list(user)
+      Array(picks).each do |pick|
+        src, path = pick.to_s.split(":", 2)
+        source = sources[src.to_i] if src.to_s.match?(/\A\d+\z/)
+        entry = source && resolve_entry(File.expand_path(source[:path]), path)
+        raise ActiveRecord::RecordInvalid, idea unless entry
+
+        idea.kb_links.find_or_create_by!(source_path: source[:path], relative_path: entry[:rel]) do |link|
+          link.entry_type = entry[:type]
+          link.position = idea.kb_links.maximum(:position).to_i + 1
+        end
+      end
+    end
+
     # Backlinks: links (across the user's ideas) pointing at this exact path.
     def for_path(user:, source_path:, relative_path:)
       joins(:idea).where(ideas: { user_id: user.id },

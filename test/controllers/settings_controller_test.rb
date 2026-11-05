@@ -5,6 +5,23 @@ class SettingsControllerTest < ActionDispatch::IntegrationTest
     @user = User.first || User.create!(email: "test@example.com", name: "Test")
   end
 
+  test "scoring page shows cost scorecard and saves custom scorecards" do
+    get settings_scoring_path
+    assert_response :success
+    assert_select ".scoring-sys-panel__name", text: "Cost scorecard"
+
+    patch settings_scoring_path, params: {
+      scoring_weights: { trl: 0.3, difficulty: -0.1, opportunity: 0.4, timing: 0.2 },
+      custom_scoring_systems_present: "1",
+      custom_scoring_systems: { "a1" => { id: "custom_ab12cd34", name: "Mine", scale_max: 5,
+                                           criteria: { "z" => { key: "cdeadbeef", label: "Fun", weight: 1 } } } }
+    }
+    assert_equal [ "custom_ab12cd34" ], @user.reload.custom_scoring_systems.map { |s| s["id"] }
+
+    get settings_scoring_path
+    assert_select "input[name='custom_scoring_systems[0][name]'][value=Mine]"
+  end
+
   test "GET settings/topologies renders settings page" do
     get settings_topologies_path
     assert_response :success

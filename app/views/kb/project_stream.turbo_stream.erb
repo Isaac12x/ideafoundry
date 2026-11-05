@@ -1,3 +1,3 @@
 <%= turbo_stream.update "flash", partial: "layouts/flash" %>
 <%= turbo_stream.replace "kb-sidebar-tree", partial: "kb/tree" %>
-<%= turbo_stream.update "kb-content", partial: "kb/projects/page" %>
+<%= turbo_stream.update "kb-content", partial: (@project.build? ? "kb/projects/build_page" : "kb/projects/page") %>

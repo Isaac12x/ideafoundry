@@ -16,6 +16,20 @@ class KbAnnotationsControllerTest < ActionDispatch::IntegrationTest
     FileUtils.rm_rf(@kb_dir)
   end
 
+  test "no marks are created or changed while the project is locking" do
+    mark_row = @user.kb_annotations.create!(source_path: File.expand_path(@kb_dir), relative_path: "papers/study.pdf", quote: "q", start_offset: 0, end_offset: 1)
+    Kb::ProjectLock::STATE[File.join(File.expand_path(@kb_dir), "papers")] = { op: :lock }
+    post kb_annotations_path(src: 0, file: "papers/study.pdf"), params: { annotation: mark }, as: :json
+    assert_response :conflict
+    patch kb_annotation_path(mark_row), params: { annotation: { color: "pink" } }, as: :json
+    assert_response :conflict
+    delete kb_annotation_path(mark_row), as: :json
+    assert_response :conflict
+    assert_equal 1, @user.kb_annotations.count
+  ensure
+    Kb::ProjectLock::STATE.clear
+  end
+
   test "highlights round-trip: create, list in reading order, recolour, erase" do
     post kb_annotations_path(src: 0, file: "papers/study.pdf"),
          params: { annotation: mark(page: 2, start_offset: 4, quote: "later") }, as: :json

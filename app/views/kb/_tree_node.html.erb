@@ -10,10 +10,10 @@
     <% editing = editing_rel.present? && editing_src == folder_index && editing_rel == node[:rel] %>
     <% project = node[:project] %>
     <% tests_dir = parent_project && name == Kb::Project::TESTS_DIR %>
-    <div class="kb-dir-group <%= 'kb-project-group' if project %>" role="none" data-controller="kb-folder"
+    <div class="kb-dir-group <%= 'kb-project-group' if project %><%= ' kb-build-group' if project&.dig(:kind) == 'build' %>" role="none" data-controller="kb-folder"
          <%= 'data-kb-folder-default-open-value=false'.html_safe if tests_dir %>>
       <div class="kb-node kb-dir-header <%= 'kb-project-row' if project %>" draggable="true"
-           role="treeitem" tabindex="-1" aria-expanded="true" aria-label="<%= name %>"
+           role="treeitem" tabindex="-1" <%= 'aria-expanded="true"'.html_safe unless project&.dig(:locked) %> aria-label="<%= name %>"
            data-action="contextmenu->kb-tree#show
                         dragstart->kb-tree#dragStart
                         dragend->kb-tree#dragEnd
@@ -25,11 +25,18 @@
            data-kb-tree-src-param="<%= folder_index %>"
            data-kb-tree-private-param="<%= node[:private] ? true : false %>"
            data-kb-tree-project-param="<%= project ? true : false %>"
+           data-kb-tree-build-param="<%= project&.dig(:kind) == 'build' %>"
            data-kb-tree-tests-dir-param="<%= name == 'Tests' %>"
+           data-kb-tree-sort-param="<%= node[:preference]&.sort_mode %>"
            data-kb-tree-favorite-param="<%= favorite %>">
-        <button type="button" class="kb-node-twisty kb-dir-toggle" data-action="click->kb-folder#toggle" aria-label="Toggle <%= name %>">
-          <svg class="kb-folder-chevron" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
-        </button>
+        <%# A locked project has nothing to expand: no chevron; the name opens the locked page. %>
+        <% if project&.dig(:locked) %>
+          <span class="kb-node-twisty" aria-hidden="true"></span>
+        <% else %>
+          <button type="button" class="kb-node-twisty kb-dir-toggle" data-action="click->kb-folder#toggle" aria-label="Toggle <%= name %>">
+            <svg class="kb-folder-chevron" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+        <% end %>
         <button type="button" class="kb-node-glyph kb-entry-icon-button" title="Personalise folder icon"
                 aria-label="Personalise <%= name %> icon"
                 data-action="click->kb-icon-picker#open"
@@ -40,20 +47,31 @@
           <%= render "kb/entry_icon",
                 preference: node[:preference],
                 default_preference: default_folder_preference,
-                fallback: project ? "project" : "folder" %>
+                fallback: project ? (project[:kind] == "build" ? "build" : "project") : "folder" %>
         </button>
         <span class="kb-node-name">
           <% if project %>
             <%= link_to name, kb_project_path(src: folder_index, path: node[:rel]),
                   draggable: "false", class: "kb-dir-label kb-project-link",
-                  title: "Stage: #{project[:stage]} · #{project[:status].to_s.capitalize}",
+                  title: (project[:kind] == "build" ? "Build plan" : "Stage: #{project[:stage]}") + " · #{project[:status].to_s.capitalize}",
                   data: { turbo_frame: "kb-content" } %>
-            <span class="kb-project-marks" aria-hidden="true">
-              <% if project[:private] %><svg class="kb-project-lock" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg><% end %>
-              <span class="kb-project-status kb-project-status--<%= project[:status] %>" title="<%= project[:status] %>"></span>
-            </span>
-            <%# Progress mark: one dot per stage, passed dimmer, current filled, last = square. %>
-            <span class="kb-project-stage" aria-hidden="true"><% project[:stage_count].to_i.times do |i| %><i class="kb-stage-dot<%= ' is-passed' if i < project[:stage_index].to_i %><%= ' is-current' if i == project[:stage_index].to_i %><%= ' is-end' if project[:stage_count].to_i > 1 && i == project[:stage_count].to_i - 1 %>"></i><% end %></span>
+            <% if project[:locked] %>
+              <span class="kb-project-locked" title="Locked: open the project and enter the password to see its files">
+                <svg class="kb-project-lock is-locked" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg>
+                Locked
+              </span>
+            <% else %>
+              <span class="kb-project-marks" aria-hidden="true">
+                <% if project[:private] %><svg class="kb-project-lock" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg><% end %>
+                <span class="kb-project-status kb-project-status--<%= project[:status] %>" title="<%= project[:status] %>"></span>
+              </span>
+              <% if project[:kind] == "build" %>
+                <span class="kb-build-badge" title="Build plan: <%= project[:progress][0] %> of <%= project[:progress][1] %> known"><%= project[:progress][0] %>/<%= project[:progress][1] %></span>
+              <% else %>
+              <%# Progress mark: one dot per stage, passed dimmer, current filled, last = square. %>
+              <span class="kb-project-stage" aria-hidden="true"><% project[:stage_count].to_i.times do |i| %><i class="kb-stage-dot<%= ' is-passed' if i < project[:stage_index].to_i %><%= ' is-current' if i == project[:stage_index].to_i %><%= ' is-end' if project[:stage_count].to_i > 1 && i == project[:stage_count].to_i - 1 %>"></i><% end %></span>
+              <% end %>
+            <% end %>
           <% else %>
             <button type="button" class="kb-dir-label" data-action="click->kb-folder#toggle"><%= name %></button>
           <% end %>
@@ -63,6 +81,7 @@
                  <%= "hidden" unless editing %>
                  data-action="keydown->kb-tree#nameKeydown blur->kb-tree#nameCommit">
         </span>
+        <% if node[:preference]&.sort_mode.present? %><span class="kb-sort-flag" title="Own sort: <%= node[:preference].sort_mode.tr('_', ' ') %>" aria-label="Own sort order"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" aria-hidden="true"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="15" y2="12"/><line x1="4" y1="18" x2="10" y2="18"/></svg></span><% end %>
         <% if node[:has_new] %><span class="kb-new-dot kb-new-dot--dir" aria-hidden="true" title="New download inside"></span><span class="sr-only">New download inside</span><% end %>
         <button type="button"
                 class="kb-node-star kb-favorite-button <%= 'is-favorite' if favorite %>"
@@ -81,7 +100,9 @@
       <div class="kb-node-children kb-dir-children" role="group" data-kb-folder-target="files">
         <% shared = { folder_index: folder_index, selected_file: selected_file, selected_folder_index: selected_folder_index,
                       default_folder_preference: default_folder_preference, editing_src: editing_src, editing_rel: editing_rel } %>
-        <% if project %>
+        <% if project&.dig(:locked) %>
+          <%# nothing to show or drop into: only the .7z + stub exist on disk %>
+        <% elsif project && project[:kind] != "build" %>
           <%= render "kb/tree_project_children", node: node, project: project, **shared %>
         <% else %>
           <%= render "kb/tree_node", tree: node[:children], **shared %>
@@ -101,7 +122,7 @@
     %>
     <div class="kb-node kb-file-row <%= 'is-active' if active %> <%= 'is-new' if node[:new] %>" draggable="true"
          role="treeitem" tabindex="-1" aria-label="<%= display_name %>" aria-selected="<%= active ? 'true' : 'false' %>"<%= ' aria-current="page"'.html_safe if active %>
-         data-action="contextmenu->kb-tree#show dragstart->kb-tree#dragStart dragend->kb-tree#dragEnd"
+         data-action="contextmenu->kb-tree#show dragstart->kb-tree#dragStart dragend->kb-tree#dragEnd dragover->kb-tree#dragOver dragleave->kb-tree#dragLeave drop->kb-tree#drop"
          data-kb-tree-type-param="file"
          data-kb-tree-rel-param="<%= node[:rel] %>"
          data-kb-tree-src-param="<%= folder_index %>"
@@ -127,6 +148,8 @@
                <%= "hidden" unless editing %>
                data-action="keydown->kb-tree#nameKeydown blur->kb-tree#nameCommit">
       </span>
+      <% if node[:cc] %><span class="kb-cc-mark" title="Has captions (.vtt)" aria-label="Has captions">CC</span><% end %>
+      <% if node[:note] %><span class="kb-note-mark" title="<%= node[:note] %>" aria-label="Note: <%= node[:note] %>"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 4h16v12H8l-4 4z"/></svg></span><% end %>
       <% if node[:new] %><span class="kb-new-dot" aria-hidden="true"></span><span class="sr-only">New</span><% end %>
       <button type="button"
               class="kb-node-star kb-favorite-button <%= 'is-favorite' if favorite %>"
@@ -141,6 +164,41 @@
               data-kb-tree-favorite-param="<%= favorite %>">
         <%= render "kb/star_icon", filled: favorite %>
       </button>
+    </div>
+  <% elsif node[:type] == :alias %>
+    <%# "Also in" row: points at the canonical file (opens it); never draggable or editable, only removable. %>
+    <%
+      alias_name = File.basename(node[:rel])
+      alias_ext = File.extname(node[:target_rel]).downcase
+      broken = node[:broken]
+    %>
+    <% canonical = "#{broken ? 'Original missing' : 'Also in'}: #{node[:target_rel]}" %>
+    <div class="kb-node kb-file-row kb-alias-row <%= 'is-broken' if broken %>" role="treeitem" tabindex="-1" aria-label="<%= alias_name %>, alias<%= ', broken' if broken %>" title="<%= canonical %>"
+         data-action="contextmenu->kb-tree#show dragover->kb-tree#dragOver dragleave->kb-tree#dragLeave drop->kb-tree#drop"
+         data-kb-tree-type-param="alias"
+         data-kb-tree-rel-param="<%= node[:rel] %>"
+         data-kb-tree-src-param="<%= folder_index %>"
+         data-kb-tree-link-id-param="<%= node[:link_id] %>"
+         data-kb-tree-broken-param="<%= broken ? true : false %>"
+         data-kb-tree-target-src-param="<%= node[:target_src] %>"
+         data-kb-tree-target-rel-param="<%= node[:target_rel] %>"
+         data-kb-tree-private-param="<%= node[:private] ? true : false %>">
+      <span class="kb-node-twisty" aria-hidden="true"></span>
+      <span class="kb-node-glyph kb-file-type-icon"><%= render "kb/file_icon", extension: alias_ext %></span>
+      <span class="kb-node-name">
+        <% if broken %>
+          <span class="kb-file-link"><%= alias_name %></span>
+        <% else %>
+          <%= link_to alias_name, kb_file_path(file: node[:target_rel], src: node[:target_src]),
+                draggable: "false", class: "kb-file-link",
+                data: { turbo_frame: "kb-content" } %>
+        <% end %>
+      </span>
+      <span class="kb-alias-mark" aria-hidden="true">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M7 17L17 7"/><path d="M8 7h9v9"/></svg>
+      </span>
+      <%= button_to kb_alias_path(node[:link_id]), method: :delete, form: { class: "kb-alias-remove-form" },
+            class: "kb-alias-remove", "aria-label": "Remove alias #{alias_name}", title: "Remove alias" do %>×<% end %>
     </div>
   <% elsif node[:type] == :download %>
     <%= render "kb/download_row", download: node[:download] %>

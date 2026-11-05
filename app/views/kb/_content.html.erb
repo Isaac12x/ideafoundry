@@ -1,6 +1,6 @@
 <% kind = content&.kind %>
 <% if content.present? && kind != :missing %>
-  <% copyable_media = %i[image video].include?(kind) %>
+  <% copyable_media = %i[image video audio].include?(kind) %>
   <div class="kb-document kb-document--<%= kind %>"
        <% if copyable_media %>
          data-controller="kb-media-copy"
@@ -9,6 +9,7 @@
          data-kb-media-copy-filename-value="<%= content.filename %>"
        <% end %>>
     <%= render "kb/file_metadata", content: content %>
+    <%= render "kb/note_panel", content: content unless kind == :markdown %>
 
     <% annotatable = %i[markdown embed pdf].include?(kind) %>
     <div class="kb-document__body kb-document__body--<%= kind %>"
@@ -42,6 +43,7 @@
                 title="<%= content.filename %>"></iframe>
 
       <% elsif kind == :pdf %>
+        <%= render layout: "kb/bookmarks", locals: { kind: :pdf, src: content.src, rel: content.rel } do %>
         <div class="kb-pdf-wrap">
           <div class="kb-pdf-viewer"
                data-controller="kb-pdf"
@@ -55,45 +57,99 @@
             </div>
           <% end %>
         </div>
+        <% end %>
 
       <% elsif kind == :image %>
-        <div class="kb-image-view">
-          <img src="<%= content.serve_url %>"
-               alt="<%= content.filename %>"
-               class="kb-image-preview kb-selectable-media"
-               draggable="true"
-               tabindex="0"
-               title="Select, then press Ctrl/Cmd+C to copy"
-               data-action="click->kb-media-copy#select keydown->kb-media-copy#copyFromShortcut" />
-          <% if content.output_rel.present? %>
-            <%= link_to "View extracted knowledge", kb_file_path(src: content.src, file: content.output_rel),
-                  data: { turbo_frame: "kb-content" }, class: "btn btn-sm" %>
-          <% end %>
+        <%# OCR only reads the raster formats it understands; svg/ico/avif are view-only. svg renders via <img> only, never inline. %>
+        <% ocr = Kb::MediaTypes::OCR_EXTENSIONS.include?(File.extname(content.filename).downcase) %>
+        <% gif = File.extname(content.filename).casecmp?(".gif") %>
+        <div class="kb-image-view"
+             data-controller="kb-image-text kb-idea-attach<%= ' kb-gif' if gif %>"
+             data-kb-image-text-url-value="<%= kb_ocr_path(src: content.src, file: content.rel) if ocr %>"
+             data-kb-idea-attach-url-value="<%= kb_attach_to_idea_path %>"
+             data-kb-idea-attach-search-url-value="<%= search_ideas_path %>"
+             data-kb-idea-attach-src-value="<%= content.src %>"
+             data-kb-idea-attach-file-value="<%= content.rel %>"
+             data-kb-idea-attach-name-value="<%= content.filename %>">
+          <div class="kb-image-stage">
+            <img src="<%= content.serve_url %>"
+                 alt="<%= content.filename %>"
+                 class="kb-image-preview kb-selectable-media<%= ' kb-image-preview--vector' if File.extname(content.filename).casecmp?('.svg') %>"
+                 draggable="true"
+                 tabindex="0"
+                 title="Select, then press Ctrl/Cmd+C to copy"
+                 data-kb-image-text-target="image"
+                 <% if gif %>data-kb-gif-target="image"<% end %>
+                 data-action="click->kb-media-copy#select keydown->kb-media-copy#copyFromShortcut load->kb-image-text#layout<%= ' click->kb-gif#toggle keydown.space->kb-gif#toggle' if gif %>" />
+            <div class="kb-image-text-layer" data-kb-image-text-target="layer" data-action="click->kb-image-text#pick pointerdown->kb-image-text#dragStart"></div>
+          </div>
+          <div class="kb-image-text-bar">
+            <button type="button" class="btn btn-sm" hidden aria-pressed="false" aria-controls="kb-image-text-panel"
+                    data-kb-image-text-target="toggle" data-action="kb-image-text#togglePanel">Text</button>
+            <% if gif %><button type="button" class="btn btn-sm" hidden data-kb-gif-target="toggle" data-action="kb-gif#toggle" aria-keyshortcuts="Space">Pause</button><% end %>
+            <% unless content.private_project %><button type="button" class="btn btn-sm" data-action="kb-idea-attach#open">Attach to idea…</button><% end %>
+            <span class="kb-image-text-status" role="status" aria-live="polite" data-kb-image-text-target="status"></span>
+            <% if content.output_rel.present? %>
+              <%= link_to "View extracted knowledge", kb_file_path(src: content.src, file: content.output_rel),
+                    data: { turbo_frame: "kb-content" }, class: "btn btn-sm" %>
+            <% end %>
+            <%= render "kb/idea_attach" unless content.private_project %>
+          </div>
+          <div class="kb-image-text-panel" id="kb-image-text-panel" hidden data-kb-image-text-target="panel">
+            <button type="button" class="btn btn-sm" data-action="kb-image-text#copyAll">Copy all</button>
+            <pre data-kb-image-text-target="text" tabindex="0"></pre>
+          </div>
         </div>
 
       <% elsif kind == :video %>
-        <div class="kb-video-view">
+        <div class="kb-video-view"
+             data-controller="kb-video-shot kb-transcript kb-idea-attach"
+             data-kb-idea-attach-url-value="<%= kb_attach_to_idea_path %>"
+             data-kb-idea-attach-search-url-value="<%= search_ideas_path %>"
+             data-kb-idea-attach-src-value="<%= content.src %>"
+             data-kb-transcript-url-value="<%= kb_transcript_path(src: content.src, file: content.rel) %>"
+             data-kb-video-shot-url-value="<%= kb_screenshot_path %>"
+             data-kb-video-shot-src-value="<%= content.src %>"
+             data-kb-video-shot-file-value="<%= content.rel %>"
+             data-kb-video-shot-private-value="<%= content.private_project ? true : false %>"
+             data-action="keydown->kb-video-shot#key kb-video-shot:attach->kb-idea-attach#open kb-idea-attach:done->kb-video-shot#attached">
           <video class="kb-video-player kb-selectable-media"
+                 data-kb-video-shot-target="video"
                  controls
                  preload="metadata"
                  tabindex="0"
                  title="Select, then press Ctrl/Cmd+C to copy"
-                 data-action="click->kb-media-copy#select keydown->kb-media-copy#copyFromShortcut"
+                 data-kb-transcript-target="media"
+                 data-action="click->kb-media-copy#select keydown->kb-media-copy#copyFromShortcut timeupdate->kb-transcript#highlight seeked->kb-transcript#highlight"
                  data-controller="kb-resume"
                  data-kb-resume-key-value="<%= content.src %>:<%= content.rel %>">
             <source src="<%= content.serve_url %>" type="<%= content.mime_type %>">
+            <% if content.captions_url %><track kind="captions" src="<%= content.captions_url %>" srclang="en" label="Captions"><% end %>
             Your browser does not support video playback.
           </video>
+          <div class="kb-video-shot-bar">
+            <button type="button" class="btn btn-sm" data-action="kb-video-shot#capture" title="Save current frame as PNG (S)" aria-keyshortcuts="S">Screenshot <kbd>S</kbd></button>
+            <div class="kb-video-shot-toast" data-kb-video-shot-target="toast" role="status" aria-live="polite" hidden></div>
+            <%= render "kb/idea_attach" unless content.private_project %>
+          </div>
+          <%= render "kb/transcript_panel" %>
         </div>
 
       <% elsif kind == :audio %>
-        <div class="kb-audio-view">
-          <audio class="kb-audio-player" controls preload="metadata"
+        <div class="kb-audio-view"
+             data-controller="kb-transcript"
+             data-kb-transcript-url-value="<%= kb_transcript_path(src: content.src, file: content.rel) %>">
+          <audio class="kb-audio-player kb-selectable-media" controls preload="metadata"
+                 tabindex="0"
+                 title="Select, then press Ctrl/Cmd+C to copy"
+                 data-kb-transcript-target="media"
+                 data-action="click->kb-media-copy#select keydown->kb-media-copy#copyFromShortcut timeupdate->kb-transcript#highlight seeked->kb-transcript#highlight"
                  data-controller="kb-resume"
                  data-kb-resume-key-value="<%= content.src %>:<%= content.rel %>">
             <source src="<%= content.serve_url %>" type="<%= content.mime_type %>">
             Your browser does not support audio playback.
           </audio>
+          <%= render "kb/transcript_panel" %>
         </div>
 
       <% elsif kind == :long_doc %>
@@ -125,6 +181,69 @@
             <% end %>
           <% end %>
         </article>
+      <% elsif kind == :model %>
+        <div class="kb-model-view"
+             data-controller="kb-model"
+             data-kb-model-url-value="<%= content.serve_url %>"
+             data-kb-model-ext-value="<%= File.extname(content.filename).downcase %>"
+             data-kb-model-bundle-url-value="<%= asset_path('kb_viewers/model.js') %>"
+             data-kb-model-wasm-url-value="<%= asset_path('kb_viewers/occt-import-js.wasm') %>">
+          <div class="kb-model-stage" tabindex="0" role="img" data-kb-model-target="stage"
+               aria-label="3D view of <%= content.filename %>. Drag to rotate, scroll to zoom, right-drag or arrow keys to pan."></div>
+          <p class="kb-viewer-notice" role="status" aria-live="polite" data-kb-model-target="status">Loading 3D model…</p>
+          <div class="kb-viewer-bar">
+            <button type="button" class="btn btn-sm" data-action="kb-model#reset" data-kb-model-target="control" disabled>Reset view</button>
+            <button type="button" class="btn btn-sm" aria-pressed="false" data-action="kb-model#toggleWireframe" data-kb-model-target="control wireframe" disabled>Wireframe</button>
+            <span class="kb-viewer-bar__text kb-model-dims" data-kb-model-target="dims" title="Bounding box in model units"></span>
+            <%= link_to "Download", content.serve_url, class: "btn btn-sm", data: { turbo: false } %>
+          </div>
+        </div>
+
+      <% elsif kind == :cad %>
+        <div class="kb-generic-file kb-cad-file">
+          <%= render "kb/file_icon", extension: File.extname(content.filename).downcase %>
+          <p><%= Kb::MediaTypes::CAD_HINTS.fetch(File.extname(content.filename).downcase) %></p>
+          <%= link_to "Download #{content.filename}", content.serve_url, class: "btn btn-primary btn-sm", data: { turbo: false } %>
+        </div>
+        <% if Kb::MediaTypes::CAD_ZIP_EXTENSIONS.include?(File.extname(content.filename).downcase) %>
+          <turbo-frame id="kb-archive" class="kb-archive-frame" loading="lazy" src="<%= kb_archive_path(src: content.src, file: content.rel) %>">
+            <p class="kb-viewer-notice">Reading archive…</p>
+          </turbo-frame>
+        <% end %>
+
+      <% elsif kind == :archive || kind == :comic %>
+        <div class="kb-archive-view">
+          <div class="kb-media-action-bar">
+            <%= link_to "Download #{content.filename}", content.serve_url, class: "btn btn-sm", data: { turbo: false } %>
+          </div>
+          <turbo-frame id="kb-archive" class="kb-archive-frame" loading="lazy" src="<%= kb_archive_path(src: content.src, file: content.rel) %>">
+            <p class="kb-viewer-notice">Reading archive…</p>
+          </turbo-frame>
+        </div>
+
+      <% elsif kind == :book %>
+        <%# .epub opens directly; other formats go through a converted sidecar (status url) and expose the same reader. %>
+        <% native = Kb::MediaTypes::EPUB_EXTENSIONS.include?(File.extname(content.filename).downcase) %>
+        <%= render layout: "kb/bookmarks", locals: { kind: :book, src: content.src, rel: content.rel } do %>
+        <div class="kb-book"
+             data-controller="kb-book"
+             data-kb-book-key-value="<%= content.src %>:<%= content.rel %>"
+             data-kb-book-bundle-url-value="<%= asset_path('kb_viewers/book.js') %>"
+             <% if native %>data-kb-book-url-value="<%= content.serve_url %>"<% else %>data-kb-book-status-url-value="<%= kb_book_path(src: content.src, file: content.rel) %>"<% end %>>
+          <div class="kb-book__stage" data-kb-book-target="stage" hidden></div>
+          <div class="kb-viewer-notice" data-kb-book-target="notice">
+            <p data-kb-book-target="message"><%= native ? "Opening book…" : "Checking conversion…" %></p>
+            <button type="button" class="btn btn-primary btn-sm" hidden data-kb-book-target="convert" data-action="kb-book#convert">Convert to read</button>
+            <%= link_to "Download #{content.filename}", content.serve_url, class: "btn btn-sm", data: { turbo: false } %>
+          </div>
+          <div class="kb-viewer-bar" data-kb-book-target="bar" hidden>
+            <button type="button" class="btn btn-sm" data-action="kb-book#previous" aria-keyshortcuts="ArrowLeft">Previous</button>
+            <span class="kb-viewer-bar__text" role="status" aria-live="polite" data-kb-book-target="location"></span>
+            <button type="button" class="btn btn-sm" data-action="kb-book#next" aria-keyshortcuts="ArrowRight">Next</button>
+          </div>
+        </div>
+        <% end %>
+
       <% elsif kind == :generic %>
         <div class="kb-generic-file">
           <%= render "kb/file_icon", extension: File.extname(content.filename).downcase %>

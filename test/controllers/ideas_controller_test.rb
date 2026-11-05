@@ -426,6 +426,15 @@ class IdeasControllerTest < ActionDispatch::IntegrationTest
     assert_select ".idea-form-ocr-sidebar li span", text: "M4 bolt"
   end
 
+  test "form sidebar is capped to the viewport and scrolls on its own" do
+    css = Rails.root.join("app/assets/stylesheets/application.css").read
+    rule = css[/^\.form-sidebar \{.*?^\}/m]
+
+    assert_match(/position:\s*sticky/, rule)
+    assert_match(/max-height:\s*calc\(100(d?v)h/, rule)
+    assert_match(/overflow-y:\s*auto/, rule)
+  end
+
   test "edit form separates image and document attachments" do
     @idea.attachments.attach(
       io: StringIO.new("image data"),
