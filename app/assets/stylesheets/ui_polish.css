@@ -1,0 +1,99 @@
+/* Cross-cutting only: motion tokens/keyframes + reduced-motion gate, shared kbd, shared toast.
+   Component-specific rules live next to their component (kb.css, kb_projects.css, ...). */
+
+:root {
+  --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+  --dur-pop: 180ms;
+}
+
+/* ── Keyboard hints: one glyph style everywhere ─────────────────────────── */
+.kb-kbd,
+.kb-video-shot-bar kbd,
+.kb-media-editor kbd {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 0 5px;
+  border: 1px solid var(--border-emphasis);
+  border-radius: 4px;
+  color: var(--text-secondary);
+  font: 600 0.68rem/1.5 var(--font-body);
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+.kb-kbd--end { margin-left: auto; }
+.kb-media-editor__hint kbd { margin-left: 0; }
+
+/* ── Toast (non-blocking prompts) ───────────────────────────────────────── */
+/* Stack container (empty until a toast lands; the picker dialog in it is top-layer). */
+.kb-toasts {
+  position: fixed;
+  right: 1.5rem;
+  bottom: 3.5rem;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.5rem;
+  pointer-events: none;
+}
+.kb-toasts > * { pointer-events: auto; }
+.kb-toast {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  max-width: min(26rem, calc(100vw - 2rem));
+  padding: 0.625rem 0.5rem 0.625rem 1rem;
+  border: 1px solid var(--border-emphasis);
+  border-radius: var(--radius-md);
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-md);
+  font-size: 0.8125rem;
+}
+.kb-toast__text { margin: 0; min-width: 0; line-height: 1.4; }
+.kb-toast__text strong { font-weight: 600; }
+.kb-toast__action {
+  flex: none;
+  color: var(--accent);
+  font-weight: 500;
+  text-decoration: none;
+  border-radius: var(--radius-sm);
+}
+.kb-toast__action:hover { color: var(--accent-hover); text-decoration: underline; }
+.kb-toast__close {
+  flex: none;
+  width: 1.75rem;
+  height: 1.75rem;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--text-secondary);
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+}
+.kb-toast__close:hover { color: var(--text-primary); background: var(--bg-overlay); }
+.kb-toast__action:focus-visible,
+.kb-toast__close:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ── Entrances: opacity + transform only, ease-out-quart, no bounce ─────── */
+@keyframes ui-pop-in { from { opacity: 0; transform: translateY(4px); } }
+@keyframes ui-pop-in-down { from { opacity: 0; transform: translateY(-4px); } }
+@keyframes ui-slide-in { from { opacity: 0; transform: translateY(8px); } }
+@keyframes ui-fade-in { from { opacity: 0; } }
+
+@media (prefers-reduced-motion: no-preference) {
+  .kb-sort[open] > .kb-sort-menu,
+  .kb-related__add[open] .kb-related__pop { animation: ui-pop-in-down var(--dur-pop) var(--ease-out-quart) both; }
+  .kb-idea-attach:not([hidden]) { animation: ui-pop-in var(--dur-pop) var(--ease-out-quart) both; }
+  .kb-video-shot-toast:not([hidden]) { animation: ui-fade-in var(--dur-pop) var(--ease-out-quart) both; }
+  .kb-toast { animation: ui-slide-in 220ms var(--ease-out-quart) both; }
+  .kbp-lockpanel:not([hidden]) { animation: ui-pop-in-down 200ms var(--ease-out-quart) both; }
+  .kb-image-text-panel:not([hidden]) { animation: ui-pop-in-down 200ms var(--ease-out-quart) both; }
+  .kb-sort-menu--inline:not([hidden]) { animation: ui-fade-in var(--dur-pop) var(--ease-out-quart) both; }
+  .kb-refs-dialog[open] .kb-refs { animation-duration: 220ms; animation-timing-function: var(--ease-out-quart); }
+  .kb-refs-dialog::backdrop { animation-duration: 180ms; }
+  .idea-kb-links__options:not([hidden]),
+  .topology-picker__new-panel:not([hidden]) { animation: ui-pop-in-down var(--dur-pop) var(--ease-out-quart) both; }
+  .theme-chip, .theme-swatch, .kb-toast__close { transition-timing-function: var(--ease-out-quart); }
+}

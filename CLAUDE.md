@@ -19,12 +19,18 @@ Any LLM session making a change in this repo: if "Last updated" above is >30 day
 3. `yarn build` + `npm run verify:excalidraw-local-only` (no remote connectors may leak) + `bin/ci`.
 4. Bump "Last updated" line (date + version). If `next` is broken, stay on current pin, note why here, still bump date.
 
-## Audio service (not built yet)
+## Audio service (built: local whisper + sidecar .vtt)
 
-- When building it, also make videos dropped straight into the KB trackable: they have no `kb_downloads` row (`url` NOT NULL + http(s) validation; `media_digests.kb_download_id` NOT NULL).
-- Relax `url` or add a local-path column, create rows on discovery, run them through the same `transcript_status` flow.
-- Pick up rows with `transcript_status "awaiting_audio"` (no captions / direct video files).
-- Files: `app/models/kb_download.rb`, `app/models/media_digest.rb` (see comment), `app/jobs/kb_transcript_job.rb`, `app/services/kb/video_transcript.rb`.
+- `Kb::Transcript` + `KbTranscribeJob`: local `whisper` CLI (`WHISPER_BIN`, `WHISPER_MODEL` default `base`, downloads on first use) writes `<media>.vtt` next to any KB audio/video. The sidecar is the source of truth: it works for files dropped straight into the KB (no `kb_downloads` row needed), shows in the tree/Finder, and survives DB loss. `kb_downloads.transcript` (captions, `MM:SS - text`) is only the fallback.
+- UI: `KbTranscriptsController` (GET cues/status, POST "Transcribe") + `kb_transcript_controller.js` panel under the player.
+- `KbTranscriptJob.sweep` hands `transcript_status "awaiting_audio"` rows to whisper (2 per run, `transcribing` -> `done`); an existing sidecar is adopted instead.
+- Still open: `media_digests.kb_download_id` is NOT NULL, so digests for dropped-in videos need a `kb_downloads` row (relax `url` or add a local-path column, create on discovery) -- feed the digest pipeline from the sidecar `.vtt`. Files: `app/models/kb_download.rb`, `app/models/media_digest.rb`.
+
+## KB sidecars and viewer tools
+
+- `<file>.note.md` (`Kb::Note`) is a file's "why I saved this" note: any non-markdown file, hidden in the tree (marker + first-line tooltip), carried on move/rename via `Kb::Note.carry!`. Source of truth is the sidecar, like `.vtt`.
+- Non-EPUB ebooks convert to a hidden `.<name>.epub` with `ebook-convert` (`EBOOK_CONVERT_BIN`, Calibre.app fallback), `.djvu` to `.pdf` with `ddjvu` (`DDJVU_BIN`); missing tools are a UI state, not an error (`Kb::BookConversion`).
+- Viewer chrome is shared: `.kb-viewer-bar` (controls) and `.kb-viewer-notice` (loading/error/missing tool); new viewers reuse them.
 
 <!-- code-review-graph MCP tools -->
 ## MCP Tools: code-review-graph

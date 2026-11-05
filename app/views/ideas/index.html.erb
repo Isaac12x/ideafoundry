@@ -34,21 +34,59 @@
   <% end %>
 
   <%= turbo_frame_tag "ideas_list" do %>
-    <div class="ideas-grid" id="ideas-grid">
-      <% @ideas.each do |idea| %>
-        <%= render 'idea_card', idea: idea %>
-      <% end %>
-
-      <% if @ideas.empty? %>
-        <div class="empty-state" style="grid-column: 1 / -1;">
-          <h3>No ideas found</h3>
-          <p>Adjust your filters or forge a new idea.</p>
-          <%= link_to "Create Idea", new_idea_path, class: "btn btn-primary" %>
+    <% if @theme_groups %>
+      <div class="theme-groups" data-controller="collapsible-groups" data-collapsible-groups-key-value="ideas-theme-groups">
+        <div class="theme-toolbar">
+          <span><%= "#{pluralize(@theme_groups.count { |t, _| t }, 'theme')} in view" if @themes.any? %></span>
+          <%= link_to "Manage themes", settings_themes_path, data: { turbo_frame: "_top" } %>
         </div>
-      <% end %>
-    </div>
+        <% if @themes.empty? && @theme_groups.any? %>
+          <div class="theme-hint">
+            <strong>Nothing to group yet</strong>
+            Add a theme to an idea to group it here. Open an idea, type a theme under Themes, press Enter.
+          </div>
+        <% end %>
+        <% @theme_groups.each do |theme, ideas| %>
+          <details class="theme-group<%= ' theme-group--none' unless theme %>" open <%= tag.attributes(style: ("--theme-color: #{theme.color}" if theme&.color.present?)) %> data-collapsible-groups-target="group" data-group-id="<%= theme&.id || 'none' %>"
+                   data-action="toggle->collapsible-groups#save">
+            <summary class="theme-group__header">
+              <span class="theme-group__mark" aria-hidden="true"></span>
+              <span class="theme-group__name"><%= theme&.name || "No theme" %></span>
+              <span class="theme-group__count"><%= pluralize(ideas.size, "idea") %></span>
+              <span class="theme-group__chev" aria-hidden="true">▾</span>
+            </summary>
+            <div class="ideas-grid">
+              <% ideas.each do |idea| %>
+                <%= render 'idea_card', idea: idea %>
+              <% end %>
+            </div>
+          </details>
+        <% end %>
+        <% if @theme_groups.empty? %>
+          <div class="empty-state">
+            <h3>No ideas found</h3>
+            <p>Adjust your filters or forge a new idea.</p>
+            <%= link_to "Create Idea", new_idea_path, class: "btn btn-primary" %>
+          </div>
+        <% end %>
+      </div>
+    <% else %>
+      <div class="ideas-grid" id="ideas-grid">
+        <% @ideas.each do |idea| %>
+          <%= render 'idea_card', idea: idea %>
+        <% end %>
 
-    <%= render 'infinite_scroll_sentinel', ideas: @ideas %>
+        <% if @ideas.empty? %>
+          <div class="empty-state" style="grid-column: 1 / -1;">
+            <h3>No ideas found</h3>
+            <p>Adjust your filters or forge a new idea.</p>
+            <%= link_to "Create Idea", new_idea_path, class: "btn btn-primary" %>
+          </div>
+        <% end %>
+      </div>
+
+      <%= render 'infinite_scroll_sentinel', ideas: @ideas %>
+    <% end %>
   <% end %>
 </div>
 

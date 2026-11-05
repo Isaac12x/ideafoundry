@@ -1,3 +1,4 @@
 <turbo-frame id="kb-content">
-  <%= render "kb/projects/page" %>
+  <% if @lock_error.present? %><p class="kbp-lock-banner" role="alert"><%= @lock_error %></p><% end %>
+  <%= render(@lock_op ? "kb/projects/working" : @project.locked? ? "kb/projects/locked" : @project.build? ? "kb/projects/build_page" : "kb/projects/page") %>
 </turbo-frame>

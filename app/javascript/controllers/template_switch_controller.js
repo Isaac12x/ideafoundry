@@ -1,7 +1,7 @@
 import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
-  static targets = ["selector", "tabCustomFields", "tabPanelsContainer", "orphanedPanel", "orphanedList", "topologyCheckbox", "scoringSystem"]
+  static targets = ["selector", "tabCustomFields", "tabPanelsContainer", "orphanedPanel", "orphanedList", "topologyCheckbox", "scoringSystem", "scoringHint"]
   static values = {
     currentFields: { type: Array, default: [] },
     fieldValues: { type: Object, default: {} }
@@ -79,6 +79,9 @@ export default class extends Controller {
       element.querySelectorAll("input, select, textarea").forEach(input => {
         input.disabled = !active
       })
+    })
+    this.scoringHintTargets.forEach(element => {
+      element.hidden = activeIds.includes(element.dataset.scoringSystemId)
     })
   }
 

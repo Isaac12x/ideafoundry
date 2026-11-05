@@ -5,6 +5,7 @@ module KbProjects
 
   UNNAMED_PROJECT = "Untitled project".freeze
   UNNAMED_TEST = "Untitled test".freeze
+  UNNAMED_PLAN = "Untitled build plan".freeze
 
   included do
     helper_method :render_markdown, :measurement_table, :project_image?
@@ -16,7 +17,8 @@ module KbProjects
 
   def project_update
     project_action(exact: true) do |_base, project|
-      project.update!(params.permit(:goal, :status, :private, :conclusion, :brief, :stage, :stages).to_h)
+      project.update!(params.permit(:goal, :status, :private, :conclusion, :brief, :stage, :stages, :items).to_h)
+      Kb::TreeBroadcaster.call(@user) # busts the tree cache so the build-plan badge refreshes
       redirect_to kb_project_path(src: params[:src], path: project.rel)
     end
   end
@@ -35,11 +37,27 @@ module KbProjects
     end
   end
 
+  # Passwords exist only in these two requests (params are log-filtered via :passw)
+  # and in the background thread's memory; see Kb::ProjectLock.start.
+  def project_lock
+    project_action(exact: true, allow_locked: true) do |_base, project|
+      Kb::ProjectLock.start(:lock, project, params[:password].to_s, params[:password_confirmation].to_s, user: @user)
+      redirect_to kb_project_path(src: params[:src], path: project.rel)
+    end
+  end
+
+  def project_unlock
+    project_action(exact: true, allow_locked: true) do |_base, project|
+      Kb::ProjectLock.start(:unlock, project, params[:password].to_s, user: @user)
+      redirect_to kb_project_path(src: params[:src], path: project.rel)
+    end
+  end
+
   def project_convert
     base = writable_base(params[:src].to_i)
     return fs_error("Folder is not available.") if base.nil?
 
-    Kb::Project.convert!(base: base, rel: params[:path].to_s)
+    Kb::Project.convert!(base: base, rel: params[:path].to_s, kind: project_kind)
     respond_fs
   rescue ArgumentError => error
     fs_error(error.message)
@@ -49,6 +67,8 @@ module KbProjects
   # that drops into inline naming in the tree.
   def project_test_create
     project_action(rel_param: :dir) do |base, project|
+      raise ArgumentError, "Build plans have no tests." if project.build?
+
       dir = params[:dir].to_s.sub(%r{/+\z}, "")
       unless [ project.rel, File.join(project.rel, Kb::Project::TESTS_DIR) ].include?(dir)
         raise ArgumentError, "Tests live inside a project."
@@ -150,11 +170,15 @@ module KbProjects
   private
 
   # Resolves the project for params[rel_param]; exact => that folder must be the project.
-  def project_action(rel_param: :path, exact: false)
+  def project_action(rel_param: :path, exact: false, allow_locked: false)
     base = writable_base(params[:src].to_i)
     rel = params[rel_param].to_s.sub(%r{/+\z}, "")
     project = base && Kb::Project.containing(base, rel)
     return head(:not_found) if project.nil? || (exact && project.rel != rel)
+    if action_name != "project_show"
+      raise ArgumentError, "Project is being #{Kb::ProjectLock.op_for(project.abs)}ed. Try again in a moment." if Kb::ProjectLock.busy?(project.abs)
+      raise ArgumentError, "Project is locked. Unlock it first." if project.locked? && !allow_locked
+    end
 
     yield base, project
   rescue ArgumentError => error
@@ -176,7 +200,9 @@ module KbProjects
   def render_project_page(base, project)
     @project = project
     @src = params[:src].to_i
-    @entries = project_entries(project)
+    @lock_op = Kb::ProjectLock.op_for(project.abs)
+    @lock_error = Kb::ProjectLock.take_error(project.abs)
+    @entries = project.locked? || @lock_op || project.build? ? [] : project_entries(project)
     @backlinks = IdeaKbLink.for_path(user: @user, source_path: base, relative_path: project.rel).includes(:idea).order(:id)
     render "kb/project_show"
   end
@@ -189,7 +215,7 @@ module KbProjects
     @folders = build_folder_tree
     @project = project
     @src = params[:src].to_i
-    @entries = project_entries(project)
+    @entries = project.build? ? [] : project_entries(project)
     @backlinks = IdeaKbLink.for_path(user: @user, source_path: base, relative_path: project.rel).includes(:idea).order(:id)
     render "kb/project_stream"
   end
@@ -250,10 +276,13 @@ module KbProjects
     File.basename(unique_fs_path(File.join(dir, UNNAMED_TEST)))
   end
 
+  def project_kind = params[:project_kind].to_s == "build" ? "build" : "research"
+
   def project_create(parent, name)
     base = writable_base(params[:src].to_i)
-    name = File.basename(unique_fs_path(File.join(parent, UNNAMED_PROJECT))) if name.blank?
-    project = Kb::Project.create!(base: base, parent_rel: params[:dir].to_s, name: name, goal: params[:goal].to_s)
+    kind = project_kind
+    name = File.basename(unique_fs_path(File.join(parent, kind == "build" ? UNNAMED_PLAN : UNNAMED_PROJECT))) if name.blank?
+    project = Kb::Project.create!(base: base, parent_rel: params[:dir].to_s, name: name, goal: params[:goal].to_s, kind: kind)
     respond_fs(editing: project.rel)
   rescue ArgumentError => error
     fs_error(error.message)

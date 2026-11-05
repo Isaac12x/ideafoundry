@@ -1,4 +1,4 @@
-<% cache ["idea-card-v1", idea, idea.updated_at, idea.computed_score, feature_enabled?(:licensing), feature_enabled?(:idea_states)] do %>
+<% cache ["idea-card-v2", idea, idea.updated_at, idea.themes.map { |t| [ t.id, t.name, t.color ] }, idea.computed_score, feature_enabled?(:licensing), feature_enabled?(:idea_states)] do %>
 <div class="idea-card idea-card--<%= idea.state %>"
      data-idea-context-menu-target="idea"
      data-action="contextmenu->idea-context-menu#open"
@@ -24,6 +24,13 @@
       <div class="idea-card-footer">
         <% if feature_enabled?(:idea_states) %>
           <span class="idea-state <%= idea.state %>"><%= idea.state == "idea_new" ? "New" : idea.state.humanize %></span>
+        <% end %>
+        <% if idea.themes.any? %>
+          <div class="idea-card-themes">
+            <% idea.themes.sort_by { |t| t.name.downcase }.each do |theme| %>
+              <span class="theme-badge" <%= tag.attributes(style: ("--theme-color: #{theme.color}" if theme.color.present?)) %>><%= theme.name %></span>
+            <% end %>
+          </div>
         <% end %>
         <% if idea.topologies.any? %>
           <div class="idea-card-tags">

@@ -190,7 +190,7 @@ module LocalAgent
       user.kb_downloads
           .where(transcript_status: "done")
           .where.not(id: MediaDigest.current.select(:kb_download_id))
-          .order(:created_at).limit(20).map do |download|
+          .order(:created_at).limit(60).reject(&:private_project?).first(20).map do |download|
         candidate(download, 60, "Distill video transcript into facts", {
           title: download.title,
           url: download.url,

@@ -94,7 +94,8 @@ export default class extends Controller {
     if (this.mimeTypeValue.startsWith("image/")) {
       return `<img src="${escapedUrl}" alt="${escapedName}">`
     }
-    return `<video src="${escapedUrl}" controls title="${escapedName}"></video>`
+    const tag = this.mimeTypeValue.startsWith("audio/") ? "audio" : "video"
+    return `<${tag} src="${escapedUrl}" controls title="${escapedName}"></${tag}>`
   }
 
   #escape(value) {
@@ -113,7 +114,7 @@ export default class extends Controller {
 
     this._feedbackTimer = window.setTimeout(() => {
       if (this.hasLabelTarget) {
-        const kind = this.mimeTypeValue.startsWith("image/") ? "image" : "video"
+        const kind = this.mimeTypeValue.split("/")[0] === "audio" ? "audio" : this.mimeTypeValue.startsWith("image/") ? "image" : "video"
         this.labelTarget.textContent = `Copy ${kind}`
       }
       if (this.hasStatusTarget) this.statusTarget.textContent = ""

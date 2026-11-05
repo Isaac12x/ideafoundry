@@ -10,7 +10,7 @@ import {
 } from "lib/idea_draft_store";
 
 export default class extends Controller {
-  static targets = ["prompt", "savedAt", "error", "idleMessage", "storedMessage", "storedActions"];
+  static targets = ["prompt", "savedAt", "error", "idleMessage", "storedMessage", "storedActions", "restoredMessage", "restoreButton"];
   static values = {
     enabled: { type: Boolean, default: false },
     storageKey: String,
@@ -72,7 +72,7 @@ export default class extends Controller {
     try {
       const draft = await decryptDraft(record, this.cryptoOptions());
       restoreDraftFields(this.element, draft);
-      this.hidePrompt();
+      this.showRestored();
     } catch (_error) {
       this.showError("This saved idea draft cannot be unlocked in the current app session.");
     }
@@ -85,8 +85,21 @@ export default class extends Controller {
       variant: "danger",
     });
     if (!confirmed) return;
+    this.discarded = this.restored; // beforeunload must not re-save the form we are about to reset
     this.clearStoredDraft();
     this.hidePrompt();
+    if (this.restored) window.location.reload();
+  }
+
+  // Restoring must never be silent: say what happened and keep Discard one click away.
+  showRestored() {
+    this.restored = true;
+    this.toggleStoredDraftMode(true);
+    if (this.hasStoredMessageTarget) this.storedMessageTarget.hidden = true;
+    if (this.hasRestoredMessageTarget) this.restoredMessageTarget.hidden = false;
+    if (this.hasRestoreButtonTarget) this.restoreButtonTarget.hidden = true;
+    if (this.hasErrorTarget) this.errorTarget.textContent = "";
+    if (this.hasPromptTarget) this.promptTarget.hidden = false;
   }
 
   dismiss() {
@@ -122,6 +135,7 @@ export default class extends Controller {
   }
 
   async saveDraft() {
+    if (this.discarded) return;
     const draft = collectDraftFields(this.element);
     if (!hasMeaningfulDraft(draft)) {
       this.clearStoredDraft();

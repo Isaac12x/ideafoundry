@@ -27,6 +27,15 @@ class IdeaKbLinksControllerTest < ActionDispatch::IntegrationTest
     assert results.none? { |r| r["name"].start_with?(".") }
   end
 
+  test "search finds media by its note text and hides the note sidecar" do
+    File.binwrite(File.join(@kb_dir, "talk.mp4"), "x")
+    File.write(File.join(@kb_dir, "talk.mp4.note.md"), "pacing reference\n")
+    get search_idea_kb_links_path(@idea), params: { q: "pacing" }
+    assert_equal [ "talk.mp4" ], response.parsed_body["results"].map { |r| r["name"] }
+    get search_idea_kb_links_path(@idea), params: { q: "talk" }
+    assert_equal [ "talk.mp4" ], response.parsed_body["results"].map { |r| r["name"] }
+  end
+
   test "create links a project and a file, destroy unlinks" do
     post idea_kb_links_path(@idea), params: { src: @src, path: "Lab" }
     post idea_kb_links_path(@idea), params: { src: @src, path: "Lab/notes.md" }

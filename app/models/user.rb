@@ -7,6 +7,7 @@ class User < ApplicationRecord
   has_many :templates, dependent: :destroy
   has_many :export_jobs, dependent: :destroy
   has_many :topologies, dependent: :destroy
+  has_many :themes, dependent: :destroy
   has_many :build_items, dependent: :destroy
   has_many :submissions, dependent: :destroy
   has_many :api_keys, dependent: :destroy
@@ -20,9 +21,11 @@ class User < ApplicationRecord
   has_many :kb_downloads, dependent: :destroy
 has_many :media_digests, dependent: :destroy
   has_many :kb_entry_preferences, dependent: :destroy
+  has_many :kb_links, dependent: :destroy
   has_many :kb_fs_jobs, dependent: :destroy
   has_many :kb_media_edits, dependent: :destroy
   has_many :kb_annotations, dependent: :destroy
+  has_many :kb_bookmarks, dependent: :destroy
   has_many :mood_images, dependent: :destroy
 
   # Single-user application - one user per instance
@@ -44,6 +47,9 @@ has_many :media_digests, dependent: :destroy
 
   LEGACY_SCORING_SYSTEM_ID = "weighted_readiness".freeze
   FOUNDER_SCORECARD_SYSTEM_ID = "founder_scorecard".freeze
+  COST_SCORECARD_SYSTEM_ID = "cost_scorecard".freeze
+  MAX_CUSTOM_SCORING_SYSTEMS = 10
+  MAX_CUSTOM_SCORING_CRITERIA = 12
 
   DEFAULT_SCORING_SYSTEMS = {
     LEGACY_SCORING_SYSTEM_ID => {
@@ -75,6 +81,24 @@ has_many :media_digests, dependent: :destroy
         { "key" => "revenue_potential", "label" => "Revenue potential" },
         { "key" => "strategic_fit", "label" => "Strategic fit with main company" },
         { "key" => "operator_independence", "label" => "Can operate without me" }
+      ]
+    },
+    COST_SCORECARD_SYSTEM_ID => {
+      "id" => COST_SCORECARD_SYSTEM_ID,
+      "name" => "Cost scorecard",
+      "description" => "What it costs to test, make, and sell. Rate cost 1-5: lower cost scores higher.",
+      "kind" => "criterion_scorecard",
+      "scale_min" => 1,
+      "scale_max" => 5,
+      "work_threshold_total" => 0,
+      "blocks_work" => false,
+      "criteria" => [
+        { "key" => "cost_to_test", "label" => "Cost to test", "direction" => "lower_better",
+          "description" => "1 = under $100 or a weekend; 3 = ~$1k or a few weeks; 5 = $10k+ or months" },
+        { "key" => "cost_to_make", "label" => "Cost to make", "direction" => "lower_better",
+          "description" => "1 = under $1k or 1 week; 3 = ~$10k or 2-3 months; 5 = $100k+ or a year+" },
+        { "key" => "cost_to_sell", "label" => "Cost to sell", "direction" => "lower_better",
+          "description" => "1 = organic or warm intros, under $500; 3 = ~$5k or a part-time seller; 5 = $50k+ or a sales team" }
       ]
     }
   }.freeze
@@ -310,10 +334,28 @@ has_many :media_digests, dependent: :destroy
   def scoring_systems
     stored = settings&.dig("scoring_systems") || {}
 
-    DEFAULT_SCORING_SYSTEMS.each_with_object({}) do |(id, defaults), systems|
+    systems = DEFAULT_SCORING_SYSTEMS.each_with_object({}) do |(id, defaults), acc|
       overrides = stored[id].is_a?(Hash) ? stored[id] : {}
-      systems[id] = normalized_scoring_system(defaults, overrides)
+      acc[id] = normalized_scoring_system(defaults, overrides)
     end
+    custom_scoring_systems.each { |custom| systems[custom["id"]] ||= normalized_scoring_system(custom, custom) }
+    systems
+  end
+
+  def custom_scoring_systems
+    Array(settings&.dig("custom_scoring_systems")).select do |system|
+      system.is_a?(Hash) && system["id"].to_s.start_with?("custom_") && Array(system["criteria"]).any?
+    end
+  end
+
+  # Replaces the user's own scorecards. Input is untrusted: everything is clamped/truncated, blank rows dropped.
+  def update_custom_scoring_systems(raw_systems)
+    self.settings ||= {}
+    raw_systems = raw_systems.to_unsafe_h if raw_systems.respond_to?(:to_unsafe_h)
+    rows = raw_systems.is_a?(Hash) ? raw_systems.values : Array(raw_systems)
+    self.settings["custom_scoring_systems"] = rows.first(MAX_CUSTOM_SCORING_SYSTEMS).filter_map { |raw| clean_custom_scoring_system(raw) }
+                                                  .uniq { |system| system["id"] }
+    save!
   end
 
   def available_scoring_systems
@@ -405,7 +447,48 @@ has_many :media_digests, dependent: :destroy
   end
 
   def scorecard_max_total(system)
-    system["criteria"].size * system.fetch("scale_max", 5).to_i
+    default_max = system.fetch("scale_max", 5).to_i
+    total = system["criteria"].sum { |c| c.fetch("weight", 1).to_f * (c["scale_max"] || default_max).to_i }
+    total == total.to_i ? total.to_i : total.round(2)
+  end
+
+  def clean_custom_scoring_system(raw)
+    raw = raw.to_unsafe_h if raw.respond_to?(:to_unsafe_h)
+    return unless raw.is_a?(Hash)
+
+    raw = raw.with_indifferent_access
+    name = raw[:name].to_s.squish.first(60)
+    criteria_rows = raw[:criteria].respond_to?(:values) ? raw[:criteria].values : Array(raw[:criteria])
+    criteria = criteria_rows.first(MAX_CUSTOM_SCORING_CRITERIA).filter_map { |row| clean_custom_criterion(row) }.uniq { |c| c["key"] }
+    return if name.blank? || criteria.empty?
+
+    id = raw[:id].to_s.match?(/\Acustom_[a-z0-9]{4,16}\z/) ? raw[:id].to_s : "custom_#{SecureRandom.hex(4)}"
+    system = {
+      "id" => id, "name" => name, "kind" => "criterion_scorecard", "custom" => true,
+      "description" => raw[:description].to_s.squish.first(200),
+      "scale_min" => 1, "scale_max" => raw[:scale_max].to_i.clamp(2, 10),
+      "blocks_work" => ActiveModel::Type::Boolean.new.cast(raw[:blocks_work]) == true,
+      "criteria" => criteria
+    }
+    system["work_threshold_total"] = raw[:work_threshold_total].to_f.clamp(0, scorecard_max_total(system))
+    system
+  end
+
+  def clean_custom_criterion(row)
+    row = row.to_unsafe_h if row.respond_to?(:to_unsafe_h)
+    return unless row.is_a?(Hash)
+
+    row = row.with_indifferent_access
+
+    label = row[:label].to_s.squish.first(60)
+    return if label.blank?
+
+    key = row[:key].to_s.match?(/\Ac[a-z0-9]{4,16}\z/) ? row[:key].to_s : "c#{SecureRandom.hex(4)}"
+    criterion = { "key" => key, "label" => label, "weight" => (row[:weight].presence || 1).to_f.clamp(0.1, 10).round(2),
+                  "direction" => row[:direction].to_s == "lower_better" ? "lower_better" : "higher_better" }
+    criterion["description"] = row[:description].to_s.squish.first(200) if row[:description].present?
+    criterion["scale_max"] = row[:scale_max].to_i.clamp(2, 10) if row[:scale_max].present?
+    criterion
   end
 
   def normalized_scoring_system(defaults, overrides)

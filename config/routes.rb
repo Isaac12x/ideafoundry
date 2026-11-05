@@ -70,8 +70,10 @@ Rails.application.routes.draw do
   mount ActionMailbox::Engine => "/rails/action_mailbox"
 
   # Ideas management
+  get "ideas/kb_link_search", to: "idea_kb_links#search", as: :ideas_kb_link_search
   resources :ideas do
     member do
+      patch :set_themes
       post :send_email
       post :approve_pending_email
       delete :discard_pending_email
@@ -162,6 +164,8 @@ Rails.application.routes.draw do
   # Think in Images — visual thinking board (idea-scoped or global/KB board)
   resources :mood_images, only: [ :create, :update, :destroy ]
 
+  resources :themes, only: [ :update, :destroy ]
+
   # Topology management
   resources :topologies do
     collection do
@@ -208,6 +212,7 @@ Rails.application.routes.draw do
   patch "settings/github", to: "settings#update_github"
   get "settings/topologies", to: "settings#topologies"
   patch "settings/topologies", to: "settings#update_topologies"
+  get "settings/themes", to: "settings#themes"
   get "settings/lists", to: "settings#lists"
   patch "settings/lists", to: "settings#update_lists"
   get "settings/idea-tabs", to: "settings#idea_tabs"
@@ -251,9 +256,20 @@ Rails.application.routes.draw do
   get "knowledge-base/raw", to: "kb#raw", as: :kb_raw
   get "knowledge-base/serve", to: "kb#serve", as: :kb_serve
   post "knowledge-base/extract", to: "kb#extract", as: :kb_extract
+  get "knowledge-base/ocr", to: "kb_ocr#show", as: :kb_ocr
+  get "knowledge-base/transcript", to: "kb_transcripts#show", as: :kb_transcript
+  post "knowledge-base/transcript", to: "kb_transcripts#create"
+  get "knowledge-base/note", to: "kb_notes#show", as: :kb_note
+  patch "knowledge-base/note", to: "kb_notes#update"
+  get "knowledge-base/archive", to: "kb_archives#show", as: :kb_archive
+  get "knowledge-base/archive/entry", to: "kb_archives#entry", as: :kb_archive_entry
+  get "knowledge-base/book", to: "kb_books#show", as: :kb_book
+  post "knowledge-base/book", to: "kb_books#create"
+  post "knowledge-base/attach-to-idea", to: "kb_idea_attachments#create", as: :kb_attach_to_idea
   get "knowledge-base/edit", to: "kb#edit", as: :kb_edit
   patch "knowledge-base/save", to: "kb#fs_save", as: :kb_fs_save
   post "knowledge-base/media-edits", to: "kb_media_edits#create", as: :kb_media_edits
+  post "knowledge-base/screenshot", to: "kb_media_edits#screenshot", as: :kb_screenshot
   get "knowledge-base/media-edits/:id", to: "kb_media_edits#show", as: :kb_media_edit
   post "knowledge-base/fs/create", to: "kb#fs_create", as: :kb_fs_create
   post "knowledge-base/fs/upload", to: "kb#fs_upload", as: :kb_fs_upload
@@ -264,10 +280,18 @@ Rails.application.routes.draw do
   delete "knowledge-base/fs", to: "kb#fs_delete", as: :kb_fs_delete
   get "knowledge-base/tree", to: "kb#tree", as: :kb_tree
   patch "knowledge-base/sort", to: "kb#sort", as: :kb_sort
+  patch "knowledge-base/order", to: "kb#order", as: :kb_order
+  post "knowledge-base/aliases", to: "kb_links#create_alias", as: :kb_aliases
+  delete "knowledge-base/aliases/:id", to: "kb_links#destroy_alias", as: :kb_alias
+  post "knowledge-base/related", to: "kb_links#create_related", as: :kb_related_links
+  delete "knowledge-base/related/:id", to: "kb_links#destroy_related", as: :kb_related_link
   resources :kb_annotations, path: "knowledge-base/annotations", only: [ :index, :create, :update, :destroy ]
+  resources :kb_bookmarks, path: "knowledge-base/bookmarks", only: [ :index, :create, :update, :destroy ]
   get   "knowledge-base/projects", to: "kb#project_show", as: :kb_project
   patch "knowledge-base/projects", to: "kb#project_update"
   patch "knowledge-base/projects/materials", to: "kb#project_material_update", as: :kb_project_materials
+  post  "knowledge-base/projects/lock", to: "kb#project_lock", as: :kb_project_lock
+  post  "knowledge-base/projects/unlock", to: "kb#project_unlock", as: :kb_project_unlock
   post  "knowledge-base/projects/convert", to: "kb#project_convert", as: :kb_project_convert
   post  "knowledge-base/projects/tests", to: "kb#project_test_create", as: :kb_project_tests
   patch "knowledge-base/projects/tests", to: "kb#project_test_update"
@@ -278,6 +302,7 @@ Rails.application.routes.draw do
   post  "knowledge-base/projects/runs", to: "kb#project_run_create", as: :kb_project_runs
   patch "knowledge-base/projects/runs", to: "kb#project_run_update"
   post "knowledge-base/jobs", to: "kb_fs_jobs#create", as: :kb_fs_jobs
+  get    "knowledge-base/downloads/:id/references", to: "kb_references#show"
   post   "knowledge-base/downloads/:id/references", to: "kb_references#create", as: :kb_download_references
   delete "knowledge-base/downloads/:id/references", to: "kb_references#destroy"
   resources :facts, only: [ :create, :destroy ]
