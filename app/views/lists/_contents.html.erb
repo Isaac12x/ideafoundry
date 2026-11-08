@@ -1,0 +1,30 @@
+<div class="named-list-items">
+  <% ideas.each do |idea| %>
+    <div class="named-list-item">
+      <div>
+        <h3><%= link_to idea.title, idea_path(idea) %></h3>
+        <p>
+          <span class="idea-state <%= idea.state %>"><%= idea.state.humanize %></span>
+          <% if idea.computed_score %>
+            <span class="idea-score"><%= number_with_precision(idea.computed_score, precision: 1) %></span>
+          <% end %>
+        </p>
+      </div>
+      <% if list.named? %>
+        <%= button_to "Remove", remove_idea_list_path(list, idea_id: idea.id),
+            method: :delete,
+            class: "btn btn-sm btn-danger",
+            form: { data: { turbo_confirm: "Remove this idea from the list?" } } %>
+      <% end %>
+    </div>
+  <% end %>
+
+  <%= render partial: "lists/item", collection: list.list_items, locals: { list: list } %>
+
+  <% if ideas.empty? && list.list_items.empty? %>
+    <div class="empty-state">
+      <h3>Nothing in this list yet</h3>
+      <p><%= list.named? ? "Add ideas, notes, links or knowledge base files above." : "Add ideas to make this list useful." %></p>
+    </div>
+  <% end %>
+</div>
