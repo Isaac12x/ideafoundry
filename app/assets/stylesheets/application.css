@@ -4043,6 +4043,7 @@ body.shortcuts-hints-active {
   position: relative;
   display: flex;
   align-items: center;
+  gap: 0.5rem;
 }
 
 .list-search-icon {
@@ -4056,6 +4057,44 @@ body.shortcuts-hints-active {
 .list-search-input-row .form-control {
   padding-left: 32px;
 }
+
+.list-anything__matches {
+  display: grid;
+  gap: 2px;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.list-anything__match {
+  display: flex;
+  width: 100%;
+  align-items: baseline;
+  gap: 0.75rem;
+  padding: 6px 10px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 0.88rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.list-anything__match small {
+  overflow: hidden;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.list-anything__match:hover,
+.list-anything__match:focus-visible { background: var(--accent-muted); }
+
+/* New list: a named list has no board, so hide the board picker. */
+.list-new-form:has(select[name="list[kind]"] option[value="named"]:checked) .list-new-board { display: none; }
 
 /* Kanban column search */
 .kanban-search-section {
@@ -4229,6 +4268,11 @@ body.shortcuts-hints-active {
 :focus-visible {
     outline: 2px solid var(--accent);
     outline-offset: 2px;
+}
+
+/* Fields inside a frame that rings on :focus-within: the frame is the ring, no second one inside. */
+:is(.kbp-finding-add, .backlog-form, .tiptap-editor) :is(input, textarea, [contenteditable]):focus-visible {
+    outline: none;
 }
 
 @media (prefers-reduced-motion: reduce) {

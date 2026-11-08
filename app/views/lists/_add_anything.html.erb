@@ -1,0 +1,16 @@
+<%# Named lists take anything: type a note or paste a link and press Enter, or pick an idea or KB file/folder/project from the matches. %>
+<%= form_with url: list_items_path(list), method: :post, class: "list-search-section list-anything",
+      data: { controller: "list-item-search", list_item_search_url_value: ideas_kb_link_search_path,
+              list_item_search_ideas_url_value: search_ideas_path, list_item_search_list_id_value: list.id } do %>
+  <h3 class="list-search-heading">Add to list</h3>
+  <div class="list-search-input-row">
+    <svg class="list-search-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+    <input type="text" name="text" class="form-control" maxlength="500" required autocomplete="off"
+           placeholder="Note, link, or search…" aria-label="Add a note, link, idea or KB file"
+           data-list-item-search-target="input" data-action="input->list-item-search#search">
+    <%# Must stay first submit button: Enter's implicit submission uses it, not the first match. %>
+    <button type="submit" class="btn btn-sm btn-primary">Add</button>
+  </div>
+  <span class="form-text">Enter adds it as a note; a trailing link becomes clickable.</span>
+  <ul class="list-anything__matches" aria-live="polite" aria-label="Matches" data-list-item-search-target="results" hidden></ul>
+<% end %>
