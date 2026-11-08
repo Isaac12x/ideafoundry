@@ -156,6 +156,7 @@ Rails.application.routes.draw do
     collection do
       patch :update_idea_position
     end
+    resources :items, only: [ :create, :destroy ], controller: :list_items
   end
 
   # Uploads for TipTap editor images

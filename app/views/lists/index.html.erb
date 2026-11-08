@@ -143,7 +143,7 @@
         <div class="named-list-card" data-list-kind="named">
           <div class="named-list-card__body">
             <h3><%= list.name %></h3>
-            <p><%= pluralize(list.ideas.size, "idea") %></p>
+            <p><%= [ pluralize(list.ideas.size, "idea"), (pluralize(list.list_items.size, "item") if list.list_items.any?) ].compact.join(" · ") %></p>
           </div>
           <div class="list-actions">
             <%= link_to "Open", list_path(list), class: "btn btn-sm btn-primary" %>

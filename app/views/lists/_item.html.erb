@@ -1,0 +1,10 @@
+<div class="named-list-item" id="<%= dom_id(item) %>">
+  <div>
+    <% host = item.host %>
+    <h3><%= item.url ? link_to(item.title == item.url ? (host || item.url) : item.title, item.url, **(item.internal? ? {} : { target: "_blank", rel: "noopener" })) : item.title %></h3>
+    <% if host && item.title != item.url %><p><%= host %></p><% end %>
+  </div>
+  <%= button_to "Remove", list_item_path(list, item), method: :delete,
+      class: "btn btn-sm btn-danger",
+      form: { data: { turbo_confirm: "Remove this from the list?" } } %>
+</div>
