@@ -1,7 +1,8 @@
-# Alias ("also in") and related links between KB entries. Canonical bytes stay
+# Alias ("also in"), related and extracted links between KB entries ("extracted":
+# source = the material, peer = the note holding what was learned from it). Canonical bytes stay
 # in one place; rows only point at them. See the migration for column meaning.
 class KbLink < ApplicationRecord
-  KINDS = %w[alias related].freeze
+  KINDS = %w[alias related extracted].freeze
 
   belongs_to :user
 
@@ -16,9 +17,11 @@ class KbLink < ApplicationRecord
   validates :source_path, :peer_source_path, :relative_path, :peer_relative_path, presence: true
   validates :peer_relative_path, uniqueness: { scope: %i[user_id kind source_path relative_path peer_source_path] }
   validate :related_pair_is_new, if: -> { kind == "related" }
+  validate :extracted_is_not_self, if: -> { kind == "extracted" }
 
   scope :aliases, -> { where(kind: "alias") }
   scope :related, -> { where(kind: "related") }
+  scope :extracted, -> { where(kind: "extracted") }
 
   class << self
     # Aliases whose slot lives in this source.
@@ -32,6 +35,14 @@ class KbLink < ApplicationRecord
       rel = normalize_relative_path(relative_path)
       user.kb_links.related.where(source_path: src, relative_path: rel).map { |l| [ l.peer_source_path, l.peer_relative_path, l ] } +
         user.kb_links.related.where(peer_source_path: src, peer_relative_path: rel).map { |l| [ l.source_path, l.relative_path, l ] }
+    end
+
+    # { into: [link, ...] (notes made from this entry), from: [link, ...] (materials this note came from) }
+    def extractions_of(user, source_path, relative_path)
+      src = normalize_source_path(source_path)
+      rel = normalize_relative_path(relative_path)
+      { into: user.kb_links.extracted.where(source_path: src, relative_path: rel).order(:id).to_a,
+        from: user.kb_links.extracted.where(peer_source_path: src, peer_relative_path: rel).order(:id).to_a }
     end
 
     # Rewrites every path under old_relative_path (either side of any link) to the new location.
@@ -98,6 +109,10 @@ class KbLink < ApplicationRecord
   def join(base, suffix)
     suffix = suffix.delete_prefix("/")
     suffix.empty? ? base : File.join(base, suffix)
+  end
+
+  def extracted_is_not_self
+    errors.add(:base, "Can't extract an entry into itself") if source_path == peer_source_path && relative_path == peer_relative_path
   end
 
   def related_pair_is_new

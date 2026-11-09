@@ -1,20 +1,16 @@
 <%# Locals: idea, form %>
 <% data = idea.napkin_calculations || { "rows" => 10, "cols" => 5, "cells" => {} } %>
 <% expanded = idea.napkin_present? %>
-<div class="form-panel napkin-panel"
+<details class="form-panel napkin-panel" <%= "open" if expanded %>
      data-controller="napkin"
+     data-action="toggle->napkin#toggle"
      data-napkin-initial-value="<%= data.to_json %>"
      data-napkin-input-name-value="idea[napkin_calculations]"
      data-napkin-expanded-value="<%= expanded %>">
 
-  <div class="napkin-header" data-action="click->napkin#toggle">
-    <h3 class="form-panel-title">Back-of-the-napkin</h3>
-    <button type="button" class="napkin-toggle-btn" data-napkin-target="toggleBtn" aria-expanded="<%= expanded %>">
-      <svg class="napkin-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-    </button>
-  </div>
+  <summary class="form-panel-title"><%= panel_title "Back-of-the-napkin calculations", done: expanded %></summary>
 
-  <div class="napkin-body <%= 'hidden' unless expanded %>" data-napkin-target="body">
+  <div class="napkin-body" data-napkin-target="body">
     <div class="napkin-toolbar">
       <select class="napkin-fmt-select" data-napkin-target="fmtSelect" data-action="change->napkin#applyFormat">
         <option value="">Auto</option>
@@ -46,4 +42,4 @@
   </div>
 
   <%= form.hidden_field :napkin_calculations, value: idea.napkin_calculations&.to_json, data: { napkin_target: "hiddenInput" } %>
-</div>
+</details>

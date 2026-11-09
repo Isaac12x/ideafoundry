@@ -3,6 +3,8 @@ import { confirmDialog, promptDialog } from "lib/app_dialog"
 
 const STORAGE_PREFIX = "kb_note_"
 const CUSTOM_TABS_KEY = "kb_notes_custom_tabs"
+const HEIGHT_KEY = "kb_notes_height"
+const MIN_HEIGHT = 160
 
 export default class extends Controller {
   static targets = ["tabList", "panel", "editorEl"]
@@ -21,6 +23,26 @@ export default class extends Controller {
     this._editorReady = null
     this._renderTabs()
     this._watchKbPanel()
+    try { this._setHeight(Number(localStorage.getItem(HEIGHT_KEY))) } catch { /* default height */ }
+  }
+
+  // Drag the panel's top edge; height is per viewer (localStorage) and clamped to the window.
+  resizeStart(event) {
+    event.preventDefault()
+    const move = (e) => this._setHeight(window.innerHeight - 36 - e.clientY)
+    const stop = () => {
+      document.removeEventListener("pointermove", move)
+      document.removeEventListener("pointerup", stop)
+      try { localStorage.setItem(HEIGHT_KEY, String(Math.round(this.panelTarget.offsetHeight))) } catch { /* not persisted */ }
+    }
+    document.addEventListener("pointermove", move)
+    document.addEventListener("pointerup", stop)
+  }
+
+  _setHeight(px) {
+    if (!px) return
+    const max = Math.round(window.innerHeight * 0.85)
+    this.panelTarget.style.setProperty("--kb-notes-h", `${Math.min(max, Math.max(MIN_HEIGHT, px))}px`)
   }
 
   disconnect() {

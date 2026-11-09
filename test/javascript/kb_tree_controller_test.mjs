@@ -296,7 +296,7 @@ async function loadController() {
   const { confirmDialog, alertDialog } = await import("../../app/javascript/lib/app_dialog.mjs")
   const { dropZone, insertNear, shift } = await import("../../app/javascript/lib/kb_order.mjs")
 
-  return new Function("Controller", "confirmDialog", "alertDialog", "dropZone", "insertNear", "shift", runnableSource)(class {}, confirmDialog, alertDialog, dropZone, insertNear, shift)
+  return new Function("Controller", "confirmDialog", "alertDialog", "dropZone", "insertNear", "shift", "PLAYER", runnableSource)(class {}, confirmDialog, alertDialog, dropZone, insertNear, shift, "video")
 }
 
 test("a file loaded into kb-content from any link moves the active highlight", async () => {
@@ -422,4 +422,20 @@ test("sortPick: field keeps direction, direction row flips, Use default clears, 
     { mode: "date_desc" },
     { src: 2, path: "notes", mode: "type_asc" }
   ])
+})
+
+test("clicking a project releases the open video; modified clicks do not", async () => {
+  const Controller = await loadController()
+  const controller = new Controller()
+  const released = []
+  globalThis.document = { querySelector: () => ({ dispatchEvent: (e) => released.push(e.type) }) }
+  globalThis.CustomEvent = class { constructor(type) { this.type = type } }
+  try {
+    controller.leaveMedia({ button: 0 })
+    controller.leaveMedia({ button: 0, metaKey: true })
+    assert.deepEqual(released, ["kb-video:release"])
+  } finally {
+    delete globalThis.document
+    delete globalThis.CustomEvent
+  }
 })

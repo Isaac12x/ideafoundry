@@ -13,7 +13,7 @@ class TopologiesController < ApplicationController
   end
 
   def new
-    @topology = @user.topologies.build
+    @topology = @user.topologies.build(parent_id: @user.topologies.find_by(id: params[:parent_id])&.id) # right-click "Add child topology"
     @parent_options = @user.topologies.ordered
   end
 

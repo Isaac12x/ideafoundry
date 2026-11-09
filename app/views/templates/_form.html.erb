@@ -60,6 +60,11 @@
                 </label>
               <% end %>
             </div>
+            <label class="weight-label" for="template_primary_scoring_system_id">Weighted score uses</label>
+            <%= select_tag "template[primary_scoring_system_id]",
+                           options_for_select([ [ "Average of all selected systems", "" ] ] + scoring_systems.map { |system| [ system['name'], system['id'] ] }, template.effective_primary_scoring_system_id),
+                           id: "template_primary_scoring_system_id", class: "form-control" %>
+            <span class="form-text">Ignored unless that system is selected above.</span>
           </div>
         <% end %>
       </div>

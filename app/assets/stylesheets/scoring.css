@@ -683,3 +683,14 @@
   .custom-scorecard__head,
   .custom-criterion { grid-template-columns: 1fr 1fr; }
 }
+
+.scorecard-form-hints { display: flex; flex-direction: column; }
+.scorecard-form-hints .scorecard-form-hint { margin: 0.5rem 0 0; }
+
+.score-info-btn {
+  width: 1.1rem; height: 1.1rem; margin-left: 0.35rem; padding: 0;
+  border: 1px solid var(--border-emphasis); border-radius: 50%;
+  background: transparent; color: var(--text-muted);
+  font: italic 0.7rem/1 var(--font-display); cursor: pointer;
+}
+.score-info-btn:hover { color: var(--text-primary); border-color: var(--text-primary); }
