@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Render marked standalone HTML artifacts with inline JavaScript in an opaque sandbox, including nested source previews. Deny app-origin access, remote connections and form submissions; keep ordinary HTML script-free and annotatable.
+
 - Knowledge base transcript: karaoke view. The current line stays centered (smooth, none under reduced motion, paused briefly while you scroll) and its words fill with the accent in step with playback; finished lines go back to grey. Text stays selectable.
 - Ask Agent sidebar: Expand and Ask AI always land in the right-hand bar (also when the agent is not running, which it says). Sending a question and the agent's answer update live, no reload; answers keep their line breaks. The sidebar polls every 3s only while an answer is pending and the tab is visible, and polling never counts as typing-lock activity.
 - Markdown: `->`, `<-`, `<->` and `=>` render as real arrows, and fenced `mermaid` blocks render as diagrams (local, sandboxed).
