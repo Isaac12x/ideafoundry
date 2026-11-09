@@ -176,9 +176,8 @@ input[type="date"].kbp-input { width: auto; color-scheme: dark; font-variant-num
 .kbp-x { border: 0; background: none; color: var(--text-muted); font-size: 18px; cursor: pointer; }
 .kbp-x:hover { color: var(--danger); }
 
-/* ── Sections: collapsible, the mode's lead section is set large ─── */
+/* ── Sections: collapsible, every section header is the same size ─── */
 .kbp-sec { margin-top: 12px; border-top: 1px solid var(--border-default); }
-.kbp-sec--lead { margin-top: 34px; border-top: 0; }
 .kbp-sec-head { display: flex; align-items: baseline; gap: 14px; min-width: 0; }
 .kbp-sec-title { flex: none; margin: 0; font: 400 19px/1.3 var(--font-display); }
 .kbp-sec-toggle, .kbp-test-toggle, .kbp-subhead, .kbp-group-head {
@@ -217,11 +216,6 @@ input[type="date"].kbp-input { width: auto; color-scheme: dark; font-variant-num
 .kbp-sec-body { padding: 4px 0 6px; min-width: 0; }
 .kbp-sec.is-open .kbp-sec-body { padding-bottom: 18px; }
 .kbp-sec, .kbp-test, .kbp-block { min-width: 0; }
-.kbp-sec--lead .kbp-sec-head { border-bottom: 1px solid var(--border-default); }
-.kbp-sec--lead .kbp-sec-title { font-size: 28px; }
-.kbp-sec--lead .kbp-sec-sum { padding-top: 6px; }
-.kbp-sec--lead .kbp-sec-toggle { padding: 0 0 8px; }
-.kbp-sec--lead .kbp-sec-body { padding-top: 16px; }
 .kbp-chev {
   width: 6px;
   height: 6px;
@@ -315,7 +309,7 @@ input[type="date"].kbp-input { width: auto; color-scheme: dark; font-variant-num
 .kbp-finding.is-editing .kbp-finding-text, .kbp-finding.is-editing .kbp-finding-tools { display: none; }
 .kbp-finding-tools { display: flex; gap: 12px; align-items: flex-start; padding-top: 2px; }
 /* One line that grows; Add sits inside the field and never wraps. */
-.kbp-finding-add { display: flex; align-items: center; gap: 8px; margin: 0; padding: 4px 4px 4px 10px; }
+.kbp-finding-add { display: flex; align-items: flex-end; gap: 8px; margin: 0; padding: 4px 4px 4px 10px; }
 .kbp-add-field {
   flex: 1 1 auto;
   min-width: 0;
@@ -325,6 +319,7 @@ input[type="date"].kbp-input { width: auto; color-scheme: dark; font-variant-num
   color: var(--text-primary);
   font: 400 13.5px/1.5 var(--font-body);
   outline: none;
+  resize: none;
 }
 .kbp-finding-add .kbp-btn { flex: none; padding: 3px 12px; white-space: nowrap; }
 .kbp-grow { resize: none; } /* edit textareas: sized by the site-wide autosize */
@@ -344,7 +339,6 @@ input[type="date"].kbp-input { width: auto; color-scheme: dark; font-variant-num
 .kbp--conclude .kbp-sec-head { border-bottom: 1px solid var(--border-default); }
 .kbp--conclude .kbp-sec-toggle { padding: 0 0 8px; }
 .kbp--conclude .kbp-sec-body { padding-top: 16px; }
-.kbp--conclude .kbp-sec--conclusion .kbp-sec-title { font-size: 32px; }
 .kbp--conclude .kbp-conclusion { max-width: 62ch; color: var(--text-primary); font: 400 18px/1.75 var(--font-display); }
 .kbp--conclude .kbp-conclusion :is(h1, h2, h3) { font-family: var(--font-display); font-weight: 400; }
 .kbp-concluded { color: var(--text-secondary); font: 500 11px/1.4 var(--font-mono); letter-spacing: 0.1em; text-transform: uppercase; }
@@ -580,6 +574,7 @@ a.kbp-fgroup-name:hover { color: var(--accent); }
 
 .kbp-mats { margin: 0; padding: 0; list-style: none; }
 .kbp-mat { border-bottom: 1px solid var(--border-subtle); }
+.kbp-mat-extract { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; padding: 0 0 8px 46px; font-size: 12px; }
 .kbp-mat-form { display: grid; grid-template-columns: 34px minmax(0, 1fr) auto; gap: 0 12px; align-items: start; margin: 0; padding: 8px 0 9px; }
 .kbp-glyph {
   align-self: start;

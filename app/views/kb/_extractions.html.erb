@@ -1,0 +1,15 @@
+<%# Both sides of "extracted into": a material lists its notes, a note lists its materials. %>
+<% x = kb_extractions(src, rel) %>
+<% { "Extracted from" => x[:from], "Extracted into" => x[:into] }.each do |label, peers| %>
+  <% next if peers.empty? %>
+  <span class="kb-related__item kb-extracted">
+    <span><%= label %></span>
+    <% peers.each do |peer| %>
+      <% if peer.kind == :file %>
+        <%= link_to File.basename(peer.rel), kb_file_path(src: peer.src, file: peer.rel), title: peer.rel, data: { turbo_frame: "kb-content" } %>
+      <% else %>
+        <span title="This entry no longer exists"><%= peer.rel %></span>
+      <% end %>
+    <% end %>
+  </span>
+<% end %>

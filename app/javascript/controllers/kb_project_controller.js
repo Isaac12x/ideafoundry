@@ -28,7 +28,7 @@ export default class extends Controller {
 
     const scroller = this.element.closest(".kb-content-area")
     if (scroller) scroller.scrollTop = carried.top
-    if (carried.focus) this.element.querySelector(`[data-refocus="${carried.focus}"] input`)?.focus({ preventScroll: true })
+    if (carried.focus) this.element.querySelector(`[data-refocus="${carried.focus}"] :is(input, textarea)`)?.focus({ preventScroll: true })
     carried = null
   }
 

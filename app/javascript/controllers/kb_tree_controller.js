@@ -144,6 +144,12 @@ export default class extends Controller {
     row.querySelector(".kb-file-link")?.classList.add("is-active")
   }
 
+  // A project link has no player swap: release the open video now so its stream does not hold the connection the project page needs.
+  leaveMedia(event) {
+    if (event.defaultPrevented || event.button || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
+    document.querySelector(PLAYER)?.dispatchEvent(new CustomEvent("kb-video:release"))
+  }
+
   _undoSwap() {
     const pending = this._pendingSwap
     this._pendingSwap = null

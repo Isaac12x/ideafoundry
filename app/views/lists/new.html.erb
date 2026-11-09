@@ -1,4 +1,4 @@
-<div class="form-container">
+<div class="form-container list-new-form">
   <h2>New List</h2>
   
   <%= form_with model: @list, local: true do |form| %>
@@ -21,19 +21,20 @@
     <div class="form-group">
       <%= form.label :kind, "List Type" %>
       <%= form.select :kind,
-          options_for_select([["Kanban column", "kanban"], ["Named list", "named"]], @list.kind),
+          options_for_select([["Column on a kanban board", "kanban"], ["Named list", "named"]], @list.kind),
           {},
           class: "form-control" %>
+      <span class="form-text">A kanban column sits on a board; a named list stands alone and holds ideas, notes, links and KB files.</span>
     </div>
 
     <% if (@kanban_boards || []).any? %>
-      <div class="form-group">
-        <%= form.label :kanban_board_id, "Kanban Board" %>
+      <div class="form-group list-new-board">
+        <%= form.label :kanban_board_id, "Board" %>
         <%= form.select :kanban_board_id,
             options_from_collection_for_select(@kanban_boards, :id, :name, @list.kanban_board_id || params[:kanban_board_id]),
             {},
             class: "form-control" %>
-        <span class="form-text">Used when creating a kanban column.</span>
+        <span class="form-text">The board this column is added to.</span>
       </div>
     <% end %>
 

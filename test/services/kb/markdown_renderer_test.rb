@@ -62,4 +62,18 @@ class Kb::MarkdownRendererTest < ActiveSupport::TestCase
     assert_includes out, "bye"
     assert_no_match(/alert|color:red|<script|<style/, out)
   end
+
+  test "ingredient list under an Ingredients heading gets badges" do
+    out = html("## Ingredients\n\n- 200 g flour\n- 1 1/2 cups milk\n- salt\n")
+    assert_includes out, 'data-controller="ingredients"'
+    assert_includes out, 'data-qty="200.0" data-unit="g"'
+    assert_includes out, 'data-qty="1.5" data-unit="cup"'
+    assert_includes out, ">salt</span>"
+  end
+
+  test "list mostly quantity+unit is detected, normal lists are not" do
+    assert_includes html("- 2 tbsp oil\n- 500 ml water\n- parsley\n"), "kb-ingredients"
+    assert_no_match(/kb-ingredients/, html("- 3 apples\n- buy milk\n- call mom\n"))
+    assert_no_match(/kb-ingredients/, html("- 200 g of regret\n"))
+  end
 end

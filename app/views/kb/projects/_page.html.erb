@@ -2,13 +2,13 @@
 <%# The stage drives the page: order, which sections start open, and which one leads. %>
 <% mode = project.stage_mode %>
 <% plan = {
-  "frame"    => { order: %w[brief materials tests findings conclusion links], open: %w[brief],
+  "frame"    => { order: %w[brief materials tests findings ideas conclusion links], open: %w[brief],
                   hint: "Pin down the question before collecting anything." },
-  "research" => { order: %w[materials findings brief tests conclusion links], open: %w[materials findings],
+  "research" => { order: %w[materials findings ideas brief tests conclusion links], open: %w[materials findings],
                   hint: "Collect and sort what you read. Write findings down as you go." },
-  "test"     => { order: %w[tests findings materials brief conclusion links], open: %w[tests findings],
+  "test"     => { order: %w[tests findings ideas materials brief conclusion links], open: %w[tests findings],
                   hint: "Run the tests, log every run, then set a verdict on each." },
-  "conclude" => { order: %w[conclusion summary results materials tests brief findings links], open: %w[conclusion summary results],
+  "conclude" => { order: %w[conclusion summary further_work ideas results materials tests brief findings links], open: %w[conclusion summary further_work results],
                   hint: "Write the answer to the goal, then close the project." }
 }[mode] %>
 <%# Every form posts src+path so the server re-resolves inside the source. %>

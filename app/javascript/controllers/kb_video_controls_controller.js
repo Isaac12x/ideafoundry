@@ -1,6 +1,11 @@
 import { Controller } from "@hotwired/stimulus"
 import { inverseScale, clock } from "lib/kb_zoom"
 
+// Modifier that lets video keys work from inside a notes field: Ctrl or Option on Mac (Option+Arrow then seeks
+// instead of word-jumping); Ctrl alone is select/edit shortcuts elsewhere, so Ctrl+Alt.
+const MAC = /mac/i.test(navigator.platform)
+const NOTES_MODIFIER = MAC ? "Ctrl or Option" : "Ctrl+Alt"
+
 // Custom control bar for KB video (native controls scale with browser/pinch zoom). The <video> stays the
 // element every other KB controller reads (transcript, note stamps, screenshots, resume, editor).
 // Fullscreen takes the wrapper so the bar stays visible. Keys apply while focus is inside the player.
@@ -14,6 +19,8 @@ export default class extends Controller {
       this.listen(video, type, () => this.sync())
     }
     this.listen(document, "fullscreenchange", () => this.sync())
+    this.listen(document, "keydown", (event) => this.noteKey(event))
+    this.element.querySelector(".kb-vplayer__bar")?.setAttribute("title", `While typing in notes, hold ${NOTES_MODIFIER} with a shortcut key to control the video`)
     for (const type of ["pointerup", "pointercancel"]) this.listen(document, type, () => { this._scrubbing = false })
     this.listen(window, "resize", () => this.zoom())
     if (window.visualViewport) this.listen(window.visualViewport, "resize", () => this.zoom())
@@ -86,6 +93,17 @@ export default class extends Controller {
     if (event.metaKey || event.ctrlKey || event.altKey) return
     const tag = event.target.tagName
     if (tag === "INPUT" || tag === "SELECT" || tag === "TEXTAREA" || (tag === "BUTTON" && event.key === " ")) return
+    this.run(event)
+  }
+
+  // Focus in a notes field: only the notes modifier combo reaches the video.
+  noteKey(event) {
+    if (!event.target.closest?.(".kb-notes-editor-body, .kb-note__form") || event.metaKey) return
+    if (MAC ? !(event.ctrlKey || event.altKey) : !(event.ctrlKey && event.altKey)) return
+    this.run(event)
+  }
+
+  run(event) {
     const actions = {
       " ": () => this.toggle(),
       arrowleft: () => this.skip(-5),

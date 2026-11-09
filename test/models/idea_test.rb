@@ -92,6 +92,30 @@ class IdeaTest < ActiveSupport::TestCase
     assert idea.transition_to_first_try!
   end
 
+  test "template primary scoring system drives the weighted score" do
+    template = Template.create!(
+      user: @user,
+      name: "Primary Score #{SecureRandom.hex(4)}",
+      field_definitions: [],
+      section_order: [],
+      tab_definitions: [ { "name" => "general", "label" => "General", "position" => 0 } ],
+      scoring_system_ids: [ User::LEGACY_SCORING_SYSTEM_ID, User::FOUNDER_SCORECARD_SYSTEM_ID ],
+      primary_scoring_system_id: User::FOUNDER_SCORECARD_SYSTEM_ID
+    )
+    idea = Idea.create!(
+      user: @user, title: "Primary idea", template: template, trl: 10, opportunity: 10,
+      metadata: { Idea::SCORE_METADATA_KEY => { User::FOUNDER_SCORECARD_SYSTEM_ID => founder_scorecard_values(3) } }
+    )
+    assert_in_delta 6.0, idea.computed_score.to_f, 0.001
+
+    template.update!(primary_scoring_system_id: nil)
+    idea.reload.save!
+    assert_operator idea.computed_score.to_f, :>, 6.0
+
+    template.update!(primary_scoring_system_id: User::COST_SCORECARD_SYSTEM_ID)
+    assert_nil template.primary_scoring_system_id
+  end
+
   test "cost scorecard inverts lower-is-better criteria" do
     id = User::COST_SCORECARD_SYSTEM_ID
     system = @user.scoring_system(id)

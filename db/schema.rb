@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_10_21_120000) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_09_120000) do
   create_table "action_mailbox_inbound_emails", force: :cascade do |t|
     t.integer "status", default: 0, null: false
     t.string "message_id", null: false
@@ -558,6 +558,16 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_21_120000) do
     t.index ["stage"], name: "index_licensors_on_stage"
   end
 
+  create_table "list_items", force: :cascade do |t|
+    t.integer "list_id", null: false
+    t.string "title", null: false
+    t.string "url"
+    t.integer "position", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["list_id"], name: "index_list_items_on_list_id"
+  end
+
   create_table "lists", force: :cascade do |t|
     t.integer "user_id", null: false
     t.string "name"
@@ -655,6 +665,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_21_120000) do
     t.text "tab_definitions"
     t.text "scoring_system_ids", default: "[]", null: false
     t.integer "topology_id"
+    t.string "primary_scoring_system_id"
     t.index ["user_id", "is_default"], name: "index_templates_on_user_id_and_is_default"
     t.index ["user_id", "name"], name: "index_templates_on_user_id_and_name", unique: true
     t.index ["user_id", "topology_id"], name: "index_templates_on_user_id_and_topology_id"
@@ -758,6 +769,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_21_120000) do
   add_foreign_key "licensor_contacts", "licensors"
   add_foreign_key "licensor_imports", "ideas"
   add_foreign_key "licensors", "ideas"
+  add_foreign_key "list_items", "lists"
   add_foreign_key "lists", "kanban_boards"
   add_foreign_key "lists", "users"
   add_foreign_key "media_digests", "kb_downloads"

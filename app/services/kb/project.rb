@@ -6,7 +6,7 @@ module Kb
     include Findings
 
     META_FILE = ".kb-project.yml".freeze
-    FIELDS = %w[goal brief status private conclusion concluded_on stage stages items].freeze
+    FIELDS = %w[goal brief status private conclusion further_work concluded_on stage stages items].freeze
     ROLES = %w[working reference output].freeze
     DEFAULT_STAGES = %w[Frame Research Test Conclude].freeze
     MAX_STAGES = 8
@@ -138,6 +138,7 @@ module Kb
     def goal = meta["goal"].to_s
     def conclusion = meta["conclusion"].to_s
     def brief = meta["brief"].to_s
+    def further_work = meta["further_work"].to_s
 
     def concluded_on
       value = meta["concluded_on"]

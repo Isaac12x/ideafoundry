@@ -264,6 +264,42 @@ class KbProjectsTest < ActionDispatch::IntegrationTest
     assert_equal "refuted", project.tests.first.verdict
   end
 
+  test "ideas and further work are stored on the project and render on every stage" do
+    project = make_project
+    post kb_project_ideas_path, params: { src: 0, path: "Ferment", text: "Try a colder start" }
+    patch kb_project_path, params: { src: 0, path: "Ferment", further_work: "Repeat at 4C", stage: "Conclude" }
+    project = Kb::Project.at(@kb_dir, "Ferment")
+    assert_equal [ "Try a colder start" ], project.ideas.map { |i| i["text"] }
+    assert_empty project.findings
+    get kb_project_path(src: 0, path: "Ferment")
+    assert_select "#kbp-sec-ideas", text: /colder start/
+    assert_select "#kbp-sec-further_work", text: /Repeat at 4C/
+
+    delete kb_project_ideas_path, params: { src: 0, path: "Ferment", id: project.ideas.first["id"] }
+    assert_empty Kb::Project.at(@kb_dir, "Ferment").ideas
+  end
+
+  test "a material links to the note extracted from it, visible on both sides" do
+    make_project
+    File.write(File.join(@kb_dir, "Ferment", "paper.pdf"), "x")
+    File.write(File.join(@kb_dir, "Ferment", "notes.md"), "learned")
+    patch kb_project_materials_path, params: { src: 0, path: "Ferment", name: "paper.pdf", role: "working" }
+
+    post kb_extracted_links_path, params: { src: 0, path: "Ferment/paper.pdf", note_path: "Ferment/notes.md", project: "Ferment" }
+    assert_redirected_to kb_project_path(src: 0, path: "Ferment")
+    assert_equal 1, @user.kb_links.extracted.count
+
+    get kb_project_path(src: 0, path: "Ferment")
+    assert_select ".kbp-mat-extract a", text: "notes.md"
+    get kb_file_path(src: 0, file: "Ferment/notes.md")
+    assert_select ".kb-extracted", text: /Extracted from.*paper\.pdf/m
+    get kb_file_path(src: 0, file: "Ferment/paper.pdf")
+    assert_select ".kb-extracted", text: /Extracted into.*notes\.md/m
+
+    delete kb_extracted_link_path(@user.kb_links.extracted.first, src: 0, project: "Ferment")
+    assert_equal 0, @user.kb_links.count
+  end
+
   test "findings endpoints add, edit and remove on a project and on a test" do
     project = make_project
     test_rel = project.create_test!(name: "Cold").rel
@@ -603,6 +639,13 @@ class KbProjectsTest < ActionDispatch::IntegrationTest
     get idea_path(idea)
     assert_select ".idea-kb-links__meta", text: /Locked/
     assert_select ".idea-kb-links__meta", text: /0 tests/, count: 0
+  end
+
+  test "global search lists a locked project but not what is behind the lock" do
+    make_locked_project
+    get global_search_path, params: { q: "ferment" }
+    kb = response.parsed_body["groups"].find { |g| g["label"] == "Knowledge Base" }["items"]
+    assert_equal [ "Ferment" ], kb.map { |e| e["title"] }
   end
 
   def make_locked_project
