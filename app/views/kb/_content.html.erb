@@ -10,7 +10,7 @@
        <% end %>>
     <%= render "kb/file_metadata", content: content %>
 
-    <% annotatable = %i[markdown embed pdf].include?(kind) %>
+    <% annotatable = %i[markdown embed pdf].include?(kind) && !content.artifact %>
     <div class="kb-document__body kb-document__body--<%= kind %>"
          <% if annotatable %>
            data-controller="kb-annotate<%= ' kb-selection-menu' if kind == :markdown %>"
@@ -39,7 +39,7 @@
       <% elsif kind == :embed %>
         <iframe class="kb-embed"
                 src="<%= content.raw_url %>"
-                sandbox="allow-same-origin"
+                sandbox="<%= content.artifact ? 'allow-scripts' : 'allow-same-origin' %>"
                 referrerpolicy="no-referrer"
                 loading="lazy"
                 title="<%= content.filename %>"></iframe>
