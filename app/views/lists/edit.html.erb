@@ -39,4 +39,9 @@
       <%= link_to "Cancel", lists_path, class: "btn btn-secondary" %>
     </div>
   <% end %>
+
+  <% if @list.named? %>
+    <%= render "lists/add_anything", list: @list %>
+    <%= render "lists/contents", list: @list, ideas: @ideas %>
+  <% end %>
 </div>

@@ -54,7 +54,7 @@
             <%= link_to name, kb_project_path(src: folder_index, path: node[:rel]),
                   draggable: "false", class: "kb-dir-label kb-project-link",
                   title: (project[:kind] == "build" ? "Build plan" : "Stage: #{project[:stage]}") + " · #{project[:status].to_s.capitalize}",
-                  data: { turbo_frame: "kb-content" } %>
+                  data: { turbo_frame: "kb-content", action: "click->kb-tree#leaveMedia" } %>
             <% if project[:locked] %>
               <span class="kb-project-locked" title="Locked: open the project and enter the password to see its files">
                 <svg class="kb-project-lock is-locked" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg>

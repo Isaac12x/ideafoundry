@@ -70,6 +70,7 @@ Rails.application.routes.draw do
   mount ActionMailbox::Engine => "/rails/action_mailbox"
 
   # Ideas management
+  get "search", to: "search#index", as: :global_search
   get "ideas/kb_link_search", to: "idea_kb_links#search", as: :ideas_kb_link_search
   resources :ideas do
     member do
@@ -156,6 +157,7 @@ Rails.application.routes.draw do
     collection do
       patch :update_idea_position
     end
+    resources :items, only: [ :create, :destroy ], controller: :list_items
   end
 
   # Uploads for TipTap editor images
@@ -290,6 +292,8 @@ Rails.application.routes.draw do
   delete "knowledge-base/aliases/:id", to: "kb_links#destroy_alias", as: :kb_alias
   post "knowledge-base/related", to: "kb_links#create_related", as: :kb_related_links
   delete "knowledge-base/related/:id", to: "kb_links#destroy_related", as: :kb_related_link
+  post "knowledge-base/extracted", to: "kb_links#create_extracted", as: :kb_extracted_links
+  delete "knowledge-base/extracted/:id", to: "kb_links#destroy_extracted", as: :kb_extracted_link
   resources :kb_annotations, path: "knowledge-base/annotations", only: [ :index, :create, :update, :destroy ]
   resources :kb_bookmarks, path: "knowledge-base/bookmarks", only: [ :index, :create, :update, :destroy ]
   get   "knowledge-base/projects", to: "kb#project_show", as: :kb_project
@@ -304,6 +308,8 @@ Rails.application.routes.draw do
   post  "knowledge-base/projects/findings", to: "kb#project_finding_create", as: :kb_project_findings
   patch "knowledge-base/projects/findings", to: "kb#project_finding_update"
   delete "knowledge-base/projects/findings", to: "kb#project_finding_destroy"
+  post "knowledge-base/projects/ideas", to: "kb#project_idea_create", as: :kb_project_ideas
+  delete "knowledge-base/projects/ideas", to: "kb#project_idea_destroy"
   post  "knowledge-base/projects/runs", to: "kb#project_run_create", as: :kb_project_runs
   patch "knowledge-base/projects/runs", to: "kb#project_run_update"
   post "knowledge-base/jobs", to: "kb_fs_jobs#create", as: :kb_fs_jobs

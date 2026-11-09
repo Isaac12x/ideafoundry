@@ -3,6 +3,8 @@ import { confirmDialog, promptDialog } from "lib/app_dialog"
 
 const STORAGE_PREFIX = "kb_note_"
 const CUSTOM_TABS_KEY = "kb_notes_custom_tabs"
+const HEIGHT_KEY = "kb_notes_height"
+const MIN_HEIGHT = 160
 
 export default class extends Controller {
   static targets = ["tabList", "panel", "editorEl"]
@@ -21,6 +23,42 @@ export default class extends Controller {
     this._editorReady = null
     this._renderTabs()
     this._watchKbPanel()
+    try { this._setHeight(Number(localStorage.getItem(HEIGHT_KEY))) } catch { /* default height */ }
+  }
+
+  // Drag the bar or the panel's top edge to resize (opening the panel if closed); a plain click keeps its
+  // tab/collapse behaviour. Height is per viewer (localStorage) and clamped to the window.
+  resizeStart(event) {
+    if (event.button) return
+    event.preventDefault()
+    const startY = event.clientY
+    let dragging = false
+    const move = (e) => {
+      if (!dragging && Math.abs(e.clientY - startY) < 4) return
+      if (!dragging) {
+        dragging = true
+        if (!this._expanded) { this._expand(); this._renderTabs() }
+      }
+      this._setHeight(window.innerHeight - 36 - e.clientY)
+    }
+    const stop = () => {
+      document.removeEventListener("pointermove", move)
+      document.removeEventListener("pointerup", stop)
+      if (!dragging) return
+      // The release would land as a click on the bar and collapse the panel the user just sized.
+      const swallow = (e) => { e.stopPropagation(); e.preventDefault() }
+      window.addEventListener("click", swallow, { capture: true, once: true })
+      setTimeout(() => window.removeEventListener("click", swallow, { capture: true }), 300) // no click followed
+      try { localStorage.setItem(HEIGHT_KEY, String(Math.round(this.panelTarget.offsetHeight))) } catch { /* not persisted */ }
+    }
+    document.addEventListener("pointermove", move)
+    document.addEventListener("pointerup", stop)
+  }
+
+  _setHeight(px) {
+    if (!px) return
+    const max = Math.round(window.innerHeight * 0.85)
+    this.panelTarget.style.setProperty("--kb-notes-h", `${Math.min(max, Math.max(MIN_HEIGHT, px))}px`)
   }
 
   disconnect() {

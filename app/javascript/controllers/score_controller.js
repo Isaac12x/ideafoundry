@@ -1,4 +1,5 @@
 import { Controller } from "@hotwired/stimulus";
+import { alertDialog } from "lib/app_dialog";
 
 // Connects to data-controller="score"
 export default class extends Controller {
@@ -35,6 +36,10 @@ export default class extends Controller {
     this.updateAllValues();
     this.calculateScore();
     this.debounceTimer = null;
+  }
+
+  explain({ params }) {
+    alertDialog(params.explanation, { title: "How the weighted score works" });
   }
 
   disconnect() {

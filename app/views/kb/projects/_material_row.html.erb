@@ -49,4 +49,29 @@
       </button>
     </div>
   <% end %>
+  <%# Extracted into: the notes holding what was learned from this file; the note shows "Extracted from" back. %>
+  <% unless entry[:dir] %>
+    <% into = kb_extractions(@src, entry[:rel])[:into] %>
+    <% notes = @entries.select { |e| !e[:dir] && e[:ext] == "md" && e[:rel] != entry[:rel] && into.none? { |p| p.rel == e[:rel] } } %>
+    <% if into.any? || (notes.any? && entry[:role].present?) %>
+      <div class="kbp-mat-extract">
+        <% if into.any? %><span class="kbp-group-hint">Extracted into</span><% end %>
+        <% into.each do |peer| %>
+          <%= peer.kind == :file ? link_to(File.basename(peer.rel), kb_file_path(src: @src, file: peer.rel), class: "kbp-mat-name", data: { turbo_frame: "kb-content" }) : tag.span(peer.rel) %>
+          <%= button_to "Unlink", kb_extracted_link_path(peer.link, src: @src, project: project.rel), method: :delete, class: "kbp-link", form: { class: "kbp-inline" } %>
+        <% end %>
+        <% if notes.any? && entry[:role].present? %>
+          <%= form_with url: kb_extracted_links_path, class: "kbp-inline" do %>
+            <%= hidden_field_tag :src, @src, id: nil %>
+            <%= hidden_field_tag :project, project.rel, id: nil %>
+            <%= hidden_field_tag :path, entry[:rel], id: nil %>
+            <select name="note_path" class="kbp-tag" aria-label="Link a note extracted from <%= name %>" data-action="change->kb-project#submit">
+              <option value="">Extracted into note...</option>
+              <% notes.each do |e| %><option value="<%= e[:rel] %>"><%= e[:name] %></option><% end %>
+            </select>
+          <% end %>
+        <% end %>
+      </div>
+    <% end %>
+  <% end %>
 </li>

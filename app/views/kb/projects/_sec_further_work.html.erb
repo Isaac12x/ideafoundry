@@ -1,0 +1,13 @@
+<% text = project.further_work %>
+<%= render layout: "kb/projects/section", locals: { id: "further_work", title: "Further work", summary: (text.present? ? truncate(text.gsub(/[#*_>`\[\]-]/, "").squish, length: 90) : "Not written yet"), open: open, lead: lead, mode: mode, project: project } do %>
+  <% if text.present? %><article class="kb-markdown rich-text-content kbp-prose"><%= render_markdown(text) %></article><% end %>
+  <details class="kbp-edit" <%= 'open' if text.blank? %>>
+    <summary><%= text.present? ? "Edit further work" : "Write further work" %></summary>
+    <%= form_with url: kb_project_path, method: :patch, class: "kbp-form kbp-form--flush" do %>
+      <%= ids %>
+      <textarea name="further_work" rows="6" class="kbp-input" aria-label="Further work (markdown)"
+                placeholder="What is left open: questions this raised, tests not run, next steps."><%= text %></textarea>
+      <div class="kbp-actions"><button class="kbp-btn kbp-btn--primary">Save further work</button></div>
+    <% end %>
+  </details>
+<% end %>
