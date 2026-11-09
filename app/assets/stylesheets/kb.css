@@ -1495,7 +1495,8 @@ body.has-notes-bar.kb-page {
   height: 36px;
   padding: 0 0.25rem;
   gap: 0.125rem;
-  cursor: default;
+  cursor: ns-resize;
+  touch-action: none;
   user-select: none;
 }
 
@@ -1630,7 +1631,7 @@ body.has-notes-bar.kb-page {
 
 .kb-notes-grip {
   position: absolute;
-  top: -4px;
+  top: 0; /* the panel clips overflow, so a negative offset hid half the handle */
   left: 0;
   right: 0;
   height: 10px;
