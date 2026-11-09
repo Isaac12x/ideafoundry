@@ -181,7 +181,7 @@
     <% if show_notes %>
       <div class="app-notes-bar">
         <div class="kb-notes-bar">
-          <div class="kb-notes-tab-strip" data-action="click->kb-notes#barClick">
+          <div class="kb-notes-tab-strip" title="Drag to resize notes" data-action="click->kb-notes#barClick pointerdown->kb-notes#resizeStart">
             <div class="kb-notes-tabs" data-kb-notes-target="tabList"></div>
             <button class="kb-notes-add-btn" data-action="click->kb-notes#addTab" title="Add note tab" aria-label="Add note tab">+</button>
             <%= render "layouts/shortcut_cheatsheet" %>
