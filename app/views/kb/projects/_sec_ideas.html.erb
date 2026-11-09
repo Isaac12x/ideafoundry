@@ -1,0 +1,26 @@
+<% items = project.ideas %>
+<%= render layout: "kb/projects/section", locals: { id: "ideas", title: "Ideas", summary: (items.empty? ? "None yet" : pluralize(items.size, "idea")), open: open, lead: lead, mode: mode, project: project } do %>
+  <% unless items.empty? %>
+    <ul class="kbp-findings">
+      <% items.each do |item| %>
+        <li class="kbp-finding" id="idea-<%= item['id'] %>">
+          <time class="kbp-finding-date" datetime="<%= item['at'] %>"><%= (Date.iso8601(item["at"]).strftime("%d %b") rescue item["at"]) %></time>
+          <div class="kbp-finding-main"><p class="kbp-finding-text"><%= item["text"] %></p></div>
+          <div class="kbp-finding-tools">
+            <%= form_with url: kb_project_ideas_path, method: :delete, class: "kbp-inline" do %>
+              <%= ids %>
+              <%= hidden_field_tag :id, item["id"], id: nil %>
+              <button class="kbp-link kbp-link--danger" aria-label="Delete idea">Delete</button>
+            <% end %>
+          </div>
+        </li>
+      <% end %>
+    </ul>
+  <% end %>
+  <%= form_with url: kb_project_ideas_path, method: :post, class: "kbp-finding-add kbp-input", data: { refocus: "i-#{project.rel}" } do %>
+    <%= ids %>
+    <textarea name="text" rows="1" maxlength="2000" class="kbp-add-field" aria-label="Add an idea" autocomplete="off"
+              data-enter-submit placeholder="Something to try or look into. Enter to save."></textarea>
+    <button class="kbp-btn">Add</button>
+  <% end %>
+<% end %>

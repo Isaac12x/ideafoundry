@@ -3,6 +3,7 @@
   <span class="kb-file-meta__name" title="<%= content.rel %>"><%= content.filename %></span>
 
   <%= render "kb/related", src: content.src.to_i, rel: content.rel %>
+  <%= render "kb/extractions", src: content.src.to_i, rel: content.rel %>
   <%= render "kb/note_panel", content: content unless content.kind == :markdown %>
   <%= render "kb/description", content: content %>
 
