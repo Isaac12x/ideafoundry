@@ -14,51 +14,8 @@
   </div>
 
   <% if @list.named? %>
-    <div class="list-search-section"
-         data-controller="idea-search"
-         data-idea-search-search-url-value="<%= search_ideas_path %>"
-         data-idea-search-add-url-template-value="/ideas/__IDEA_ID__/add_to_list"
-         data-idea-search-list-id-value="<%= @list.id %>">
-      <h3 class="list-search-heading">Add idea</h3>
-      <div class="list-search-input-row">
-        <svg class="list-search-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-        <input type="text"
-               class="form-control"
-               placeholder="Search by title, tldr, or description…" aria-label="Search ideas to add"
-               data-idea-search-target="input"
-               data-action="input->idea-search#search"
-               autocomplete="off">
-      </div>
-      <div class="idea-search-results" data-idea-search-target="results" hidden></div>
-    </div>
+    <%= render "lists/add_anything", list: @list %>
   <% end %>
 
-  <div class="named-list-items">
-    <% @ideas.each do |idea| %>
-      <div class="named-list-item">
-        <div>
-          <h3><%= link_to idea.title, idea_path(idea) %></h3>
-          <p>
-            <span class="idea-state <%= idea.state %>"><%= idea.state.humanize %></span>
-            <% if idea.computed_score %>
-              <span class="idea-score"><%= number_with_precision(idea.computed_score, precision: 1) %></span>
-            <% end %>
-          </p>
-        </div>
-        <% if @list.named? %>
-          <%= button_to "Remove", remove_idea_list_path(@list, idea_id: idea.id),
-              method: :delete,
-              class: "btn btn-sm btn-danger",
-              form: { data: { turbo_confirm: "Remove this idea from the list?" } } %>
-        <% end %>
-      </div>
-    <% end %>
-
-    <% if @ideas.empty? %>
-      <div class="empty-state">
-        <h3>No ideas in this list yet</h3>
-        <p>Add ideas to make this list useful.</p>
-      </div>
-    <% end %>
-  </div>
+  <%= render "lists/contents", list: @list, ideas: @ideas %>
 </div>

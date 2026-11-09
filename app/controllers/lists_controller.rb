@@ -7,13 +7,12 @@ class ListsController < ApplicationController
     @kanban_boards = @user.kanban_boards.ordered.includes(lists: { ideas: [ :idea_lists, :idea_entries, :github_repository ] })
     @kanban_board = @user.kanban_boards.build
     @kanban_lists = @user.lists.kanban.includes(:kanban_board, ideas: [ :idea_lists, :idea_entries, :github_repository ]).order(:kanban_board_id, :position)
-    @named_lists = @user.lists.named.ordered.includes(:ideas)
+    @named_lists = @user.lists.named.ordered.includes(:ideas, :list_items)
     @lists = @kanban_lists
   end
 
   def show
-    @ideas = @list.ideas.includes(:idea_lists, :idea_entries).order("idea_lists.position")
-    @available_ideas = @user.ideas.non_draft.kept.order(:title).where.not(id: @list.idea_ids) if @list.named?
+    load_contents
   end
 
   def new
@@ -34,6 +33,7 @@ class ListsController < ApplicationController
   end
 
   def edit
+    load_contents
     load_kanban_boards
   end
 
@@ -87,7 +87,7 @@ class ListsController < ApplicationController
 
     @list.idea_lists.find_by!(idea_id: params[:idea_id]).destroy!
 
-    redirect_to @list, notice: "Idea was removed from the list."
+    redirect_back fallback_location: @list, notice: "Idea was removed from the list."
   end
 
   # PATCH /lists/update_idea_position
@@ -193,6 +193,10 @@ class ListsController < ApplicationController
     return id if @user.kanban_boards.exists?(id: id)
 
     @user.kanban_boards.ordered.pick(:id)
+  end
+
+  def load_contents
+    @ideas = @list.ideas.includes(:idea_lists, :idea_entries).order("idea_lists.position")
   end
 
   def load_kanban_boards

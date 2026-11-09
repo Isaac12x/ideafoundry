@@ -1,5 +1,5 @@
 import { Controller } from "@hotwired/stimulus"
-import { binding, matches } from "lib/shortcut_bindings"
+import { binding, matches, isMac } from "lib/shortcut_bindings"
 
 export default class extends Controller {
   static values = { searchUrl: String }
@@ -9,18 +9,23 @@ export default class extends Controller {
     this._timer = null
     this._selectedIndex = -1
     this._boundKeydown = this._globalKeydown.bind(this)
+    this._boundOpen = () => this.open()
     document.addEventListener("keydown", this._boundKeydown)
+    document.addEventListener("command-palette:open", this._boundOpen)
     this._showHint()
     this.keyTargets.forEach((el) => { el.textContent = binding("search") })
   }
 
   disconnect() {
     document.removeEventListener("keydown", this._boundKeydown)
+    document.removeEventListener("command-palette:open", this._boundOpen)
     clearTimeout(this._timer)
   }
 
   _globalKeydown(e) {
-    if (matches(binding("search"), e)) {
+    // Cmd+P (Mac) / Ctrl+P: the palette instead of the print dialog, even inside inputs.
+    const mod = isMac() ? e.metaKey && !e.ctrlKey : e.ctrlKey && !e.metaKey
+    if ((mod && !e.altKey && !e.shiftKey && e.key.toLowerCase() === "p") || matches(binding("search"), e)) {
       e.preventDefault()
       this.open()
     }
@@ -32,6 +37,7 @@ export default class extends Controller {
     this.element.showModal()
     this.inputTarget.focus()
     this.inputTarget.select()
+    this._showHint()
   }
 
   close() {
@@ -50,6 +56,7 @@ export default class extends Controller {
     clearTimeout(this._timer)
     const q = this.inputTarget.value.trim()
     if (!q) { this._showHint(); return }
+    this._render(this._actions(q))
     this._timer = setTimeout(() => this._fetch(q), 200)
   }
 
@@ -83,49 +90,56 @@ export default class extends Controller {
       url.searchParams.set("q", q)
       const resp = await fetch(url, { headers: { Accept: "application/json" } })
       if (!resp.ok) throw new Error(resp.status)
-      const { results } = await resp.json()
+      const { groups } = await resp.json()
       if (!this.hasInputTarget || this.inputTarget.value.trim() !== q) return // stale response
-      this._render(results || [])
+      this._render([...this._actions(q), ...(groups || [])])
     } catch { /* silently fail */ }
   }
 
-  _render(results) {
+  // Navigation and "new" actions reuse the URLs the layout already puts on <body> for the keyboard shortcuts.
+  _actions(q = "") {
+    const d = document.body.dataset
+    const all = [
+      ["Ideas", "Ideas"], ["Plan", "Plan"], ["Intake", "Intake"], ["Topologies", "Topologies"], ["Licensing", "Licensing"],
+      ["Knowledge Base", "Kb"], ["Backlog", "Backlog"], ["Settings", "Settings"],
+      ["New idea", "NewIdea"], ["New named list", "NewList"], ["New topology", "NewTopology"], ["Import submissions", "Import"]
+    ]
+    const items = all.map(([title, key]) => ({ title, hint: title.startsWith("New") || title.startsWith("Import") ? "action" : "go to", url: d[`shortcuts${key}UrlValue`] }))
+      .filter((i) => i.url && i.title.toLowerCase().includes(q.toLowerCase()))
+    return items.length ? [{ label: "Actions", items }] : []
+  }
+
+  _render(groups) {
     this._selectedIndex = -1
 
-    if (!results.length) {
-      this.resultsTarget.innerHTML = `<p class="cp-empty">No ideas found</p>`
+    if (!groups.length) {
+      this.resultsTarget.innerHTML = `<p class="cp-empty">No results</p>`
       return
     }
 
     const frag = document.createDocumentFragment()
-    results.slice(0, 8).forEach((idea) => {
-      const a = document.createElement("a")
-      a.className = "cp-result"
-      a.href = idea.url
-      a.dataset.url = idea.url
-
-      const stateLabel = (idea.state || "").replace(/_/g, " ")
-      const score = idea.score != null
-        ? `<span class="cp-score">${Number(idea.score).toFixed(1)}</span>`
-        : ""
-      const snippet = idea.matches?.[0]?.snippet || ""
-
-      a.innerHTML = `
-        <div class="cp-result-main">
-          <span class="cp-result-title">${this._esc(idea.title)}</span>
-          ${score}
-          <span class="cp-result-state idea-state ${this._esc(idea.state)}">${this._esc(stateLabel)}</span>
-        </div>
-        ${snippet ? `<div class="cp-result-snippet">${this._esc(snippet)}</div>` : ""}
-      `
-
-      a.addEventListener("click", (e) => {
-        e.preventDefault()
-        this.close()
-        this._visit(idea.url)
+    groups.forEach((group) => {
+      const h = document.createElement("p")
+      h.className = "cp-group"
+      h.textContent = group.label
+      frag.appendChild(h)
+      group.items.forEach((item) => {
+        const a = document.createElement("a")
+        a.className = "cp-result"
+        a.href = item.url
+        a.dataset.url = item.url
+        a.innerHTML = `
+          <div class="cp-result-main">
+            <span class="cp-result-title">${this._esc(item.title)}</span>
+            ${item.hint ? `<span class="cp-result-state">${this._esc(item.hint)}</span>` : ""}
+          </div>`
+        a.addEventListener("click", (e) => {
+          e.preventDefault()
+          this.close()
+          this._visit(item.url)
+        })
+        frag.appendChild(a)
       })
-
-      frag.appendChild(a)
     })
 
     this.resultsTarget.replaceChildren(frag)
@@ -134,8 +148,7 @@ export default class extends Controller {
   }
 
   _showHint() {
-    this._selectedIndex = -1
-    this.resultsTarget.innerHTML = `<p class="cp-hint">Type to search by title, summary or description</p>`
+    this._render(this._actions())
   }
 
   _reset() {

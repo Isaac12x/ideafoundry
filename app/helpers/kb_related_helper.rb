@@ -15,6 +15,22 @@ module KbRelatedHelper
     end
   end
 
+  # { into: [RelatedPeer], from: [RelatedPeer] } for one entry's extraction links (material -> note).
+  def kb_extractions(src, rel)
+    sources = KbSource.list(@user)
+    return { into: [], from: [] } unless sources[src]
+
+    bases = sources.map { |s| File.expand_path(s[:path]) }
+    found = KbLink.extractions_of(@user, bases[src], rel)
+    peer = lambda do |link, base, path|
+      peer_src = bases.index(base)
+      kind = peer_src.nil? || !File.exist?(File.join(base, path)) ? :missing : (File.file?(File.join(base, path)) ? :file : :dir)
+      RelatedPeer.new(link: link, rel: path, src: peer_src, kind: kind)
+    end
+    { into: found[:into].map { |l| peer.call(l, l.peer_source_path, l.peer_relative_path) },
+      from: found[:from].map { |l| peer.call(l, l.source_path, l.relative_path) } }
+  end
+
   # Parent folder name shown muted after a chip's name, to tell same-named files apart.
   def kb_related_where(rel)
     dir = File.dirname(rel)

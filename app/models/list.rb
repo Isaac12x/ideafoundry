@@ -8,6 +8,7 @@ class List < ApplicationRecord
   belongs_to :kanban_board, optional: true
   has_many :idea_lists, -> { order(:position) }, dependent: :destroy
   has_many :ideas, through: :idea_lists
+  has_many :list_items, -> { order(:position) }, dependent: :destroy
 
   # Validations
   validates :name, presence: true

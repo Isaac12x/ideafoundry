@@ -148,4 +148,23 @@ class KbNotesBarSystemTest < ApplicationSystemTestCase
       assert_bar_usable
     end
   end
+
+  test "dragging the bar opens and resizes the notes panel instead of hiding it" do
+    visit kb_path
+    panel = -> { page.evaluate_script("(() => { const r = document.querySelector('.kb-notes-panel-overlay').getBoundingClientRect(); return [document.body.classList.contains('kb-notes-expanded'), Math.round(r.height)] })()") }
+    drag = ->(selector, dy) { page.driver.browser.action.move_to(find(selector, visible: :all).native).click_and_hold.move_by(0, dy).release.perform; sleep 0.4 }
+
+    drag.(".kb-notes-tab-strip", -400)
+    open, height = panel.()
+    assert open, "dragging the collapsed bar should open the panel"
+    assert_in_delta 400, height, 30
+
+    drag.(".kb-notes-grip", 150)
+    open, height = panel.()
+    assert open, "dragging the panel edge should keep it open"
+    assert_in_delta 250, height, 30
+
+    find(".kb-notes-tab-strip").click # a plain click still collapses
+    assert_not panel.().first
+  end
 end

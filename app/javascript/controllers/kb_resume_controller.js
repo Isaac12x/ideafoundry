@@ -16,6 +16,8 @@ export default class extends Controller {
       if (saved > 0 && this._media.dataset.kbSwapKey !== this.keyValue) this._restore(saved)
       this._onSwap = (event) => this._swap(event.detail)
       this._media.addEventListener("kb-video:swap", this._onSwap)
+      this._onRelease = () => this._release()
+      this._media.addEventListener("kb-video:release", this._onRelease)
       this._listen()
     } else {
       this._scroller = this.element.closest(".kb-content-area")
@@ -31,21 +33,28 @@ export default class extends Controller {
       // Moved, not removed (the frame swap keeps the live player): keep playing, just drop our listeners.
       this._unlisten()
       this._media.removeEventListener("kb-video:swap", this._onSwap)
+      this._media.removeEventListener("kb-video:release", this._onRelease)
       return
     }
-    if (this._media) {
-      this._store(this._media.currentTime)
-      // Leaving: stop buffering at once instead of waiting for GC to drop the connection and decoder.
-      this._media.pause()
-      this._media.removeAttribute("src")
-      this._media.querySelectorAll("source").forEach((source) => source.remove())
-      this._media.load()
-    }
+    this._release()
     // Scroll case saves only from real scroll events: by disconnect time the
     // container may already hold (and have clamped to) the next document.
     if (this._scroller && this._onScroll) {
       this._scroller.removeEventListener("scroll", this._onScroll)
     }
+  }
+
+  // Leaving: stop buffering at once instead of waiting for GC to drop the connection and decoder.
+  // Also fired by a tree click on a project (no video swap there), so the stream stops before the page request waits behind it.
+  _release() {
+    if (!this._media || this._released) return
+    this._released = true
+    this._store(this._media.currentTime)
+    this._unlisten()
+    this._media.pause()
+    this._media.removeAttribute("src")
+    this._media.querySelectorAll("source").forEach((source) => source.remove())
+    this._media.load()
   }
 
   _listen() {
