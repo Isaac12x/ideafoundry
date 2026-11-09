@@ -3,7 +3,7 @@ import { Controller } from "@hotwired/stimulus"
 const COL_LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 export default class extends Controller {
-  static targets = ["body", "grid", "toggleBtn", "fmtSelect", "decimalsInput", "boldBtn",
+  static targets = ["body", "grid", "fmtSelect", "decimalsInput", "boldBtn",
                     "hiddenInput", "formulaBar", "formulaRef", "loading"]
   static values  = { initial: String, inputName: String, expanded: Boolean }
 
@@ -46,17 +46,8 @@ export default class extends Controller {
     this.element.tabIndex = 0
   }
 
-  toggle(e) {
-    if (e && e.target.closest("input, select, button.napkin-toggle-btn") === null && e.currentTarget !== this.element.querySelector(".napkin-header")) return
-    const isOpen = !this.bodyTarget.classList.contains("hidden")
-    if (isOpen) {
-      this.bodyTarget.classList.add("hidden")
-      this.toggleBtnTarget.setAttribute("aria-expanded", "false")
-    } else {
-      this.bodyTarget.classList.remove("hidden")
-      this.toggleBtnTarget.setAttribute("aria-expanded", "true")
-      this.ensureParserLoaded()
-    }
+  toggle() {
+    if (this.element.open) this.ensureParserLoaded()
   }
 
   cellRef(c, r) { return `${COL_LETTERS[c]}${r + 1}` }

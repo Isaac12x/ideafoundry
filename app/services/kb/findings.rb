@@ -5,8 +5,27 @@ module Kb
     MAX_FINDING = 2000
 
     # [{"id", "text", "at"}], malformed entries dropped.
-    def findings
-      Array(meta["findings"]).filter_map do |item|
+    def findings = read_items("findings")
+
+    # Same shape under "ideas": things to try, kept while working (project only).
+    def ideas = read_items("ideas")
+
+    def add_idea!(text)
+      item = { "id" => SecureRandom.hex(4), "text" => clean_finding(text), "at" => Date.current.iso8601 }
+      write_items!("ideas", ideas + [ item ])
+      item
+    end
+
+    def remove_idea!(id)
+      list = ideas.reject { |f| f["id"] == id.to_s }
+      raise ArgumentError, "Idea not found." if list.size == ideas.size
+
+      write_items!("ideas", list)
+      self
+    end
+
+    def read_items(key)
+      Array(meta[key]).filter_map do |item|
         next unless item.is_a?(Hash) && item["id"].present? && item["text"].to_s.strip.present?
 
         { "id" => item["id"].to_s, "text" => item["text"].to_s, "at" => item["at"].to_s }
@@ -46,8 +65,10 @@ module Kb
       text
     end
 
-    def write_findings!(list)
-      write_meta!(meta.merge("findings" => list))
+    def write_findings!(list) = write_items!("findings", list)
+
+    def write_items!(key, list)
+      write_meta!(meta.merge(key => list))
       @meta = nil
     end
   end

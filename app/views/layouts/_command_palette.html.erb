@@ -1,17 +1,17 @@
 <dialog class="command-palette"
         data-controller="command-palette"
-        data-command-palette-search-url-value="<%= search_ideas_path %>"
+        data-command-palette-search-url-value="<%= global_search_path %>"
         data-action="click->command-palette#backdropClick cancel->command-palette#onCancel"
         aria-labelledby="command_palette_title">
   <div class="command-palette__frame">
     <div class="command-palette__header">
-      <h2 id="command_palette_title">Search Ideas</h2>
+      <h2 id="command_palette_title">Search</h2>
       <kbd data-command-palette-target="key">Ctrl/Cmd+K</kbd>
     </div>
     <input type="search"
-           aria-label="Search ideas"
+           aria-label="Search"
            class="command-palette__input"
-           placeholder="Search title or description..."
+           placeholder="Search or jump to..."
            autocomplete="off"
            data-command-palette-target="input"
            data-action="input->command-palette#search keydown->command-palette#navigate">

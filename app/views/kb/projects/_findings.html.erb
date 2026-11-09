@@ -35,7 +35,7 @@
 <%= form_with url: kb_project_findings_path, method: :post, class: "kbp-finding-add kbp-input", data: { refocus: "f-#{owner.rel}" } do %>
   <%= hidden_field_tag :src, @src, id: nil %>
   <%= hidden_field_tag :path, owner.rel, id: nil %>
-  <input type="text" name="text" maxlength="2000" class="kbp-add-field" aria-label="Add a finding" autocomplete="off"
-         placeholder="<%= placeholder %>">
+  <textarea name="text" rows="1" maxlength="2000" class="kbp-add-field" aria-label="Add a finding" autocomplete="off"
+            data-enter-submit placeholder="<%= placeholder %>"></textarea>
   <button class="kbp-btn">Add</button>
 <% end %>

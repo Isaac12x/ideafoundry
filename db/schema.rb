@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_08_120000) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_09_120000) do
   create_table "action_mailbox_inbound_emails", force: :cascade do |t|
     t.integer "status", default: 0, null: false
     t.string "message_id", null: false
@@ -665,6 +665,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_08_120000) do
     t.text "tab_definitions"
     t.text "scoring_system_ids", default: "[]", null: false
     t.integer "topology_id"
+    t.string "primary_scoring_system_id"
     t.index ["user_id", "is_default"], name: "index_templates_on_user_id_and_is_default"
     t.index ["user_id", "name"], name: "index_templates_on_user_id_and_name", unique: true
     t.index ["user_id", "topology_id"], name: "index_templates_on_user_id_and_topology_id"

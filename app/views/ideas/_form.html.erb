@@ -87,7 +87,7 @@
 
       <!-- Basics: topology (type of idea) first, then title -->
       <details class="form-panel" open>
-        <summary class="form-panel-title">Basics</summary>
+        <summary class="form-panel-title"><%= panel_title "Basics", done: idea.title.present? %></summary>
         <div class="form-group">
           <label>Topology</label>
           <% children_by_parent = topologies.group_by(&:parent_id) %>
@@ -203,7 +203,7 @@
 
       <!-- Description (TipTap) -->
       <details class="form-panel" open>
-        <summary class="form-panel-title">Description</summary>
+        <summary class="form-panel-title"><%= panel_title "Description", done: idea.description.present?, recommended: true %></summary>
         <div class="form-group" data-controller="editor"
              data-editor-content-value="<%= idea.description&.body&.to_html&.gsub('"', '&quot;') || '' %>"
              data-editor-upload-url-value="<%= uploads_path %>">
@@ -260,7 +260,7 @@
       <% image_attachments = idea.image_attachments %>
       <% document_attachments = idea.document_attachments %>
       <details class="form-panel" open>
-        <summary class="form-panel-title">Attachments</summary>
+        <summary class="form-panel-title"><%= panel_title "Attachments", done: idea.attachments.attached? %></summary>
 
         <div class="current-attachments"
              data-controller="attachment-reorder"
@@ -401,7 +401,7 @@
       <!-- Licensing (kept at the bottom of the form on purpose) -->
       <% if feature_enabled?(:licensing) %>
         <details class="form-panel" open>
-          <summary class="form-panel-title">Licensing</summary>
+          <summary class="form-panel-title"><%= panel_title "Licensing", done: idea.for_licensing? %></summary>
           <div class="form-group form-check">
             <%= form.check_box :for_licensing, class: "form-check__input", id: "idea_for_licensing" %>
             <label class="form-check__label" for="idea_for_licensing">
@@ -453,7 +453,7 @@
              data-score-opportunity-weight-value="<%= weights['opportunity'] %>"
              data-score-timing-weight-value="<%= weights['timing'] %>"
            <% end %>>
-        <summary class="form-panel-title">Scoring</summary>
+        <summary class="form-panel-title"><%= panel_title "Scoring", done: idea.computed_score.to_f.positive?, recommended: true %></summary>
 
         <% if legacy_scoring_system %>
           <div class="scoring-grid"
@@ -540,10 +540,6 @@
 
         <% scorecard_systems.each do |system| %>
           <% breakdown = idea.scoring_breakdown_for(system) %>
-          <p class="scorecard-form-hint" data-template-switch-target="scoringHint" data-scoring-system-id="<%= system['id'] %>"
-             <%= "hidden" if active_scoring_system_ids.include?(system['id']) %>>
-            <%= system['name'] %> is not enabled for this idea. <%= link_to "Enable it in a template", templates_path %>
-          </p>
           <div class="scorecard-form-system"
                data-template-switch-target="scoringSystem"
                data-scoring-system-id="<%= system['id'] %>"
@@ -576,18 +572,34 @@
         <% end %>
 
         <div class="computed-score-display">
-          <div class="computed-score-label">Weighted score</div>
+          <div class="computed-score-label">
+            Weighted score
+            <% if legacy_scoring_system %>
+              <button type="button" class="score-info-btn" aria-label="How the weighted score is calculated"
+                      data-action="score#explain"
+                      data-score-explanation-param="<%= weighted_score_explanation(idea, weights) %>">i</button>
+            <% end %>
+          </div>
           <div class="computed-score-value" data-score-target="computedScore">
             <%= number_with_precision(idea.computed_score || 0, precision: 2) %>
           </div>
         </div>
+
+        <div class="scorecard-form-hints">
+          <% scorecard_systems.each do |system| %>
+            <p class="scorecard-form-hint" data-template-switch-target="scoringHint" data-scoring-system-id="<%= system['id'] %>"
+               <%= "hidden" if active_scoring_system_ids.include?(system['id']) %>>
+              <%= system['name'] %> is not enabled for this idea. <%= link_to "Enable it in a template", templates_path %>
+            </p>
+          <% end %>
+        </div>
       </details>
 
       <% ocr_parts = idea.persisted? ? idea.ocr_attachment_parts : [] %>
-      <aside class="form-panel idea-form-ocr-sidebar" aria-label="Extracted attachment parts">
-        <details <%= "open" if ocr_parts.present? %>>
-          <summary>Extracted parts <span><%= ocr_parts.size %></span></summary>
-          <% if ocr_parts.present? %>
+      <% if ocr_parts.present? %>
+        <aside class="form-panel idea-form-ocr-sidebar" aria-label="Extracted attachment parts">
+          <details open>
+            <summary>Extracted parts <span><%= ocr_parts.size %></span></summary>
             <ul>
               <% ocr_parts.each do |part| %>
                 <li>
@@ -596,11 +608,9 @@
                 </li>
               <% end %>
             </ul>
-          <% else %>
-            <p>Upload a document or image and local OCR will extract likely parts here.</p>
-          <% end %>
-        </details>
-      </aside>
+          </details>
+        </aside>
+      <% end %>
 
       <!-- Form Actions -->
       <div class="form-panel">

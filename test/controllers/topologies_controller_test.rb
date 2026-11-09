@@ -31,6 +31,23 @@ class TopologiesControllerTest < ActionDispatch::IntegrationTest
     assert_equal false, json["settings"]["show_ideas"]
   end
 
+  test "new preselects a valid parent_id (right-click Add child topology)" do
+    get new_topology_path(parent_id: @topology.id)
+    assert_response :success
+    assert_select "select[name='topology[parent_id]'] option[selected][value='#{@topology.id}']"
+  end
+
+  test "new ignores another user's parent_id" do
+    other = User.create!(email: "other-#{SecureRandom.hex(3)}@example.com", name: "Other")
+    foreign = other.topologies.create!(name: "Foreign #{SecureRandom.hex(3)}", topology_type: :custom, color: "#00ff00")
+    get new_topology_path(parent_id: foreign.id)
+    assert_response :success
+    assert_select "select[name='topology[parent_id]'] option[selected]", count: 0
+  ensure
+    foreign&.destroy
+    other&.destroy
+  end
+
   teardown do
     @topology&.destroy
   end

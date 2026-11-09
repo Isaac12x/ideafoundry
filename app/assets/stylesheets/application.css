@@ -1136,6 +1136,18 @@ body.typing-lock-page .app-quote-banner {
     display: flex;
     flex-direction: column;
     gap: 16px;
+    padding-bottom: 2rem;
+}
+
+/* Template tab panels: same gap as sibling cards, and no phantom gap while empty. */
+.form-main > [data-template-switch-target="tabPanelsContainer"] {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.form-main > [data-template-switch-target="tabPanelsContainer"]:empty {
+    display: none;
 }
 
 .form-sidebar {
@@ -1952,6 +1964,8 @@ select.form-control {
     outline: none;
 }
 
+.idea-context-menu__item--danger { color: var(--danger); }
+
 .idea-context-menu__item:disabled {
     cursor: default;
     color: var(--text-muted);
@@ -2712,6 +2726,20 @@ details.form-panel > summary.form-panel-title::after {
 
 details.form-panel[open] > summary.form-panel-title::after {
     transform: rotate(0deg);
+}
+
+/* Done tick sits just left of the collapse arrow. */
+.form-panel-done {
+    margin-left: auto;
+    color: var(--success);
+    font-style: normal;
+    font-size: 1rem;
+}
+
+summary.form-panel-title .template-card-badge {
+    margin-left: 8px;
+    font-style: normal;
+    vertical-align: middle;
 }
 
 details.form-panel:not([open]) > summary.form-panel-title {

@@ -36,6 +36,7 @@ module Kb
       # sanitize strips <script>/<style> tags but keeps their text; drop the elements whole first.
       fragment = Loofah.fragment(md.render(raw.to_s)).tap { |f| f.css("script, style").remove }
       html = ActionController::Base.helpers.sanitize(fragment.to_s, tags: ALLOWED_TAGS, attributes: ALLOWED_ATTRIBUTES)
+      html = Kb::Ingredients.transform(html)
       renderer.hosts.each { |token, host| html = html.sub("<p>#{token}</p>") { host } }
       html.html_safe
     end

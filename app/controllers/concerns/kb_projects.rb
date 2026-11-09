@@ -17,7 +17,7 @@ module KbProjects
 
   def project_update
     project_action(exact: true) do |_base, project|
-      project.update!(params.permit(:goal, :status, :private, :conclusion, :brief, :stage, :stages, :items).to_h)
+      project.update!(params.permit(:goal, :status, :private, :conclusion, :further_work, :brief, :stage, :stages, :items).to_h)
       Kb::TreeBroadcaster.call(@user) # busts the tree cache so the build-plan badge refreshes
       redirect_to kb_project_path(src: params[:src], path: project.rel)
     end
@@ -120,6 +120,15 @@ module KbProjects
 
   def project_finding_destroy
     project_finding_action { |owner| owner.remove_finding!(params[:id]) }
+  end
+
+  # Ideas live on the project only.
+  def project_idea_create
+    project_action(exact: true) { |base, project| project.add_idea!(params[:text]); respond_project(base, project) }
+  end
+
+  def project_idea_destroy
+    project_action(exact: true) { |base, project| project.remove_idea!(params[:id]); respond_project(base, project) }
   end
 
   def project_run_create

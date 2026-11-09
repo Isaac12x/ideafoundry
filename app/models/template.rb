@@ -105,6 +105,11 @@ class Template < ApplicationRecord
     ids.presence || [ User::LEGACY_SCORING_SYSTEM_ID ]
   end
 
+  # The one system the weighted score uses, or nil to average all enabled systems.
+  def effective_primary_scoring_system_id
+    primary_scoring_system_id.presence_in(enabled_scoring_system_ids)
+  end
+
   def scoring_systems
     return [] unless user
 
@@ -208,6 +213,7 @@ class Template < ApplicationRecord
   def normalize_scoring_system_ids
     self.scoring_system_ids = enabled_scoring_system_ids & (user&.scoring_system_ids || User::DEFAULT_SCORING_SYSTEMS.keys)
     self.scoring_system_ids = [ User::LEGACY_SCORING_SYSTEM_ID ] if scoring_system_ids.blank?
+    self.primary_scoring_system_id = effective_primary_scoring_system_id
   end
 
   def valid_field_instance_ids

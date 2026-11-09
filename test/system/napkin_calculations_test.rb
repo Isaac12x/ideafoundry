@@ -10,7 +10,7 @@ class NapkinCalculationsTest < ApplicationSystemTestCase
   test "user enters napkin formula and it persists and renders on show" do
     visit edit_idea_path(@idea)
 
-    find(".napkin-header").click
+    find(".napkin-panel > summary").click
     assert_selector ".napkin-grid-table", visible: true
 
     enter_cell("A1", "Users")

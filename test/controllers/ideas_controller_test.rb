@@ -128,7 +128,7 @@ class IdeasControllerTest < ActionDispatch::IntegrationTest
     assert_select ".kb-notes-tab-strip .shortcuts-toggle[title=?]", "Keyboard shortcuts", text: "⌘"
     assert_select ".shortcuts-panel[data-shortcuts-target=?]", "panel"
     assert_select ".command-palette[data-controller=?][data-command-palette-search-url-value=?]",
-                  "command-palette", search_ideas_path
+                  "command-palette", global_search_path
     assert_select ".app-dialog[data-controller=?][aria-labelledby=?]", "app-dialog", "app_dialog_title" do
       assert_select "form[data-app-dialog-target=?]", "form"
       assert_select "input[data-app-dialog-target=?]", "input"

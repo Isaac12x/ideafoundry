@@ -40,10 +40,24 @@ export default class extends Controller {
 
     this.renderPrompt();
     this.updateDisplay();
-    if (this.resultValue !== "matched") this.inputTarget.focus();
+    if (this.resultValue !== "matched") this.focusInput();
+  }
+
+  // First responder as soon as the lock shows, every time: now, after layout, and when the tab/bfcache page comes back.
+  focusInput() {
+    const focus = () => { if (this.hasInputTarget && !this.submitted) this.inputTarget.focus({ preventScroll: true }); };
+    focus();
+    requestAnimationFrame(focus);
+    this.refocus = () => { if (!document.hidden) focus(); };
+    window.addEventListener("pageshow", this.refocus);
+    window.addEventListener("focus", this.refocus);
+    document.addEventListener("visibilitychange", this.refocus);
   }
 
   disconnect() {
+    window.removeEventListener("pageshow", this.refocus);
+    window.removeEventListener("focus", this.refocus);
+    document.removeEventListener("visibilitychange", this.refocus);
     if (this.redirectFallbackTimer) clearTimeout(this.redirectFallbackTimer);
     this.stopTicking();
   }

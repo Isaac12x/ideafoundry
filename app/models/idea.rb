@@ -466,7 +466,10 @@ has_many :kb_links, class_name: "IdeaKbLink", dependent: :destroy
   end
 
   def aggregate_normalized_score
-    scores = scoring_breakdowns.filter_map { |breakdown| breakdown[:normalized] }
+    breakdowns = scoring_breakdowns
+    primary_id = template&.effective_primary_scoring_system_id
+    breakdowns = breakdowns.select { |breakdown| breakdown[:id] == primary_id } if primary_id
+    scores = breakdowns.filter_map { |breakdown| breakdown[:normalized] }
     return nil if scores.empty?
 
     (scores.sum / scores.size.to_f).round(2)

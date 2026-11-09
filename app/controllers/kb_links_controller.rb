@@ -41,7 +41,31 @@ class KbLinksController < ApplicationController
     respond_related({ base: link.source_path, rel: link.relative_path })
   end
 
+  # Material (src/path) -> the note holding what was extracted from it. Returns to the project page.
+  def create_extracted
+    material = entry(params[:src], params[:path])
+    note = entry(params[:src], params[:note_path])
+    return fail_with("Entry not found.") unless material && note && note[:type] == "file"
+
+    link = @user.kb_links.new(kind: "extracted", source_path: material[:base], relative_path: material[:rel],
+                              peer_source_path: note[:base], peer_relative_path: note[:rel])
+    return fail_with(link.errors.full_messages.to_sentence) unless link.save
+
+    back_to_project
+  end
+
+  def destroy_extracted
+    @user.kb_links.extracted.find(params[:id]).destroy
+    back_to_project
+  end
+
   private
+
+  def back_to_project
+    return redirect_to(kb_path) if params[:project].blank?
+
+    redirect_to kb_project_path(src: params[:src], path: params[:project])
+  end
 
   # { base:, rel:, type: } for an existing entry (or the source root when dir && blank).
   def entry(src, rel, dir: false)
