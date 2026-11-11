@@ -86,6 +86,35 @@ class KbMultiFormatTest < ActionDispatch::IntegrationTest
     assert_equal "allow-same-origin", sandbox
   end
 
+  test "marked artifact html runs only in a script-enabled opaque iframe and skips annotation UI" do
+    File.write(File.join(@kb_dir, @html_name), <<~HTML)
+      <!doctype html>
+      <html><head><meta content="1" name="idea-capture-artifacts"></head>
+      <body><h1>Artifact</h1><script>document.body.dataset.ran = "yes"</script></body></html>
+    HTML
+
+    get kb_file_path(src: src_index, file: @html_name)
+
+    assert_response :success
+    assert_select "iframe.kb-embed[sandbox=?]", "allow-scripts"
+    assert_select '[data-controller~="kb-annotate"]', false
+    assert_select ".kb-marker", false
+
+    get kb_raw_path(src: src_index, file: @html_name)
+
+    assert_response :success
+    csp = response.headers["Content-Security-Policy"].to_s
+    assert_includes csp, "sandbox allow-scripts"
+    assert_includes csp, "script-src 'unsafe-inline'"
+    assert_includes csp, "style-src 'unsafe-inline'"
+    assert_includes csp, "connect-src 'none'"
+    assert_includes csp, "frame-src about:"
+    assert_includes csp, "form-action 'none'"
+    assert_includes csp, "base-uri 'none'"
+    assert_includes csp, "object-src 'none'"
+    assert_includes response.body, 'document.body.dataset.ran'
+  end
+
   test "raw endpoint converts pptx slides into html via pandoc" do
     skip "pandoc not installed" unless @pandoc
     md = File.join(@kb_dir, "deck.md")
@@ -185,6 +214,7 @@ class KbMultiFormatTest < ActionDispatch::IntegrationTest
     assert_equal "text/html", response.media_type
     csp = response.headers["Content-Security-Policy"]
     assert_includes csp.to_s, "default-src 'none'"
+    assert_not_includes csp.to_s, "allow-scripts"
     assert_includes response.body, "Embedded Page"
   end
 

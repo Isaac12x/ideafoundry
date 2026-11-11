@@ -1,8 +1,8 @@
 require "open3"
 require "cgi"
 
-# Converts a KB document (html/docx/pptx/xlsx) into a self-contained HTML string
-# suitable for rendering inside a sandboxed, script-free iframe.
+# Converts a KB document (html/docx/pptx/xlsx) into HTML for a sandboxed iframe.
+# Marked artifact HTML may run inline code under KbController's stricter runtime CSP.
 class KbDocumentRenderer
   class ConversionError < StandardError; end
 
