@@ -20,6 +20,7 @@ class KbController < ApplicationController
   ALL_EXTENSIONS        = (KB_EXTENSIONS + SERVE_EXTENSIONS + LONG_DOC_EXTENSIONS + Kb::MediaTypes::VIEWER_EXTENSIONS).freeze
 
   EMBED_CSP = "default-src 'none'; img-src data:; style-src 'unsafe-inline'; font-src data:".freeze
+  ARTIFACT_CSP = "sandbox allow-scripts; default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data: blob:; font-src data: blob:; media-src data: blob:; frame-src about:; connect-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'".freeze
 
   # Placeholders for nodes created straight from the tree, before naming.
   UNNAMED_FILE = "Untitled.md".freeze
@@ -30,7 +31,7 @@ class KbController < ApplicationController
   KbContent = Struct.new(
     :kind, :html, :raw_url, :serve_url, :rel, :src, :filename,
     :created_at, :modified_at,
-    :extraction, :output_rel, :mime_type, :captions_url, :private_project, :shots, :source_url, :description,
+    :extraction, :output_rel, :mime_type, :captions_url, :private_project, :shots, :source_url, :description, :artifact,
     keyword_init: true
   )
 
@@ -83,7 +84,8 @@ class KbController < ApplicationController
     return head(:not_found) if abs.nil?
 
     html = KbDocumentRenderer.new(abs).to_html
-    response.set_header("Content-Security-Policy", EMBED_CSP)
+    artifact = %w[.html .htm].include?(File.extname(abs).downcase) && artifact_html?(html)
+    response.set_header("Content-Security-Policy", artifact ? ARTIFACT_CSP : EMBED_CSP)
     render html: html.html_safe, layout: false, content_type: "text/html"
   rescue KbDocumentRenderer::ConversionError
     head :unprocessable_entity
@@ -808,7 +810,8 @@ class KbController < ApplicationController
     if MARKDOWN_EXTENSIONS.include?(ext)
       KbContent.new(**metadata, kind: :markdown, html: render_markdown(File.read(abs)))
     elsif EMBED_EXTENSIONS.include?(ext)
-      KbContent.new(**metadata, kind: :embed, raw_url: kb_raw_path(src: folder_index, file: rel_path))
+      artifact = %w[.html .htm].include?(ext) && artifact_html?(File.read(abs))
+      KbContent.new(**metadata, kind: :embed, artifact: artifact, raw_url: kb_raw_path(src: folder_index, file: rel_path))
     elsif PDF_EXTENSIONS.include?(ext)
       KbContent.new(
         **metadata,
@@ -945,6 +948,12 @@ class KbController < ApplicationController
     return nil unless extensions == :any || extensions.include?(File.extname(abs).downcase)
 
     abs
+  end
+
+  def artifact_html?(html)
+    return false if html.blank?
+
+    Nokogiri::HTML(html).at_css('meta[name="idea-capture-artifacts"][content="1"]').present?
   end
 
   def render_markdown(raw)

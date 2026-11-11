@@ -264,3 +264,14 @@ Branch: `fix/concurrent-dev-ports`
 ### Workspace note
 
 - Pre-existing generated `graphify-out/` changes and cache entries remain outside this feature commit.
+
+
+## 2026-11-09 — Isolated standalone artifact viewer
+
+Branch `feat/isolated-html-artifact-viewer` accompanies source-backed React/HTML artifact packaging in `idea-chrome-ext` branch `feat/standalone-react-artifacts`. User authorized implementing artifact fidelity end-to-end with Luna subagents. HTML/HTM with `<meta name="idea-capture-artifacts" content="1">` uses an iframe with `sandbox="allow-scripts"` and a response CSP including `sandbox allow-scripts`, default-deny resources, inline scripts/styles, data/blob media, `frame-src about:`, and no connect/form/base/object. No same-origin permission is granted, including direct raw navigation. The marker chooses a rendering mode, not trusted-code status. App DOM, cookies, storage and annotation access remain unavailable. Unmarked HTML stays script-free and annotatable; docx/pptx/xlsx conversion still occurs only at its original render point.
+
+Tests cover marked and unmarked response/view behavior, nested srcdoc script execution, app parent isolation, and direct-navigation cookie/storage denial. Root read both project visions, followed graph query/update instructions, and left pre-existing dirty app/assets/builds files untouched and unstaged. Excalidraw upkeep is not due (2026-10-12 to 2026-11-09 is 28 days). Final validation and publication are recorded below.
+
+Validation: with `PATH="$HOME/.rbenv/versions/4.0.7/bin:$PATH"`, `bundle exec rails test test/controllers/kb_multi_format_test.rb` passed 16 tests / 114 assertions and `bundle exec rails test test/system/kb_artifact_runtime_system_test.rb` passed 2 tests / 9 assertions. Root reran both after the final `frame-src about:` policy change. Focused diff checks passed. `graphify update .` completed. Logs are `/tmp/idea-artifact-app-controller-final.log`, `/tmp/idea-artifact-app-system.log`, and `/tmp/idea-artifact-graph-update.log`.
+
+Publication: implementation `d544233`, PR https://github.com/Isaac12x/ideafoundry/pull/107 against master, created 2026-11-09 23:18:59 UTC. Connector creation returned 403; the authenticated GitHub CLI created it. Review check at 23:24:40 UTC (over five minutes later) found no comments, reviews or CI checks. PR remains open and unmerged; one scheduled review cycle was performed, not persistent monitoring.
