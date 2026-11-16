@@ -77,7 +77,13 @@ class ApplicationController < ActionController::Base
   end
 
   def backlog_lock_bypass?
-    backlog_escape_available? && controller_path == "build_items"
+    (backlog_escape_available? && controller_path == "build_items") || kb_upload_lock_bypass?
+  end
+
+  # Write-only: the Chrome extension must be able to drop a conversation into the KB
+  # while locked. Reads (project list, KB pages) stay behind the lock.
+  def kb_upload_lock_bypass?
+    controller_path == "kb" && action_name == "fs_upload"
   end
 
   def backlog_lock_bypass_active?

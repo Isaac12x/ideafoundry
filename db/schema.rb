@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_09_120000) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_10_130000) do
   create_table "action_mailbox_inbound_emails", force: :cascade do |t|
     t.integer "status", default: 0, null: false
     t.string "message_id", null: false
@@ -247,6 +247,16 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_09_120000) do
     t.index ["token_digest"], name: "index_idea_agent_tokens_on_token_digest", unique: true
   end
 
+  create_table "idea_dependencies", force: :cascade do |t|
+    t.integer "idea_id", null: false
+    t.integer "prerequisite_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["idea_id", "prerequisite_id"], name: "index_idea_dependencies_on_idea_id_and_prerequisite_id", unique: true
+    t.index ["idea_id"], name: "index_idea_dependencies_on_idea_id"
+    t.index ["prerequisite_id"], name: "index_idea_dependencies_on_prerequisite_id"
+  end
+
   create_table "idea_entries", force: :cascade do |t|
     t.integer "idea_id", null: false
     t.integer "kind", null: false
@@ -335,6 +345,10 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_09_120000) do
     t.boolean "version_primary", default: false, null: false
     t.boolean "for_licensing", default: false, null: false
     t.json "hero_order", default: [], null: false
+    t.string "location"
+    t.decimal "latitude", precision: 10, scale: 6
+    t.decimal "longitude", precision: 10, scale: 6
+    t.text "situation"
     t.index ["computed_score"], name: "index_ideas_on_computed_score"
     t.index ["cool_off_until"], name: "index_ideas_on_cool_off_until"
     t.index ["discarded_at"], name: "index_ideas_on_discarded_at"
@@ -747,6 +761,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_09_120000) do
   add_foreign_key "export_jobs", "users"
   add_foreign_key "github_repositories", "ideas"
   add_foreign_key "idea_agent_tokens", "ideas"
+  add_foreign_key "idea_dependencies", "ideas"
+  add_foreign_key "idea_dependencies", "ideas", column: "prerequisite_id"
   add_foreign_key "idea_entries", "ideas"
   add_foreign_key "idea_kb_links", "ideas"
   add_foreign_key "idea_lists", "ideas"

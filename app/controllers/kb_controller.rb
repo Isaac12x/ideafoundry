@@ -225,7 +225,7 @@ class KbController < ApplicationController
       abs = File.join(parent, name)
       return fs_error("\"#{name}\" already exists.") if File.exist?(abs)
       File.write(abs, "")
-      respond_fs(file: abs.delete_prefix("#{base}/"))
+      respond_fs(file: abs.delete_prefix("#{base}/"), edit: MARKDOWN_EXTENSIONS.include?(File.extname(abs).downcase))
     end
   end
 
@@ -245,6 +245,8 @@ class KbController < ApplicationController
 
     parent = resolve_dir(base, params[:dir])
     return fs_error("Target folder not found.") if parent.nil?
+
+    return fs_error("Project is locked. Unlock it first.") if Kb::ProjectLock.write_block(base, params[:dir]) == :locked
 
     uploads = Array(params[:files]).select { |upload| upload.respond_to?(:tempfile) }
     return fs_error("Choose at least one file to copy.") if uploads.empty?
@@ -655,9 +657,10 @@ class KbController < ApplicationController
   # Renders the tree (and, when the selection changed, the content pane) as a
   # turbo stream so file ops update in place instead of reloading the page.
   # Falls back to a full redirect for non-turbo clients.
-  def respond_fs(file: nil, src: params[:src].to_i, alert: nil, notice: nil, editing: nil)
+  def respond_fs(file: nil, src: params[:src].to_i, alert: nil, notice: nil, editing: nil, edit: false)
     Kb::TreeBuilder.bust_cache!(@user) # before any early return: redirects re-render from the cache too
     unless request.format.turbo_stream?
+      return redirect_to kb_edit_path(src: src, file: file), alert: alert, notice: notice if edit
       return redirect_to kb_path(src: src, file: file || editing), alert: alert, notice: notice
     end
     flash.now[:alert]  = alert if alert
@@ -671,6 +674,8 @@ class KbController < ApplicationController
       @content = render_file(src, file)
       remember_document(src, file) if displayable_content?(@content)
       @update_content = true
+      # A freshly created file opens straight in the editor, not the read view.
+      @raw_content = File.read(resolve_kb_path(src, file, extensions: :any)) if edit
     else
       # Keep the doc the user had open highlighted; clear the pane if it's
       # gone (deleted, or inside a renamed/moved folder).
@@ -787,6 +792,9 @@ class KbController < ApplicationController
   end
 
   def remember_document(folder_index, rel_path)
+    # Turbo prefetches tree links on hover: only a real visit counts as "last viewed".
+    return if %w[X-Sec-Purpose Sec-Purpose].any? { |h| request.headers[h].to_s.start_with?("prefetch") }
+
     cookies.permanent.encrypted[LAST_DOCUMENT_COOKIE] = {
       value: { src: folder_index, file: rel_path }.to_json,
       httponly: true,

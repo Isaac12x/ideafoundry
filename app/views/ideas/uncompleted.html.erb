@@ -2,6 +2,12 @@
   <div data-controller="idea-draft-persist"
        data-idea-draft-persist-clear-on-connect-value="true"
        data-idea-draft-persist-storage-key-value="idea-draft:v1:user-<%= @user.id %>"></div>
+  <% if params[:idea_draft_saved].to_s.match?(/\A\d+\z/) %>
+    <%# Per-draft encrypted copy (server drafts); the line above clears the legacy per-user key. %>
+    <div data-controller="idea-draft-persist"
+         data-idea-draft-persist-clear-on-connect-value="true"
+         data-idea-draft-persist-storage-key-value="idea-draft:v1:user-<%= @user.id %>:idea-<%= params[:idea_draft_saved].to_i %>"></div>
+  <% end %>
 <% end %>
 
 <div class="ideas-container ideas-uncompleted">
@@ -14,7 +20,7 @@
       <%= link_to ideas_path, class: "btn" do %>
         All Ideas
       <% end %>
-      <%= link_to new_idea_path, class: "btn btn-primary" do %>
+      <%= link_to new_idea_path, class: "btn btn-primary", data: { turbo_prefetch: false } do %>
         New Idea
       <% end %>
     </div>
@@ -51,7 +57,7 @@
         <div class="empty-state" style="grid-column: 1 / -1;">
           <h3>No saved drafts</h3>
           <p>Start a new idea and it will appear here if you leave before finishing.</p>
-          <%= link_to "Create Idea", new_idea_path, class: "btn btn-primary" %>
+          <%= link_to "Create Idea", new_idea_path, class: "btn btn-primary", data: { turbo_prefetch: false } %>
         </div>
       <% end %>
     </div>

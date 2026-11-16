@@ -312,7 +312,7 @@ export default class extends Controller {
       {
         title: "Global",
         items: [
-          ...["cheatsheet", "search", "hints", "focus_search", "save", "submit", "ask_agent"].map((id) => ({
+          ...["cheatsheet", "search", "hints", "focus_search", "save", "submit", "ask_agent", "dictate"].map((id) => ({
             key: binding(id),
             label: id === "hints" ? `Show action hints for ${this.visibleActions.length} visible controls` : DEFAULT_BINDINGS[id].label,
           })),
