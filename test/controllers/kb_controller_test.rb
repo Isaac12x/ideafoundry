@@ -209,7 +209,7 @@ class KbControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_equal "text/vnd.turbo-stream.html", response.media_type
     assert_select "turbo-stream[action=replace][target=kb-sidebar-tree]"
-    assert_select "turbo-stream[action=update][target=kb-content]"
+    assert_select "turbo-stream[action=replace][target=kb-content] textarea.kb-editor-textarea" # new file opens in the editor
     assert File.exist?(File.join(@kb_dir, "turbo-note.md"))
   end
 
