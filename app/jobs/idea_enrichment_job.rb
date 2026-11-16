@@ -17,12 +17,7 @@ class IdeaEnrichmentJob < ApplicationJob
     results
   rescue StandardError => e
     Rails.logger.error("IdeaEnrichmentJob failed for idea #{idea_id}: #{e.message}")
-    idea&.update_columns(
-      metadata: idea.metadata&.merge({
-        "enrichment_error" => e.message,
-        "enrichment_failed_at" => Time.current.iso8601
-      })
-    )
+    IdeaEnrichmentService.new(idea).mark_failed(e.message) if idea
     raise
   end
 end

@@ -92,7 +92,12 @@ export default class extends Controller {
       if (!resp.ok) throw new Error(resp.status)
       const { groups } = await resp.json()
       if (!this.hasInputTarget || this.inputTarget.value.trim() !== q) return // stale response
-      this._render([...this._actions(q), ...(groups || [])])
+      const list = groups || []
+      // No idea matched: offer to start one titled with the query (full visit; `new` makes a draft and redirects).
+      const newUrl = document.body.dataset.shortcutsNewIdeaUrlValue
+      const create = newUrl && !list.some((g) => g.label === "Ideas")
+        ? [{ label: "Actions", items: [{ title: `Create idea “${q}”`, hint: "action", url: `${newUrl}?title=${encodeURIComponent(q)}` }] }] : []
+      this._render([...create, ...this._actions(q), ...list])
     } catch { /* silently fail */ }
   }
 

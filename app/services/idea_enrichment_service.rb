@@ -15,6 +15,12 @@
 #
 class IdeaEnrichmentService
   ENRICHMENT_SOURCES = %w[competitors market resources].freeze
+  SOURCE_LABELS = {
+    "competitors" => "Looking for competitors",
+    "market" => "Reading market trends",
+    "resources" => "Finding tools and resources"
+  }.freeze
+  STALE_AFTER = 10.minutes
 
   attr_reader :idea, :user
 
@@ -30,7 +36,8 @@ class IdeaEnrichmentService
     sources ||= ENRICHMENT_SOURCES
 
     results = {}
-    sources.each do |source|
+    sources.each_with_index do |source, i|
+      mark_running(step: "#{SOURCE_LABELS[source] || source} (#{i + 1} of #{sources.size})")
       results[source] = case source
       when "competitors" then search_competitors(search_query)
       when "market"      then search_market(search_query)
@@ -80,6 +87,44 @@ class IdeaEnrichmentService
     end
 
     created
+  end
+
+  # idle | running | done | failed. "running" older than STALE_AFTER counts as failed (worker died).
+  def state
+    run = idea.metadata&.dig("enrichment_run")
+    if run.is_a?(Hash) && run["status"] == "running"
+      started = Time.zone.parse(run["started_at"].to_s)
+      return started && started > STALE_AFTER.ago ? "running" : "failed"
+    end
+    return "failed" if error_message.present?
+    last_enrichment.present? ? "done" : "idle"
+  end
+
+  def error_message
+    idea.metadata&.dig("enrichment_error").presence
+  end
+
+  def progress_step
+    idea.metadata&.dig("enrichment_run", "step")
+  end
+
+  # False when no search API key is set: the null adapter can only ever return nothing.
+  def search_configured?
+    !adapter.is_a?(Adapters::NullAdapter)
+  end
+
+  def mark_running(step: "Queued")
+    meta = (idea.metadata || {}).except("enrichment_error", "enrichment_failed_at")
+    started = meta.dig("enrichment_run", "started_at") || Time.current.iso8601
+    meta["enrichment_run"] = { "status" => "running", "started_at" => started, "step" => step }
+    idea.update_columns(metadata: meta)
+  end
+
+  def mark_failed(message)
+    meta = (idea.metadata || {}).except("enrichment_run")
+    meta["enrichment_error"] = message
+    meta["enrichment_failed_at"] = Time.current.iso8601
+    idea.update_columns(metadata: meta)
   end
 
   def last_enrichment
@@ -154,6 +199,7 @@ class IdeaEnrichmentService
   # Stores enrichment results in the idea's metadata.
   def store_enrichment(results, query)
     idea.metadata ||= {}
+    idea.metadata = idea.metadata.except("enrichment_run", "enrichment_error", "enrichment_failed_at")
     idea.metadata["enrichment"] = {
       "query" => query,
       "enriched_at" => Time.current.iso8601,

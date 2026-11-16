@@ -18,6 +18,8 @@ class IdeasController < ApplicationController
     @ideas = @user.ideas.non_draft.primary_or_standalone.includes(:lists, :idea_lists, :topologies, :idea_entries, :themes)
     @kanban_boards = @user.kanban_boards.ordered.includes(:lists)
     @named_lists = @user.lists.named.ordered
+    # Resumable drafts (skip untouched ones: no title and empty description)
+    @drafts = @user.ideas.drafts.where(discarded_at: nil).order(updated_at: :desc).limit(20).select { |d| d.title.present? || d.description.present? }
 
     @ideas = apply_filters(@ideas)
     @ideas = apply_sorting(@ideas)
@@ -50,7 +52,7 @@ class IdeasController < ApplicationController
     # Auto-draft: create a hidden draft idea immediately so drawings can attach
     # to it during composition. Drafts are filtered from listings and cleaned up
     # daily by CleanOrphanedDraftsJob if abandoned.
-    @idea = @user.ideas.create!(draft: true, state: :idea_new, attempt_count: 0, title: "")
+    @idea = @user.ideas.create!(draft: true, state: :idea_new, attempt_count: 0, title: params[:title].to_s.squish.truncate(200, omission: ""))
     redirect_to edit_idea_path(@idea, draft: 1)
   end
 
@@ -73,6 +75,8 @@ class IdeasController < ApplicationController
   end
 
   def update
+    return autosave_draft if params[:autosave].present?
+
     was_draft = @idea.draft?
     attrs = idea_params
     attrs[:draft] = false if was_draft  # Submitting promotes draft → real idea
@@ -97,7 +101,7 @@ class IdeasController < ApplicationController
 
         format.html do
           redirect_to(
-            was_draft ? uncompleted_ideas_path(idea_draft_saved: 1) : idea_path(@idea, idea_edit_saved: 1),
+            was_draft ? uncompleted_ideas_path(idea_draft_saved: @idea.id) : idea_path(@idea, idea_edit_saved: 1),
             notice: "Idea was successfully updated."
           )
         end
@@ -190,10 +194,11 @@ class IdeasController < ApplicationController
     query = params[:query].presence
     sources = params[:sources].presence&.split(",")
 
+    IdeaEnrichmentService.new(@idea).mark_running
     IdeaEnrichmentJob.perform_later(@idea.id, query: query, sources: sources)
 
     respond_to do |format|
-      format.html { redirect_to @idea, notice: "Enrichment started. Results will appear in the Enrichment tab when ready." }
+      format.html { redirect_to idea_path(@idea, anchor: "enrichment") }
       format.json { render json: { status: "enqueued", idea_id: @idea.id } }
     end
   end
@@ -206,9 +211,12 @@ class IdeasController < ApplicationController
 
     render json: {
       idea_id: @idea.id,
+      state: service.state,
+      step: service.progress_step,
+      error: service.error_message,
       enriched: service.enriched?,
       enrichment: enrichment,
-      can_enrich: !service.enriched?
+      can_enrich: service.state != "running"
     }
   end
 
@@ -516,12 +524,22 @@ class IdeasController < ApplicationController
     end
   end
 
+  # Background save of an in-progress draft (typing, lock, page hide). Stays a draft, no version, no extras.
+  # A non-draft is never touched: a late autosave must not overwrite the final submit.
+  def autosave_draft
+    return head :no_content unless @idea.draft?
+
+    attrs = idea_params.except(:hero_images, :hero_order, :remove_hero_image_ids, :metadata, :topology_ids)
+    saved = Idea.without_history_tracking { @idea.update(attrs) }
+    saved ? head(:no_content) : head(:unprocessable_content)
+  end
+
   def idea_params
     permitted = params.require(:idea).permit(
       :title, :tldr, :state, :template_id, :for_licensing,
       :trl, :difficulty, :opportunity, :timing,
       :difficulty_explanation, :opportunity_explanation, :timing_explanation,
-      :description,
+      :description, :location, :latitude, :longitude, :situation,
       :napkin_calculations,
       hero_images: [],
       hero_order: [],

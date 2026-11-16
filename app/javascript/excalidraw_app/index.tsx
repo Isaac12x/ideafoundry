@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { createRoot, Root } from "react-dom/client";
-import { Excalidraw, exportToBlob, CaptureUpdateAction } from "@excalidraw/excalidraw";
+import { Excalidraw, exportScene, CaptureUpdateAction } from "@excalidraw/excalidraw";
 import type { ExcalidrawImperativeAPI } from "@excalidraw/excalidraw/types";
 import "@excalidraw/excalidraw/index.css";
 import { binding, matches } from "../lib/shortcut_bindings.mjs";
@@ -60,12 +60,14 @@ function blobToDataUrl(blob: Blob): Promise<string> {
 async function renderPngDataUrl(scene: Scene): Promise<string | null> {
   if (!scene.elements || scene.elements.length === 0) return null;
   try {
-    const blob = await exportToBlob({
-      elements: scene.elements,
-      appState: { ...scene.appState, exportBackground: true },
-      files: scene.files,
-      mimeType: "image/png",
-    } as any);
+    const blob = await exportScene({
+      type: "png",
+      data: {
+        elements: scene.elements,
+        appState: { viewBackgroundColor: scene.appState?.viewBackgroundColor },
+        files: scene.files,
+      },
+    });
     if (!blob) return null;
     return await blobToDataUrl(blob);
   } catch (e) {

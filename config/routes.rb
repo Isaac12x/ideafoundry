@@ -65,6 +65,8 @@ Rails.application.routes.draw do
   post "recovery-secret", to: "recovery_secrets#create"
   delete "recovery-secret", to: "recovery_secrets#destroy"
 
+  post "transcriptions", to: "transcriptions#create"
+
   # Action Mailbox ingress routes
   mount ActionMailbox::Resend::Engine, at: "/rails/action_mailbox/resend"
   mount ActionMailbox::Engine => "/rails/action_mailbox"

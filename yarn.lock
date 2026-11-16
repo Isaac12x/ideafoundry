@@ -36,15 +36,6 @@
   resolved "https://registry.npmjs.org/@braintree/sanitize-url/-/sanitize-url-7.1.2.tgz"
   integrity sha512-jigsZK+sMF/cuiB7sERuo9V7N9jx+dhmHHnQyDSVdpZwVutaBu7WvNYqMDLSgFgfB30n452TP3vjDAvFC973mA==
 
-"@chevrotain/cst-dts-gen@11.0.3":
-  version "11.0.3"
-  resolved "https://registry.npmjs.org/@chevrotain/cst-dts-gen/-/cst-dts-gen-11.0.3.tgz"
-  integrity sha512-BvIKpRLeS/8UbfxXxgC33xOumsacaeCKAjAeLyOn7Pcp95HiRbrpl14S+9vaZLolnbssPIUuiUd8IvgkRyt6NQ==
-  dependencies:
-    "@chevrotain/gast" "11.0.3"
-    "@chevrotain/types" "11.0.3"
-    lodash-es "4.17.21"
-
 "@chevrotain/cst-dts-gen@13.2.0":
   version "13.2.0"
   resolved "https://registry.yarnpkg.com/@chevrotain/cst-dts-gen/-/cst-dts-gen-13.2.0.tgz#64d904738c224327b14ed616d174cb2c097c8eea"
@@ -53,14 +44,6 @@
     "@chevrotain/gast" "13.2.0"
     "@chevrotain/types" "13.2.0"
 
-"@chevrotain/gast@11.0.3":
-  version "11.0.3"
-  resolved "https://registry.npmjs.org/@chevrotain/gast/-/gast-11.0.3.tgz"
-  integrity sha512-+qNfcoNk70PyS/uxmj3li5NiECO+2YKZZQMbmjTqRI3Qchu8Hig/Q9vgkHpI3alNjr7M+a2St5pw5w5F6NL5/Q==
-  dependencies:
-    "@chevrotain/types" "11.0.3"
-    lodash-es "4.17.21"
-
 "@chevrotain/gast@13.2.0":
   version "13.2.0"
   resolved "https://registry.yarnpkg.com/@chevrotain/gast/-/gast-13.2.0.tgz#3fd21451c3a6d1550e8ef61aca656359fd468644"
@@ -68,35 +51,15 @@
   dependencies:
     "@chevrotain/types" "13.2.0"
 
-"@chevrotain/regexp-to-ast@11.0.3":
-  version "11.0.3"
-  resolved "https://registry.npmjs.org/@chevrotain/regexp-to-ast/-/regexp-to-ast-11.0.3.tgz"
-  integrity sha512-1fMHaBZxLFvWI067AVbGJav1eRY7N8DDvYCTwGBiE/ytKBgP8azTdgyrKyWZ9Mfh09eHWb5PgTSO8wi7U824RA==
-
 "@chevrotain/regexp-to-ast@13.2.0":
   version "13.2.0"
   resolved "https://registry.yarnpkg.com/@chevrotain/regexp-to-ast/-/regexp-to-ast-13.2.0.tgz#fc254a6af6461f7cce6a0f5b8ecbd3dd2dadf3ea"
   integrity sha512-kxpUkLtiaK09ph+dib+Yvm+3sWSnuwlo25gqfKRgTPNmF6H7uW4gVkMjaRdtnN783S9sM6vUNWh9CsxYX4QwKw==
 
-"@chevrotain/types@11.0.3":
-  version "11.0.3"
-  resolved "https://registry.npmjs.org/@chevrotain/types/-/types-11.0.3.tgz"
-  integrity sha512-gsiM3G8b58kZC2HaWR50gu6Y1440cHiJ+i3JUvcp/35JchYejb2+5MVeJK0iKThYpAa/P2PYFV4hoi44HD+aHQ==
-
 "@chevrotain/types@13.2.0", "@chevrotain/types@~13.2.0":
   version "13.2.0"
   resolved "https://registry.yarnpkg.com/@chevrotain/types/-/types-13.2.0.tgz#546500791f9713e8c7bcd1a090fdc232374cf832"
   integrity sha512-7qrYHRlKfWf2AvBfJi5eVOrKAkbxvMFsy/iIHTGIiApNcEecCaVIdR+mIQhyCBsTDJxBz4JWXHMo6krbhR9hVg==
-
-"@chevrotain/types@~11.1.2":
-  version "11.1.2"
-  resolved "https://registry.npmjs.org/@chevrotain/types/-/types-11.1.2.tgz"
-  integrity sha512-U+HFai5+zmJCkK86QsaJtoITlboZHBqrVketcO2ROv865xfCMSFpELQoz1GkX5GzME8pTa+3kbKrZHQtI0gdbw==
-
-"@chevrotain/utils@11.0.3":
-  version "11.0.3"
-  resolved "https://registry.npmjs.org/@chevrotain/utils/-/utils-11.0.3.tgz"
-  integrity sha512-YslZMgtJUyuMbZ+aKvfF3x1f5liK4mWNxghFRv7jqRR9C3R3fAOGTTKvxXDa2Y1s9zSbcpuO0cAxDYsc9SrXoQ==
 
 "@chevrotain/utils@13.2.0":
   version "13.2.0"
@@ -278,37 +241,37 @@
   resolved "https://registry.yarnpkg.com/@esbuild/win32-x64/-/win32-x64-0.28.2.tgz#b21affb804cc167c133d95f45b3a1dc1323b9a87"
   integrity sha512-5ebpxr3nWMzrL/rnUI755Jkuee0bHL/Gq0WTF9lvcpv73wAp5eu8MfBUgWK9bhWvZjj7yX8etf/8tI8Ney695g==
 
-"@excalidraw/common@0.18.0-143b5b6":
-  version "0.18.0-143b5b6"
-  resolved "https://registry.npmjs.org/@excalidraw/common/-/common-0.18.0-143b5b6.tgz"
-  integrity sha512-CSl+RQjhRdlo9Qug9PTBrtlyKN1eAYetUcDeyqpuF5Z0TlL3DQonkQOzhzgeUQIclk2vFH8KtwpZiy3XypyEjg==
+"@excalidraw/common@0.18.0-3c916c5":
+  version "0.18.0-3c916c5"
+  resolved "https://registry.yarnpkg.com/@excalidraw/common/-/common-0.18.0-3c916c5.tgz#8e51143dbceda2f23e5d269002d5926b433c26a6"
+  integrity sha512-r5uM0frSkgd3N/V7zhc0AWfV2/gqaDY5TV6/7E68atMwjAHmqwxmA4PA9qfbCxHRJcn0EuSGGHH8Sr9NLEUGOg==
   dependencies:
     tinycolor2 "1.6.0"
 
-"@excalidraw/element@0.18.0-143b5b6":
-  version "0.18.0-143b5b6"
-  resolved "https://registry.npmjs.org/@excalidraw/element/-/element-0.18.0-143b5b6.tgz"
-  integrity sha512-Pj37R56VV7lF+78minyTk6s5lK5tG3JzQl5tyOgrpRaOCF2wZwjPdgmB1P/nM51z2x8WCivipYsN5I8DEp44YQ==
+"@excalidraw/element@0.18.0-3c916c5":
+  version "0.18.0-3c916c5"
+  resolved "https://registry.yarnpkg.com/@excalidraw/element/-/element-0.18.0-3c916c5.tgz#dda9549a43088716ed2553cc3e0aa23f906a8245"
+  integrity sha512-kfXiH+etGNgynx43r5qTG9NjTA0LlmCODXR6EghRTz1qctnWoyExmxce8bkfbOTGdAZCciGh2iwlOONh7o7nVQ==
   dependencies:
-    "@excalidraw/common" "0.18.0-143b5b6"
-    "@excalidraw/fractional-indexing" "0.18.0-143b5b6"
-    "@excalidraw/math" "0.18.0-143b5b6"
+    "@excalidraw/common" "0.18.0-3c916c5"
+    "@excalidraw/fractional-indexing" "0.18.0-3c916c5"
+    "@excalidraw/math" "0.18.0-3c916c5"
 
-"@excalidraw/excalidraw@0.18.0-143b5b6":
-  version "0.18.0-143b5b6"
-  resolved "https://registry.npmjs.org/@excalidraw/excalidraw/-/excalidraw-0.18.0-143b5b6.tgz"
-  integrity sha512-eHnbxvldu4jQi3y0jQBsSCiUzWoeZOtr+Rwh49QNh4DKl9TGfvhlxAFFzxpChjIoDuTP33bW1STJt/YGSbVjCw==
+"@excalidraw/excalidraw@0.18.0-3c916c5":
+  version "0.18.0-3c916c5"
+  resolved "https://registry.yarnpkg.com/@excalidraw/excalidraw/-/excalidraw-0.18.0-3c916c5.tgz#1e1ad564f259aa546ff73d874977362e7a46316f"
+  integrity sha512-RYMD7G2vbTMzIE8RmKGRrghdD+h6p1jd7R0pQZzw1NPOzFosg73SMW8JDFVPMC/weWByBqGNOtmp+v+YEDilMA==
   dependencies:
     "@braintree/sanitize-url" "6.0.2"
     "@codemirror/commands" "^6.0.0"
     "@codemirror/language" "^6.0.0"
     "@codemirror/state" "^6.0.0"
     "@codemirror/view" "^6.0.0"
-    "@excalidraw/common" "0.18.0-143b5b6"
-    "@excalidraw/element" "0.18.0-143b5b6"
+    "@excalidraw/common" "0.18.0-3c916c5"
+    "@excalidraw/element" "0.18.0-3c916c5"
     "@excalidraw/laser-pointer" "1.3.1"
-    "@excalidraw/math" "0.18.0-143b5b6"
-    "@excalidraw/mermaid-to-excalidraw" "2.2.2"
+    "@excalidraw/math" "0.18.0-3c916c5"
+    "@excalidraw/mermaid-to-excalidraw" "3.6.0"
     "@excalidraw/random-username" "1.1.0"
     "@lezer/highlight" "^1.0.0"
     browser-fs-access "0.38.0"
@@ -336,10 +299,10 @@
     sass "1.51.0"
     tunnel-rat "0.1.2"
 
-"@excalidraw/fractional-indexing@0.18.0-143b5b6":
-  version "0.18.0-143b5b6"
-  resolved "https://registry.npmjs.org/@excalidraw/fractional-indexing/-/fractional-indexing-0.18.0-143b5b6.tgz"
-  integrity sha512-+UxhEmLS5bUsQLqchFRGzX5RBn6cr8gAyqnWBWwqkE0RW1f0yMQE2GKqyGEzLg6WC5Nc3qWh8PN+46gcBNxZtQ==
+"@excalidraw/fractional-indexing@0.18.0-3c916c5":
+  version "0.18.0-3c916c5"
+  resolved "https://registry.yarnpkg.com/@excalidraw/fractional-indexing/-/fractional-indexing-0.18.0-3c916c5.tgz#d215aa3534ce827c3350775835115e9bb1eed6af"
+  integrity sha512-3USAvvxJR3JXgE1WitUQzRoSXnBLLVP9jEhYAZXwbk6BP0SXZISCEi9aw2mDa1ssT3jhORj/R0H0xDox0gJjUw==
 
 "@excalidraw/laser-pointer@1.3.1":
   version "1.3.1"
@@ -351,22 +314,21 @@
   resolved "https://registry.npmjs.org/@excalidraw/markdown-to-text/-/markdown-to-text-0.1.2.tgz"
   integrity sha512-1nDXBNAojfi3oSFwJswKREkFm5wrSjqay81QlyRv2pkITG/XYB5v+oChENVBQLcxQwX4IUATWvXM5BcaNhPiIg==
 
-"@excalidraw/math@0.18.0-143b5b6":
-  version "0.18.0-143b5b6"
-  resolved "https://registry.npmjs.org/@excalidraw/math/-/math-0.18.0-143b5b6.tgz"
-  integrity sha512-Vw/KBih+LrSPE/HhtvxZSi3LZySBPH7zeAuP3+PPHJ80U1+WgLJld0KHCRIT5yjBJDFmbrjcoZLaIH9ENZ2uIQ==
+"@excalidraw/math@0.18.0-3c916c5":
+  version "0.18.0-3c916c5"
+  resolved "https://registry.yarnpkg.com/@excalidraw/math/-/math-0.18.0-3c916c5.tgz#9ff886a0b0a8e54f804e6eb7430a300269e1b7f5"
+  integrity sha512-7ZlXYZbHS6NbN8kIgAfrDjqMQjlvGo5/+tQKgVPJ/gMOVoPR1xcW1Yy1MkREIVGZxOzvN0X9i1U0d9UTWrwhTQ==
   dependencies:
-    "@excalidraw/common" "0.18.0-143b5b6"
+    "@excalidraw/common" "0.18.0-3c916c5"
 
-"@excalidraw/mermaid-to-excalidraw@2.2.2":
-  version "2.2.2"
-  resolved "https://registry.npmjs.org/@excalidraw/mermaid-to-excalidraw/-/mermaid-to-excalidraw-2.2.2.tgz"
-  integrity sha512-5VKQq5CdRocC82vOIUpQ5ufJOVV9FpBTdHGA+ULqazeIVV+cr299877omQCibsdS3Bpitz2fsnTwnIXEmLVDSg==
+"@excalidraw/mermaid-to-excalidraw@3.6.0":
+  version "3.6.0"
+  resolved "https://registry.yarnpkg.com/@excalidraw/mermaid-to-excalidraw/-/mermaid-to-excalidraw-3.6.0.tgz#fbf422ef01932d953f82a443b06f72ea51646fa0"
+  integrity sha512-h21Mr9FxmfLDds78iw0iTRDzes+/CDRFJ5kndFAmH+EVQLG6PHoMyn4Lms1dHiYgDTal+MkBJnqKJC9Xj080uA==
   dependencies:
     "@excalidraw/markdown-to-text" "0.1.2"
-    "@mermaid-js/parser" "^0.6.3"
-    mermaid "^11.12.1"
     nanoid "4.0.2"
+    pele "1.13.0"
 
 "@excalidraw/random-username@1.1.0":
   version "1.1.0"
@@ -437,20 +399,6 @@
   version "1.0.4"
   resolved "https://registry.npmjs.org/@marijn/find-cluster-break/-/find-cluster-break-1.0.4.tgz"
   integrity sha512-Wy0V7+SGUjnF9/TkiM1hKVDPj7jKXduPNboMVtHTA8dySMURWqfg/JZ9E2Sq8JgSJmkl7k7Qe9FLeMSrSraWmQ==
-
-"@mermaid-js/parser@^0.6.3":
-  version "0.6.3"
-  resolved "https://registry.npmjs.org/@mermaid-js/parser/-/parser-0.6.3.tgz"
-  integrity sha512-lnjOhe7zyHjc+If7yT4zoedx2vo4sHaTmtkl1+or8BRTnCtDmcTpAjpzDSfCZrshM5bCoz0GyidzadJAH1xobA==
-  dependencies:
-    langium "3.3.1"
-
-"@mermaid-js/parser@^1.2.0":
-  version "1.2.0"
-  resolved "https://registry.npmjs.org/@mermaid-js/parser/-/parser-1.2.0.tgz"
-  integrity sha512-oYPyv8A4As1yH5Bx+04iQEQxXuIQDe0GKCNSRgao6z8AM9jixXIfP0vsppRLvGf+nKIOb9/LdpWA4YuJiVvESA==
-  dependencies:
-    "@chevrotain/types" "~11.1.2"
 
 "@mermaid-js/parser@^2.0.1":
   version "2.0.1"
@@ -1600,31 +1548,12 @@ canvas-roundrect-polyfill@0.0.1:
   resolved "https://registry.npmjs.org/canvas-roundrect-polyfill/-/canvas-roundrect-polyfill-0.0.1.tgz"
   integrity sha512-yWq+R3U3jE+coOeEb3a3GgE2j/0MMiDKM/QpLb6h9ihf5fGY9UXtvK9o4vNqjWXoZz7/3EaSVU3IX53TvFFUOw==
 
-chevrotain-allstar@~0.3.0:
-  version "0.3.1"
-  resolved "https://registry.npmjs.org/chevrotain-allstar/-/chevrotain-allstar-0.3.1.tgz"
-  integrity sha512-b7g+y9A0v4mxCW1qUhf3BSVPg+/NvGErk/dOkrDaHA0nQIQGAtrOjlX//9OQtRlSCy+x9rfB5N8yC71lH1nvMw==
-  dependencies:
-    lodash-es "^4.17.21"
-
 chevrotain@^6.5.0:
   version "6.5.0"
   resolved "https://registry.npmjs.org/chevrotain/-/chevrotain-6.5.0.tgz"
   integrity sha512-BwqQ/AgmKJ8jcMEjaSnfMybnKMgGTrtDKowfTP3pX4jwVy0kNjRsT/AP6h+wC3+3NC+X8X15VWBnTCQlX+wQFg==
   dependencies:
     regexp-to-ast "0.4.0"
-
-chevrotain@~11.0.3:
-  version "11.0.3"
-  resolved "https://registry.npmjs.org/chevrotain/-/chevrotain-11.0.3.tgz"
-  integrity sha512-ci2iJH6LeIkvP9eJW6gpueU8cnZhv85ELY8w8WiFtNjMHA5ad6pQLaJo9mEly/9qUyCpvqX8/POVUTf18/HFdw==
-  dependencies:
-    "@chevrotain/cst-dts-gen" "11.0.3"
-    "@chevrotain/gast" "11.0.3"
-    "@chevrotain/regexp-to-ast" "11.0.3"
-    "@chevrotain/types" "11.0.3"
-    "@chevrotain/utils" "11.0.3"
-    lodash-es "4.17.21"
 
 chevrotain@~13.2.0:
   version "13.2.0"
@@ -1735,11 +1664,6 @@ cytoscape-fcose@^2.2.0:
   integrity sha512-ki1/VuRIHFCzxWNrsshHYPs6L7TvLu3DL+TyIGEsRcvVERmxokbf5Gdk7mFxZnTdiGtnA4cfSmjZJMviqSuZrQ==
   dependencies:
     cose-base "^2.2.0"
-
-cytoscape@^3.33.3:
-  version "3.33.3"
-  resolved "https://registry.npmjs.org/cytoscape/-/cytoscape-3.33.3.tgz"
-  integrity sha512-Gej7U+OKR+LZ8kvX7rb2HhCYJ0IhvEFsnkud4SB1PR+BUY/TsSO0dmOW59WEVLu51b1Rm+gQRKoz4bLYxGSZ2g==
 
 cytoscape@^3.34.0:
   version "3.34.4"
@@ -2061,11 +1985,6 @@ data-bind-mapper@1:
   dependencies:
     accessor-fn "1"
 
-dayjs@^1.11.20:
-  version "1.11.20"
-  resolved "https://registry.npmjs.org/dayjs/-/dayjs-1.11.20.tgz"
-  integrity sha512-YbwwqR/uYpeoP4pu043q+LTDLFBLApUP6VxRihdfNTqu4ubqMlGDLd6ErXhEgsyvY0K6nCs7nggYumAN+9uEuQ==
-
 dayjs@^1.11.21:
   version "1.11.23"
   resolved "https://registry.yarnpkg.com/dayjs/-/dayjs-1.11.23.tgz#b0a363506dde5f36cf5075e42ebe8115165a8c79"
@@ -2083,7 +2002,7 @@ detect-node-es@^1.1.0:
   resolved "https://registry.npmjs.org/detect-node-es/-/detect-node-es-1.1.0.tgz"
   integrity sha512-ypdmJU/TbBby2Dxibuv7ZLW3Bs1QEmM7nHjEANfohJLvE0XVujisn1qPJcZxg+qDucsr+bP6fLD1rPS3AhJ7EQ==
 
-dompurify@3.4.12, dompurify@^3.3.3, dompurify@^3.4.12:
+dompurify@3.4.12, dompurify@^3.4.12:
   version "3.4.12"
   resolved "https://registry.npmjs.org/dompurify/-/dompurify-3.4.12.tgz"
   integrity sha512-zQvGet8Z2sWbQhCmfFz/T5QWH2oBmjnqK3qvOjaqaNLrLEF912WamU+ohnTp0TCep/MFVHpdJuCZEdFOdTnEFg==
@@ -2365,7 +2284,7 @@ kapsule@^1.16:
   dependencies:
     lodash-es "4"
 
-katex@^0.16.45, katex@^0.16.47:
+katex@^0.16.47:
   version "0.16.47"
   resolved "https://registry.npmjs.org/katex/-/katex-0.16.47.tgz"
   integrity sha512-Eeo8Ys1doU1z+x8AZsPpQu+p/QcZBI5PeOo7QGQdy2x2m0MU/hYagBbGOmXwr5KVbEfVuWv9LpnQWeehogurjg==
@@ -2376,17 +2295,6 @@ khroma@^2.1.0:
   version "2.1.0"
   resolved "https://registry.npmjs.org/khroma/-/khroma-2.1.0.tgz"
   integrity sha512-Ls993zuzfayK269Svk9hzpeGUKob/sIgZzyHYdjQoAdQetRKpOLj+k/QQQ/6Qi0Yz65mlROrfd+Ev+1+7dz9Kw==
-
-langium@3.3.1:
-  version "3.3.1"
-  resolved "https://registry.npmjs.org/langium/-/langium-3.3.1.tgz"
-  integrity sha512-QJv/h939gDpvT+9SiLVlY7tZC3xB2qK57v0J04Sh9wpMb6MP1q8gB21L3WIo8T5P1MSMg3Ep14L7KkDCFG3y4w==
-  dependencies:
-    chevrotain "~11.0.3"
-    chevrotain-allstar "~0.3.0"
-    vscode-languageserver "~9.0.1"
-    vscode-languageserver-textdocument "~1.0.11"
-    vscode-uri "~3.0.8"
 
 layout-base@^1.0.0:
   version "1.0.2"
@@ -2419,7 +2327,7 @@ localforage@*, localforage@^1.10.0:
   dependencies:
     lie "3.1.1"
 
-lodash-es@4, lodash-es@4.17.21, lodash-es@4.18.1, lodash-es@^4.17.21:
+lodash-es@4, lodash-es@4.18.1, lodash-es@^4.17.21:
   version "4.18.1"
   resolved "https://registry.npmjs.org/lodash-es/-/lodash-es-4.18.1.tgz"
   integrity sha512-J8xewKD/Gk22OZbhpOVSwcs60zhd95ESDwezOFuA3/099925PdHJ7OFHNTGtajL3AlZkykD32HykiMo+BIBI8A==
@@ -2471,33 +2379,6 @@ mermaid@12.1.0:
     elkjs "^0.9.3"
     es-toolkit "^1.45.1"
     katex "^0.16.47"
-    khroma "^2.1.0"
-    marked "^16.3.0"
-    roughjs "^4.6.6"
-    stylis "^4.3.6"
-    ts-dedent "^2.2.0"
-    uuid "^11.1.0 || ^12 || ^13 || ^14.0.0"
-
-mermaid@^11.12.1:
-  version "11.16.1"
-  resolved "https://registry.npmjs.org/mermaid/-/mermaid-11.16.1.tgz"
-  integrity sha512-TQsq6u22fAn3rek5VOubrhKPo1g5hwC3FXUN9hiyupTckcYiGuuKGkNQrKYwGJkXUxZdojwRG46gsSCFZMDp4g==
-  dependencies:
-    "@braintree/sanitize-url" "^7.1.2"
-    "@iconify/utils" "^3.0.2"
-    "@mermaid-js/parser" "^1.2.0"
-    "@types/d3" "^7.4.3"
-    "@upsetjs/venn.js" "^2.0.0"
-    cytoscape "^3.33.3"
-    cytoscape-cose-bilkent "^4.1.0"
-    cytoscape-fcose "^2.2.0"
-    d3 "^7.9.0"
-    d3-sankey "^0.12.3"
-    dagre-d3-es "7.0.14"
-    dayjs "^1.11.20"
-    dompurify "^3.3.3"
-    es-toolkit "^1.45.1"
-    katex "^0.16.45"
     khroma "^2.1.0"
     marked "^16.3.0"
     roughjs "^4.6.6"
@@ -2605,6 +2486,11 @@ pdfjs-dist@4.10.38:
   integrity sha512-/Y3fcFrXEAsMjJXeL9J8+ZG9U01LbuWaYypvDW2ycW1jL269L3js3DVBjDJ0Up9Np1uqDXsDrRihHANhZOlwdQ==
   optionalDependencies:
     "@napi-rs/canvas" "^0.1.65"
+
+pele@1.13.0:
+  version "1.13.0"
+  resolved "https://registry.yarnpkg.com/pele/-/pele-1.13.0.tgz#5a14f20b809a5ae61b04cd8825a4940550675d11"
+  integrity sha512-Ie8UKY9x00MsuR3jO6AzUwzK2Z6MIV3Tf4EDdITiuk8Uaz8K7g0R082WqsqNaSU8DdgkrRvZThzhit83mi/uiw==
 
 perfect-freehand@1.2.0:
   version "1.2.0"
@@ -3046,41 +2932,6 @@ util-deprecate@~1.0.1:
   version "14.0.0"
   resolved "https://registry.npmjs.org/uuid/-/uuid-14.0.0.tgz"
   integrity sha512-Qo+uWgilfSmAhXCMav1uYFynlQO7fMFiMVZsQqZRMIXp0O7rR7qjkj+cPvBHLgBqi960QCoo/PH2/6ZtVqKvrg==
-
-vscode-jsonrpc@8.2.0:
-  version "8.2.0"
-  resolved "https://registry.npmjs.org/vscode-jsonrpc/-/vscode-jsonrpc-8.2.0.tgz"
-  integrity sha512-C+r0eKJUIfiDIfwJhria30+TYWPtuHJXHtI7J0YlOmKAo7ogxP20T0zxB7HZQIFhIyvoBPwWskjxrvAtfjyZfA==
-
-vscode-languageserver-protocol@3.17.5:
-  version "3.17.5"
-  resolved "https://registry.npmjs.org/vscode-languageserver-protocol/-/vscode-languageserver-protocol-3.17.5.tgz"
-  integrity sha512-mb1bvRJN8SVznADSGWM9u/b07H7Ecg0I3OgXDuLdn307rl/J3A9YD6/eYOssqhecL27hK1IPZAsaqh00i/Jljg==
-  dependencies:
-    vscode-jsonrpc "8.2.0"
-    vscode-languageserver-types "3.17.5"
-
-vscode-languageserver-textdocument@~1.0.11:
-  version "1.0.12"
-  resolved "https://registry.npmjs.org/vscode-languageserver-textdocument/-/vscode-languageserver-textdocument-1.0.12.tgz"
-  integrity sha512-cxWNPesCnQCcMPeenjKKsOCKQZ/L6Tv19DTRIGuLWe32lyzWhihGVJ/rcckZXJxfdKCFvRLS3fpBIsV/ZGX4zA==
-
-vscode-languageserver-types@3.17.5:
-  version "3.17.5"
-  resolved "https://registry.npmjs.org/vscode-languageserver-types/-/vscode-languageserver-types-3.17.5.tgz"
-  integrity sha512-Ld1VelNuX9pdF39h2Hgaeb5hEZM2Z3jUrrMgWQAu82jMtZp7p3vJT3BzToKtZI7NgQssZje5o0zryOrhQvzQAg==
-
-vscode-languageserver@~9.0.1:
-  version "9.0.1"
-  resolved "https://registry.npmjs.org/vscode-languageserver/-/vscode-languageserver-9.0.1.tgz"
-  integrity sha512-woByF3PDpkHFUreUa7Hos7+pUWdeWMXRd26+ZX2A8cFx6v/JPTtd4/uN0/jB6XQHYaOlHbio03NTHCqrgG5n7g==
-  dependencies:
-    vscode-languageserver-protocol "3.17.5"
-
-vscode-uri@~3.0.8:
-  version "3.0.8"
-  resolved "https://registry.npmjs.org/vscode-uri/-/vscode-uri-3.0.8.tgz"
-  integrity sha512-AyFQ0EVmsOZOlAnxoFOGOq1SQDWAB7C6aqMGS23svWAllfOaxbuFvcT8D1i8z3Gyn8fraVeZNNmN6e9bxxXkKw==
 
 w3c-keyname@^2.2.4:
   version "2.2.8"
