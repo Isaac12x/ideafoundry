@@ -8,6 +8,7 @@ export const DEFAULT_BINDINGS = {
   "submit": { "key": "Ctrl/Cmd+Enter", "label": "Submit the current form" },
   "ask_agent": { "key": "Ctrl/Cmd+J", "label": "Open Ask Agent" },
   "lock": { "key": "Ctrl/Cmd+L", "label": "Lock workspace" },
+  "dictate": { "key": "Ctrl+Shift+Space", "label": "Dictate into the focused field" },
   "edit": { "key": "e", "label": "Edit the current item" },
   "prev_tab": { "key": "[", "label": "Previous tab" },
   "next_tab": { "key": "]", "label": "Next tab" },

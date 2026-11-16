@@ -33,6 +33,32 @@ class KbEnhancementsTest < ActionDispatch::IntegrationTest
     assert_select ".kb-file-link", text: "source.bin"
   end
 
+  test "extension upload works while the typing lock is engaged; reads stay locked" do
+    @user.update!(settings: @user.settings.merge("typing_lock" => { "enabled" => true }))
+    upload = Rack::Test::UploadedFile.new(StringIO.new("locked bytes"), "text/plain", original_filename: "chat.md")
+
+    get kb_path
+    assert_response :redirect
+    get kb_projects_path
+    assert_response :redirect
+
+    ActionController::Base.allow_forgery_protection = true # test env disables it, which hides the meta tag
+    get root_path
+    follow_redirect!
+    ActionController::Base.allow_forgery_protection = false
+    assert_select "meta[name=csrf-token]"
+
+    post kb_fs_upload_path, params: { src: 0, dir: "research", files: [ upload ] }, headers: { "Accept" => "application/json" }
+    assert_response :redirect
+    assert_equal "locked bytes", File.read(File.join(@kb_dir, "research", "chat.md"))
+
+    Kb::ProjectLock.stub(:write_block, :locked) do
+      post kb_fs_upload_path, params: { src: 0, dir: "research", files: [ upload ] }, headers: { "Accept" => "application/json" }
+    end
+    assert_response :unprocessable_content
+    assert_match(/locked/i, response.parsed_body["error"])
+  end
+
   test "upload keeps both files when a name already exists" do
     File.write(File.join(@kb_dir, "research", "notes.txt"), "first")
     upload = Rack::Test::UploadedFile.new(StringIO.new("second"), "text/plain", original_filename: "notes.txt")

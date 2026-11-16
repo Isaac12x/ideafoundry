@@ -17,6 +17,16 @@ class IdeaTest < ActiveSupport::TestCase
     assert @idea.valid?
   end
 
+  test "rejects out-of-range coordinates" do
+    @idea.latitude = 91
+    assert_not @idea.valid?
+    @idea.latitude = 10
+    @idea.longitude = -181
+    assert_not @idea.valid?
+    @idea.longitude = 10
+    assert @idea.valid?
+  end
+
   test "should require title" do
     @idea.title = nil
     assert_not @idea.valid?
