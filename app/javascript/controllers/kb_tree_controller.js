@@ -552,9 +552,11 @@ export default class extends Controller {
 
     const name = input.value.trim()
     const original = input.dataset.original ?? ""
+    const fresh = "kbAutofocus" in input.dataset // just created: open it for editing once named
     this._stopNaming(row)
     if (!name || name === original) {
       input.value = original
+      if (fresh) this._openForEdit(row)
       return
     }
 
@@ -568,10 +570,17 @@ export default class extends Controller {
     // the whole tree — the pane, scroll, and collapse state all stay put.
     if (result?.rel) {
       this._applyRename(row, result.rel, result.name)
+      if (fresh) this._openForEdit(row)
     } else {
       input.value = original
       if (result?.error) this._alert(result.error)
     }
+  }
+
+  _openForEdit(row) {
+    const frame = document.getElementById("kb-content")
+    if (!frame || !row.querySelector(".kb-file-link")) return
+    frame.src = `${this.editUrlValue}?${new URLSearchParams({ src: row.dataset.kbTreeSrcParam, file: row.dataset.kbTreeRelParam })}`
   }
 
   _applyRename(row, rel, name) {
