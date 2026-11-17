@@ -18,8 +18,15 @@ class KbFsOpsTest < ActionDispatch::IntegrationTest
   test "creates a markdown file, defaulting the extension" do
     post kb_fs_create_path, params: { src: @src, dir: "", name: "note", kind: "file" }
 
-    assert_redirected_to kb_path(src: @src, file: "note.md")
+    assert_redirected_to kb_edit_path(src: @src, file: "note.md")
     assert File.file?(File.join(@kb_dir, "note.md"))
+  end
+
+  test "creating a named file over turbo stream opens it in the editor" do
+    post kb_fs_create_path, params: { src: @src, dir: "", name: "note", kind: "file" }, as: :turbo_stream
+
+    assert_response :success
+    assert_select "turbo-stream[action=replace][target=kb-content] textarea.kb-editor-textarea"
   end
 
   test "creates a folder that shows in the tree even when empty" do
