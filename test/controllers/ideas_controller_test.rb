@@ -15,6 +15,53 @@ class IdeasControllerTest < ActionDispatch::IntegrationTest
     controller.instance_variable_get(:@ideas).map(&:id)
   end
 
+  test "update syncs @ mentions into dependencies, show links them" do
+    other = @user.ideas.create!(title: "Foundation", state: :idea_new)
+    patch idea_url(@idea), params: { idea: { tldr: "builds on @[Foundation](idea:#{other.id})" } }
+    assert_equal [ other.id ], @idea.prerequisites.pluck(:id)
+    get idea_url(@idea)
+    assert_select ".idea-links-group .idea-link-chip", text: "Foundation"
+  end
+
+  test "new uses title param for the draft" do
+    assert_difference -> { @user.ideas.drafts.count }, 1 do
+      get new_idea_url, params: { title: "  Solar   kettle " }
+    end
+    draft = @user.ideas.drafts.order(:id).last
+    assert_equal "Solar kettle", draft.title
+    assert_redirected_to edit_idea_url(draft, draft: 1)
+  end
+
+  test "autosave keeps draft and stores fields without versioning" do
+    draft = @user.ideas.create!(draft: true, state: :idea_new, title: "")
+    assert_no_difference -> { draft.versions.count } do
+      patch idea_url(draft), params: { autosave: 1, idea: { title: "Half done", description: "<p>typing</p>" } }
+    end
+    assert_response :no_content
+    draft.reload
+    assert draft.draft?
+    assert_equal "Half done", draft.title
+    assert_includes draft.description.to_plain_text, "typing"
+  end
+
+  test "autosave never changes a finished idea" do
+    patch idea_url(@idea), params: { autosave: 1, idea: { title: "Late write" } }
+    assert_response :no_content
+    assert_equal "Test Idea", @idea.reload.title
+  end
+
+  test "index empty state create link breaks out of the frame and carries the search" do
+    get ideas_url, params: { search: "zzz-nothing" }
+    assert_response :success
+    assert_select "a[data-turbo-frame='_top'][href=?]", new_idea_path(title: "zzz-nothing")
+  end
+
+  test "index lists resumable drafts" do
+    d = @user.ideas.create!(draft: true, state: :idea_new, title: "Resume me")
+    get ideas_url
+    assert_select "a[href=?]", edit_idea_path(d, draft: 1)
+  end
+
   test "index sorts by created and title in both directions" do
     @user.ideas.destroy_all
     b = @user.ideas.create!(title: "bravo", state: :idea_new, created_at: 3.days.ago)
@@ -181,7 +228,7 @@ class IdeasControllerTest < ActionDispatch::IntegrationTest
     draft = @user.ideas.create!(title: "Draft", state: :idea_new, draft: true)
     get ideas_url
     assert_response :success
-    assert_no_match draft.title, response.body
+    assert_no_match(/idea-card--draft|#{draft.title}<\/h3>/, response.body)
   end
 
   test "drafts are excluded from search" do
@@ -205,7 +252,9 @@ class IdeasControllerTest < ActionDispatch::IntegrationTest
 
     patch idea_url(draft), params: { idea: { title: "Promoted" } }
 
-    assert_redirected_to uncompleted_ideas_url(idea_draft_saved: 1)
+    assert_redirected_to uncompleted_ideas_url(idea_draft_saved: draft.id)
+    follow_redirect!
+    assert_select "[data-idea-draft-persist-storage-key-value=?]", "idea-draft:v1:user-#{@user.id}:idea-#{draft.id}"
   end
 
   test "uncompleted ideas page lists unfinished drafts and recently started ideas" do
@@ -280,6 +329,17 @@ class IdeasControllerTest < ActionDispatch::IntegrationTest
     end
 
     assert_redirected_to uncompleted_ideas_url(idea_draft_saved: 1)
+  end
+
+  test "create persists location, coordinates and situation" do
+    post ideas_url, params: { idea: { title: "Placed", location: "Lisbon, Portugal", latitude: "38.722252", longitude: "-9.139337", situation: "On the tram" } }
+    idea = Idea.find_by!(title: "Placed")
+    assert_equal "Lisbon, Portugal", idea.location
+    assert_in_delta 38.722252, idea.latitude.to_f, 1e-6
+    assert_in_delta(-9.139337, idea.longitude.to_f, 1e-6)
+    assert_equal "On the tram", idea.situation
+    get idea_url(idea)
+    assert_select ".idea-context__location a[href*='openstreetmap.org']", text: "Lisbon, Portugal"
   end
 
   test "create ignores list and board placement params" do
@@ -627,7 +687,7 @@ class IdeasControllerTest < ActionDispatch::IntegrationTest
       post enrich_idea_url(@idea)
     end
 
-    assert_redirected_to idea_url(@idea)
+    assert_redirected_to idea_url(@idea, anchor: "enrichment")
   end
 
   test "enrichment_status returns JSON" do
@@ -637,5 +697,38 @@ class IdeasControllerTest < ActionDispatch::IntegrationTest
     json = JSON.parse(response.body)
     assert_equal @idea.id, json["idea_id"]
     assert json.key?("enriched")
+  end
+
+  test "enrich marks running and the tab shows progress" do
+    post enrich_idea_url(@idea)
+    assert_redirected_to idea_url(@idea, anchor: "enrichment")
+    assert_equal "running", @idea.reload.metadata.dig("enrichment_run", "status")
+
+    get enrichment_status_idea_url(@idea)
+    json = JSON.parse(response.body)
+    assert_equal "running", json["state"]
+    assert_equal false, json["can_enrich"]
+
+    get idea_url(@idea)
+    assert_select ".enrichment-running"
+    assert_select ".enrichment-form", count: 0
+  end
+
+  test "enrichment tab idle, done and failed states" do
+    get idea_url(@idea)
+    assert_select ".enrichment-form input[type=submit][value='Enrich this idea']"
+
+    @idea.update_columns(metadata: (@idea.metadata || {}).merge("enrichment" => {
+      "query" => "q", "enriched_at" => 2.days.ago.iso8601, "summary" => "x",
+      "results" => { "competitors" => [ { "title" => "Acme", "url" => "https://www.acme.test/x" } ] }
+    }))
+    get idea_url(@idea)
+    assert_select ".enrichment-section a[href='https://www.acme.test/x']", text: "Acme"
+    assert_select ".enrichment-form input[value='Re-run']"
+
+    @idea.update_columns(metadata: @idea.reload.metadata.merge("enrichment_error" => "boom"))
+    get idea_url(@idea)
+    assert_select ".enrichment-failed", text: /boom/
+    assert_select ".enrichment-form input[value='Try again']"
   end
 end

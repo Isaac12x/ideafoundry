@@ -8,7 +8,7 @@
   },
   "dependencies": {
     "3d-force-graph": "^1.80.1",
-    "@excalidraw/excalidraw": "0.18.0-143b5b6",
+    "@excalidraw/excalidraw": "0.18.0-3c916c5",
     "@rails/actioncable": "^8.1.400",
     "epubjs": "0.3.93",
     "hyperformula": "^3.5.0",

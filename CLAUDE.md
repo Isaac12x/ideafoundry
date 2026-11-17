@@ -11,7 +11,7 @@ Rules:
 ## Excalidraw upkeep (recurring, monthly)
 
 Embedded `@excalidraw/excalidraw` tracks the npm `next` dist-tag, pinned exact in package.json.
-Last updated: 2026-10-12 (0.18.0-143b5b6)
+Last updated: 2026-11-10 (0.18.0-3c916c5)
 
 Any LLM session making a change in this repo: if "Last updated" above is >30 days old, also do this update in the same change:
 1. `npm view @excalidraw/excalidraw dist-tags` → pin `next` version exactly in package.json, reinstall (yarn).

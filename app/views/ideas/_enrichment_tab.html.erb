@@ -1,144 +1,116 @@
-<!-- Enrichment Tab Content -->
+<%# Web enrichment: states idle | running | done | failed (see IdeaEnrichmentService#state) %>
+<% service = IdeaEnrichmentService.new(idea) %>
+<% state = service.state %>
+<% enrichment = service.last_enrichment %>
+<% results = enrichment.is_a?(Hash) ? (enrichment["results"] || {}) : {} %>
+<% sections = [
+     [ "competitors", "Competitors and alternatives", "Products that already solve this, or close to it." ],
+     [ "market", "Market and trends", "Where the space is heading." ],
+     [ "resources", "Tools and resources", "Things you could build on or learn from." ]
+   ] %>
+<% total = sections.sum { |key, _, _| Array(results[key]).size } %>
+
 <div class="enrichment-panel" data-controller="enrichment"
-     data-enrichment-idea-id-value="<%= idea.id %>"
-     data-enrichment-enriched-value="<%= idea.enriched? %>">
+     data-enrichment-status-url-value="<%= enrichment_status_idea_path(idea) %>"
+     data-enrichment-state-value="<%= state %>">
 
-  <div class="enrichment-header">
-    <h3>Web Enrichment</h3>
-    <p class="text-muted">Scan the web for competitors, market trends, and related tools for this idea.</p>
-  </div>
+  <header class="enrichment-head">
+    <h3>Web enrichment</h3>
+    <% if state == "done" && enrichment["enriched_at"].present? %>
+      <p class="enrichment-stamp">
+        Updated <time datetime="<%= enrichment["enriched_at"] %>"><%= time_ago_in_words(Time.zone.parse(enrichment["enriched_at"])) %> ago</time>
+      </p>
+    <% end %>
+  </header>
 
-  <!-- Trigger Enrichment -->
-  <div class="enrichment-actions" style="margin-bottom: 1.5rem;">
+  <% unless service.search_configured? %>
+    <p class="enrichment-note" role="note">
+      No search provider is set up (Brave or SerpApi key in credentials), so a scan will find nothing.
+    </p>
+  <% end %>
+
+  <% if state == "running" %>
+    <div class="enrichment-running" role="status" aria-live="polite">
+      <span class="enrichment-pulse" aria-hidden="true"></span>
+      <div>
+        <p class="enrichment-running-title">Scanning the web</p>
+        <p class="enrichment-running-step" data-enrichment-target="step"><%= service.progress_step || "Queued" %></p>
+        <p class="enrichment-hint">This page updates by itself. You can leave it open or come back later.</p>
+      </div>
+    </div>
+  <% elsif state == "idle" %>
+    <p class="enrichment-lede">
+      Searches the web for competitors, market trends and tools related to this idea, and lists what it finds here with links.
+    </p>
+  <% elsif state == "failed" %>
+    <div class="alert alert-error enrichment-failed" role="alert">
+      <strong>The scan didn't finish</strong>
+      <%= service.error_message.presence || "It took too long and was stopped." %>
+      <% if enrichment.present? %><span> Showing results from the previous scan below.</span><% end %>
+    </div>
+  <% end %>
+
+  <% if state != "running" %>
     <%= form_with url: enrich_idea_path(idea), method: :post, local: true, class: "enrichment-form" do |f| %>
-      <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
-        <input type="text" name="query" placeholder="Custom search query (optional)" class="form-input" style="flex: 1; min-width: 200px;">
-        <select name="sources" class="form-select" style="min-width: 150px;">
-          <option value="">All sources</option>
-          <option value="competitors">Competitors only</option>
-          <option value="market">Market insights only</option>
-          <option value="resources">Tools & resources only</option>
-        </select>
-        <%= f.submit "Enrich", class: "btn btn-primary btn-sm" %>
+      <%= f.submit(state == "idle" ? "Enrich this idea" : (state == "failed" ? "Try again" : "Re-run"),
+                   class: "btn btn-sm #{state == 'done' ? 'btn-secondary' : 'btn-primary'}") %>
+      <details class="enrichment-options">
+        <summary>Options</summary>
+        <div class="enrichment-options-body">
+          <label for="enrichment-query">Search for</label>
+          <input id="enrichment-query" type="text" name="query" class="enrichment-input"
+                 value="<%= enrichment && enrichment["query"] %>"
+                 placeholder="Defaults to the idea title and description">
+          <label for="enrichment-sources">Look for</label>
+          <select id="enrichment-sources" name="sources" class="enrichment-input">
+            <option value="">Everything</option>
+            <option value="competitors">Competitors only</option>
+            <option value="market">Market trends only</option>
+            <option value="resources">Tools and resources only</option>
+          </select>
+        </div>
+      </details>
+    <% end %>
+  <% end %>
+
+  <% if enrichment.present? && state != "running" %>
+    <% if total.zero? %>
+      <p class="enrichment-lede">
+        The last scan found nothing<%= service.search_configured? ? ". Try different wording under Options." : "." %>
+      </p>
+    <% else %>
+      <div class="enrichment-results">
+        <% sections.each do |key, label, hint| %>
+          <% items = Array(results[key]) %>
+          <% next if items.empty? %>
+          <section class="enrichment-section" aria-labelledby="enrichment-<%= key %>">
+            <h4 id="enrichment-<%= key %>"><%= label %> <span class="enrichment-count"><%= items.size %></span></h4>
+            <p class="enrichment-hint"><%= hint %></p>
+            <ul class="enrichment-items">
+              <% items.each do |item| %>
+                <% next unless item.is_a?(Hash) %>
+                <% title = item["name"].presence || item["title"].presence || item["url"] %>
+                <% url = item["url"].to_s %>
+                <% safe = url.match?(%r{\Ahttps?://}i) %>
+                <% host = (URI.parse(url).host.to_s.delete_prefix("www.") rescue nil) %>
+                <li class="enrichment-item">
+                  <% if safe %>
+                    <%= link_to title, url, target: "_blank", rel: "noopener noreferrer", class: "enrichment-link" %>
+                  <% else %>
+                    <span class="enrichment-link"><%= title %></span>
+                  <% end %>
+                  <% if item["potential"] %><span class="enrichment-tag">Likely competitor</span><% end %>
+                  <% if safe && host.present? %><span class="enrichment-host"><%= host %></span><% end %>
+                  <% if item["description"].present? %>
+                    <p class="enrichment-desc"><%= truncate(item["description"], length: 220) %></p>
+                  <% end %>
+                </li>
+              <% end %>
+            </ul>
+          </section>
+        <% end %>
+        <p class="enrichment-hint">Search used: <%= enrichment["query"] %></p>
       </div>
     <% end %>
-  </div>
-
-  <!-- Enrichment Results -->
-  <% enrichment = idea.enrichment_data %>
-
-  <% if enrichment.present? %>
-    <div class="enrichment-results">
-      <div class="enrichment-meta" style="margin-bottom: 1rem; padding: 0.75rem; background: var(--bg-secondary); border-radius: 8px;">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-          <span class="text-muted">
-            Last enriched: <%= time_ago_in_words(Time.parse(enrichment["enriched_at"])) %> ago
-          </span>
-          <span class="enrichment-summary"><%= enrichment["summary"] %></span>
-        </div>
-        <div style="margin-top: 0.5rem;">
-          <code style="font-size: 0.8rem; color: var(--text-muted);">Query: <%= enrichment["query"] %></code>
-        </div>
-      </div>
-
-      <% results = enrichment["results"] || {} %>
-
-      <!-- Competitors -->
-      <% if results["competitors"]&.any? %>
-        <div class="enrichment-section" style="margin-bottom: 1.5rem;">
-          <h4 style="margin-bottom: 0.75rem;">
-            Competitors & Alternatives
-            <span class="badge"><%= results["competitors"].size %></span>
-          </h4>
-          <div class="enrichment-items">
-            <% results["competitors"].each do |item| %>
-              <div class="enrichment-item" style="padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 6px; margin-bottom: 0.5rem;">
-                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-                  <div>
-                    <strong><%= item["name"] %></strong>
-                    <% if item["url"].present? %>
-                      <%= link_to URI.parse(item["url"]).host, item["url"], target: "_blank", class: "text-muted", style: "font-size: 0.8rem; margin-left: 0.5rem;" rescue nil %>
-                    <% end %>
-                    <% if item["potential"] %>
-                      <span class="badge badge-warning" style="font-size: 0.65rem;">Potential</span>
-                    <% end %>
-                  </div>
-                </div>
-                <% if item["description"].present? %>
-                  <p style="font-size: 0.85rem; color: var(--text-secondary); margin: 0.25rem 0 0;"><%= truncate(item["description"], length: 200) %></p>
-                <% end %>
-              </div>
-            <% end %>
-          </div>
-          <div style="margin-top: 0.5rem;">
-            <%= button_to "Add competitors as entries", "#", method: :post, class: "btn btn-sm", disabled: true, title: "Coming soon - will create IdeaEntry records from these results" %>
-          </div>
-        </div>
-      <% end %>
-
-      <!-- Market Insights -->
-      <% if results["market"]&.any? %>
-        <div class="enrichment-section" style="margin-bottom: 1.5rem;">
-          <h4 style="margin-bottom: 0.75rem;">
-            Market & Trends
-            <span class="badge"><%= results["market"].size %></span>
-          </h4>
-          <div class="enrichment-items">
-            <% results["market"].each do |item| %>
-              <div class="enrichment-item" style="padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 6px; margin-bottom: 0.5rem;">
-                <strong><%= item["name"] %></strong>
-                <% if item["url"].present? %>
-                  <%= link_to "link", item["url"], target: "_blank", class: "text-muted", style: "font-size: 0.8rem; margin-left: 0.5rem;" rescue nil %>
-                <% end %>
-                <% if item["description"].present? %>
-                  <p style="font-size: 0.85rem; color: var(--text-secondary); margin: 0.25rem 0 0;"><%= truncate(item["description"], length: 200) %></p>
-                <% end %>
-              </div>
-            <% end %>
-          </div>
-        </div>
-      <% end %>
-
-      <!-- Tools & Resources -->
-      <% if results["resources"]&.any? %>
-        <div class="enrichment-section" style="margin-bottom: 1.5rem;">
-          <h4 style="margin-bottom: 0.75rem;">
-            Tools & Resources
-            <span class="badge"><%= results["resources"].size %></span>
-          </h4>
-          <div class="enrichment-items">
-            <% results["resources"].each do |item| %>
-              <div class="enrichment-item" style="padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 6px; margin-bottom: 0.5rem;">
-                <strong><%= item["name"] %></strong>
-                <% if item["url"].present? %>
-                  <%= link_to "link", item["url"], target: "_blank", class: "text-muted", style: "font-size: 0.8rem; margin-left: 0.5rem;" rescue nil %>
-                <% end %>
-                <% if item["description"].present? %>
-                  <p style="font-size: 0.85rem; color: var(--text-secondary); margin: 0.25rem 0 0;"><%= truncate(item["description"], length: 200) %></p>
-                <% end %>
-              </div>
-            <% end %>
-          </div>
-        </div>
-      <% end %>
-
-      <% if results.values.flatten.empty? %>
-        <div class="empty-state-small">
-          <p>Enrichment completed but no results found. Try a different search query.</p>
-        </div>
-      <% end %>
-    </div>
-
-    <!-- Enrichment Error -->
-    <% if idea.metadata&.dig("enrichment_error").present? %>
-      <div class="alert alert-warning" style="margin-top: 1rem;">
-        <strong>Last enrichment failed:</strong>
-        <p><%= idea.metadata["enrichment_error"] %></p>
-      </div>
-    <% end %>
-  <% else %>
-    <div class="empty-state-small">
-      <p>No enrichment data yet. Click "Enrich" to scan the web for related information.</p>
-    </div>
   <% end %>
 </div>
