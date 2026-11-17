@@ -1,0 +1,3 @@
+# fixture
+ES	ESP	724	SP	Spain	Madrid	504782	49355143	EU	.es	EUR	Euro	34	#####	^(\d{5})$	es
+GB	GBR	826	UK	United Kingdom	London	244820	69487000	EU	.uk	GBP	Pound	44	@# #@@|@

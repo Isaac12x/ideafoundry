@@ -1,0 +1,4 @@
+ES.60	Valencia	Valencia	2593113
+ES.29	Madrid	Madrid	3117732
+ES.56	Catalonia	Catalonia	3336901
+GB.ENG	England	England	6269131

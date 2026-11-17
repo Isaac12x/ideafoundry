@@ -42,6 +42,9 @@ FileUtils.chdir APP_ROOT do
   #   FileUtils.cp "config/database.yml.sample", "config/database.yml"
   # end
 
+  puts "\n== Offline reverse-geocoding data (GeoNames) =="
+  system("bin/rails geonames:install") || puts("WARNING: GeoNames download failed (offline?); run `bin/rails geonames:install` later.")
+
   puts "\n== Enabling development caching =="
   FileUtils.touch("tmp/caching-dev.txt") unless File.exist?("tmp/caching-dev.txt")
 

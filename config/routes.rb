@@ -319,6 +319,7 @@ Rails.application.routes.draw do
   post   "knowledge-base/downloads/:id/references", to: "kb_references#create", as: :kb_download_references
   delete "knowledge-base/downloads/:id/references", to: "kb_references#destroy"
   resources :facts, only: [ :create, :destroy ]
+  get "reverse_geocode", to: "reverse_geocodes#show"
   resources :maxims, only: [ :create, :destroy ]
 
   # Settings - KB folders

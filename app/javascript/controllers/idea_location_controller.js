@@ -31,15 +31,12 @@ export default class extends Controller {
     const fallback = `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
     let label = fallback;
     try {
-      const res = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=14&lat=${latitude}&lon=${longitude}`,
-        { headers: { Accept: "application/json" } }
-      );
-      const a = (await res.json()).address || {};
-      const place = a.city || a.town || a.village || a.suburb || a.municipality;
-      label = [place, a.country].filter(Boolean).join(", ") || fallback;
+      const res = await fetch(`/reverse_geocode?lat=${latitude}&lng=${longitude}`, {
+        headers: { Accept: "application/json" },
+      });
+      label = (await res.json()).label || fallback;
     } catch (_) {
-      // ponytail: offline or blocked, coordinates are label enough
+      // ponytail: lookup failed, coordinates are label enough
     }
     // a label typed while the lookup was in flight wins over auto-capture
     if (overwrite || !this.labelTarget.value.trim()) {
