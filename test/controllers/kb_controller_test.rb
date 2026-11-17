@@ -67,6 +67,19 @@ class KbControllerTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "<h1>Last open</h1>"
   end
 
+  test "prefetch of another file does not change the remembered document" do
+    use_isolated_kb_folder
+    File.write(File.join(@kb_dir, "a-first.md"), "# First")
+    File.write(File.join(@kb_dir, "z-last.md"), "# Last open")
+
+    get kb_file_path(src: 0, file: "z-last.md")
+    get kb_file_path(src: 0, file: "a-first.md"), headers: { "X-Sec-Purpose" => "prefetch", "Turbo-Frame" => "kb-content" }
+    get kb_edit_path(src: 0, file: "a-first.md"), headers: { "Sec-Purpose" => "prefetch" }
+    get kb_path
+
+    assert_select ".kb-file-link.is-active", text: "z-last.md"
+  end
+
   test "stale last document falls back to the first available file" do
     use_isolated_kb_folder
     File.write(File.join(@kb_dir, "available.md"), "# Available")
