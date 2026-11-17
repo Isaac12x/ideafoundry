@@ -225,7 +225,7 @@ class KbController < ApplicationController
       abs = File.join(parent, name)
       return fs_error("\"#{name}\" already exists.") if File.exist?(abs)
       File.write(abs, "")
-      respond_fs(file: abs.delete_prefix("#{base}/"))
+      respond_fs(file: abs.delete_prefix("#{base}/"), edit: MARKDOWN_EXTENSIONS.include?(File.extname(abs).downcase))
     end
   end
 
@@ -655,9 +655,10 @@ class KbController < ApplicationController
   # Renders the tree (and, when the selection changed, the content pane) as a
   # turbo stream so file ops update in place instead of reloading the page.
   # Falls back to a full redirect for non-turbo clients.
-  def respond_fs(file: nil, src: params[:src].to_i, alert: nil, notice: nil, editing: nil)
+  def respond_fs(file: nil, src: params[:src].to_i, alert: nil, notice: nil, editing: nil, edit: false)
     Kb::TreeBuilder.bust_cache!(@user) # before any early return: redirects re-render from the cache too
     unless request.format.turbo_stream?
+      return redirect_to kb_edit_path(src: src, file: file), alert: alert, notice: notice if edit
       return redirect_to kb_path(src: src, file: file || editing), alert: alert, notice: notice
     end
     flash.now[:alert]  = alert if alert
@@ -671,6 +672,8 @@ class KbController < ApplicationController
       @content = render_file(src, file)
       remember_document(src, file) if displayable_content?(@content)
       @update_content = true
+      # A freshly created file opens straight in the editor, not the read view.
+      @raw_content = File.read(resolve_kb_path(src, file, extensions: :any)) if edit
     else
       # Keep the doc the user had open highlighted; clear the pane if it's
       # gone (deleted, or inside a renamed/moved folder).
