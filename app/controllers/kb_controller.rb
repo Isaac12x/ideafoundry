@@ -787,6 +787,9 @@ class KbController < ApplicationController
   end
 
   def remember_document(folder_index, rel_path)
+    # Turbo prefetches tree links on hover: only a real visit counts as "last viewed".
+    return if %w[X-Sec-Purpose Sec-Purpose].any? { |h| request.headers[h].to_s.start_with?("prefetch") }
+
     cookies.permanent.encrypted[LAST_DOCUMENT_COOKIE] = {
       value: { src: folder_index, file: rel_path }.to_json,
       httponly: true,
