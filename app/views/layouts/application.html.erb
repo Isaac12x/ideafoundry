@@ -42,6 +42,7 @@
     body_controllers << "typing-activity" if typing_activity_enabled
     body_controllers << "kb-notes" if show_notes
     body_controllers << "draft-keeper" if @user && !security_lock_screen
+    body_controllers << "voice-dictation" if @user && !security_lock_screen
   %>
   <body class="<%= [body_class, show_notes ? 'has-notes-bar' : nil].compact.join(' ') %>"
         data-contrast="<%= display_contrast.presence || 'normal' %>"
