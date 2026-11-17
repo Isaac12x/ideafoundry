@@ -246,6 +246,8 @@ class KbController < ApplicationController
     parent = resolve_dir(base, params[:dir])
     return fs_error("Target folder not found.") if parent.nil?
 
+    return fs_error("Project is locked. Unlock it first.") if Kb::ProjectLock.write_block(base, params[:dir]) == :locked
+
     uploads = Array(params[:files]).select { |upload| upload.respond_to?(:tempfile) }
     return fs_error("Choose at least one file to copy.") if uploads.empty?
 

@@ -4,6 +4,12 @@
   <div data-controller="idea-draft-persist"
        data-idea-draft-persist-clear-on-connect-value="true"
        data-idea-draft-persist-storage-key-value="idea-draft:v1:user-<%= @user.id %>"></div>
+  <% if params[:idea_draft_saved].to_s.match?(/\A\d+\z/) %>
+    <%# Per-draft encrypted copy (server drafts); the line above clears the legacy per-user key. %>
+    <div data-controller="idea-draft-persist"
+         data-idea-draft-persist-clear-on-connect-value="true"
+         data-idea-draft-persist-storage-key-value="idea-draft:v1:user-<%= @user.id %>:idea-<%= params[:idea_draft_saved].to_i %>"></div>
+  <% end %>
 <% end %>
 <% if params[:idea_edit_saved].present? %>
   <div data-controller="idea-draft-persist"
@@ -125,6 +131,36 @@
           Created <%= time_ago_in_words(@idea.created_at) %> ago
         </span>
       </div>
+      <% if @idea.location.present? || @idea.situation.present? %>
+        <div class="idea-context">
+          <% if @idea.location.present? %>
+            <p class="idea-context__location">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 21s-7-6.2-7-11a7 7 0 0114 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>
+              <% if @idea.latitude && @idea.longitude %>
+                <%= link_to @idea.location, "https://www.openstreetmap.org/?mlat=#{@idea.latitude.to_f}&mlon=#{@idea.longitude.to_f}#map=14/#{@idea.latitude.to_f}/#{@idea.longitude.to_f}", target: "_blank", rel: "noopener" %>
+              <% else %>
+                <span><%= @idea.location %></span>
+              <% end %>
+            </p>
+          <% end %>
+          <% if @idea.situation.present? %>
+            <div class="idea-context__situation"><%= simple_format(@idea.situation) %></div>
+          <% end %>
+        </div>
+      <% end %>
+      <% comes_after = @idea.prerequisites.kept.non_draft.to_a %>
+      <% unlocks = @idea.dependents.kept.non_draft.to_a %>
+      <% if comes_after.any? || unlocks.any? %>
+        <div class="idea-links-row">
+          <% [ [ "Comes after", comes_after ], [ "Unlocks", unlocks ] ].each do |label, ideas| %>
+            <% next if ideas.empty? %>
+            <div class="idea-links-group">
+              <span class="idea-links-label"><%= label %></span>
+              <% ideas.each do |other| %><%= link_to other.title, idea_path(other), class: "idea-link-chip" %><% end %>
+            </div>
+          <% end %>
+        </div>
+      <% end %>
       <div class="idea-themes">
         <% @idea.themes.each do |theme| %>
           <%= link_to theme.name, ideas_path(theme_id: theme.id), class: "theme-badge", style: ("--theme-color: #{theme.color}" if theme.color.present?) %>
@@ -317,7 +353,7 @@
           </button>
         <% end %>
         <button type="button" data-tabs-target="tab" data-tab-name="enrichment" data-action="click->tabs#switch" class="tab-button">
-          Enrichment<% if @idea.enriched? %> &check;<% end %>
+          Enrichment<% if @idea.enrichment_data.present? %> &check;<% end %>
         </button>
       </div>
 
@@ -326,7 +362,7 @@
         <div data-tabs-target="panel" data-tab-panel="description" class="tab-panel">
           <% if @idea.description.present? %>
             <div class="rich-text-content">
-              <%= @idea.description %>
+              <%= link_idea_mentions(@idea.description.to_s, @user) %>
             </div>
           <% else %>
             <div class="empty-state-small">

@@ -132,6 +132,23 @@
           <%= form.text_area :tldr, rows: 1, data: { enter_submit: true }, class: "form-control", placeholder: "One sentence: what is this idea and why it matters?" %>
         </div>
         <div class="form-group">
+          <%= form.label :situation, "Context / situation" %>
+          <%= form.text_area :situation, rows: 2, class: "form-control", placeholder: "Where were you, what were you doing, what sparked it?" %>
+        </div>
+        <div class="form-group idea-location" data-controller="idea-location"
+             data-idea-location-auto-value="<%= idea.new_record? && idea.latitude.blank? && idea.longitude.blank? %>">
+          <%= form.label :location, "Location" %>
+          <div class="idea-location__row">
+            <%= form.text_field :location, class: "form-control", placeholder: "Where did this come to you?", autocomplete: "off", data: { idea_location_target: "label" } %>
+            <%= form.hidden_field :latitude, data: { idea_location_target: "lat" } %>
+            <%= form.hidden_field :longitude, data: { idea_location_target: "lng" } %>
+            <button type="button" class="btn btn-ghost idea-location__btn" data-action="idea-location#locate" aria-label="Use my location" title="Use my location">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3m0 14v3M2 12h3m14 0h3"/></svg>
+            </button>
+          </div>
+          <span class="idea-location__status" data-idea-location-target="status" role="status" aria-live="polite"></span>
+        </div>
+        <div class="form-group">
           <label>Themes</label>
           <%= render "ideas/theme_picker", idea: idea, themes: (@themes || []), auto_submit: false %>
         </div>
@@ -204,7 +221,9 @@
       <!-- Description (TipTap) -->
       <details class="form-panel" open>
         <summary class="form-panel-title"><%= panel_title "Description", done: idea.description.present?, recommended: true %></summary>
-        <div class="form-group" data-controller="editor"
+        <div class="form-group" data-controller="editor idea-mention" style="position: relative"
+             data-idea-mention-search-url-value="<%= search_ideas_path %>" data-idea-mention-exclude-id-value="<%= idea.id %>"
+             data-action="input->idea-mention#typed keydown->idea-mention#keydown blur->idea-mention#close"
              data-editor-content-value="<%= idea.description&.body&.to_html&.gsub('"', '&quot;') || '' %>"
              data-editor-upload-url-value="<%= uploads_path %>">
           <%= form.hidden_field :description, data: { editor_target: "input", action: "idea-draft:restore-description->editor#restoreFromIdeaDraft" } %>
@@ -240,6 +259,8 @@
             </div>
           </div>
           <div class="tiptap-editor" data-editor-target="editor"></div>
+          <ul class="idea-kb-links__options idea-mention-options" role="listbox" hidden data-idea-mention-target="list"></ul>
+          <p class="idea-mention-hint">Type <kbd>@</kbd> to link another idea.</p>
         </div>
       </details>
 

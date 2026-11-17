@@ -3,6 +3,8 @@ import { Controller } from "@hotwired/stimulus"
 export default class extends Controller {
   static targets = ["input"]
 
+  connect() { this.autoResize() }
+
   reset() {
     this.element.reset()
     if (this.hasInputTarget) {
@@ -19,7 +21,7 @@ export default class extends Controller {
   }
 
   submitOnEnter(event) {
-    if (event.key === "Enter" && !event.shiftKey) {
+    if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) {
       event.preventDefault()
       this.element.requestSubmit()
     }

@@ -21,6 +21,11 @@ class Idea < ApplicationRecord
   has_many :licensors, dependent: :destroy
   has_many :licensor_imports, dependent: :destroy
   has_many :drawings, dependent: :destroy
+  # "Comes after": this idea builds on / requires its prerequisites; dependents are the ideas it unlocks.
+  has_many :prerequisite_links, class_name: "IdeaDependency", foreign_key: :idea_id, dependent: :destroy, inverse_of: :idea
+  has_many :dependent_links, class_name: "IdeaDependency", foreign_key: :prerequisite_id, dependent: :destroy, inverse_of: :prerequisite
+  has_many :prerequisites, through: :prerequisite_links
+  has_many :dependents, through: :dependent_links, source: :idea
 has_many :kb_links, class_name: "IdeaKbLink", dependent: :destroy
   has_many :mood_images, dependent: :destroy
   has_one :github_repository, dependent: :destroy
@@ -28,6 +33,7 @@ has_many :kb_links, class_name: "IdeaKbLink", dependent: :destroy
   has_many_attached :attachments
   has_rich_text :description
   after_save :attach_pending_hero_images, :purge_removed_hero_images
+  after_save :sync_mentions!
 
   # Lifecycle management
   enum :state, {
@@ -54,6 +60,8 @@ has_many :kb_links, class_name: "IdeaKbLink", dependent: :destroy
   validates :state, presence: true
   validates :trl, :difficulty, :opportunity, :timing,
             inclusion: { in: 0..10 }, allow_nil: true
+  validates :latitude, numericality: { greater_than_or_equal_to: -90, less_than_or_equal_to: 90 }, allow_nil: true
+  validates :longitude, numericality: { greater_than_or_equal_to: -180, less_than_or_equal_to: 180 }, allow_nil: true
   validates :attempt_count, presence: true, numericality: { greater_than_or_equal_to: 0 }
   validate :template_required_fields_present
   validate :scorecard_values_within_limits
@@ -96,6 +104,21 @@ has_many :kb_links, class_name: "IdeaKbLink", dependent: :destroy
   end
 
   HERO_KEY = /\A(image|drawing):\d+\z/
+
+  # Mention token stored in text: @[Title](idea:123)
+  MENTION = /@\[[^\]\n]*\]\(idea:(\d+)\)/
+
+  # Mirrors idea mentions (title, tldr, description) into prerequisites (the only way links are created).
+  def sync_mentions!
+    text = [ title, tldr, (description.to_plain_text if description) ].join("\n")
+    wanted = text.scan(MENTION).flatten.map(&:to_i).uniq - [ id ]
+    wanted = user.ideas.where(id: wanted).pluck(:id)
+    prerequisite_links.where.not(prerequisite_id: wanted).destroy_all
+    (wanted - prerequisite_links.pluck(:prerequisite_id)).each do |pid|
+      prerequisite_links.create!(prerequisite_id: pid)
+    end
+    prerequisite_links.reset
+  end
 
   def hero_order=(keys)
     super(Array(keys).map(&:to_s).grep(HERO_KEY).uniq)

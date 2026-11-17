@@ -112,7 +112,7 @@ class KbMultiFormatTest < ActionDispatch::IntegrationTest
     assert_includes csp, "form-action 'none'"
     assert_includes csp, "base-uri 'none'"
     assert_includes csp, "object-src 'none'"
-    assert_includes response.body, 'document.body.dataset.ran'
+    assert_includes response.body, "document.body.dataset.ran"
   end
 
   test "raw endpoint converts pptx slides into html via pandoc" do

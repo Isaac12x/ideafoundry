@@ -1,9 +1,11 @@
-<%= form_with(model: [idea, idea.notes.build], class: "note-form", data: { controller: "note-form", action: "turbo:submit-end->note-form#reset" }) do |f| %>
-  <% if parent_note_id.present? %>
+<% reply = parent_note_id.present? %>
+<%= form_with(model: [idea, idea.notes.build], class: "note-form#{' note-form--reply' if reply}", data: { controller: "note-form", action: "turbo:submit-end->note-form#reset" }) do |f| %>
+  <% if reply %>
     <%= f.hidden_field :parent_note_id, value: parent_note_id %>
   <% end %>
-  <div class="note-form-row">
-    <%= f.text_area :body, placeholder: parent_note_id.present? ? "Reply..." : "Add a note...", class: "note-form-input", required: true, autocomplete: "off", rows: 1, data: { note_form_target: "input", action: "input->note-form#autoResize keydown->note-form#submitOnEnter" } %>
-    <%= f.submit parent_note_id.present? ? "Reply" : "Add", class: "btn btn-sm btn-primary note-form-submit" %>
+  <%= f.text_area :body, placeholder: reply ? "Reply…" : "Jot what you learned, a lead, a doubt…", "aria-label": (reply ? "Reply to note" : "New note"), class: "note-form-input", required: true, autocomplete: "off", rows: reply ? 1 : 2, data: { note_form_target: "input", action: "input->note-form#autoResize keydown->note-form#submitOnEnter" } %>
+  <div class="note-form-foot">
+    <span class="note-form-hint"><kbd>⌘</kbd> <kbd>↵</kbd> to save</span>
+    <%= f.submit reply ? "Reply" : "Save note", class: "note-form-submit" %>
   </div>
 <% end %>

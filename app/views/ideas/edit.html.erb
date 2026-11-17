@@ -5,7 +5,8 @@
   </div>
 
   <% prompt_with_existing_content = @idea.persisted? && !@idea.draft? %>
-  <% draft_storage_key = prompt_with_existing_content ? "idea-edit-draft:v1:user-#{@user.id}:idea-#{@idea.id}" : "idea-draft:v1:user-#{@user.id}" %>
+  <% server_draft = @idea.persisted? && @idea.draft? %>
+  <% draft_storage_key = prompt_with_existing_content ? "idea-edit-draft:v1:user-#{@user.id}:idea-#{@idea.id}" : (server_draft ? "idea-draft:v1:user-#{@user.id}:idea-#{@idea.id}" : "idea-draft:v1:user-#{@user.id}") %>
   <%= form_with model: @idea,
         local: true,
         data: {
@@ -15,7 +16,8 @@
           idea_draft_persist_storage_key_value: draft_storage_key,
           idea_draft_persist_unlock_seed_value: @user.idea_draft_unlock_seed,
           idea_draft_persist_prompt_with_existing_content_value: prompt_with_existing_content,
-          idea_draft_persist_prompt_delay_value: 6000
+          idea_draft_persist_prompt_delay_value: 6000,
+          idea_draft_persist_autosave_url_value: (idea_path(@idea) if server_draft)
         }.compact do |form| %>
     <%= render 'form', form: form, idea: @idea, lists: @lists, kanban_boards: @kanban_boards, named_lists: @named_lists, topologies: @topologies %>
   <% end %>

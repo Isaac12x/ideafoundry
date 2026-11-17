@@ -1,0 +1,91 @@
+/* Voice mode everywhere: one floating mic that follows the focused text field. */
+.voice-dictation {
+  --voice-rec: #c9623f; /* warm red-ochre */
+  position: fixed;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  pointer-events: none;
+  font-family: var(--font-body);
+}
+
+.voice-dictation[hidden] { display: none; }
+
+.voice-dictation__hint {
+  font-size: 0.72rem;
+  letter-spacing: 0.02em;
+  color: var(--text-secondary);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  padding: 2px 8px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.voice-dictation__hint:empty { display: none; }
+.voice-dictation[data-state="error"] .voice-dictation__hint { color: var(--danger); border-color: var(--danger); }
+.voice-dictation[data-state="recording"] .voice-dictation__hint { color: var(--voice-rec); }
+
+.voice-dictation__btn {
+  position: relative;
+  pointer-events: auto;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 1px solid var(--border-default);
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s, background-color 0.2s;
+}
+
+.voice-dictation__btn:hover:not(:disabled) { color: var(--text-primary); border-color: var(--border-emphasis); }
+.voice-dictation__btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.voice-dictation__btn:disabled { cursor: progress; }
+
+/* Recording: warm ring, a soft expanding pulse, and a level meter on the inner glow. */
+.voice-dictation[data-state="recording"] .voice-dictation__btn {
+  color: var(--voice-rec);
+  border-color: var(--voice-rec);
+  box-shadow: 0 0 0 calc(var(--level, 0) * 5px) rgba(201, 98, 63, 0.18);
+}
+
+.voice-dictation[data-state="recording"] .voice-dictation__btn::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: 50%;
+  border: 1px solid var(--voice-rec);
+  animation: voice-pulse 1.8s cubic-bezier(0.25, 1, 0.5, 1) infinite;
+  pointer-events: none;
+}
+
+@keyframes voice-pulse {
+  from { transform: scale(1); opacity: 0.6; }
+  to { transform: scale(1.9); opacity: 0; }
+}
+
+/* Processing: the mic is replaced by a quiet spinner. */
+.voice-dictation[data-state="processing"] .voice-dictation__btn svg { display: none; }
+
+.voice-dictation[data-state="processing"] .voice-dictation__btn::before {
+  content: "";
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border-emphasis);
+  border-top-color: var(--accent);
+  animation: voice-spin 0.8s linear infinite;
+}
+
+@keyframes voice-spin { to { transform: rotate(360deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .voice-dictation[data-state="recording"] .voice-dictation__btn::after { animation: none; opacity: 0.4; }
+  .voice-dictation[data-state="processing"] .voice-dictation__btn::before { animation-duration: 2.4s; }
+}

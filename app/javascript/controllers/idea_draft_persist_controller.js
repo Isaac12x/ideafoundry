@@ -18,6 +18,7 @@ export default class extends Controller {
     clearOnConnect: { type: Boolean, default: false },
     promptWithExistingContent: { type: Boolean, default: false },
     promptDelay: { type: Number, default: 6000 },
+    autosaveUrl: String, // set only for server-side draft ideas: typed content is also PATCHed there so lock/reload never loses it
   };
 
   connect() {
@@ -34,11 +35,50 @@ export default class extends Controller {
     this.queueResumePrompt();
     this.boundBeforeUnload = () => this.saveImmediately();
     window.addEventListener("beforeunload", this.boundBeforeUnload);
+    // The lock waits (up to 300ms) on draft:flush; also flush when the tab hides or unloads.
+    this.boundFlush = (event) => event.detail?.wait?.push(this.flush());
+    this.boundHide = () => document.visibilityState === "hidden" && this.flush(true);
+    document.addEventListener("draft:flush", this.boundFlush);
+    document.addEventListener("visibilitychange", this.boundHide);
+    window.addEventListener("pagehide", this.boundHide);
+    this.autoRestore();
+  }
+
+  // Local copy is only used when the server copy came back empty (e.g. save never landed).
+  async autoRestore() {
+    if (!this.autosaveUrlValue || hasMeaningfulDraft(collectDraftFields(this.element))) return;
+    if (this.readStoredRecord()) await this.restore();
+  }
+
+  async flush(keepalive = false) {
+    clearTimeout(this.saveTimer);
+    clearTimeout(this.serverTimer);
+    await this.saveDraft();
+    await this.saveToServer(keepalive);
+  }
+
+  async saveToServer(keepalive = false) {
+    if (!this.autosaveUrlValue || this.discarded || this.submittingAfterSave) return;
+    const body = new FormData();
+    for (const [name, value] of new FormData(this.element)) {
+      if (!(value instanceof File)) body.append(name, value); // ponytail: files (hero images) only go with the final submit
+    }
+    body.set("autosave", "1");
+    if (!hasMeaningfulDraft(collectDraftFields(this.element))) return; // never overwrite the server copy with an empty form
+    try {
+      await fetch(this.autosaveUrlValue, { method: "POST", body, keepalive, credentials: "same-origin", headers: { Accept: "application/json" } });
+    } catch (_error) { /* offline: the encrypted local copy still has it */ }
   }
 
   disconnect() {
     clearTimeout(this.saveTimer);
     clearTimeout(this.promptTimer);
+    clearTimeout(this.serverTimer);
+    if (this.boundFlush) {
+      document.removeEventListener("draft:flush", this.boundFlush);
+      document.removeEventListener("visibilitychange", this.boundHide);
+      window.removeEventListener("pagehide", this.boundHide);
+    }
     if (this.boundBeforeUnload) window.removeEventListener("beforeunload", this.boundBeforeUnload);
   }
 
@@ -47,6 +87,8 @@ export default class extends Controller {
     this.hidePrompt();
     clearTimeout(this.saveTimer);
     this.saveTimer = setTimeout(() => this.saveDraft(), 350);
+    clearTimeout(this.serverTimer);
+    this.serverTimer = setTimeout(() => this.saveToServer(), 1500);
     this.queueResumePrompt();
   }
 
@@ -55,6 +97,7 @@ export default class extends Controller {
 
     event.preventDefault();
     clearTimeout(this.saveTimer);
+    clearTimeout(this.serverTimer);
     await this.saveDraft();
     this.submittingAfterSave = true;
 
