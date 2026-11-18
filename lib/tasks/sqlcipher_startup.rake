@@ -12,5 +12,10 @@ namespace :db do
     end
 
     Rake::Task["db:prepare"].invoke
+
+    # New auto_encrypt DBs (cable) created plaintext before a key existed: encrypt once it does.
+    ActiveRecord::Base.connection_handler.connection_pool_list.each(&:disconnect!)
+    encrypted = SqlcipherDatabaseMigrator.encrypt_auto!(env: env)
+    encrypted.each { |path| puts "Encrypted #{path}" }
   end
 end

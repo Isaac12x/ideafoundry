@@ -119,3 +119,5 @@ gem "redcarpet", "~> 3.6"
 gem "roo", "~> 3.0"
 
 gem "rack-attack"
+
+gem "solid_cable", "~> 4.1"
