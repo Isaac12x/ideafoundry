@@ -18,6 +18,10 @@ Any LLM session making a change in this repo: if "Last updated" above is >30 day
 Everything running outside Rails lives in `infra/` (Brewfile, Dockerfile, compose, Caddy, launchd plist, `services/{ocr,long_ocr,voice_id}`); map in `infra/README.md`. Compose: `docker compose -f infra/docker-compose.yml ...`; image build from repo root: `docker build -f infra/Dockerfile .`. Rails-side clients stay in `app/`.
 New out-of-process service → `infra/services/<name>/` (Dockerfile + README), register in `infra/docker-compose.yml`, URL via ENV in Rails.
 
+## Public site (GitHub Pages)
+
+Only `docs/index.html`, `docs/assets/` and `docs/guide/*.md` are published: `bin/build-site` (pandoc, `_template.html`) builds `_site/`, `.github/workflows/pages.yml` deploys it. Rest of `docs/` (plans, assessments, audits) is internal and never published. User-facing setup/config/services change → update `docs/guide/`.
+
 ## Audio service (built: local whisper + sidecar .vtt)
 
 - `Kb::Transcript` + `KbTranscribeJob`: local `whisper` CLI (`WHISPER_BIN`, `WHISPER_MODEL` default `base`, downloads on first use) writes `<media>.vtt` next to any KB audio/video. The sidecar is the source of truth: it works for files dropped straight into the KB (no `kb_downloads` row needed), shows in the tree/Finder, and survives DB loss. `kb_downloads.transcript` (captions, `MM:SS - text`) is only the fallback.
