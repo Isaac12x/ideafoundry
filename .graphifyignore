@@ -1,4 +1,0 @@
-node_modules/
-graphify-out/manifest.json    # mtime-based, breaks after git clone
-graphify-out/cost.json        # local only
-
