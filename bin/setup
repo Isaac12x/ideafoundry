@@ -15,12 +15,12 @@ FileUtils.chdir APP_ROOT do
   if RUBY_PLATFORM.include?("darwin")
     puts "== Installing system dependencies (Brewfile) =="
     if !system("command -v brew >/dev/null 2>&1")
-      puts "Homebrew not found; skipping. Install it (https://brew.sh) then run `brew bundle --file=Brewfile`."
-    elsif system("brew bundle check --no-upgrade --file=Brewfile >/dev/null")
+      puts "Homebrew not found; skipping. Install it (https://brew.sh) then run `brew bundle --file=infra/Brewfile`."
+    elsif system("brew bundle check --no-upgrade --file=infra/Brewfile >/dev/null")
       # all present
     elsif ARGV.include?("--skip-server") || ENV["CI"] # bin/ci gate: never start multi-GB installs
-      puts "WARNING: Brewfile deps missing; run `brew bundle --file=Brewfile`."
-    elsif !system("brew bundle --no-upgrade --file=Brewfile")
+      puts "WARNING: Brewfile deps missing; run `brew bundle --file=infra/Brewfile`."
+    elsif !system("brew bundle --no-upgrade --file=infra/Brewfile")
       puts "WARNING: some Brewfile entries failed; features needing them show as unavailable."
     end
     puts

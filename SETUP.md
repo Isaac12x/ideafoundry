@@ -5,11 +5,11 @@
 - **Ruby** 4.0.7 (use [rbenv](https://github.com/rbenv/rbenv) or [asdf](https://asdf-vm.com/))
 - **Node.js** 20+ and npm (for esbuild graph bundle)
 - **SQLite3** (usually pre-installed on macOS/Linux)
-- **System tools** (SQLCipher, libvips, Caddy, ffmpeg, ImageMagick, Ghostscript, pdftk, poppler, pandoc, tesseract, DjVuLibre, 7z, whisper, yt-dlp, Calibre, Chrome) are declared in the root **`Brewfile`**, the single source of truth.
-  - macOS: `brew bundle --file=Brewfile` (`bin/install` and `bin/setup` run it for you)
-  - Debian/Ubuntu: `apt-get install libsqlcipher-dev sqlcipher libvips`; the `Dockerfile` final stage lists the other apt equivalents (Calibre, whisper, yt-dlp and Chrome are left out; those features show as "not installed")
-  - Adding a new shell-out tool? Declare it in the `Brewfile` (and `Dockerfile`); `test/brewfile_test.rb` fails otherwise.
-- **yt-dlp** for TED/Vimeo needs a recent build with `curl_cffi`; the Brewfile build works, or `pipx install yt-dlp && pipx inject yt-dlp curl_cffi` (`~/.local/bin/yt-dlp` wins over Homebrew). `YT_DLP_BIN` overrides. DRM-only Vimeo videos can't be fetched.
+- **System tools** (SQLCipher, libvips, Caddy, ffmpeg, ImageMagick, Ghostscript, pdftk, poppler, pandoc, tesseract, DjVuLibre, 7z, whisper, yt-dlp, Calibre, Chrome) are declared in the **`infra/Brewfile`**, the single source of truth.
+  - macOS: `brew bundle --file=infra/Brewfile` (`bin/install` and `bin/setup` run it for you)
+  - Debian/Ubuntu: `apt-get install libsqlcipher-dev sqlcipher libvips`; the `infra/Dockerfile` final stage lists the other apt equivalents (Calibre, whisper, yt-dlp and Chrome are left out; those features show as "not installed")
+  - Adding a new shell-out tool? Declare it in `infra/Brewfile` (and `infra/Dockerfile`); `test/brewfile_test.rb` fails otherwise.
+- **yt-dlp** for TED/Vimeo needs a recent build with `curl_cffi`; the `infra/Brewfile` build works, or `pipx install yt-dlp && pipx inject yt-dlp curl_cffi` (`~/.local/bin/yt-dlp` wins over Homebrew). `YT_DLP_BIN` overrides. DRM-only Vimeo videos can't be fetched.
 
 ## Local Development Setup
 
@@ -69,11 +69,11 @@ Email features are optional — the app works fine without them.
 By default, compose now runs only the associated sidecar services so the Rails app can be supervised separately by launchd/systemd:
 
 ```bash
-# Build and run only sidecar services: voice-id and OCR
-docker compose up --build
+# Compose lives in infra/ (see infra/README.md). Build and run only sidecar services: voice-id and OCR
+docker compose -f infra/docker-compose.yml up --build
 
 # Or in detached mode
-docker compose up -d --build
+docker compose -f infra/docker-compose.yml up -d --build
 ```
 
 The sidecar services bind to localhost only:
@@ -103,19 +103,19 @@ the UI with **Extract knowledge**.
 Backend selection (`OCR_LONG_BACKEND=auto|vllm|llamacpp|remote`):
 
 - **vllm** — NVIDIA box, recipe image (`unlimited-ocr` compose service, `gpu` profile).
-- **llamacpp** — Apple Silicon / CPU port via `llama-server` (`unlimited-ocr-llama`); see `long_ocr_service/README.md`.
+- **llamacpp** — Apple Silicon / CPU port via `llama-server` (`unlimited-ocr-llama`); see `infra/services/long_ocr/README.md`.
 - **remote** — set `OCR_LONG_SERVICE_URL` to an already-running endpoint (no lifecycle management).
 
 ```bash
 # Build the on-demand backends (kept out of the default graph):
-docker compose --profile gpu build unlimited-ocr-llama
+docker compose -f infra/docker-compose.yml --profile gpu build unlimited-ocr-llama
 ```
 
-Lifecycle management drives `docker compose` and therefore needs docker CLI
+Lifecycle management drives `docker compose -f infra/docker-compose.yml` and therefore needs docker CLI
 access on whatever host runs the `long_ocr` worker (host launchd run, a mounted
 docker socket, or a remote backend).
 
-When Rails runs directly under launchd/systemd, `bin/start_idea_app.sh [installation-name]` starts compose sidecars in the background **without blocking Rails**. The installation name defaults to `idea-app` and becomes the Compose project name, so separate clones do not share containers, networks, or volumes. Sidecar startup uses existing images only (`docker compose up -d --no-build` per service); it does not rebuild OCR on every boot. Voice ID and OCR are optional — if a sidecar image is missing or fails to start, the app still comes up and only that feature is unavailable until you build or fix the service manually.
+When Rails runs directly under launchd/systemd, `bin/start_idea_app.sh [installation-name]` starts compose sidecars in the background **without blocking Rails**. The installation name defaults to `idea-app` and becomes the Compose project name, so separate clones do not share containers, networks, or volumes. Sidecar startup uses existing images only (`docker compose -f infra/docker-compose.yml up -d --no-build` per service); it does not rebuild OCR on every boot. Voice ID and OCR are optional — if a sidecar image is missing or fails to start, the app still comes up and only that feature is unavailable until you build or fix the service manually.
 
 Sidecar logs: `log/compose-sidecars.log`. Useful environment variables:
 
@@ -128,9 +128,9 @@ Sidecar logs: `log/compose-sidecars.log`. Useful environment variables:
 Build sidecars manually when needed:
 
 ```bash
-docker compose build voice-id
-docker compose build --no-cache ocr   # first build or after Dockerfile changes
-docker compose up -d --no-build voice-id ocr
+docker compose -f infra/docker-compose.yml build voice-id
+docker compose -f infra/docker-compose.yml build --no-cache ocr   # first build or after Dockerfile changes
+docker compose -f infra/docker-compose.yml up -d --no-build voice-id ocr
 ```
 
 The script uses the first available running runtime from `docker compose`, `docker-compose`, `podman compose`, or `podman-compose`. It also points Rails at the host-side service URLs:
@@ -145,10 +145,10 @@ If you do want compose to run the Rails app too, opt into the `app` profile:
 
 ```bash
 # Build and run sidecars plus the Rails app container
-docker compose --profile app up --build
+docker compose -f infra/docker-compose.yml --profile app up --build
 
 # Or in detached mode
-docker compose --profile app up -d --build
+docker compose -f infra/docker-compose.yml --profile app up -d --build
 ```
 
 The app container:
@@ -160,7 +160,7 @@ The app container:
 Customize the app container port:
 
 ```bash
-PORT=8080 docker compose --profile app up
+PORT=8080 docker compose -f infra/docker-compose.yml --profile app up
 ```
 
 Health check endpoint when the app container is running: `http://localhost:3333/up`
@@ -224,14 +224,14 @@ The same recovery secret is also used to derive an app-level AES-GCM key for esp
 Start Compose without a recovery passphrase environment variable; the passphrase is configured from the app UI, not from `.env` or Compose secrets:
 
 ```bash
-docker compose up --build
+docker compose -f infra/docker-compose.yml up --build
 ```
 
 If you already have plaintext production SQLite files, open `/settings/security`, enter and confirm a strong database recovery passphrase, and confirm you saved that passphrase in two separate places before starting the Database Encryption action. When no explicit path is configured, the app writes the passphrase to `storage/recovery_passphrase.key`, then encrypts the SQLCipher-configured databases from `config/database.yml`, verifies the encrypted copies, replaces the plaintext files, and keeps plaintext backups outside the checkout by default in `../idea-app-sqlcipher-backups`.
 
 Use the same recovery passphrase when moving the encrypted database to another computer. Without it, the app cannot open the SQLCipher database and cannot decrypt protected security templates.
 
-For advanced deployments that need the app to read/write the passphrase at a specific path, set `IDEA_FOUNDRY_RECOVERY_PASSPHRASE_FILE=/path/outside/idea-foundry-recovery-passphrase.txt` in the Rails process environment before using `/settings/security`; do not add a required interpolation to `docker-compose.yml`, because Podman Compose evaluates it even when the Rails app profile is not selected.
+For advanced deployments that need the app to read/write the passphrase at a specific path, set `IDEA_FOUNDRY_RECOVERY_PASSPHRASE_FILE=/path/outside/idea-foundry-recovery-passphrase.txt` in the Rails process environment before using `/settings/security`; do not add a required interpolation to `infra/docker-compose.yml`, because Podman Compose evaluates it even when the Rails app profile is not selected.
 
 Set `IDEA_FOUNDRY_SQLCIPHER_BACKUP_DIR=/path/outside/app` before starting the app to choose a different backup location. After you have verified your encrypted database, move long-term plaintext backups to secure offline storage or delete them according to your backup policy.
 

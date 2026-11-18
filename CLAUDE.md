@@ -1,13 +1,3 @@
-## graphify
-
-This project has a knowledge graph at graphify-out/ with god nodes, community structure, and cross-file relationships.
-
-Rules:
-- For codebase questions, first run `graphify query "<question>"` when graphify-out/graph.json exists. Use `graphify path "<A>" "<B>"` for relationships and `graphify explain "<concept>"` for focused concepts. These return a scoped subgraph, usually much smaller than GRAPH_REPORT.md or raw grep output.
-- If graphify-out/wiki/index.md exists, use it for broad navigation instead of raw source browsing.
-- Read graphify-out/GRAPH_REPORT.md only for broad architecture review or when query/path/explain do not surface enough context.
-- After modifying code, run `graphify update .` to keep the graph current (AST-only, no API cost).
-
 ## Excalidraw upkeep (recurring, monthly)
 
 Embedded `@excalidraw/excalidraw` tracks the npm `next` dist-tag, pinned exact in package.json.
@@ -21,7 +11,12 @@ Any LLM session making a change in this repo: if "Last updated" above is >30 day
 
 ## System dependencies
 
-Root `Brewfile` is the source of truth for every external CLI/library (`bin/install` + `bin/setup` run `brew bundle`). New shell-out tool → add it to `Brewfile`, the Dockerfile final-stage apt list (manual sync), and `PACKAGES` in `test/brewfile_test.rb` (CI fails otherwise).
+`infra/Brewfile` is the source of truth for every external CLI/library (`bin/install` + `bin/setup` run `brew bundle`). New shell-out tool → add it to `infra/Brewfile`, the `infra/Dockerfile` final-stage apt list (manual sync), and `PACKAGES` in `test/brewfile_test.rb` (CI fails otherwise).
+
+## Infra layout
+
+Everything running outside Rails lives in `infra/` (Brewfile, Dockerfile, compose, Caddy, launchd plist, `services/{ocr,long_ocr,voice_id}`); map in `infra/README.md`. Compose: `docker compose -f infra/docker-compose.yml ...`; image build from repo root: `docker build -f infra/Dockerfile .`. Rails-side clients stay in `app/`.
+New out-of-process service → `infra/services/<name>/` (Dockerfile + README), register in `infra/docker-compose.yml`, URL via ENV in Rails.
 
 ## Audio service (built: local whisper + sidecar .vtt)
 

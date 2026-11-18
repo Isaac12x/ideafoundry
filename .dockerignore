@@ -36,3 +36,6 @@
 !/app/assets/builds/.keep
 /public/assets
 /public/excalidraw-assets
+
+# Sidecar service sources/compose/Caddy are not needed in the Rails image.
+/infra/
