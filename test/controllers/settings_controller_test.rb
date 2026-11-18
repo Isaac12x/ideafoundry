@@ -594,6 +594,42 @@ class SettingsControllerTest < ActionDispatch::IntegrationTest
     assert_select ".ask-agent-message--pending", count: 1
   end
 
+  test "questions continue a thread, can switch agent per turn, and render per thread" do
+    @user.update_local_agent_settings("enabled" => "1")
+
+    post settings_local_agent_questions_path, params: { agent_question: { body: "First", thread_id: "new" } }, as: :json
+    thread = @user.agent_threads.order(:id).last
+    assert_equal thread.id, response.parsed_body["thread_id"]
+
+    assert_enqueued_with(job: AgentModelTurnJob) do
+      post settings_local_agent_questions_path, params: { agent_question: { body: "Second", thread_id: thread.id.to_s, agent: "model" } }, as: :json
+    end
+    assert_equal [ "First", "Second" ], thread.agent_events.where(event_type: "question").order(:id).map(&:summary)
+    assert_equal [ "local", "model" ], thread.agent_events.where(event_type: "question").order(:id).map { |e| e.payload["agent"] }
+
+    post settings_local_agent_questions_path, params: { agent_question: { body: "Other" } }, as: :json
+    assert_equal 2, @user.agent_threads.count
+
+    get settings_local_agent_questions_path(thread: thread.id)
+    assert_select ".ask-agent-thread", count: 2
+    assert_select ".ask-agent-threadbar__list button", count: 2
+    get settings_local_agent_questions_path(thread: "new")
+    assert_select ".ask-agent-thread", count: 0
+  end
+
+  test "a thread id from another user starts a new thread" do
+    @user.update_local_agent_settings("enabled" => "1")
+    other = User.create!(email: "o-#{SecureRandom.hex(3)}@example.com", name: "O")
+    foreign = other.agent_threads.create!(title: "x")
+
+    post settings_local_agent_questions_path, params: { agent_question: { body: "Hi", thread_id: foreign.id.to_s } }, as: :json
+
+    assert_not_equal foreign.id, response.parsed_body["thread_id"]
+    assert_equal 0, foreign.agent_events.count
+  ensure
+    other&.destroy
+  end
+
   test "POST settings/ai-agents/questions queues a local agent question" do
     @user.update_local_agent_settings("enabled" => "1")
 

@@ -193,6 +193,7 @@
 
     <%= form_with url: settings_local_agent_questions_path, method: :post, local: true, class: "ask-agent-sidebar__form", data: { action: "submit->ask-agent#send" } do %>
       <%= hidden_field_tag :return_to, ask_agent_return_path %>
+      <%= hidden_field_tag "agent_question[thread_id]", ask_agent_active_thread&.id || "new", id: "global_agent_question_thread", data: { ask_agent_target: "thread" } %>
 
       <div class="form-group">
         <%= label_tag "global_agent_question_body", "Question" %>
@@ -203,12 +204,17 @@
               class: "form-control",
               placeholder: "What should I focus on next?",
               required: true,
-              data: { ask_agent_target: "body" } %>
+              data: { ask_agent_target: "body", action: "keydown->ask-agent#submitOnShortcut" } %>
       </div>
 
       <p class="ask-agent-sidebar__notice ask-agent-sidebar__error" role="alert" data-ask-agent-target="error" hidden></p>
 
       <div class="ask-agent-sidebar__actions">
+        <label class="ask-agent-sidebar__agent">
+          <span>Agent</span>
+          <%= select_tag "agent_question[agent]", options_for_select(LocalAgent::Agents.all.map { |key, label| [ label, key ] }, LocalAgent::Agents::DEFAULT), id: "global_agent_question_agent" %>
+        </label>
+        <span class="ask-agent-sidebar__hint" aria-hidden="true">&#8984;&#8629;</span>
         <%= submit_tag "Send", class: "btn btn-primary" %>
       </div>
     <% end %>

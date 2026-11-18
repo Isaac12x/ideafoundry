@@ -1,0 +1,12 @@
+<%# Header bell: unread notifications + draft queue. The panel loads lazily when opened. %>
+<% count = inbox_count(@user) %>
+<details class="inbox" data-controller="inbox" data-action="keydown.esc->inbox#close click@window->inbox#outside">
+  <summary class="nav-pill inbox-bell" aria-label="Notifications<%= " (#{count} unread)" if count.positive? %>" title="Notifications">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 8a6 6 0 00-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+    <span class="nav-label">Inbox</span>
+    <% if count.positive? %><span class="inbox-badge"><%= count > 99 ? "99+" : count %></span><% end %>
+  </summary>
+  <div class="inbox-panel">
+    <turbo-frame id="inbox_panel" src="<%= notifications_path %>" loading="lazy"><p class="inbox-empty">Loading...</p></turbo-frame>
+  </div>
+</details>

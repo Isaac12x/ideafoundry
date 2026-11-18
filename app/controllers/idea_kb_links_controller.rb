@@ -1,6 +1,7 @@
 # Links an idea to KB projects, folders and files. Created from the idea page.
 class IdeaKbLinksController < ApplicationController
   include KbEntrySearch
+  include IdeaKbLinksHelper
 
   before_action :set_user
   before_action :set_idea, except: :search # search is idea-independent (also used by the new-idea form)
@@ -26,6 +27,18 @@ class IdeaKbLinksController < ApplicationController
   def destroy
     @idea.kb_links.find(params[:id]).destroy
     respond_section
+  end
+
+  # Copies one finding of the linked project into the idea's notes, with a backlink.
+  def promote
+    link = @idea.kb_links.find(params[:id])
+    project = (entry = idea_kb_link_entries(@idea, @user).find { |e| e[:link] == link }) && entry[:project]
+    finding = project && !project.locked? && idea_project_findings(project).find { |f| f["id"] == params[:finding_id].to_s }
+    return redirect_to(idea_path(@idea), alert: "Finding not found.") unless finding
+
+    body = "#{finding['text']}\n\nFrom KB project #{project.name}#{" (#{finding['from']})" if finding['from']}: #{kb_path(src: entry[:index], project: link.relative_path)}"
+    @idea.notes.find_or_create_by!(body: body)
+    redirect_to idea_path(@idea, anchor: "notes"), notice: "Finding added to notes."
   end
 
   private

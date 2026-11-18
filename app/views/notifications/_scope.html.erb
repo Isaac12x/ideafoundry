@@ -1,0 +1,10 @@
+<%# Notifications + tasks for one scope (project page). locals: scope, notifications, tasks, return_to %>
+<% if notifications.any? %>
+  <ul class="inbox-list inbox-list--inline">
+    <% notifications.each do |n| %><%= render "notifications/notification", notification: n, return_to: return_to, show_scope: false %><% end %>
+  </ul>
+<% end %>
+<ul class="inbox-list inbox-list--inline">
+  <% tasks.each do |t| %><%= render "notifications/task", task: t, return_to: return_to, show_scope: false %><% end %>
+</ul>
+<%= render "notifications/task_form", scope: scope, return_to: return_to %>

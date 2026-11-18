@@ -1,0 +1,19 @@
+<%# locals: notification, return_to, show_scope %>
+<li class="inbox-row<%= ' is-unread' if !notification.read? %>">
+  <span class="inbox-dot" aria-hidden="true"></span>
+  <div class="inbox-main">
+    <% if notification.url.present? %>
+      <%= link_to notification.title, notification.url, class: "inbox-title", data: { turbo_frame: "_top" } %>
+    <% else %>
+      <span class="inbox-title"><%= notification.title %></span>
+    <% end %>
+    <% if notification.body.present? %><span class="inbox-body"><%= notification.body %></span><% end %>
+    <span class="inbox-meta"><%= time_ago_in_words(notification.created_at) %> ago<% if show_scope %> <span class="inbox-chip"><%= notification.scope_label %></span><% end %></span>
+  </div>
+  <span class="inbox-actions">
+    <% unless notification.read? %>
+      <%= button_to "Read", notification_path(notification, return_to: return_to), method: :patch, class: "inbox-link", form_class: "inbox-inline" %>
+    <% end %>
+    <%= button_to notification_path(notification, return_to: return_to), method: :delete, class: "inbox-x", form_class: "inbox-inline", aria: { label: "Dismiss" } do %>&times;<% end %>
+  </span>
+</li>

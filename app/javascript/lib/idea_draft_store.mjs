@@ -73,6 +73,15 @@ export function hasMeaningfulDraft(draft) {
   });
 }
 
+// Stricter than hasMeaningfulDraft (which also counts scoring sliders, pickers...): an idea draft is only worth
+// keeping once it has a title, description text/image, or an attachment. `hasFiles` = a file input has a file chosen.
+export function hasIdeaContent(draft, { hasFiles = false } = {}) {
+  if (hasFiles) return true;
+  const title = String(draft?.["idea[title]"] ?? "").trim();
+  const description = String(draft?.["idea[description]"] ?? "");
+  return title !== "" || /<img/i.test(description) || description.replace(/<[^>]*>/g, "").trim() !== "";
+}
+
 export function shouldShowResumePrompt({ record, currentDraft, promptWithExistingContent = false } = {}) {
   const currentDraftIsMeaningful = hasMeaningfulDraft(currentDraft);
 

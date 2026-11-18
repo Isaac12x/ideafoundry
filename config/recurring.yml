@@ -20,6 +20,12 @@ development:
     command: "KbTranscriptJob.sweep"
     schedule: every 15 minutes
 
+  # Planner stats: PRAGMA optimize + ANALYZE so new indexes/data volumes are used
+  db_optimize:
+    class: DbOptimizeJob
+    queue: default
+    schedule: every 6 hours
+
 production:
   # Queue maintenance
   clear_solid_queue_finished_jobs:
@@ -79,3 +85,9 @@ production:
   sweep_kb_transcripts:
     command: "KbTranscriptJob.sweep"
     schedule: every 15 minutes
+
+  # Planner stats: PRAGMA optimize + ANALYZE so new indexes/data volumes are used
+  db_optimize:
+    class: DbOptimizeJob
+    queue: default
+    schedule: every 6 hours
