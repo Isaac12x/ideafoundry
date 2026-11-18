@@ -22,6 +22,28 @@ class KbFsOpsTest < ActionDispatch::IntegrationTest
     assert File.file?(File.join(@kb_dir, "note.md"))
   end
 
+  test "blank-name new file opens in the editor" do
+    post kb_fs_create_path, params: { src: @src, dir: "", kind: "file" }, as: :turbo_stream
+
+    assert_select "turbo-stream[action=replace][target=kb-content] textarea.kb-editor-textarea"
+  end
+
+  test "new file made while viewing a project lands in the project" do
+    Kb::Project.create!(base: @kb_dir, parent_rel: "", name: "Proj")
+    post kb_fs_create_path, params: { src: @src, dir: "", kind: "file", view_rel: "Proj" }, as: :turbo_stream
+
+    assert File.file?(File.join(@kb_dir, "Proj", "Untitled.md"))
+    refute File.exist?(File.join(@kb_dir, "Untitled.md"))
+  end
+
+  test "project named like an existing file gets a free name" do
+    File.write(File.join(@kb_dir, "Plan"), "x")
+    post kb_fs_create_path, params: { src: @src, dir: "", kind: "project", name: "Plan" }
+
+    assert File.file?(File.join(@kb_dir, "Plan"))
+    assert File.file?(File.join(@kb_dir, "Plan-2", ".kb-project.yml"))
+  end
+
   test "creating a named file over turbo stream opens it in the editor" do
     post kb_fs_create_path, params: { src: @src, dir: "", name: "note", kind: "file" }, as: :turbo_stream
 
@@ -74,6 +96,74 @@ class KbFsOpsTest < ActionDispatch::IntegrationTest
 
     assert File.file?(File.join(@kb_dir, "sub", "a.md"))
     refute File.exist?(File.join(@kb_dir, "a.md"))
+  end
+
+  test "moving an unopened file only refreshes the tree, not the viewer" do
+    FileUtils.mkdir_p(File.join(@kb_dir, "sub"))
+    File.write(File.join(@kb_dir, "a.md"), "hi")
+    File.write(File.join(@kb_dir, "open.md"), "open")
+
+    patch kb_fs_move_path, params: { src: @src, path: "a.md", dest_dir: "sub", sel_src: @src, sel_file: "open.md" }, as: :turbo_stream
+
+    assert_select "turbo-stream[action=update][target^=kb-children-]"
+    assert_select "turbo-stream[target=kb-content]", false
+  end
+
+  test "moving the open file re-points the viewer at its new path" do
+    FileUtils.mkdir_p(File.join(@kb_dir, "sub"))
+    File.write(File.join(@kb_dir, "a.md"), "hi")
+
+    patch kb_fs_move_path, params: { src: @src, path: "a.md", dest_dir: "sub", sel_src: @src, sel_file: "a.md" }, as: :turbo_stream
+
+    assert_select "turbo-stream[target=kb-content]"
+    assert_select "turbo-stream[action=kb_url][url*='sub%2Fa.md']"
+  end
+
+  test "move patches the cached scan to match a full rescan" do
+    FileUtils.mkdir_p(File.join(@kb_dir, "sub/deep"))
+    FileUtils.mkdir_p(File.join(@kb_dir, "dest"))
+    File.write(File.join(@kb_dir, "sub/deep/x.md"), "x")
+    File.binwrite(File.join(@kb_dir, "sub/clip.mp4"), "x")
+    File.write(File.join(@kb_dir, "sub/clip.vtt"), "WEBVTT\n")
+    File.write(File.join(@kb_dir, "dest/keep.md"), "k")
+    key = ->(gen) { [ "kb/tree/fs-v6", @user.id, File.expand_path(@kb_dir), gen ] }
+    cache = ActiveSupport::Cache::MemoryStore.new
+    Rails.stub(:cache, cache) do
+      Kb::TreeBuilder.build(@user) # warm
+      FileUtils.mv(File.join(@kb_dir, "sub"), File.join(@kb_dir, "dest/sub"))
+      Kb::TreeBuilder.patch!(@user, @kb_dir, "sub", "dest/sub")
+      patched = cache.read(key.(Kb::TreeBuilder.cache_generation(@user.id)))
+      Kb::TreeBuilder.bust_cache!(@user)
+      Kb::TreeBuilder.build(@user)
+      full = cache.read(key.(Kb::TreeBuilder.cache_generation(@user.id)))
+      strip = ->(list) { list.map { |e| e.slice(:rel, :cc, :size) } }
+      assert_equal strip.(full[:files]), strip.(patched[:files])
+      assert_equal full[:dirs].map { |d| d[:rel] }, patched[:dirs].map { |d| d[:rel] }
+    end
+  end
+
+  test "move and create stream only the changed folders" do
+    FileUtils.mkdir_p(File.join(@kb_dir, "sub"))
+    FileUtils.mkdir_p(File.join(@kb_dir, "other"))
+    File.write(File.join(@kb_dir, "sub/a.md"), "hi")
+    File.write(File.join(@kb_dir, "other/b.md"), "hi")
+
+    patch kb_fs_move_path, params: { src: @src, path: "sub/a.md", dest_dir: "other" }, as: :turbo_stream
+    assert_select "turbo-stream[action=update][target^=kb-children-]", 2
+    assert_select "turbo-stream[target=kb-sidebar-tree]", false
+
+    post kb_fs_create_path, params: { src: @src, dir: "other", name: "n", kind: "file" }, as: :turbo_stream
+    assert_select "turbo-stream[action=update][target^=kb-children-]", 1
+    assert_select "turbo-stream[target=kb-content] textarea.kb-editor-textarea"
+  end
+
+  test "tree lists files that have notes" do
+    File.binwrite(File.join(@kb_dir, "clip.mp4"), "x")
+    Kb::Note.write!(File.join(@kb_dir, "clip.mp4"), "Why I kept this")
+
+    get kb_path(src: @src)
+
+    assert_select ".kb-notes-index a .kb-notes-index__text", text: "Why I kept this"
   end
 
   test "refuses to move a folder into its own subtree" do

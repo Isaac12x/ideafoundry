@@ -10,7 +10,7 @@ import { hasFieldDraft, restoreFieldDraft } from "lib/field_draft"
 // ponytail: no single-key shortcut; "n" belongs to the global "n i / n l" sequences.
 export default class extends Controller {
   static targets = ["view", "toggle", "panel", "preview", "edit", "form", "input", "status", "more", "stamp"]
-  static values = { url: String }
+  static values = { url: String, open: Boolean }
 
   connect() {
     this.text = ""
@@ -29,6 +29,7 @@ export default class extends Controller {
       this.show(await response.json())
       if (hasFieldDraft(this.inputTarget)) this.edit() // unsaved text from before a lock or reload: reopen the editor on it
       if (!this.gone) this.element.hidden = false
+      if (this.openValue && this.text && !this.gone) this.setOpen(true) // arrived from the tree's Notes list
       this.clamp()
     } catch {
       // leave the panel hidden; the file itself still opens

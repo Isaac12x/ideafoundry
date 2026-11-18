@@ -1,0 +1,13 @@
+<div class="kb-fact-form-wrap" id="problem_form">
+  <% error ||= nil %>
+  <%= form_with url: problems_path, scope: :problem do |f| %>
+    <% if error %>
+      <div class="alert alert-error" style="margin-bottom: 0.75rem; padding: 0.5rem 0.75rem; font-size: 0.85rem;"><%= error %></div>
+    <% end %>
+    <div class="kb-fact-input-row">
+      <%= f.text_field :title, placeholder: "The problem, e.g. Slippery train tracks", class: "kb-fact-textarea", required: true, "aria-label": "Problem" %>
+      <%= f.text_area :need, placeholder: "The need: who suffers, and what would solving it change?", class: "kb-fact-textarea", rows: 3, "aria-label": "Need" %>
+      <div class="kb-fact-actions"><%= f.submit "Add problem", class: "btn btn-primary btn-sm" %></div>
+    </div>
+  <% end %>
+</div>

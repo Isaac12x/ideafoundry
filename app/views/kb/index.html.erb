@@ -43,6 +43,10 @@
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
       IPFs/BPFs
     </button>
+    <button data-tabs-target="tab" data-tab-name="problems" data-action="click->tabs#switch" class="tab-button">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      Problems
+    </button>
     <button data-tabs-target="tab" data-tab-name="maxims" data-action="click->tabs#switch" class="tab-button">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V4s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
       Maxims
@@ -151,6 +155,28 @@
           <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
           <p>No facts yet. Add the first one above.</p>
         </div>
+      <% end %>
+    </div>
+  </div>
+
+  <%# ── Problems panel (needs worth solving; Wikipedia/Grokipedia imported beside each) ── %>
+  <div data-tabs-target="panel" data-tab-panel="problems" class="kb-panel-full kb-facts-panel-full hidden">
+    <div class="kb-facts-container">
+      <div class="page-header">
+        <div>
+          <h2>Problems</h2>
+          <p class="kb-facts-subtitle">Needs worth solving. Each is a note in Problems/ in the KB, researched on Wikipedia and Grokipedia.</p>
+        </div>
+      </div>
+
+      <%= render "problems/form" %>
+
+      <div id="problems-list" class="kb-facts-list">
+        <%= render partial: "problems/problem", collection: @problems %>
+      </div>
+
+      <% if @problems.empty? %>
+        <div class="kb-facts-empty" id="problems-empty-state"><p>No problems yet. Add the first one above.</p></div>
       <% end %>
     </div>
   </div>

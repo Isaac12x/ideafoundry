@@ -490,6 +490,8 @@ export default class extends Controller {
   _create(kind, extra = {}) {
     const node = this._node
     const fields = { src: node.src, dir: this._targetDir(node), kind, ...extra }
+    const viewed = this._viewedRel()
+    if (kind === "file" && viewed) fields.view_rel = viewed // new files go to the viewed project's inbox
     if (node.multi) {
       // Wrap the picked files in a new folder next to them (same source only).
       const rows = this._multiRows().filter((el) => String(el.dataset.kbTreeSrcParam) === String(node.src))
@@ -1097,9 +1099,11 @@ export default class extends Controller {
 
   // Folder/file/project currently shown in the content pane (frame src, else the page URL).
   _viewedRel() {
-    const frame = document.getElementById("kb-content")
     let params
-    try { params = new URL(frame?.getAttribute("src") || window.location.href, window.location.origin).searchParams } catch (_error) { return "" }
+    try {
+      const frame = document.getElementById("kb-content")
+      params = new URL(frame?.getAttribute("src") || window.location.href, window.location.origin).searchParams
+    } catch (_error) { return "" }
     return params.get("file") || params.get("path") || params.get("project") || ""
   }
 
@@ -1152,7 +1156,9 @@ export default class extends Controller {
 
   _preserveSelectionAcrossStream(event) {
     const stream = event.target
-    if (stream?.getAttribute?.("target") !== "kb-sidebar-tree") return
+    const target = stream?.getAttribute?.("target") || ""
+    // The whole tree, or one folder's children (targeted moves/creates).
+    if (target !== "kb-sidebar-tree" && !target.startsWith("kb-children-")) return
 
     const active = this.element.querySelector(".kb-file-row.is-active")
     const selected = active && {

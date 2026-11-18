@@ -210,3 +210,17 @@
   text-transform: uppercase;
   color: var(--text-secondary);
 }
+
+.cp-group--history { display: flex; align-items: center; justify-content: space-between; }
+.cp-clear {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text-muted);
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  cursor: pointer;
+}
+.cp-clear:hover,
+.cp-clear:focus-visible { color: var(--accent); }

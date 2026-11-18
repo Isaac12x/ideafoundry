@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   decryptDraft,
   encryptDraft,
+  hasIdeaContent,
   hasMeaningfulDraft,
   restoreDraftFields,
   shouldShowResumePrompt,
@@ -109,4 +110,11 @@ test("an untouched editor description (<p></p>) is not a meaningful draft", () =
   assert.equal(hasMeaningfulDraft({ "idea[description]": "<p></p>", "idea[title]": "" }), false);
   assert.equal(hasMeaningfulDraft({ "idea[description]": "<p>words</p>" }), true);
   assert.equal(hasMeaningfulDraft({ "idea[description]": "<p></p>", "idea[for_licensing]": "0", "idea[state]": "idea_new" }), false);
+});
+
+test("hasIdeaContent needs title, description text or a file", () => {
+  assert.equal(hasIdeaContent({ "idea[title]": "  ", "idea[description]": "<p></p>", "idea[trl]": "5" }), false);
+  assert.equal(hasIdeaContent({ "idea[title]": "A" }), true);
+  assert.equal(hasIdeaContent({ "idea[description]": "<p>hi</p>" }), true);
+  assert.equal(hasIdeaContent({}, { hasFiles: true }), true);
 });

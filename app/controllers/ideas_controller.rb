@@ -18,8 +18,7 @@ class IdeasController < ApplicationController
     @ideas = @user.ideas.non_draft.primary_or_standalone.includes(:lists, :idea_lists, :topologies, :idea_entries, :themes)
     @kanban_boards = @user.kanban_boards.ordered.includes(:lists)
     @named_lists = @user.lists.named.ordered
-    # Resumable drafts (skip untouched ones: no title and empty description)
-    @drafts = @user.ideas.drafts.where(discarded_at: nil).order(updated_at: :desc).limit(20).select { |d| d.title.present? || d.description.present? }
+    @drafts = @user.ideas.resumable_drafts.first(20)
 
     @ideas = apply_filters(@ideas)
     @ideas = apply_sorting(@ideas)
@@ -52,6 +51,7 @@ class IdeasController < ApplicationController
     # Auto-draft: create a hidden draft idea immediately so drawings can attach
     # to it during composition. Drafts are filtered from listings and cleaned up
     # daily by CleanOrphanedDraftsJob if abandoned.
+    @user.ideas.blank_drafts.each(&:destroy) # drafts with no content are never kept
     @idea = @user.ideas.create!(draft: true, state: :idea_new, attempt_count: 0, title: params[:title].to_s.squish.truncate(200, omission: ""))
     redirect_to edit_idea_path(@idea, draft: 1)
   end
@@ -185,7 +185,7 @@ class IdeasController < ApplicationController
 
   def destroy
     @idea.destroy
-    redirect_to ideas_path, notice: "Idea was successfully deleted."
+    redirect_to (url_from(params[:return_to]) || ideas_path), notice: "Idea was successfully deleted."
   end
 
   # POST /ideas/:id/enrich
@@ -233,7 +233,7 @@ class IdeasController < ApplicationController
   # just started instead of interrupting the composition flow immediately.
   def uncompleted
     recent_cutoff = 15.minutes.ago
-    @draft_ideas = @user.ideas.drafts.where(discarded_at: nil).order(updated_at: :desc)
+    @draft_ideas = @user.ideas.resumable_drafts
     @recent_ideas = @user.ideas.non_draft
                          .where(discarded_at: nil)
                          .where("ideas.updated_at >= ?", recent_cutoff)
@@ -324,7 +324,11 @@ class IdeasController < ApplicationController
 
     q_lower     = query.downcase
     search_term = "%#{q_lower}%"
+    # Cached per query; the key carries a data version so any idea/description edit invalidates it.
+    version = [ @user.ideas.maximum(:updated_at), ActionText::RichText.where(record_type: "Idea").maximum(:updated_at), @user.ideas.count, IdeaList.count, IdeaList.maximum(:updated_at) ]
+    results = Rails.cache.fetch([ "idea_search", @user.id, q_lower, version ], expires_in: 10.minutes) do
     ideas = @user.ideas.non_draft.where(discarded_at: nil)
+                 .preload(:rich_text_description, :idea_lists)
                  .left_joins(:rich_text_description)
                  .where(
                    "LOWER(ideas.title) LIKE :q OR LOWER(ideas.tldr) LIKE :q OR LOWER(action_text_rich_texts.body) LIKE :q",
@@ -350,8 +354,9 @@ class IdeasController < ApplicationController
         matches:  matches
       }
     end
+    end
 
-    render json: { results: ideas }
+    render json: { results: results }
   end
 
   private

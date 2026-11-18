@@ -42,6 +42,11 @@ class KbController < ApplicationController
   before_action :block_locking_writes, only: %i[fs_save fs_create fs_upload fs_rename fs_move fs_delete]
 
   def index
+    # Last thing viewed was a project page: reopen that, not a stale file.
+    if params[:file].blank? && params[:project].blank? && (project = remembered_project)
+      return redirect_to kb_path(src: project.first, project: project.last)
+    end
+
     @folders = build_folder_tree
     @selected_folder_index, @selected_file = initial_document_selection
     # A file inside a locked project (remembered, linked or the first one): show the locked page instead.
@@ -53,6 +58,7 @@ class KbController < ApplicationController
     remember_document(@selected_folder_index, @selected_file) if displayable_content?(@content)
     @facts = @user.facts.recent
     @maxims = @user.maxims.recent
+    @problems = @user.problems.recent
   end
 
   # Capture destinations for the Chrome extension: every project in every source (locked ones flagged).
@@ -184,6 +190,11 @@ class KbController < ApplicationController
 
     folder = params[:kind] == "folder"
 
+    # New files made while viewing a project land in its inbox (top level), not wherever the click's folder was.
+    if !folder && params[:dir].blank? && !url?(name) && (inbox = download_dir(base, "")).present?
+      parent = resolve_dir(base, inbox) || parent
+    end
+
     # A URL instead of a name means "download this into the folder in the
     # background" (yt-dlp for media, HTTP otherwise). URLs contain "/" so this
     # must run before valid_node_name?, which rejects them.
@@ -210,7 +221,9 @@ class KbController < ApplicationController
       abs = unique_fs_path(File.join(parent, folder ? UNNAMED_FOLDER : UNNAMED_FILE))
       folder ? Dir.mkdir(abs) : File.write(abs, "")
       move_into_folder(base, abs, Array(params[:move])) if folder
-      return respond_fs(editing: abs.delete_prefix("#{base}/"))
+      rel = abs.delete_prefix("#{base}/")
+      # A new file opens in the editor at once (inline naming stays available in the tree).
+      return respond_fs(editing: rel, file: (rel unless folder), edit: !folder, **created_tree_opts(base, abs))
     end
 
     return fs_error("Invalid name.") unless valid_node_name?(name)
@@ -219,14 +232,23 @@ class KbController < ApplicationController
       abs = File.join(parent, name)
       return fs_error("\"#{name}\" already exists.") if File.exist?(abs)
       Dir.mkdir(abs)
-      respond_fs
+      respond_fs(**created_tree_opts(base, abs))
     else
       name = "#{name}.md" unless ALL_EXTENSIONS.include?(File.extname(name).downcase)
       abs = File.join(parent, name)
       return fs_error("\"#{name}\" already exists.") if File.exist?(abs)
       File.write(abs, "")
-      respond_fs(file: abs.delete_prefix("#{base}/"), edit: MARKDOWN_EXTENSIONS.include?(File.extname(abs).downcase))
+      respond_fs(file: abs.delete_prefix("#{base}/"), edit: MARKDOWN_EXTENSIONS.include?(File.extname(abs).downcase), **created_tree_opts(base, abs))
     end
+  end
+
+  # A new entry: patch the cached scan and re-render only its parent folder, not a full rescan + full tree.
+  def created_tree_opts(base, abs)
+    return {} if params[:move].present? # siblings moved in too: their old folders change as well
+    rel = abs.delete_prefix("#{base}/")
+    patched = Kb::TreeBuilder.patch!(@user, base, nil, rel)
+    parent = File.dirname(rel).then { |d| d == "." ? "" : d }
+    { bust: !patched, dirs: [ [ params[:src].to_i, parent ] ] }
   end
 
   # A download aimed at the tree root (blank dir) while the user is inside a project lands in that
@@ -413,10 +435,19 @@ class KbController < ApplicationController
     KbDownload.move_subtree!(user: @user, source_index: params[:src].to_i, old_relative_path: params[:path],
                              new_source_index: dest_index, new_relative_path: target.delete_prefix("#{dest_base}/"))
     apply_drop_order(dest_base, dest_dir, File.basename(target))
-    if File.file?(target)
-      respond_fs(src: dest_index, file: target.delete_prefix("#{dest_base}/"))
+    # Only the tree is re-rendered; the viewer is touched only when the open file moved (or sat in a moved
+    # folder), pointing it at its new path. Opening the moved file would re-render heavy content for nothing.
+    new_rel = target.delete_prefix("#{dest_base}/")
+    # Same source: patch the cached scan (moved subtree + parent dirs) instead of re-globbing everything.
+    patched = base == dest_base && Kb::TreeBuilder.patch!(@user, base, params[:path].to_s, new_rel)
+    parent_rel = ->(rel) { File.dirname(rel.to_s).then { |d| d == "." ? "" : d } }
+    dirs = [ [ params[:src].to_i, parent_rel.(params[:path]) ], [ dest_index, parent_rel.(new_rel) ] ]
+    open_file = params[:sel_file].presence
+    if open_file && params[:sel_src].to_i == params[:src].to_i && (open_file == params[:path] || open_file.start_with?("#{params[:path]}/"))
+      @moved_open_file = true
+      respond_fs(src: dest_index, file: new_rel + open_file.delete_prefix(params[:path].to_s), bust: !patched, dirs: dirs)
     else
-      respond_fs(src: dest_index)
+      respond_fs(src: dest_index, bust: !patched, dirs: dirs)
     end
   end
 
@@ -555,6 +586,7 @@ class KbController < ApplicationController
     @folders = build_folder_tree
     @facts = @user.facts.recent
     @maxims = @user.maxims.recent
+    @problems = @user.problems.recent
     render :index
   end
 
@@ -657,8 +689,8 @@ class KbController < ApplicationController
   # Renders the tree (and, when the selection changed, the content pane) as a
   # turbo stream so file ops update in place instead of reloading the page.
   # Falls back to a full redirect for non-turbo clients.
-  def respond_fs(file: nil, src: params[:src].to_i, alert: nil, notice: nil, editing: nil, edit: false)
-    Kb::TreeBuilder.bust_cache!(@user) # before any early return: redirects re-render from the cache too
+  def respond_fs(file: nil, src: params[:src].to_i, alert: nil, notice: nil, editing: nil, edit: false, bust: true, dirs: nil)
+    Kb::TreeBuilder.bust_cache!(@user) if bust # before any early return: redirects re-render from the cache too
     unless request.format.turbo_stream?
       return redirect_to kb_edit_path(src: src, file: file), alert: alert, notice: notice if edit
       return redirect_to kb_path(src: src, file: file || editing), alert: alert, notice: notice
@@ -688,7 +720,31 @@ class KbController < ApplicationController
         @update_content = true
       end
     end
+    @tree_parts = tree_parts_for(dirs)
     render "kb/fs_stream"
+  end
+
+  # Only the folders that changed (their children lists) instead of the whole tree: rendering the full tree is
+  # what costs seconds on a big KB. nil -> caller falls back to the full tree (projects, aliases, odd paths).
+  def tree_parts_for(dirs)
+    return if dirs.blank? || @user.kb_links.aliases.exists?
+
+    dirs.uniq.map do |src, rel|
+      folder = @folders.find { |f| f[:index] == src } or return
+      rel = rel.to_s
+      tree = folder[:tree]
+      unless rel.empty?
+        node = nil
+        rel.split("/").each do |segment|
+          node = tree[segment]
+          return unless node && node[:type] == :dir && !node[:project] # project folders render specially
+          tree = node[:children]
+        end
+      end
+      return if tree.empty? && rel.empty?
+
+      { id: Kb::TreeBuilder.children_id(src, rel), tree: tree, src: src, default_folder_preference: folder[:default_folder_preference] }
+    end
   end
 
   # No writes into (or around) a project while it locks/unlocks: the archive
@@ -791,12 +847,24 @@ class KbController < ApplicationController
     nil
   end
 
-  def remember_document(folder_index, rel_path)
+  # [src, rel] of the project page last viewed, if it still exists.
+  def remembered_project
+    parsed = JSON.parse(cookies.encrypted[LAST_DOCUMENT_COOKIE].presence || "null")
+    return unless parsed.is_a?(Hash) && parsed["project"].present?
+
+    index = Integer(parsed.fetch("src"))
+    source = kb_sources[index] unless index.negative?
+    [ index, parsed["project"] ] if source && Kb::Project.at(File.expand_path(source[:path]), parsed["project"])
+  rescue JSON::ParserError, KeyError, TypeError, ArgumentError
+    nil
+  end
+
+  def remember_document(folder_index, rel_path, project: nil)
     # Turbo prefetches tree links on hover: only a real visit counts as "last viewed".
     return if %w[X-Sec-Purpose Sec-Purpose].any? { |h| request.headers[h].to_s.start_with?("prefetch") }
 
     cookies.permanent.encrypted[LAST_DOCUMENT_COOKIE] = {
-      value: { src: folder_index, file: rel_path }.to_json,
+      value: { src: folder_index, file: rel_path.to_s, project: project }.to_json,
       httponly: true,
       same_site: :lax
     }

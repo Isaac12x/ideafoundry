@@ -1511,6 +1511,11 @@
 .idea-kb-links__name { font-weight: 600; }
 .idea-kb-links__meta, .idea-kb-links__goal, .idea-kb-links__empty { color: var(--text-muted); font-size: 0.78rem; }
 .idea-kb-links__form { margin: 0; }
+.idea-kb-findings { margin: 0 0 0.75rem; }
+.idea-kb-findings__title { margin: 0 0 0.4rem; font-size: 0.85rem; color: var(--text-muted); }
+.idea-kb-findings__list { list-style: none; margin: 0.3rem 0 0.6rem; padding: 0; display: grid; gap: 0.4rem; }
+.idea-kb-findings__item { display: grid; gap: 0.25rem; justify-items: start; padding: 0.5rem 0.65rem; border: 1px solid var(--border-default); border-radius: var(--radius-md); }
+.idea-kb-findings__text { margin: 0; white-space: pre-wrap; }
 .idea-kb-links__combo { position: relative; }
 .idea-kb-links__input {
   width: 100%;

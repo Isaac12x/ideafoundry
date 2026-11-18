@@ -18,6 +18,10 @@ default: &default
     journal_mode: wal
     journal_size_limit: 67108864
     wal_autocheckpoint: 1000
+    # Single-user Mac with ample RAM: 64MB page cache per connection, 1GB mmap, temp tables in memory.
+    cache_size: -65536
+    mmap_size: 1073741824
+    temp_store: memory
 
 development:
   primary:
