@@ -124,6 +124,7 @@ export default class extends Controller {
     this._customTabs.push({ id, label: name.trim() })
     this._saveCustomTabs()
     this._activeKey = id
+    this._renderTabs() // before the editor loads: TipTap comes from a CDN and must not delay (or block) the new tab
     await this._expand()
     this._renderTabs()
     this._loadContent()

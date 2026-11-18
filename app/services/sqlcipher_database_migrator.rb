@@ -19,6 +19,25 @@ class SqlcipherDatabaseMigrator
     end.uniq
   end
 
+  # Encrypts plaintext databases flagged `auto_encrypt: true` (new DBs such as cable, as opposed
+  # to the opt-in primary). Needs a recovery key; returns the encrypted paths. Callers must drop
+  # open connections first and bump RecoverySecret's generation afterwards.
+  def self.encrypt_auto!(env: Rails.env)
+    return [] unless RecoverySecret.present?
+
+    migrator = new(key_hex: RecoverySecret.sqlcipher_key_hex)
+    ActiveRecord::Base.configurations.configs_for(env_name: env).filter_map do |config|
+      hash = config.configuration_hash
+      next unless hash[:sqlcipher] && hash[:auto_encrypt]
+
+      path = resolve_database_path(hash[:database])
+      next unless path.present? && File.file?(path) && File.size(path).positive? && plaintext_sqlite_database?(path)
+
+      migrator.migrate!(path)
+      path
+    end
+  end
+
   def self.locked_database_paths_without_recovery_secret(env:)
     configured_database_paths(env: env).select do |path|
       locked_database_path_for_startup?(path)
