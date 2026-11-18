@@ -259,11 +259,7 @@ module Kb
     end
 
     # Set of [source_path, file_rel] for finished downloads not opened yet.
-    def unseen_download_keys
-      user.kb_downloads.where(status: "done", opened_at: nil).where.not(filename: [ nil, "" ])
-          .pluck(:source_path, :dir, :filename)
-          .to_set { |path, dir, name| [ path && File.expand_path(path), dir.present? ? File.join(dir, name) : name ] }
-    end
+    def unseen_download_keys = user.kb_downloads.unseen_keys
 
     # Flags unseen file nodes (node[:new]) and their ancestor dirs (node[:has_new]).
     def mark_unseen(children, source_path, unseen)
