@@ -8,6 +8,7 @@
 <div id="kb-sidebar-tree"
      data-controller="kb-tree-sync"
      data-kb-tree-sync-url-value="<%= kb_tree_path %>">
+  <%= render "kb/notes_index", folders: folders %>
   <% if folders.empty? %>
     <div class="kb-tree">
       <div class="kb-folder-group">
@@ -100,7 +101,7 @@
             <% end %>
           </div>
           <% end %>
-          <div class="kb-node-children kb-folder-files" role="group">
+          <div class="kb-node-children kb-folder-files" role="group" id="<%= Kb::TreeBuilder.children_id(folder[:index], "") %>">
             <% if folder[:tree].empty? %>
               <span class="kb-no-files">Drop files here or create a folder</span>
             <% else %>

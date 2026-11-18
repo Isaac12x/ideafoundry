@@ -4,6 +4,7 @@ import {
   collectDraftFields,
   decryptDraft,
   encryptDraft,
+  hasIdeaContent,
   hasMeaningfulDraft,
   restoreDraftFields,
   shouldShowResumePrompt,
@@ -46,8 +47,14 @@ export default class extends Controller {
 
   // Local copy is only used when the server copy came back empty (e.g. save never landed).
   async autoRestore() {
-    if (!this.autosaveUrlValue || hasMeaningfulDraft(collectDraftFields(this.element))) return;
+    if (!this.autosaveUrlValue || this.hasContent()) return;
     if (this.readStoredRecord()) await this.restore();
+  }
+
+  // A draft with no title, description or attachment is never persisted (locally or on the server).
+  hasContent() {
+    const hasFiles = [...this.element.querySelectorAll("input[type=file]")].some((input) => input.files?.length);
+    return hasIdeaContent(collectDraftFields(this.element), { hasFiles });
   }
 
   async flush(keepalive = false) {
@@ -64,7 +71,7 @@ export default class extends Controller {
       if (!(value instanceof File)) body.append(name, value); // ponytail: files (hero images) only go with the final submit
     }
     body.set("autosave", "1");
-    if (!hasMeaningfulDraft(collectDraftFields(this.element))) return; // never overwrite the server copy with an empty form
+    if (!this.hasContent()) return; // never overwrite the server copy with an empty form
     try {
       await fetch(this.autosaveUrlValue, { method: "POST", body, keepalive, credentials: "same-origin", headers: { Accept: "application/json" } });
     } catch (_error) { /* offline: the encrypted local copy still has it */ }
@@ -155,6 +162,7 @@ export default class extends Controller {
   }
 
   async showResumePromptIfNeeded() {
+    if (!this.hasPromptTarget) return; // creation flow has no prompt: unfinished drafts queue in the inbox instead
     const record = this.readStoredRecord();
     const currentDraft = collectDraftFields(this.element);
     if (!shouldShowResumePrompt({
@@ -180,7 +188,7 @@ export default class extends Controller {
   async saveDraft() {
     if (this.discarded) return;
     const draft = collectDraftFields(this.element);
-    if (!hasMeaningfulDraft(draft)) {
+    if (!hasMeaningfulDraft(draft) || !this.hasContent()) {
       this.clearStoredDraft();
       return;
     }

@@ -43,6 +43,27 @@
     <p class="idea-kb-links__empty">No linked projects, folders or files.</p>
   <% end %>
 
+  <% from_projects = idea_linked_findings(entries) %>
+  <% if from_projects.any? %>
+    <div class="idea-kb-findings">
+      <h4 class="idea-kb-findings__title">From linked projects</h4>
+      <% from_projects.each do |entry, items| %>
+        <div class="idea-kb-findings__group">
+          <%= link_to entry[:name], idea_kb_link_href(entry), class: "idea-kb-links__name" %>
+          <ul class="idea-kb-findings__list">
+            <% items.each do |finding| %>
+              <li class="idea-kb-findings__item">
+                <p class="idea-kb-findings__text"><%= truncate(finding["text"], length: 240) %></p>
+                <span class="idea-kb-links__meta"><%= finding["at"] %><%= " · #{finding['from']}" if finding["from"] %></span>
+                <%= button_to "Promote to idea", promote_idea_kb_link_path(idea, entry[:link], finding_id: finding["id"]), class: "btn btn-sm", form: { class: "idea-kb-links__form" } %>
+              </li>
+            <% end %>
+          </ul>
+        </div>
+      <% end %>
+    </div>
+  <% end %>
+
   <div class="idea-kb-links__combo">
     <input type="text" class="idea-kb-links__input" placeholder="Link a KB project, folder or file…"
            role="combobox" aria-expanded="false" aria-autocomplete="list" aria-controls="kb_link_options_<%= idea.id %>"

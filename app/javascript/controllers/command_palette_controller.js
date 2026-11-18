@@ -1,4 +1,5 @@
 import { Controller } from "@hotwired/stimulus"
+import { topSearches, recordSearch, clearSearches } from "lib/search_history"
 import { binding, matches, isMac } from "lib/shortcut_bindings"
 
 export default class extends Controller {
@@ -57,7 +58,9 @@ export default class extends Controller {
     const q = this.inputTarget.value.trim()
     if (!q) { this._showHint(); return }
     this._render(this._actions(q))
-    this._timer = setTimeout(() => this._fetch(q), 200)
+    this._abort?.abort()
+    if (q.length < 2) return // 1-char queries match everything; don't hit the server
+    this._timer = setTimeout(() => this._fetch(q), 250)
   }
 
   navigate(e) {
@@ -75,8 +78,9 @@ export default class extends Controller {
     } else if (e.key === "Enter") {
       e.preventDefault()
       const idx = this._selectedIndex >= 0 ? this._selectedIndex : 0
-      const url = items[idx]?.dataset.url
-      if (url) { this.close(); this._visit(url) }
+      const item = items[idx]
+      if (item?.dataset.query) this._runQuery(item.dataset.query)
+      else if (item?.dataset.url) this._go(item.dataset.url)
       return
     }
 
@@ -84,11 +88,57 @@ export default class extends Controller {
     items[this._selectedIndex]?.scrollIntoView({ block: "nearest" })
   }
 
+  _store() { try { return window.localStorage } catch { return null } }
+
+  _go(url) {
+    const store = this._store()
+    if (store) recordSearch(store, this.inputTarget.value)
+    this.close()
+    this._visit(url)
+  }
+
+  _runQuery(q) {
+    this.inputTarget.value = q
+    this.search()
+    this.inputTarget.focus()
+  }
+
+  clearHistory() {
+    const store = this._store()
+    if (store) clearSearches(store)
+    this._showHint()
+  }
+
+  _history() {
+    const store = this._store()
+    const queries = store ? topSearches(store) : []
+    if (!queries.length) return null
+    const wrap = document.createElement("div")
+    const head = document.createElement("div")
+    head.className = "cp-group cp-group--history"
+    head.innerHTML = `<span>Recent searches</span><button type="button" class="cp-clear">Clear</button>`
+    head.lastChild.addEventListener("click", () => this.clearHistory())
+    wrap.append(head)
+    queries.forEach((q) => {
+      const a = document.createElement("a")
+      a.className = "cp-result"
+      a.href = "#"
+      a.dataset.query = q
+      a.innerHTML = `<div class="cp-result-main"><span class="cp-result-title"></span></div>`
+      a.querySelector(".cp-result-title").textContent = q
+      a.addEventListener("click", (e) => { e.preventDefault(); this._runQuery(q) })
+      wrap.append(a)
+    })
+    return wrap
+  }
+
   async _fetch(q) {
     try {
       const url = new URL(this.searchUrlValue, window.location.origin)
       url.searchParams.set("q", q)
-      const resp = await fetch(url, { headers: { Accept: "application/json" } })
+      this._abort?.abort() // cancel the stale request
+      this._abort = new AbortController()
+      const resp = await fetch(url, { headers: { Accept: "application/json" }, signal: this._abort.signal })
       if (!resp.ok) throw new Error(resp.status)
       const { groups } = await resp.json()
       if (!this.hasInputTarget || this.inputTarget.value.trim() !== q) return // stale response
@@ -140,8 +190,7 @@ export default class extends Controller {
           </div>`
         a.addEventListener("click", (e) => {
           e.preventDefault()
-          this.close()
-          this._visit(item.url)
+          this._go(item.url)
         })
         frag.appendChild(a)
       })
@@ -154,6 +203,12 @@ export default class extends Controller {
 
   _showHint() {
     this._render(this._actions())
+    const history = this._history()
+    if (!history) return
+    this.resultsTarget.prepend(history)
+    this.resultsTarget.querySelectorAll(".cp-result").forEach((el) => el.classList.remove("cp-result--active"))
+    this.resultsTarget.querySelector(".cp-result")?.classList.add("cp-result--active")
+    this._selectedIndex = 0
   }
 
   _reset() {

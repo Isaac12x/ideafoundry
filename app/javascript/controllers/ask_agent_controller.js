@@ -1,7 +1,7 @@
 import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
-  static targets = ["backdrop", "body", "error", "invention", "launcher", "messages", "panel", "status"]
+  static targets = ["backdrop", "body", "error", "invention", "launcher", "messages", "panel", "status", "thread"]
   static values = { questionsUrl: String }
   static inventionVariants = ["bulb", "engine", "magnet", "gyro"]
   static errors = { disabled: "The local agent is turned off.", blank: "Enter a question." }
@@ -80,6 +80,7 @@ export default class extends Controller {
   // "ask-agent:queued": a question was sent without a page load (KB "Expand"); fetch the threads so it shows as pending.
   // The panel opens without taking focus, so the reader's selection and scroll position stay put.
   queued() {
+    this.threadId = "" // a queued question starts its own thread: show the newest
     this.markChange()
     this.open(null, { focus: false })
     return this.refresh({ scroll: true })
@@ -102,6 +103,7 @@ export default class extends Controller {
       const result = response.redirected ? {} : await response.json().catch(() => ({}))
       if (!response.ok || response.redirected) throw new Error(this.constructor.errors[result.error] || "The question was not sent.")
       this.halted = false
+      if (result.thread_id) this.setThread(String(result.thread_id))
       this.bodyTarget.value = ""
       this.bodyTarget.focus()
       await this.refresh({ scroll: true })
@@ -110,6 +112,43 @@ export default class extends Controller {
     } finally {
       button.disabled = false
     }
+  }
+
+  // Cmd/Ctrl+Enter sends from the question box.
+  submitOnShortcut(event) {
+    if (event.key !== "Enter" || !(event.metaKey || event.ctrlKey) || event.isComposing) return
+    event.preventDefault()
+    event.currentTarget.form?.requestSubmit()
+  }
+
+  // Thread bar (inside the polled markup): resume a listed thread, or start an empty one.
+  selectThread(event) {
+    event.preventDefault()
+    event.currentTarget.closest("details")?.removeAttribute("open")
+    this.setThread(event.currentTarget.dataset.threadId)
+    return this.refresh({ scroll: true })
+  }
+
+  newThread(event) {
+    event.preventDefault()
+    this.setThread("new")
+    if (this.hasMessagesTarget) this.messagesTarget.querySelector?.(".ask-agent-threadbar__menu")?.removeAttribute("open")
+    this.refresh({ scroll: true })
+    if (this.hasBodyTarget) this.bodyTarget.focus()
+  }
+
+  // The thread the next question joins ("new" = a fresh one); the form field follows what the server says is shown.
+  setThread(id) {
+    this.threadId = id
+    this.syncThread(id)
+  }
+
+  syncThread(id) {
+    if (this.hasThreadTarget) this.threadTarget.value = id === "legacy" ? "new" : id || this.threadTarget.value
+  }
+
+  questionsUrl() {
+    return this.threadId ? `${this.questionsUrlValue}?thread=${encodeURIComponent(this.threadId)}` : this.questionsUrlValue
   }
 
   showError(message) {
@@ -163,7 +202,7 @@ export default class extends Controller {
     if (!this.pending() && !this.deferred && !scroll) return this.schedule()
     const id = ++this.seq
     try {
-      const response = await fetch(this.questionsUrlValue, { credentials: "same-origin", cache: "no-store", headers: { Accept: "text/html" } })
+      const response = await fetch(this.questionsUrl(), { credentials: "same-origin", cache: "no-store", headers: { Accept: "text/html" } })
       // A redirect (lock/login page), 401 or 403 means the session is gone or the agent is off: stop, and never inject that page.
       if (response.redirected || response.status === 401 || response.status === 403) return (this.halted = true)
       if (!response.ok) return
@@ -187,6 +226,7 @@ export default class extends Controller {
     const selection = document.getSelection?.()
     if (selection && !selection.isCollapsed && box.contains(selection.anchorNode)) return (this.deferred = true)
     this.deferred = false
+    if (this.hasThreadTarget) this.syncThread(next.querySelector?.("[data-active-thread]")?.dataset.activeThread)
     const atBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 80
     const before = this.pendingCount
     box.replaceChildren(...next.childNodes)

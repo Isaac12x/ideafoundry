@@ -17,6 +17,12 @@ Turbo.StreamActions.kb_seen = function () {
   });
 };
 
+// The open KB file moved: point the address bar at its new path so refresh/restore don't 404.
+Turbo.StreamActions.kb_url = function () {
+  const url = this.getAttribute("url");
+  if (url) window.history.replaceState(window.history.state, "", url);
+};
+
 // ---------------------------------------------------------------------------
 // Auto-grow every <textarea> site-wide: size to its content plus a bit more
 // (one extra line of breathing room) so fields never need an inner scrollbar.

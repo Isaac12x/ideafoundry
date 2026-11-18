@@ -97,7 +97,7 @@
           <%= render "kb/star_icon", filled: favorite %>
         </button>
       </div>
-      <div class="kb-node-children kb-dir-children" role="group" data-kb-folder-target="files">
+      <div class="kb-node-children kb-dir-children" role="group" id="<%= Kb::TreeBuilder.children_id(folder_index, node[:rel]) %>" data-kb-folder-target="files">
         <% shared = { folder_index: folder_index, selected_file: selected_file, selected_folder_index: selected_folder_index,
                       default_folder_preference: default_folder_preference, editing_src: editing_src, editing_rel: editing_rel } %>
         <% if project&.dig(:locked) %>

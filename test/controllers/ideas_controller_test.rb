@@ -270,15 +270,13 @@ class IdeasControllerTest < ActionDispatch::IntegrationTest
     assert_no_match old.title, response.body
   end
 
-  test "draft idea edit form enables delayed bottom-right uncompleted prompt" do
+  test "draft idea edit form has no resume prompt" do
     draft = @user.ideas.create!(title: "Draft", state: :idea_new, draft: true)
 
     get edit_idea_url(draft, draft: 1)
 
     assert_response :success
-    assert_select ".idea-draft-resume.idea-draft-resume--toast", count: 1
-    assert_select "[data-idea-draft-persist-prompt-delay-value=?]", "6000", count: 1
-    assert_select "a[href=?]", uncompleted_ideas_path, text: /View Uncompleted/
+    assert_select ".idea-draft-resume", count: 0
   end
 
   test "draft idea edit form enables encrypted client draft persistence" do
@@ -288,9 +286,7 @@ class IdeasControllerTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_select "form[data-controller~=?]", "idea-draft-persist", count: 1 do
-      assert_select "[data-idea-draft-persist-target=?]", "prompt", count: 1
-      assert_select "button[data-action*=?]", "idea-draft-persist#restore", count: 1
-      assert_select "button[data-action*=?]", "idea-draft-persist#discard", count: 1
+      assert_select "[data-idea-draft-persist-target=?]", "prompt", count: 0
     end
   end
 

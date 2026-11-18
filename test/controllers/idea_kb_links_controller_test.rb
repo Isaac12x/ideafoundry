@@ -79,4 +79,22 @@ class IdeaKbLinksControllerTest < ActionDispatch::IntegrationTest
     delete kb_fs_delete_path, params: { src: @src, path: "Other/notes.md" }
     assert_not IdeaKbLink.exists?(link.id)
   end
+
+  test "promote copies a project finding into idea notes with a backlink, once" do
+    post idea_kb_links_path(@idea), params: { src: @src, path: "Lab" }
+    link = @idea.kb_links.first
+    finding = Kb::Project.at(@kb_dir, "Lab").add_finding!("Cold start dominates latency")
+
+    get idea_path(@idea)
+    assert_includes response.body, "From linked projects"
+
+    2.times { post promote_idea_kb_link_path(@idea, link, finding_id: finding["id"]) }
+    assert_redirected_to idea_path(@idea, anchor: "notes")
+    note = @idea.notes.sole
+    assert_includes note.body, "Cold start dominates latency"
+    assert_includes note.body, "From KB project Lab"
+
+    post promote_idea_kb_link_path(@idea, link, finding_id: "nope")
+    assert_equal "Finding not found.", flash[:alert]
+  end
 end

@@ -13,6 +13,13 @@
     </div>
   <% end %>
 
+  <% idea_notifications = idea.notifications.recent.limit(10) %>
+  <% if idea_notifications.any? %>
+    <ul class="inbox-list inbox-list--inline">
+      <% idea_notifications.each do |n| %><%= render "notifications/notification", notification: n, return_to: idea_path(idea, anchor: "todo"), show_scope: false %><% end %>
+    </ul>
+  <% end %>
+
   <div class="todo-add-section" id="todo_form_<%= idea.id %>">
     <%= render "todo_items/form", idea: idea %>
   </div>
