@@ -120,7 +120,7 @@ start_compose_services() {
     set +e
     for svc in voice-id ocr; do
       echo "==> $(date '+%Y-%m-%d %H:%M:%S') starting $svc"
-      if ! "${COMPOSE_CMD[@]}" up "${up_args[@]}" "$svc"; then
+      if ! "${COMPOSE_CMD[@]}" -f "$APP_DIR/infra/docker-compose.yml" up "${up_args[@]}" "$svc"; then
         echo "==> $(date '+%Y-%m-%d %H:%M:%S') $svc unavailable; continuing without it."
       fi
     done
@@ -168,7 +168,7 @@ else
       -e "s|__HTTPS_PORT__|${IDEA_APP_HTTPS_PORT}|g" \
       -e "s|__CADDY_HTTP_PORT__|${IDEA_APP_CADDY_HTTP_PORT}|g" \
       -e "s|__CADDY_ADMIN_PORT__|${IDEA_APP_CADDY_ADMIN_PORT}|g" \
-      "$APP_DIR/Caddyfile.instance" > "$CADDY_CONFIG"
+      "$APP_DIR/infra/Caddyfile.instance" > "$CADDY_CONFIG"
   echo "==> Starting installation Caddy at https://ideas.local:${IDEA_APP_HTTPS_PORT}."
   caddy start --config "$CADDY_CONFIG" --adapter caddyfile --pidfile "$APP_DIR/tmp/pids/caddy-${INSTALLATION_NAME}.pid"
 fi

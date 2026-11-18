@@ -14,8 +14,8 @@ profile and is started on demand by `LongOcr::ServiceSupervisor` when a long
 document is enqueued, then stopped by `LongOcrIdleStopJob` once idle:
 
 ```
-docker compose --profile gpu up -d unlimited-ocr-llama   # supervisor does this
-docker compose stop unlimited-ocr-llama                  # idle-stop job does this
+docker compose -f infra/docker-compose.yml --profile gpu up -d unlimited-ocr-llama   # supervisor does this
+docker compose -f infra/docker-compose.yml stop unlimited-ocr-llama                  # idle-stop job does this
 ```
 
 ## Model files

@@ -1,6 +1,6 @@
 module LongOcr
   # Drives one KnowledgeExtraction end to end: brings up the heavy backend,
-  # rasterizes the document page by page (via the cheap ocr_service), OCRs each
+  # rasterizes the document page by page (via the cheap infra/services/ocr sidecar), OCRs each
   # page on the heavy model, assembles markdown, writes the output beside the
   # source (KB) or attaches it to the idea, then runs enrichment for ideas.
   class Pipeline

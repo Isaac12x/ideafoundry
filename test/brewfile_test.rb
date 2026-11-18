@@ -18,7 +18,7 @@ class BrewfileTest < ActiveSupport::TestCase
   CALL = /(?:LocalTool\.path|Open3\.(?:capture[23e]*|popen[23e]*)|Subprocess\.capture|IO\.popen|Process\.spawn|(?<![\w.])(?:system|run!?))\(\s*\[?\s*"([a-z0-9][a-z0-9-]*)"/m
 
   test "every tool the app shells out to is declared in the Brewfile" do
-    declared = Rails.root.join("Brewfile").read.scan(/^\s*(?:brew|cask)\s+"([^"]+)"/).flatten
+    declared = Rails.root.join("infra/Brewfile").read.scan(/^\s*(?:brew|cask)\s+"([^"]+)"/).flatten
     used = Dir[Rails.root.join("{app,lib}/**/*.rb")].flat_map { |f| File.read(f).scan(CALL).flatten }.uniq - BUILTIN
 
     assert_includes used, "ffmpeg", "scan regex found no tools; it is broken"
