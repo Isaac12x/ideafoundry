@@ -48,7 +48,7 @@ class KbProjectSystemTest < ApplicationSystemTestCase
     assert_selector ".kbp-delta", text: "+0.5"
 
     # findings: one field + Enter, edit in place
-    find(".kbp-test .kbp-finding-add input").send_keys("Holds at 4C", :enter)
+    find(".kbp-test .kbp-finding-add textarea").send_keys("Holds at 4C", :enter)
     assert_selector ".kbp-finding-text", text: "Holds at 4C"
     find(".kbp-finding").hover
     find(".kbp-finding-tools button", text: "Edit").click

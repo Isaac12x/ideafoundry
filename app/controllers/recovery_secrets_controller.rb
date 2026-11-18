@@ -21,6 +21,7 @@ class RecoverySecretsController < ApplicationController
     RecoverySecret.with(passphrase, override_configured: true) { verify_recovery_secret! }
     RecoverySecret.persist_user_passphrase!(passphrase)
     RecoverySecret.rekey!(passphrase, env: Rails.env) if RecoverySecret.rekey_needed?
+    encrypt_auto_databases!
     session.delete(RECOVERY_SECRET_SESSION_KEY)
     redirect_to @return_to
   rescue ActiveRecord::StatementInvalid, ActiveSupport::MessageEncryptor::InvalidMessage, SQLite3::Exception => e
@@ -33,10 +34,21 @@ class RecoverySecretsController < ApplicationController
   def destroy
     session.delete(RECOVERY_SECRET_SESSION_KEY)
     reset_recovery_secret_database_connections!
+    RecoverySecret.bump_generation! # every worker drops its connections too
     redirect_to recovery_secret_path, notice: "Recovery passphrase cleared."
   end
 
   private
+
+  # The cable DB (rendered KB/graph HTML) starts plaintext when no key existed; convert it on unlock.
+  def encrypt_auto_databases!
+    reset_recovery_secret_database_connections!
+    return if SqlcipherDatabaseMigrator.encrypt_auto!(env: Rails.env).empty?
+
+    RecoverySecret.bump_generation! # other workers reconnect with the key
+  rescue StandardError => e
+    Rails.logger.error "Auto-encrypting cable database failed: #{e.class}: #{e.message}"
+  end
 
   def verify_recovery_secret!
     User.first&.security_lock_enabled?

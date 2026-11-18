@@ -31,7 +31,14 @@ class ApplicationController < ActionController::Base
   end
 
   def with_recovery_secret_from_session(&action)
+    drop_connections_after_secret_change
     RecoverySecret.with(session[RECOVERY_SECRET_SESSION_KEY], &action)
+  end
+
+  # Another Puma worker stored/cleared the passphrase: our open connections were keyed
+  # (or not) under the old state, so close them and let the pools re-key on next checkout.
+  def drop_connections_after_secret_change
+    RecoverySecret.reset_connections_if_changed!
   end
 
   def require_database_recovery_unlock
