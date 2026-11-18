@@ -33,6 +33,11 @@ class KbDownload < ApplicationRecord
   # spinner row keeps the sidebar polling. ponytail: age cutoff, no heartbeat;
   # add one if fetches legitimately run longer than this.
   scope :in_tree, -> { active.where(updated_at: 6.hours.ago..) }
+  # Set of [expanded source_path, file_rel] for finished downloads not opened yet.
+  def self.unseen_keys
+    where(status: "done", opened_at: nil).where.not(filename: [ nil, "" ]).pluck(:source_path, :dir, :filename)
+      .to_set { |path, dir, name| [ path && File.expand_path(path), dir.present? ? File.join(dir, name) : name ] }
+  end
   scope :transcribed, -> { where(transcript_status: "done") }
   scope :for_file, ->(index, rel) {
     dir = File.dirname(rel.to_s)

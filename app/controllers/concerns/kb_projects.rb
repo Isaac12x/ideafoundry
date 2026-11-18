@@ -231,7 +231,9 @@ module KbProjects
 
   # Non-Tests, non-dot children of the project folder, with their materials metadata.
   def project_entries(project)
-    Dir.children(project.abs).reject { |c| c.start_with?(".") || c == Kb::Project::TESTS_DIR || File.symlink?(File.join(project.abs, c)) }
+    unseen = @user.kb_downloads.unseen_keys
+    base = File.expand_path(project.base)
+    without_sidecars(Dir.children(project.abs).reject { |c| c.start_with?(".") || c == Kb::Project::TESTS_DIR || File.symlink?(File.join(project.abs, c)) })
        .sort.map do |c|
       path = File.join(project.abs, c)
       dir = File.directory?(path)
@@ -240,9 +242,19 @@ module KbProjects
       { name: c, rel: File.join(project.rel, c), dir: dir,
         ext: dir ? "" : File.extname(c).delete_prefix(".").downcase,
         size: dir ? nil : stat.size,
-        count: dir ? Dir.children(path).count { |x| !x.start_with?(".") } : nil,
-        mtime: stat.mtime, role: meta["role"], stage: meta["stage"], note: meta["note"] }
+        count: dir ? without_sidecars(Dir.children(path).reject { |x| x.start_with?(".") }).size : nil,
+        mtime: stat.mtime, new: !dir && unseen.include?([ base, File.join(project.rel, c) ]), role: meta["role"], stage: meta["stage"], note: meta["note"] }
     end
+  end
+
+  # Same rule as the tree: .vtt / .note.md / .source.json vanish only when their owner is listed too.
+  def without_sidecars(names)
+    hidden = names.flat_map do |n|
+      [ (Kb::Transcript.sidecar(n) if Kb::Transcript.media?(n)),
+        (Kb::Note.sidecar(n) if Kb::Note.eligible?(n)),
+        (Kb::Source.sidecar(n) unless Kb::Source.sidecar?(n)) ]
+    end
+    names - hidden.compact
   end
 
   def project_test(base, project, rel)

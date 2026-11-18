@@ -16,7 +16,8 @@
       <% if entry[:dir] %>
         <span class="kbp-mat-name kbp-mat-name--dir"><%= name %>/</span>
       <% else %>
-        <%= link_to name, kb_file_path(src: @src, file: entry[:rel]), class: "kbp-mat-name", data: { turbo_frame: "kb-content" } %>
+        <%= link_to name, kb_file_path(src: @src, file: entry[:rel]), class: "kbp-mat-name", data: { turbo_frame: "kb-content", action: "kb-project#markSeen" } %>
+        <% if entry[:new] %><span class="kbp-new">New<span class="sr-only"> download, not opened yet</span></span><% end %>
       <% end %>
       <span class="kbp-mat-meta">
         <% if entry[:dir] %><%= entry[:count].to_i.zero? ? "empty" : pluralize(entry[:count].to_i, "item") %><% else %><%= entry[:ext].presence || "file" %><span class="kbp-mat-size"> · <%= number_to_human_size(entry[:size].to_i) %></span><% end %>
