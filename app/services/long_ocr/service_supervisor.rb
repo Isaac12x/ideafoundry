@@ -73,7 +73,7 @@ module LongOcr
     end
 
     def compose_file
-      ENV.fetch("OCR_LONG_COMPOSE_FILE", Rails.root.join("docker-compose.yml").to_s)
+      ENV.fetch("OCR_LONG_COMPOSE_FILE", Rails.root.join("infra/docker-compose.yml").to_s)
     end
 
     def startup_timeout

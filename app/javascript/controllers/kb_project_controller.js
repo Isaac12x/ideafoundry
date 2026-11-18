@@ -197,6 +197,11 @@ export default class extends Controller {
     form.requestSubmit()
   }
 
+  // The server clears the unseen flag when the file opens; drop the badge at once.
+  markSeen(event) {
+    event.currentTarget.parentElement.querySelector(".kbp-new")?.remove()
+  }
+
   submit(event) {
     event.currentTarget.form?.requestSubmit()
   }

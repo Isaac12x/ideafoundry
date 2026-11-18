@@ -35,11 +35,11 @@ else
 fi
 
 echo "==> Starting Caddy reverse proxy (HTTPS on ideas.local)..."
-caddy start --config "$APP_DIR/Caddyfile" --pidfile "$APP_DIR/tmp/pids/caddy.pid"
+caddy start --config "$APP_DIR/infra/Caddyfile" --pidfile "$APP_DIR/tmp/pids/caddy.pid"
 
 cleanup() {
   echo "==> Shutting down Caddy..."
-  caddy stop --config "$APP_DIR/Caddyfile" 2>/dev/null || true
+  caddy stop --config "$APP_DIR/infra/Caddyfile" 2>/dev/null || true
   if [[ -n "$JOBS_PID" ]]; then
     echo "==> Shutting down SolidQueue (PID $JOBS_PID)..."
     kill "$JOBS_PID" 2>/dev/null || true

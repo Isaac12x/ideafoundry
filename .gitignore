@@ -24,7 +24,7 @@
 
 # Ignore generated .plist files (but keep the template)
 *.plist
-!com.USERNAME.idea-app.plist
+!infra/com.USERNAME.idea-app.plist
 
 # Ignore database backups
 /backups/

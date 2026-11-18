@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Infra reorganized under `infra/`: `Brewfile`, `Dockerfile`, `docker-compose.yml`, `Caddyfile*` and the launchd plist moved there; sidecars now live in `infra/services/{ocr,long_ocr,voice_id}` (was `ocr_service/`, `long_ocr_service/`, `services/voice_id/`). Run compose with `docker compose -f infra/docker-compose.yml ...`, `brew bundle --file=infra/Brewfile`, build the app image with `docker build -f infra/Dockerfile .`. Compose project name is pinned to `idea-app`, so containers and volumes keep their names. Map in `infra/README.md`.
+
 ### Added
 
 - Render marked standalone HTML artifacts with inline JavaScript in an opaque sandbox, including nested source previews. Deny app-origin access, remote connections and form submissions; keep ordinary HTML script-free and annotatable.

@@ -3,7 +3,7 @@ FROM python:3.12-slim
 ARG LLAMA_CPP_REF=b9360
 ARG TARGETARCH
 
-# Reuse the ocr_service approach: download official llama.cpp release binaries
+# Reuse the infra/services/ocr approach: download official llama.cpp release binaries
 # (which include llama-server with multimodal / mtmd support) rather than
 # compiling in-container. curl is kept for runtime GGUF downloads.
 RUN apt-get update -qq && \
