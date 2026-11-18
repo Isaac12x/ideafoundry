@@ -1,6 +1,8 @@
-# Local Voice ID
+# voice-id
 
-Idea Foundry's Voice ID flow does not depend on the browser's cloud speech-recognition API. The browser records a short microphone sample locally, posts the audio to Rails, and Rails forwards it to the bundled `voice-id` container in `docker-compose.yml`.
+Local speech-to-text sidecar (FastAPI + faster-whisper, port 8000 in the container; `GET /health`, `POST /transcribe`) for the typing-lock Voice ID flow. It is the `voice-id` service in `infra/docker-compose.yml`. Idea Foundry's Voice ID flow does not depend on the browser's cloud speech-recognition API. The browser records a short microphone sample locally, posts the audio to Rails, and Rails forwards it to the bundled `voice-id` container in `infra/docker-compose.yml`.
+
+Rails client: `LocalVoiceIdClient` in `app/`. Image build context is this directory.
 
 ## Runtime architecture
 
@@ -16,13 +18,14 @@ The default compose build downloads `Systran/faster-whisper-base.en` into the `v
 To prebuild before going offline:
 
 ```bash
-docker compose build voice-id web
+docker compose -f infra/docker-compose.yml build voice-id
+docker compose -f infra/docker-compose.yml --profile app build web
 ```
 
 Then run normally:
 
 ```bash
-docker compose up
+docker compose -f infra/docker-compose.yml up
 ```
 
 ## Running Rails outside Docker
@@ -30,7 +33,7 @@ docker compose up
 You can run the Rails app directly on the host while keeping bundled services in Compose:
 
 ```bash
-docker compose up voice-id
+docker compose -f infra/docker-compose.yml up voice-id
 bin/rails server
 ```
 

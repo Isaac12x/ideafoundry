@@ -1,3 +1,6 @@
+# Pinned so the default project name stays "idea-app" (file lives in infra/); COMPOSE_PROJECT_NAME still overrides.
+name: idea-app
+
 services:
   # Keep the Rails app out of the default compose graph so production can run it
   # directly under launchd/systemd while compose manages only sidecar services.
@@ -5,7 +8,9 @@ services:
   web:
     profiles:
       - app
-    build: .
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile
     ports:
       - "${PORT:-3333}:3000"
     environment:
@@ -25,14 +30,14 @@ services:
       # Lower it (e.g. 8) if VRAM can't hold a very large book in a single call.
       - OCR_LONG_PAGES_PER_REQUEST=${OCR_LONG_PAGES_PER_REQUEST:-0}
     volumes:
-      - ./storage:/rails/storage
-      - ./config/master.key:/rails/config/master.key:ro
+      - ../storage:/rails/storage
+      - ../config/master.key:/rails/config/master.key:ro
       # Lifecycle management (start/stop the heavy backend on demand) needs the
       # docker CLI + socket. Uncomment to let the in-container worker drive
       # compose; otherwise run the :long_ocr worker on the host, or use a remote
       # backend via OCR_LONG_SERVICE_URL.
       # - /var/run/docker.sock:/var/run/docker.sock
-      # - ./docker-compose.yml:/rails/docker-compose.yml:ro
+      # - ./docker-compose.yml:/rails/infra/docker-compose.yml:ro
     depends_on:
       voice-id:
         condition: service_healthy
@@ -67,7 +72,7 @@ services:
 
   ocr:
     build:
-      context: ./ocr_service
+      context: ./services/ocr
       args:
         LLAMA_CPP_REF: ${LLAMA_CPP_REF:-b9360}
     ports:
@@ -127,7 +132,7 @@ services:
   unlimited-ocr-llama:
     profiles: [ gpu ]
     build:
-      context: ./long_ocr_service
+      context: ./services/long_ocr
       args:
         LLAMA_CPP_REF: ${LLAMA_CPP_REF:-b9360}
     ports:

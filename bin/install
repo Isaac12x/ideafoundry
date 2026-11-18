@@ -46,9 +46,9 @@ fi
 
 # --- System dependencies (Brewfile is the source of truth) ---
 echo "==> Installing system dependencies from Brewfile..."
-brew bundle --no-upgrade --file="$APP_DIR/Brewfile" || echo "WARNING: some Brewfile entries failed to install; features needing them show as unavailable. Rerun: brew bundle --file=\"$APP_DIR/Brewfile\"" >&2
+brew bundle --no-upgrade --file="$APP_DIR/infra/Brewfile" || echo "WARNING: some Brewfile entries failed to install; features needing them show as unavailable. Rerun: brew bundle --file=\"$APP_DIR/infra/Brewfile\"" >&2
 for tool in rbenv node caddy; do
-  command -v "$tool" &>/dev/null || { echo "ERROR: $tool missing after brew bundle (required). Fix: brew bundle --file=\"$APP_DIR/Brewfile\"" >&2; exit 1; }
+  command -v "$tool" &>/dev/null || { echo "ERROR: $tool missing after brew bundle (required). Fix: brew bundle --file=\"$APP_DIR/infra/Brewfile\"" >&2; exit 1; }
 done
 
 # --- Ruby ---
@@ -126,7 +126,7 @@ sed -e "s|__USERNAME__|${USERNAME}|g" \
     -e "s|__CADDY_ADMIN_PORT__|${CADDY_ADMIN_PORT}|g" \
     -e "s|__SKIP_CADDY__|${SKIP_CADDY}|g" \
     -e "s|__SECRET_KEY_BASE__|${SECRET_KEY_BASE}|g" \
-    "$APP_DIR/com.USERNAME.idea-app.plist" > "$PLIST_DEST"
+    "$APP_DIR/infra/com.USERNAME.idea-app.plist" > "$PLIST_DEST"
 
 echo "==> Starting service..."
 launchctl load -w "$PLIST_DEST"
