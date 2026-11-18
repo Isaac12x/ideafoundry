@@ -183,6 +183,16 @@ class KbProjectsTest < ActionDispatch::IntegrationTest
     assert_select ".kbp-mat-name--dir", text: "raw/"
   end
 
+  test "materials hide a file's sidecars but keep orphans" do
+    make_project
+    %w[clip.mp4 clip.mp4.source.json clip.mp4.note.md orphan.mp4.source.json].each { |f| File.write(File.join(@kb_dir, "Ferment", f), "x") }
+
+    get kb_project_path(src: 0, path: "Ferment")
+    assert_select ".kbp-mat", 2
+    assert_select ".kbp-mat", text: /clip\.mp4\.(source\.json|note\.md)/, count: 0
+    assert_select ".kbp-mat", text: /orphan\.mp4\.source\.json/
+  end
+
   test "materials endpoint sets, clears and rejects bad names" do
     make_project
     File.write(File.join(@kb_dir, "Ferment/a.md"), "x")
@@ -216,7 +226,8 @@ class KbProjectsTest < ActionDispatch::IntegrationTest
     FileUtils.mkdir_p(File.join(@kb_dir, "Ferment/sub"))
     File.write(File.join(@kb_dir, "Ferment/sub/f.txt"), "")
     project.update_material!("A.MD", role: "output", note: "n")
-    entries = KbController.new.send(:project_entries, project)
+    controller = KbController.new.tap { |c| c.instance_variable_set(:@user, @user) }
+    entries = controller.send(:project_entries, project)
     file = entries.find { |e| e[:name] == "A.MD" }
     assert_equal({ dir: false, ext: "md", size: 3, count: nil, role: "output", stage: "", note: "n", rel: "Ferment/A.MD" },
                  file.slice(:dir, :ext, :size, :count, :role, :stage, :note, :rel))
@@ -770,5 +781,18 @@ class KbProjectsTest < ActionDispatch::IntegrationTest
     assert_equal true, rows["Ferment"]["locked"]
   ensure
     FileUtils.rm_rf(other)
+  end
+
+  test "materials show a New badge for an unopened download until it is opened" do
+    make_project
+    File.write(File.join(@kb_dir, "Ferment", "clip.mp4"), "x")
+    dl = @user.kb_downloads.create!(url: "https://x.com/c", source_index: 0, source_path: @kb_dir, dir: "Ferment",
+                                    filename: "clip.mp4", status: "done")
+    get kb_project_path(src: 0, path: "Ferment")
+    assert_select ".kbp-mat .kbp-new", text: /New/
+
+    dl.update!(opened_at: Time.current)
+    get kb_project_path(src: 0, path: "Ferment")
+    assert_select ".kbp-new", count: 0
   end
 end
