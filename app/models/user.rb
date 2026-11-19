@@ -726,6 +726,16 @@ has_many :media_digests, dependent: :destroy
     save
   end
 
+  def privacy_gaze_enabled?
+    ActiveModel::Type::Boolean.new.cast(settings&.dig("privacy_gaze", "enabled")) == true
+  end
+
+  def update_privacy_gaze_settings(params)
+    self.settings ||= {}
+    self.settings["privacy_gaze"] = { "enabled" => ActiveModel::Type::Boolean.new.cast(params.fetch("enabled", false)) == true }
+    save
+  end
+
   def mobile_uplink_settings
     DEFAULT_MOBILE_UPLINK_SETTINGS.merge(settings&.dig("mobile_uplink") || {})
   end

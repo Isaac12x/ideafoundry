@@ -103,6 +103,44 @@
         <% end %>
       </section>
 
+      <section class="tab-toggle-section">
+        <header class="tab-toggle-section__header">
+          <h3>Privacy</h3>
+          <p>Use the camera to notice when you look away. Video never leaves this device.</p>
+        </header>
+
+        <%= form_with url: settings_security_privacy_path, method: :patch, local: true, class: "typing-settings-form", data: { controller: "settings-autosave", action: "change->settings-autosave#toggleChanged" } do %>
+          <%= hidden_field_tag "privacy_gaze[enabled]", "0" %>
+          <label class="tab-toggle" for="privacy_gaze_enabled">
+            <div class="tab-toggle__text">
+              <span class="tab-toggle__name">Gaze privacy haze</span>
+              <span class="tab-toggle__description">When you look away from the screen, the app fogs over. It clears when you look back. If the camera is unavailable the haze stays on.</span>
+            </div>
+            <span class="tab-toggle__switch">
+              <%= check_box_tag "privacy_gaze[enabled]", "1", @user.privacy_gaze_enabled?, id: "privacy_gaze_enabled", class: "tab-toggle__input" %>
+              <span class="tab-toggle__track" aria-hidden="true">
+                <span class="tab-toggle__thumb"></span>
+              </span>
+            </span>
+          </label>
+        <% end %>
+
+        <div class="privacy-calibrate" data-controller="privacy-gaze-calibrate">
+          <div class="privacy-calibrate__row">
+            <div>
+              <span class="typing-settings-status__label">Calibration</span>
+              <strong data-privacy-gaze-calibrate-target="status">Not calibrated</strong>
+              <p data-privacy-gaze-calibrate-target="message" aria-live="polite">Look at the middle of the screen while it runs. This device only.</p>
+            </div>
+            <button type="button" class="btn btn-secondary btn-sm" data-privacy-gaze-calibrate-target="button" data-action="privacy-gaze-calibrate#toggle">Calibrate</button>
+          </div>
+          <div class="privacy-calibrate__stage">
+            <video class="privacy-calibrate__preview" data-privacy-gaze-calibrate-target="preview" muted playsinline hidden></video>
+            <span class="privacy-calibrate__live" data-privacy-gaze-calibrate-target="live" aria-live="off"></span>
+          </div>
+        </div>
+      </section>
+
       <section class="tab-toggle-section security-database-encryption">
         <header class="tab-toggle-section__header">
           <h3>Database Encryption</h3>
