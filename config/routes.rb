@@ -208,6 +208,7 @@ Rails.application.routes.draw do
   end
   get "settings/security", to: "settings#security"
   patch "settings/security", to: "settings#update_security"
+patch "settings/security/privacy", to: "settings#update_privacy", as: :settings_security_privacy
   post "settings/security/encrypt-database", to: "settings#encrypt_database", as: :settings_security_encrypt_database
   get "settings/idea-work-tokens", to: "settings#idea_work_tokens", as: :settings_idea_work_tokens
   patch "settings/idea-work-tokens", to: "settings#update_idea_work_tokens"

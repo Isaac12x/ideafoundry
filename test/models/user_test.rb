@@ -110,6 +110,17 @@ class UserTest < ActiveSupport::TestCase
     assert_nil user.authenticator_app_secret
   end
 
+  test "privacy gaze settings default off and cast enabled" do
+    user = users(:one)
+    refute user.privacy_gaze_enabled?
+
+    assert user.update_privacy_gaze_settings("enabled" => "1")
+    assert user.reload.privacy_gaze_enabled?
+
+    assert user.update_privacy_gaze_settings("enabled" => "0")
+    refute user.reload.privacy_gaze_enabled?
+  end
+
   test "mobile uplink settings generate and clear a connection id" do
     user = users(:one)
 

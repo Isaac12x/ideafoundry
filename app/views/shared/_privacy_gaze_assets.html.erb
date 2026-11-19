@@ -1,0 +1,2 @@
+<%# Local-only URLs for the lazy gaze bundle (mediapipe wasm + model); read by privacy_gaze controllers. %>
+<meta name="privacy-gaze-assets" content="<%= { bundle: asset_path('privacy_gaze/index.js'), wasmLoader: asset_path('privacy_gaze/vision_wasm_internal.js'), wasm: asset_path('privacy_gaze/vision_wasm_internal.wasm'), model: asset_path('privacy_gaze/face_landmarker.task') }.to_json %>">
