@@ -301,6 +301,32 @@ class SettingsControllerTest < ActionDispatch::IntegrationTest
     assert_match(/Mobile Uplink/, response.body)
   end
 
+  test "PATCH settings/security/privacy toggles privacy gaze and the layout loads the controller" do
+    patch settings_security_privacy_path, params: { privacy_gaze: { enabled: "1" } }
+    assert_redirected_to settings_security_path
+    assert @user.reload.privacy_gaze_enabled?
+
+    get settings_path
+    assert_select "body[data-controller~=?]", "privacy-gaze"
+    assert_select "body[data-privacy-gaze-settings-url-value=?]", settings_security_path
+
+    patch settings_security_privacy_path, params: { privacy_gaze: { enabled: "0" } }, as: :json
+    assert_response :success
+    assert_equal({ "saved" => true, "enabled" => false }, response.parsed_body)
+    refute @user.reload.privacy_gaze_enabled?
+
+    get settings_path
+    assert_select "body[data-controller~=?]", "privacy-gaze", count: 0
+  end
+
+  test "PATCH settings/security does not clobber privacy gaze" do
+    @user.update_privacy_gaze_settings("enabled" => "1")
+
+    patch settings_security_path, params: { typing_lock: { enabled: "0", lock_after_minutes: "5" } }
+
+    assert @user.reload.privacy_gaze_enabled?
+  end
+
   test "PATCH settings/security enabling mobile uplink renders install and pairing QR setup" do
     patch settings_security_path, params: {
       typing_lock: {

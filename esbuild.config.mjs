@@ -259,7 +259,22 @@ const builds = [
     splitting: false,
     external: ["path", "fs", "module", "canvas", "@napi-rs/canvas"], // node-only code paths (occt-import-js, pdf.js)
   },
+  {
+    // Lazy-loaded by privacy_gaze controllers (mediapipe FaceLandmarker); wasm + model are copied below.
+    ...common,
+    entryPoints: ["app/javascript/privacy_gaze/index.js"],
+    outdir: "app/assets/builds/privacy_gaze",
+    minify: !dev,
+    splitting: false,
+  },
 ];
+
+// mediapipe loads its wasm and model by URL (strictly local, no CDN), so they ship as plain assets next to the bundle.
+fs.mkdirSync("app/assets/builds/privacy_gaze", { recursive: true });
+for (const f of ["vision_wasm_internal.js", "vision_wasm_internal.wasm"]) {
+  fs.copyFileSync(path.join("node_modules", "@mediapipe", "tasks-vision", "wasm", f), path.join("app/assets/builds/privacy_gaze", f));
+}
+fs.copyFileSync("vendor/mediapipe/face_landmarker.task", "app/assets/builds/privacy_gaze/face_landmarker.task");
 
 // occt-import-js fetches its wasm by URL (locateFile), so it ships as a plain asset next to the bundle.
 fs.mkdirSync("app/assets/builds/kb_viewers", { recursive: true });

@@ -254,6 +254,21 @@ class SettingsController < ApplicationController
     redirect_to local_agent_recommendation_return_path, notice: "Recommendation dismissed."
   end
 
+  def update_privacy
+    if @user.update_privacy_gaze_settings(privacy_gaze_params)
+      ActivityLog.record_settings!(user: @user, setting: "Privacy")
+      respond_to do |format|
+        format.html { redirect_to settings_security_path, notice: "Privacy settings updated." }
+        format.json { render json: { saved: true, enabled: @user.privacy_gaze_enabled? } }
+      end
+    else
+      respond_to do |format|
+        format.html { redirect_to settings_security_path, alert: "Failed to update privacy settings." }
+        format.json { render json: { saved: false }, status: :unprocessable_entity }
+      end
+    end
+  end
+
   def update_security
     was_voice_id_configured = @user.voice_id_configured?
     typing_lock_updated = @user.update_typing_lock_settings(typing_lock_params)
@@ -841,6 +856,10 @@ class SettingsController < ApplicationController
 
   def voice_id_params
     params.fetch(:voice_id, {}).permit(:enabled)
+  end
+
+  def privacy_gaze_params
+    params.fetch(:privacy_gaze, {}).permit(:enabled)
   end
 
   def mobile_uplink_params
