@@ -125,7 +125,7 @@
           </label>
         <% end %>
 
-        <div class="privacy-calibrate" data-controller="privacy-gaze-calibrate">
+        <div class="privacy-calibrate" data-controller="privacy-gaze-calibrate" data-privacy-gaze-calibrate-face-url-value="<%= settings_security_privacy_face_path %>">
           <div class="privacy-calibrate__row">
             <div>
               <span class="typing-settings-status__label">Calibration</span>
@@ -137,6 +137,36 @@
           <div class="privacy-calibrate__stage">
             <video class="privacy-calibrate__preview" data-privacy-gaze-calibrate-target="preview" muted playsinline hidden></video>
             <span class="privacy-calibrate__live" data-privacy-gaze-calibrate-target="live" aria-live="off"></span>
+          </div>
+
+          <div class="privacy-enroll">
+            <div class="privacy-calibrate__row">
+              <div>
+                <span class="typing-settings-status__label">Face ID</span>
+                <strong data-privacy-gaze-calibrate-target="enrollStatus">Checking…</strong>
+                <p data-privacy-gaze-calibrate-target="enrollMessage" aria-live="polite">Only you clear the haze. Anyone else looking at the screen fogs it, even with you there. Your face data never leaves your account.</p>
+              </div>
+              <div class="privacy-enroll__actions">
+                <button type="button" class="btn btn-secondary btn-sm" data-privacy-gaze-calibrate-target="enrollButton" data-action="privacy-gaze-calibrate#enroll">Enroll face</button>
+                <button type="button" class="btn btn-secondary btn-sm" data-privacy-gaze-calibrate-target="removeButton" data-action="privacy-gaze-calibrate#removeFace" hidden>Remove face ID</button>
+              </div>
+            </div>
+            <div class="privacy-enroll__stage" data-privacy-gaze-calibrate-target="enrollStage" data-ready="false" hidden>
+              <div class="privacy-enroll__frame">
+                <video data-privacy-gaze-calibrate-target="enrollPreview" muted playsinline></video>
+                <span class="privacy-enroll__oval" aria-hidden="true"></span>
+              </div>
+              <div class="privacy-enroll__side">
+                <p class="privacy-enroll__guide">Look at the screen. Both ears visible. No mask, scarf or hand over your face.</p>
+                <ul class="privacy-enroll__checks" aria-label="Enrollment checks">
+                  <li data-privacy-gaze-calibrate-target="check" data-check="oneFace" data-ok="false">One face</li>
+                  <li data-privacy-gaze-calibrate-target="check" data-check="ears" data-ok="false">Ears visible</li>
+                  <li data-privacy-gaze-calibrate-target="check" data-check="real" data-ok="false">Real person</li>
+                  <li data-privacy-gaze-calibrate-target="check" data-check="camera" data-ok="false">Camera ok</li>
+                </ul>
+                <div class="privacy-enroll__steps" data-privacy-gaze-calibrate-target="enrollSteps" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+              </div>
+            </div>
           </div>
         </div>
       </section>

@@ -1506,6 +1506,11 @@
     d3-selection "^3.0.0"
     d3-transition "^3.0.1"
 
+"@vladmandic/human@3.3.6":
+  version "3.3.6"
+  resolved "https://registry.yarnpkg.com/@vladmandic/human/-/human-3.3.6.tgz#74397dcda15109f52db36de098de823b8497ddc5"
+  integrity sha512-Nr5mPfq1gQ+uKeXY5uM3Fj8UxvF5CEh2s6txM5wRThqaW0mF9huooOuZSrT8hhGho0hGaXLFdAwfD/2+teCv6A==
+
 "@xmldom/xmldom@^0.7.5":
   version "0.7.13"
   resolved "https://registry.yarnpkg.com/@xmldom/xmldom/-/xmldom-0.7.13.tgz#ff34942667a4e19a9f4a0996a76814daac364cf3"
