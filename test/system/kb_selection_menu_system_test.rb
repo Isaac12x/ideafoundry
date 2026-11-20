@@ -133,9 +133,9 @@ class KbSelectionMenuSystemTest < ApplicationSystemTestCase
     end
     question = @user.agent_events.where(event_type: "question").last
     answer!(question, "First paragraph.\n\nSecond paragraph <b>escaped</b>.")
-    assert_selector "#ask_agent_sidebar .ask-agent-message--agent p", text: "First paragraph.", wait: 10
+    assert_selector "#ask_agent_sidebar .ask-agent-message--agent", text: "First paragraph.", wait: 10
     assert_no_selector "#ask_agent_sidebar .ask-agent-message--pending"
-    assert_includes find("#ask_agent_sidebar .ask-agent-message--agent p").text, "<b>escaped</b>"
+    assert_includes find("#ask_agent_sidebar .ask-agent-message--agent").text, "Second paragraph escaped." # markdown-rendered, HTML sanitized
     assert_equal "same-document", page.evaluate_script("window.__page"), "the page reloaded"
   end
 
@@ -152,7 +152,7 @@ class KbSelectionMenuSystemTest < ApplicationSystemTestCase
     assert_equal "", find("#global_agent_question_body").value
     assert_equal "global_agent_question_body", page.evaluate_script("document.activeElement.id")
     answer!(@user.agent_events.where(event_type: "question").last, "Sugars to acid.")
-    assert_selector "#ask_agent_sidebar .ask-agent-message--agent p", text: "Sugars to acid.", wait: 10
+    assert_selector "#ask_agent_sidebar .ask-agent-message--agent", text: "Sugars to acid.", wait: 10
     assert_equal "same-document", page.evaluate_script("window.__page"), "the page reloaded"
   end
 
@@ -166,7 +166,7 @@ class KbSelectionMenuSystemTest < ApplicationSystemTestCase
       assert_selector "#ask_agent_sidebar .ask-agent-message--pending", wait: 8
     end
     assert_selector "#ask_agent_sidebar .ask-agent-sidebar__status", text: "Not running"
-    assert_selector "#ask_agent_sidebar .ask-agent-sidebar__notice a[href='#{settings_local_agent_path}']"
+    assert_selector "#ask_agent_sidebar .ask-agent-sidebar__status-action[href='#{settings_local_agent_path}']"
     assert_equal 1, @user.agent_events.where(event_type: "question").count
   end
 

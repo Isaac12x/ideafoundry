@@ -9,4 +9,9 @@ class AgentEvent < ApplicationRecord
   validates :event_type, presence: true
 
   scope :recent, -> { order(created_at: :desc) }
+
+  # A question as the agent should read it: the optional idea context (kept out of the visible thread) then the user's words.
+  def question_prompt
+    [ payload&.dig("context").presence, payload&.dig("question").presence || summary ].compact.join("\n\n")
+  end
 end

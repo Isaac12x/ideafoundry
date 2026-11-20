@@ -79,7 +79,7 @@ document.addEventListener("input", (event) => {
 // One-row auto-growing textareas stand in for single-line text inputs: Enter submits (Shift+Enter breaks the line).
 document.addEventListener("keydown", (event) => {
   const field = event.target;
-  if (event.key !== "Enter" || event.shiftKey || event.isComposing || !field.matches?.("textarea[data-enter-submit]")) return;
+  if (event.key !== "Enter" || event.shiftKey || event.isComposing || event.defaultPrevented || !field.matches?.("textarea[data-enter-submit]")) return;
   event.preventDefault();
   field.form?.requestSubmit();
 });

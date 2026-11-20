@@ -2,9 +2,9 @@ import { test } from "node:test"
 import assert from "node:assert/strict"
 import {
   isLooking, margins, marginScale, pointMedian, buildEnvelope, createHysteresis, extractFeatures,
-  loadEnvelope, saveEnvelope, hasEnvelope, DEFAULT_ENVELOPE, DEFAULT_AWAY_MS, DEFAULT_CLEAR_MS, CALIBRATION_POINTS,
+  loadEnvelope, saveEnvelope, hasEnvelope, DEFAULT_ENVELOPE, screenKey, loadProfiles, renameProfile, deleteProfile, defaultScreenName, DEFAULT_AWAY_MS, DEFAULT_CLEAR_MS, CALIBRATION_POINTS,
 } from "../../app/javascript/privacy_gaze/gaze_state.js"
-import { devtoolsOpen, devtoolsKey, windowGap, hazeVars, indicatorState, indicatorTitle, paintIndicator } from "../../app/javascript/lib/privacy_guard.mjs"
+import { devtoolsOpen, devtoolsKey, windowGap, hazeVars, hazeOffAllowed } from "../../app/javascript/lib/privacy_guard.mjs"
 import { privacyToggleAllowed, DEFAULT_BINDINGS, matches, platformBinding, binding } from "../../app/javascript/lib/shortcut_bindings.mjs"
 
 const f = (o = {}) => ({ yaw: 0, pitch: 0, h: 0, v: 0, ...o })
@@ -118,8 +118,70 @@ test("envelope storage survives a throwing localStorage and rejects junk", () =>
   saveEnvelope(e, mem)
   assert.equal(hasEnvelope(mem), true)
   assert.equal(loadEnvelope(mem).min.yaw, -20)
-  mem.d["privacy-gaze:envelope"] = '{"min":1}'
+  mem.d["privacy-gaze:profiles"] = '{"profiles":[{"key":"unknown","envelope":{"min":1}}]}'
   assert.equal(loadEnvelope(mem), DEFAULT_ENVELOPE)
+})
+
+const mem = () => ({ d: {}, getItem(k) { return this.d[k] ?? null }, setItem(k, v) { this.d[k] = v }, removeItem(k) { delete this.d[k] } })
+const laptop = { width: 1512, height: 982, availLeft: 0, availTop: 38, isInternal: true }
+const above = { width: 2560, height: 1440, availLeft: 0, availTop: -1440 }
+const beside = { ...above, availLeft: 1512, availTop: 0 }
+
+test("screenKey: size + position; a monitor above differs from the same one beside; no screen = unknown", () => {
+  assert.equal(screenKey(laptop), "1512x982@0,38")
+  assert.notEqual(screenKey(above), screenKey(beside))
+  assert.notEqual(screenKey(above), screenKey(laptop))
+  assert.equal(screenKey({ ...laptop, devicePixelRatio: 3 }), screenKey(laptop)) // zoom/dpr must not change the identity
+  assert.equal(screenKey({ width: 800, height: 600 }), "800x600@0,0") // no availLeft/availTop (Safari/Firefox)
+  assert.equal(screenKey(undefined), "unknown")
+  assert.equal(screenKey({}), "unknown")
+  assert.match(defaultScreenName(laptop), /built-in/)
+  assert.equal(defaultScreenName(above, "LG UltraFine"), "LG UltraFine")
+})
+
+test("profiles: one per screen, auto-selected by screen, recalibrate replaces, default for uncalibrated", () => {
+  const st = mem()
+  const e1 = buildEnvelope(perPoint)
+  const e2 = { ...e1, min: { ...e1.min, yaw: -40 } }
+  assert.equal(hasEnvelope(st, laptop), false)
+  saveEnvelope(e1, st, laptop)
+  assert.equal(hasEnvelope(st, laptop), true)
+  assert.equal(hasEnvelope(st, above), false) // the other screen is uncalibrated: prompt + defaults
+  assert.equal(loadEnvelope(st, above), DEFAULT_ENVELOPE)
+  saveEnvelope(e2, st, above, "Desk monitor")
+  assert.equal(loadEnvelope(st, above).min.yaw, -40)
+  assert.equal(loadEnvelope(st, laptop).min.yaw, -20) // untouched
+  assert.deepEqual(loadProfiles(st, laptop).map((p) => p.name), ["1512\u00d7982 screen (built-in)", "Desk monitor"])
+  saveEnvelope(e1, st, above) // recalibrate keeps the (renamed) name, replaces the envelope
+  assert.equal(loadProfiles(st, laptop).length, 2)
+  assert.equal(loadEnvelope(st, above).min.yaw, -20)
+  assert.equal(loadProfiles(st, laptop)[1].name, "Desk monitor")
+})
+
+test("profiles: rename (trimmed, non-empty) and delete", () => {
+  const st = mem()
+  saveEnvelope(buildEnvelope(perPoint), st, laptop)
+  const key = screenKey(laptop)
+  assert.equal(renameProfile(key, "  Laptop  ", st), true)
+  assert.equal(loadProfiles(st, laptop)[0].name, "Laptop")
+  assert.equal(renameProfile(key, "   ", st), false)
+  assert.equal(loadProfiles(st, laptop)[0].name, "Laptop")
+  deleteProfile(key, st)
+  assert.equal(hasEnvelope(st, laptop), false)
+  assert.deepEqual(loadProfiles(st, laptop), [])
+})
+
+test("profiles: the legacy single envelope becomes the first profile (of the current screen) and is removed", () => {
+  const st = mem()
+  st.d["privacy-gaze:envelope"] = JSON.stringify(buildEnvelope(perPoint))
+  assert.equal(hasEnvelope(st, laptop), true)
+  assert.equal(st.d["privacy-gaze:envelope"], undefined)
+  assert.equal(loadProfiles(st, above).length, 1)
+  assert.equal(hasEnvelope(st, above), false)
+  assert.equal(loadEnvelope(st, laptop).min.yaw, -20)
+  const junk = mem()
+  junk.d["privacy-gaze:envelope"] = '{"min":1}'
+  assert.deepEqual(loadProfiles(junk, laptop), [])
 })
 
 // ---- devtools + shortcut guards ----
@@ -155,12 +217,13 @@ test("devtoolsKey: F12, Ctrl/Cmd+Shift+I/J/C, Cmd+Alt+I/J/C (by code), Ctrl/Cmd+
   assert.equal(k({ key: "u", code: "KeyU" }), false)
 })
 
-test("privacy shortcut: ON always allowed; OFF refused while hazed", () => {
-  assert.equal(privacyToggleAllowed(false, "hazy"), true)
-  assert.equal(privacyToggleAllowed(false, "clear"), true)
-  assert.equal(privacyToggleAllowed(true, "hazy"), false)
-  assert.equal(privacyToggleAllowed(true, "clear"), true)
-  assert.equal(privacyToggleAllowed(true, undefined), true) // controller not running
+test("privacy shortcut: ON always allowed; OFF only while the owner is verified looking", () => {
+  assert.equal(privacyToggleAllowed(false, undefined), true)
+  assert.equal(privacyToggleAllowed(false, "false"), true)
+  assert.equal(privacyToggleAllowed(true, "true"), true)
+  assert.equal(privacyToggleAllowed(true, true), true)
+  assert.equal(privacyToggleAllowed(true, "false"), false) // hazed / away / unknown face
+  assert.equal(privacyToggleAllowed(true, undefined), false) // no reading (inactive page): fail closed
 })
 
 test("privacy_haze: Cmd+Shift+G on Mac (native opt-out), Alt+Shift+G elsewhere", () => {
@@ -188,19 +251,6 @@ test("hazeVars: monotonic, 1 = light veil, 10 = near invisible, bad input = defa
   assert.deepEqual(hazeVars(undefined), hazeVars(6))
   assert.deepEqual(hazeVars(99), hazeVars(10))
   assert.deepEqual(hazeVars(0), hazeVars(6))
-})
-
-test("indicator state + title + paint", () => {
-  assert.equal(indicatorState(false, true), "off")
-  assert.equal(indicatorState(true, false), "watching")
-  assert.equal(indicatorState(true, true), "hazed")
-  assert.match(indicatorTitle("hazed", "Alt+Shift+G"), /Look at the screen.*Alt\+Shift\+G/)
-  const attrs = {}
-  const el = { dataset: {}, title: "", setAttribute: (k, v) => { attrs[k] = v } }
-  paintIndicator(el, "watching", "X")
-  assert.equal(el.dataset.state, "watching")
-  assert.equal(attrs["aria-pressed"], "true")
-  paintIndicator(null, "off")
 })
 
 // ---- identity + camera health ----
@@ -368,4 +418,10 @@ test("guard: tuning (awayMs) applies to the gaze delay", () => {
   g.setTuning({ awayMs: 1000 })
   g.gaze([mp(ME, { yaw: 80 })], 4080)
   assert.equal(g.decision(4080).reason, "away")
+})
+
+test("haze-off allowed when clear, or when the camera/face ID cannot work", () => {
+  assert.equal(hazeOffAllowed(false, null), true)
+  for (const r of ["error", "frozen", "dark", "not_enrolled"]) assert.equal(hazeOffAllowed(true, r), true)
+  for (const r of ["away", "stale", "not_owner", "other_looking"]) assert.equal(hazeOffAllowed(true, r), false)
 })

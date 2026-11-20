@@ -106,6 +106,9 @@ module Kb
 
     def text_length = article&.text.to_s.squish.length
 
+    # Plain reader-mode text, cut to `limit` chars (requirement imports keep this, not the page).
+    def excerpt(limit) = article&.text.to_s.squish.truncate(limit, separator: " ")
+
     def article? = text_length >= MIN_ARTICLE_CHARS
 
     # Hard block (401/402/403) or a thin page that says "subscribe".

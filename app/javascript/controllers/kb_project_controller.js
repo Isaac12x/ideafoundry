@@ -162,6 +162,7 @@ export default class extends Controller {
   findingKey(event) {
     const field = event.currentTarget
     if (event.key === "Enter" && !event.shiftKey && !event.isComposing) {
+      if (this.element.dataset.mentionOpen) return // Enter picks the highlighted @ result
       event.preventDefault()
       if (field.value.trim()) field.form.requestSubmit()
     } else if (event.key === "Escape" && field.form.dataset.cancelable) {
@@ -200,6 +201,51 @@ export default class extends Controller {
   // The server clears the unseen flag when the file opens; drop the badge at once.
   markSeen(event) {
     event.currentTarget.parentElement.querySelector(".kbp-new")?.remove()
+  }
+
+  // ---- Drawings in text: the idea-drawings controller (same element) runs the Excalidraw dialog ----
+
+  trackField(event) {
+    if (event.target.matches?.("textarea, [data-mention]")) this.field = event.target
+  }
+
+  drawings() {
+    return this.application.getControllerForElementAndIdentifier(this.element, "idea-drawings")
+  }
+
+  // "Draw" next to a form's text: the drawing lands at the caret of that form's last-used field.
+  draw(event) {
+    const form = event.currentTarget.closest("form")
+    const field = this.field && form.contains(this.field) ? this.field : form.querySelector("textarea")
+    if (!field) return
+    this.drawTarget = { field, at: field.selectionStart ?? field.value.length }
+    this.placed = new Set()
+    this.drawings().open(event)
+  }
+
+  // Clicking a drawing in rendered text reopens it for editing.
+  openDrawing(event) {
+    const id = event.target.matches?.("img") && event.target.getAttribute("src")?.match(/\/projects\/drawings\/([0-9a-f]{8})\.png/)?.[1]
+    if (!id) return
+    this.drawTarget = null
+    this.drawings().edit({ preventDefault() {}, currentTarget: { dataset: { drawingId: id, drawingTitle: event.target.alt } } })
+  }
+
+  // Every autosave lands here: the first one of a new drawing inserts it, later ones refresh the shown image.
+  drawingSaved(event) {
+    const { id, png_url: url } = event.detail
+    if (!url) return
+    const target = this.drawTarget
+    if (target?.field.isConnected && !this.placed.has(id)) {
+      this.placed.add(id)
+      const { field } = target
+      const text = `\n![Drawing](${url})\n`
+      const at = Math.min(target.at, field.value.length)
+      field.setRangeText(text, at, at, "end")
+      field.dispatchEvent(new Event("input", { bubbles: true }))
+      return
+    }
+    this.element.querySelectorAll(`img[src*="/drawings/${id}.png"]`).forEach((img) => { img.src = `${url}&t=${Date.now()}` })
   }
 
   submit(event) {

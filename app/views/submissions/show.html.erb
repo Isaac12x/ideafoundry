@@ -72,7 +72,7 @@
           <div data-tabs-target="panel" data-tab-panel="content" class="tab-panel">
             <% if @submission.body.present? %>
               <div class="submission-body-content">
-                <%= simple_format(@submission.body) %>
+                <%= render_prose(@submission.body) %>
               </div>
             <% else %>
               <div class="empty-state-small">

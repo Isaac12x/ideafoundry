@@ -239,10 +239,19 @@ class TypingLocksControllerTest < ActionDispatch::IntegrationTest
     post lock_typing_lock_path, params: { return_to: ideas_path }
 
     assert_redirected_to root_path
-    assert_equal '"cache"', response.headers["Clear-Site-Data"]
+    assert_nil response.headers["Clear-Site-Data"]
 
     get ideas_path
     assert_redirected_to root_path
+  end
+
+  test "clear-cache works from the lock screen and sends Clear-Site-Data" do
+    @user.store_typing_fingerprint!(fingerprint_for(TypingTextLibrary.unlock_text("spark-gap"), hold: 91, flight: 41))
+
+    post clear_cache_typing_lock_path
+
+    assert_response :no_content
+    assert_equal '"cache"', response.headers["Clear-Site-Data"]
   end
 
   test "unlocked pages expose a manual lock button and keyboard shortcut" do

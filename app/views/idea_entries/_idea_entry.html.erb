@@ -10,7 +10,7 @@
       <% end %>
     </div>
     <% if idea_entry.description.present? %>
-      <div class="idea-entry-description"><%= simple_format(idea_entry.description, {}, sanitize: true) %></div>
+      <div class="idea-entry-description"><%= render_prose(idea_entry.description) %></div>
     <% end %>
   </div>
   <div class="idea-entry-actions">

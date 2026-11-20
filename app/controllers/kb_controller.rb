@@ -36,6 +36,7 @@ class KbController < ApplicationController
   )
 
   before_action :set_user
+  before_action :unescape_file_param
   # Only the KB section page is feature-gated; file/tree/serve endpoints also
   # back the notes bar and stay available.
   before_action -> { require_feature(:kb) }, only: [ :index ]
@@ -43,7 +44,7 @@ class KbController < ApplicationController
 
   def index
     # Last thing viewed was a project page: reopen that, not a stale file.
-    if params[:file].blank? && params[:project].blank? && (project = remembered_project)
+    if params[:file].blank? && params[:project].blank? && params[:folder].blank? && (project = remembered_project)
       return redirect_to kb_path(src: project.first, project: project.last)
     end
 
@@ -812,6 +813,19 @@ class KbController < ApplicationController
 
   def kb_sources
     KbSource.list(@user)
+  end
+
+  # A link that percent-encoded the path before it was encoded again ("research%2FNote.mp4") names no file: when the
+  # literal path is missing but its once-unescaped form exists, use that.
+  def unescape_file_param
+    rel = params[:file]
+    return unless rel.is_a?(String) && rel.match?(/%[0-9A-Fa-f]{2}/)
+
+    decoded = CGI.unescape(rel)
+    return unless decoded != rel && resolve_kb_path(params[:src].to_i, rel, extensions: :any).nil? &&
+                  resolve_kb_path(params[:src].to_i, decoded, extensions: :any)
+
+    params[:file] = decoded
   end
 
   def initial_document_selection

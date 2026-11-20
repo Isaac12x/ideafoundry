@@ -10,7 +10,7 @@ class FactsController < ApplicationController
       end
     else
       respond_to do |format|
-        format.turbo_stream { render turbo_stream: turbo_stream.replace("fact_form", partial: "facts/form", locals: { error: @fact.errors.full_messages.first }) }
+        format.turbo_stream { render turbo_stream: turbo_stream.replace("fact_form", partial: "facts/form", locals: { error: @fact.errors.full_messages.first, draft: @fact.body, refocus: true }) }
         format.html { redirect_to kb_path(tab: "facts") }
       end
     end

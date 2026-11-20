@@ -1,10 +1,19 @@
 <div class="licensors-tab" id="licensors_tab_<%= idea.id %>">
-  <div class="licensors-tab__intro">
-    <p>Potential licensors for this idea. Advance stages and log contacts here, or manage the full pipeline in the
-      <%= link_to "Licensing CRM →", licensing_crm_path, class: "licensors-crm-link" %>.</p>
-    <p><%= link_to "Import from a spreadsheet →", new_idea_licensor_import_path(idea), class: "licensors-crm-link" %>
-      Map a CSV or Excel file's columns onto these fields.</p>
-  </div>
+  <%= form_with model: idea, url: licensing_notes_idea_path(idea), method: :patch, class: "licensing-notes",
+        data: { controller: "auto-submit" } do |f| %>
+    <label class="licensing-notes__label" for="licensing_notes_<%= idea.id %>">Where &amp; to whom</label>
+    <%= f.text_area :licensing_notes, id: "licensing_notes_#{idea.id}", rows: 2, class: "idea-entry-input idea-entry-textarea",
+          placeholder: "Industries, trade shows, people you know, rough ideas. Saves when you click away.",
+          data: { action: "blur->auto-submit#go" } %>
+  <% end %>
+
+  <header class="licensors-head">
+    <h3>Prospects<% if idea.licensors.any? %> <span class="licensors-head__count"><%= idea.licensors.count %></span><% end %></h3>
+    <nav class="licensors-head__links" aria-label="Licensing tools">
+      <%= link_to "Import spreadsheet", new_idea_licensor_import_path(idea), class: "licensors-crm-link" %>
+      <%= link_to "Licensing CRM →", licensing_crm_path, class: "licensors-crm-link" %>
+    </nav>
+  </header>
 
   <%= render "licensors/form", idea: idea, licensor: (local_assigns[:licensor] || Licensor.new) %>
 
@@ -16,8 +25,8 @@
       <% end %>
     <% else %>
       <div class="licensors-empty">
-        <p>No potential licensors yet</p>
-        <span class="notes-empty-hint">Add your first licensor above</span>
+        <p>No prospects yet</p>
+        <span class="notes-empty-hint">Add a company or person who might license this. Log contacts and move them through stages as it goes.</span>
       </div>
     <% end %>
   </div>
