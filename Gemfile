@@ -116,7 +116,7 @@ end
 gem "redcarpet", "~> 3.6"
 
 # Read .xlsx spreadsheets for KB rendering (converted to HTML tables)
-gem "roo", "~> 3.0"
+gem "roo", "~> 4.0"
 
 gem "rack-attack"
 
