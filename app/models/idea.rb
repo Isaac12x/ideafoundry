@@ -78,6 +78,7 @@ has_many :kb_links, class_name: "IdeaKbLink", dependent: :destroy
   after_update_commit :record_automatic_history_version, if: :automatic_history_version_needed?
   after_commit :broadcast_graph_updated, on: :update, if: :title_previously_changed?
   after_commit :track_github_repository_later, on: [ :create, :update ], unless: :draft?
+  after_commit :semantic_index_later, if: -> { SemanticSearch.enabled? }
 
   # Scopes
   scope :active, -> { where.not(state: [ :rejected, :shipped ]).where(discarded_at: nil, draft: false) }
@@ -732,6 +733,11 @@ has_many :kb_links, class_name: "IdeaKbLink", dependent: :destroy
     changed
   end
 
+  # Text the palette's Similar / SemanticIndexJob matches on.
+  def search_text
+    [ title, title, tldr, description.to_plain_text, notes.map(&:body), topologies.map(&:name), themes.map(&:name) ].flatten.compact.join(" ")
+  end
+
   private
 
   def self.without_history_tracking
@@ -797,6 +803,10 @@ has_many :kb_links, class_name: "IdeaKbLink", dependent: :destroy
       action: "node_updated",
       node: { id: "i_#{id}", name: title }
     })
+  end
+
+  def semantic_index_later
+    SemanticIndexJob.perform_later(user_id, id)
   end
 
   def track_github_repository_later

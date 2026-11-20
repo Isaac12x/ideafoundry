@@ -89,6 +89,31 @@ class SearchControllerTest < ActionDispatch::IntegrationTest
     assert_equal "Zebrafish tracker", response.parsed_body["groups"].first["items"].first["title"]
   end
 
+  test "similar uses semantic hits when the sidecar answers" do
+    close = @user.ideas.create!(title: "Aquarium filter")
+    hits = [ { "id" => SemanticSearch.idea_id(@user.id, close.id), "score" => 0.87 } ]
+    seen = nil
+    search = ->(**kw) { seen = kw; hits }
+    SemanticSearch.stub(:enabled?, true) do
+      SemanticSearch.stub(:search, search) do
+        get global_search_path, params: { mode: "similar", idea: @idea.id }
+      end
+    end
+    item = response.parsed_body["groups"].first["items"].first
+    assert_equal [ "Aquarium filter", "87% match" ], [ item["title"], item["hint"] ]
+    assert_equal SemanticSearch.idea_id(@user.id, @idea.id), seen[:id]
+  end
+
+  test "similar falls back to TF-IDF when the sidecar returns nil" do
+    close = @user.ideas.create!(title: "Aquarium zebrafish filter", tldr: "tank filter for zebrafish")
+    SemanticSearch.stub(:enabled?, true) do
+      SemanticSearch.stub(:search, nil) do
+        get global_search_path, params: { mode: "similar", idea: @idea.id }
+      end
+    end
+    assert_equal close.title, response.parsed_body["groups"].first["items"].first["title"]
+  end
+
   test "deep finds words inside descriptions, notes and KB files, with snippets and terms" do
     use_kb_folder
     File.write(File.join(@kb_dir, "log.md"), "Long prelude. The axolotl regeneration experiment worked.")

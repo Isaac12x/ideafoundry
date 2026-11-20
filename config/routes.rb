@@ -195,7 +195,10 @@ Rails.application.routes.draw do
   patch "settings/display", to: "settings#update_display"
   get "settings/shortcuts", to: "settings#shortcuts", as: :settings_shortcuts
   patch "settings/shortcuts", to: "settings#update_shortcuts"
-  get "settings/scoring", to: "settings#scoring"
+  get "settings/services", to: "settings#services", as: :settings_services
+patch "settings/services", to: "settings#update_services"
+post "settings/services/test", to: "settings#test_service", as: :settings_services_test
+get "settings/scoring", to: "settings#scoring"
   patch "settings/scoring", to: "settings#update_scoring"
   get "settings/scoring/weights", to: "settings#get_scoring_weights"
   get "settings/email", to: "settings#email"

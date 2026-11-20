@@ -11,6 +11,13 @@ module ActiveSupport
     # Run tests in parallel with specified workers
     parallelize(workers: :number_of_processors)
 
+    # tmp/recovery_generation is a cross-process signal; a sibling worker bumping it makes this one drop its
+    # test-transaction connection mid-test (state vanishes). Give each worker its own file.
+    parallelize_setup do |worker|
+      path = Rails.root.join("tmp", "recovery_generation_test_#{worker}")
+      RecoverySecret.define_singleton_method(:generation_path) { path }
+    end
+
     # Setup all fixtures in test/fixtures/*.yml for all tests in alphabetical order.
     fixtures :all
 
