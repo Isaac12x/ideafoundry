@@ -1,5 +1,5 @@
 // Pure identity + camera-health rules (no DOM, no Human, no mediapipe). Fail closed everywhere.
-import { createHysteresis, isLooking } from "./gaze_state.js"
+import { createHysteresis, isLooking, DEFAULT_ENVELOPE, DEFAULT_SENSITIVITY, DEFAULT_AWAY_MS, DEFAULT_CLEAR_MS } from "./gaze_state.js"
 
 // ponytail: tuning knobs. MATCH_THRESHOLD is human.match.similarity (0..1, faceres) against the best enrolled sample;
 // raise if strangers get through, lower if the owner is rejected in bad light.
@@ -103,18 +103,29 @@ export function cameraStatus({ stats, frozen = false, muted = false } = {}) {
 // Owner's mediapipe face = the one nearest the last verified position; any other looking face hazes at once.
 const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y)
 
-export function createGuard({ baseline, enrolled = false, ttl = VERIFY_TTL_MS } = {}) {
-  const hyst = createHysteresis()
+// Identity failures caused by simply turning away (no face, ears hidden) get the same awayMs grace as a glance.
+// Anything that could be someone else (not_owner, spoof, ...) hazes at once.
+const SOFT = ["no_face", "ears"]
+
+export function createGuard({ envelope = DEFAULT_ENVELOPE, sensitivity = DEFAULT_SENSITIVITY, awayMs = DEFAULT_AWAY_MS, clearMs = DEFAULT_CLEAR_MS, enrolled = false, ttl = VERIFY_TTL_MS } = {}) {
+  const hyst = createHysteresis({ awayMs, clearMs })
   // camera unknown until the first health check, so start "stale" (quiet haze)
-  let verified = null, camera = { ok: false, reason: "stale" }, owner = null, othersLooking = false, now0 = 0
+  let verified = null, camera = { ok: false, reason: "stale" }, owner = null, othersLooking = false, now0 = 0, lastOk = null
+  const look = (f) => isLooking(f, envelope, sensitivity)
   return {
-    setBaseline(b) { baseline = b },
+    setCalibration(e) { envelope = e },
+    setTuning(t = {}) {
+      sensitivity = t.sensitivity ?? sensitivity
+      awayMs = t.awayMs ?? awayMs
+      hyst.setDelays(t.awayMs, t.clearMs)
+    },
     setEnrolled(e) { enrolled = e },
     setCamera(c) { camera = c },
-    reset() { hyst.reset(); verified = null; owner = null; othersLooking = false },
+    reset() { hyst.reset(); verified = null; owner = null; othersLooking = false; lastOk = null },
     // result of verifyOwner() at time `now`
     verify(r, now) {
       verified = { ...r, at: now }
+      if (r.ok) lastOk = now
       if (r.center) owner = r.center
     },
     // faces: [{ yaw, pitch, h, v, center }] from the fast mediapipe loop
@@ -123,8 +134,8 @@ export function createGuard({ baseline, enrolled = false, ttl = VERIFY_TTL_MS } 
       let mine = null, best = OWNER_TRACK_DIST
       if (owner) for (const f of faces) { const d = f.center ? dist(f.center, owner) : Infinity; if (d <= best) { best = d; mine = f } }
       if (mine?.center) owner = mine.center
-      othersLooking = faces.some((f) => f !== mine && isLooking(f, baseline))
-      hyst.step(!!mine && isLooking(mine, baseline), now)
+      othersLooking = faces.some((f) => f !== mine && look(f))
+      hyst.step(!!mine && look(mine), now)
     },
     decision(now = now0) {
       const d = (reason) => ({ hazy: true, reason })
@@ -132,7 +143,10 @@ export function createGuard({ baseline, enrolled = false, ttl = VERIFY_TTL_MS } 
       if (!camera.ok) return d(camera.reason)
       if (!verified) return d("stale")
       if (now - verified.at > ttl) return d("stale")
-      if (!verified.ok) return d(verified.reason)
+      if (!verified.ok) {
+        const grace = SOFT.includes(verified.reason) && lastOk !== null && now - lastOk < awayMs
+        if (!grace) return d(verified.reason)
+      }
       if (othersLooking) return d("other_looking")
       if (hyst.state !== "looking") return d("away")
       return { hazy: false, reason: null }

@@ -106,45 +106,130 @@
       <section class="tab-toggle-section">
         <header class="tab-toggle-section__header">
           <h3>Privacy</h3>
-          <p>Use the camera to notice when you look away. Video never leaves this device.</p>
+          <p>Use the camera to notice when you look away or when someone else looks. Video never leaves this device.</p>
         </header>
 
-        <%= form_with url: settings_security_privacy_path, method: :patch, local: true, class: "typing-settings-form", data: { controller: "settings-autosave", action: "change->settings-autosave#toggleChanged" } do %>
-          <%= hidden_field_tag "privacy_gaze[enabled]", "0" %>
-          <label class="tab-toggle" for="privacy_gaze_enabled">
-            <div class="tab-toggle__text">
-              <span class="tab-toggle__name">Gaze privacy haze</span>
-              <span class="tab-toggle__description">When you look away from the screen, the app fogs over. It clears when you look back. If the camera is unavailable the haze stays on.</span>
-            </div>
-            <span class="tab-toggle__switch">
-              <%= check_box_tag "privacy_gaze[enabled]", "1", @user.privacy_gaze_enabled?, id: "privacy_gaze_enabled", class: "tab-toggle__input" %>
-              <span class="tab-toggle__track" aria-hidden="true">
-                <span class="tab-toggle__thumb"></span>
+        <% gaze = @privacy_gaze_settings %>
+        <div class="privacy-section" data-controller="privacy-haze-preview">
+          <%= form_with url: settings_security_privacy_path, method: :patch, local: true, class: "privacy-form", data: { controller: "settings-autosave", action: "change->settings-autosave#toggleChanged input->settings-autosave#echo" } do %>
+            <%= hidden_field_tag "privacy_gaze[enabled]", "0" %>
+            <label class="tab-toggle" for="privacy_gaze_enabled">
+              <div class="tab-toggle__text">
+                <span class="tab-toggle__name">Gaze privacy haze</span>
+                <span class="tab-toggle__description">When you look away or someone else looks, the page content fades behind a haze. It clears when you look back. If the camera or face ID is unavailable, the haze stays on.</span>
+              </div>
+              <span class="tab-toggle__switch">
+                <%= check_box_tag "privacy_gaze[enabled]", "1", @user.privacy_gaze_enabled?, id: "privacy_gaze_enabled", class: "tab-toggle__input" %>
+                <span class="tab-toggle__track" aria-hidden="true">
+                  <span class="tab-toggle__thumb"></span>
+                </span>
               </span>
-            </span>
-          </label>
-        <% end %>
+            </label>
 
-        <div class="privacy-calibrate" data-controller="privacy-gaze-calibrate" data-privacy-gaze-calibrate-face-url-value="<%= settings_security_privacy_face_path %>">
-          <div class="privacy-calibrate__row">
-            <div>
-              <span class="typing-settings-status__label">Calibration</span>
-              <strong data-privacy-gaze-calibrate-target="status">Not calibrated</strong>
-              <p data-privacy-gaze-calibrate-target="message" aria-live="polite">Look at the middle of the screen while it runs. This device only.</p>
+            <div class="privacy-group privacy-group--applies privacy-group--dim">
+              <span class="privacy-label" id="privacy_sections_label">Applies to</span>
+              <%= hidden_field_tag "privacy_gaze[sections][]", "", id: nil %>
+              <div class="privacy-chips" role="group" aria-labelledby="privacy_sections_label">
+                <% @privacy_sections.each do |key, label| %>
+                  <label class="privacy-chip">
+                    <%= check_box_tag "privacy_gaze[sections][]", key, gaze["sections"].include?(key), id: "privacy_section_#{key}" %>
+                    <span><%= label %></span>
+                  </label>
+                <% end %>
+              </div>
+              <p class="privacy-hint">Page content only, never the navigation. The camera stays off in other sections.</p>
             </div>
-            <button type="button" class="btn btn-secondary btn-sm" data-privacy-gaze-calibrate-target="button" data-action="privacy-gaze-calibrate#toggle">Calibrate</button>
-          </div>
-          <div class="privacy-calibrate__stage">
-            <video class="privacy-calibrate__preview" data-privacy-gaze-calibrate-target="preview" muted playsinline hidden></video>
-            <span class="privacy-calibrate__live" data-privacy-gaze-calibrate-target="live" aria-live="off"></span>
+
+            <div class="privacy-group privacy-group--dim">
+              <div class="privacy-group__head">
+                <div>
+                  <h4 class="privacy-group__title">Tuning</h4>
+                  <p class="privacy-group__sub">Saved as you move each slider.</p>
+                </div>
+              </div>
+              <div class="privacy-tuning">
+                <div class="privacy-range">
+                  <label for="privacy_gaze_sensitivity">Sensitivity</label>
+                  <output data-echo="privacy_gaze_sensitivity"><%= gaze["sensitivity"] %></output>
+                  <%= range_field_tag "privacy_gaze[sensitivity]", gaze["sensitivity"], id: "privacy_gaze_sensitivity", min: 1, max: 10, step: 1 %>
+                  <div class="privacy-range__ends"><span>Relaxed</span><span>Strict</span></div>
+                  <p class="privacy-range__caption">How far you can turn your head before it counts as looking away.</p>
+                </div>
+
+                <div class="privacy-range">
+                  <label for="privacy_gaze_haze_strength">Haze strength</label>
+                  <output data-echo="privacy_gaze_haze_strength"><%= gaze["haze_strength"] %></output>
+                  <%= range_field_tag "privacy_gaze[haze_strength]", gaze["haze_strength"], id: "privacy_gaze_haze_strength", min: 1, max: 10, step: 1, data: { privacy_haze_preview_target: "strength", action: "input->privacy-haze-preview#peek" } %>
+                  <div class="privacy-range__ends"><span>Light</span><span>Opaque</span></div>
+                  <p class="privacy-range__caption">Light keeps shapes visible; opaque hides everything.</p>
+                </div>
+
+                <div class="privacy-range">
+                  <label for="privacy_gaze_away_ms">Haze after looking away</label>
+                  <output data-echo="privacy_gaze_away_ms"><%= (gaze["away_ms"] / 1000.0).round(2) %>s</output>
+                  <%= range_field_tag "privacy_gaze[away_ms]", gaze["away_ms"], id: "privacy_gaze_away_ms", min: 500, max: 15_000, step: 100, data: { echo_scale: 1000, echo_unit: "s" } %>
+                  <div class="privacy-range__ends"><span>0.5s</span><span>15s</span></div>
+                  <p class="privacy-range__caption">Short glances at a second screen stay clear.</p>
+                </div>
+
+                <div class="privacy-range">
+                  <label for="privacy_gaze_clear_ms">Clear after looking back</label>
+                  <output data-echo="privacy_gaze_clear_ms"><%= (gaze["clear_ms"] / 1000.0).round(2) %>s</output>
+                  <%= range_field_tag "privacy_gaze[clear_ms]", gaze["clear_ms"], id: "privacy_gaze_clear_ms", min: 0, max: 2000, step: 50, data: { echo_scale: 1000, echo_unit: "s" } %>
+                  <div class="privacy-range__ends"><span>Instant</span><span>2s</span></div>
+                  <p class="privacy-range__caption">A short wait avoids flicker when you glance back.</p>
+                </div>
+              </div>
+            </div>
+          <% end %>
+
+          <div class="privacy-group privacy-group--dim">
+            <div class="privacy-group__head">
+              <div>
+                <h4 class="privacy-group__title">Preview</h4>
+                <p class="privacy-group__sub">What the haze does to a page at the current strength.</p>
+              </div>
+              <button type="button" class="btn btn-secondary btn-sm privacy-preview__hold"
+                      data-action="pointerdown->privacy-haze-preview#hold pointerup->privacy-haze-preview#release pointerleave->privacy-haze-preview#release pointercancel->privacy-haze-preview#release keydown->privacy-haze-preview#hold keyup->privacy-haze-preview#release blur->privacy-haze-preview#release contextmenu->privacy-haze-preview#hold">Hold to preview haze</button>
+            </div>
+            <div class="privacy-preview__tile" data-privacy-haze-preview-target="tile" aria-hidden="true">
+              <div class="privacy-preview__nav"><span class="privacy-preview__brand"></span><i></i><i></i><i></i>
+                <svg class="privacy-eye" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
+              </div>
+              <div class="privacy-preview__page" data-privacy-haze-preview-target="page">
+                <h4>Launch notes</h4>
+                <p>Pricing is settled for the first cohort. Next up: the onboarding email and a short demo for the two pilot teams.</p>
+                <div class="privacy-preview__rows"><span>Draft the onboarding sequence</span><span>Book pilot demo calls</span></div>
+              </div>
+              <span class="privacy-preview__state" data-privacy-haze-preview-target="state" data-hazed="false">Clear</span>
+            </div>
           </div>
 
-          <div class="privacy-enroll">
+        <div class="privacy-panels" data-controller="privacy-gaze-calibrate" data-privacy-gaze-calibrate-face-url-value="<%= settings_security_privacy_face_path %>">
+          <div class="privacy-panel privacy-calibrate">
             <div class="privacy-calibrate__row">
               <div>
-                <span class="typing-settings-status__label">Face ID</span>
+                <span class="privacy-calibrate__eyebrow">Calibration</span>
+                <strong data-privacy-gaze-calibrate-target="status">Not calibrated</strong>
+                <p data-privacy-gaze-calibrate-target="message" aria-live="polite">Follow a dot to the centre and the four corners of the screen so wide monitors and corners count as looking. This device only.</p>
+              </div>
+              <button type="button" class="btn btn-secondary btn-sm" data-privacy-gaze-calibrate-target="button" data-action="privacy-gaze-calibrate#toggle">Calibrate</button>
+            </div>
+            <div class="privacy-calibrate__stage" data-privacy-gaze-calibrate-target="stage" hidden>
+              <video class="privacy-calibrate__preview" data-privacy-gaze-calibrate-target="preview" muted playsinline hidden></video>
+              <div class="privacy-calibrate__side">
+                <span class="privacy-calibrate__live" data-privacy-gaze-calibrate-target="live" aria-live="off"></span>
+              </div>
+            </div>
+            <p class="privacy-status" data-privacy-gaze-calibrate-target="haze" aria-live="polite" hidden></p>
+          </div>
+
+          <div class="privacy-panel privacy-enroll">
+            <div class="privacy-calibrate__row">
+              <div>
+                <span class="privacy-calibrate__eyebrow">Face ID</span>
                 <strong data-privacy-gaze-calibrate-target="enrollStatus">Checking…</strong>
-                <p data-privacy-gaze-calibrate-target="enrollMessage" aria-live="polite">Only you clear the haze. Anyone else looking at the screen fogs it, even with you there. Your face data never leaves your account.</p>
+                <p data-privacy-gaze-calibrate-target="enrollMessage" aria-live="polite">Only you clear the haze. Anyone else looking at the screen hazes it, even with you there. Your face data never leaves your account.</p>
               </div>
               <div class="privacy-enroll__actions">
                 <button type="button" class="btn btn-secondary btn-sm" data-privacy-gaze-calibrate-target="enrollButton" data-action="privacy-gaze-calibrate#enroll">Enroll face</button>
@@ -168,6 +253,12 @@
               </div>
             </div>
           </div>
+        </div>
+
+          <p class="privacy-footnote">
+            <kbd data-shortcut-id="privacy_haze"><%= @user.shortcut_binding("privacy_haze") %></kbd> toggles the haze from any screen; turning it off is refused while the content is hazed.
+            The eye in the top bar shows the state: <svg class="privacy-eye" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/><line x1="3" y1="3" x2="21" y2="21"/></svg> off, <svg class="privacy-eye" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg> watching, hazed when it is dimmed and pulsing. Click it to toggle.
+          </p>
         </div>
       </section>
 

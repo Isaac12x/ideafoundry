@@ -269,6 +269,17 @@ class SettingsController < ApplicationController
     end
   end
 
+  def toggle_privacy
+    enable = !@user.privacy_gaze_enabled?
+    if enable && !@user.privacy_gaze_configured?
+      return render json: { enabled: false, error: "Set up face ID first" }, status: :unprocessable_entity
+    end
+
+    @user.update_privacy_gaze_settings("enabled" => enable)
+    ActivityLog.record_settings!(user: @user, setting: "Privacy")
+    render json: { enabled: @user.privacy_gaze_enabled? }
+  end
+
   def privacy_face
     response.headers["Cache-Control"] = "no-store"
     template = @user.privacy_face_template || {}
@@ -720,6 +731,8 @@ class SettingsController < ApplicationController
     @typing_lock_settings = @user.typing_lock_settings
     @authenticator_app_settings = @user.authenticator_app_settings
     @voice_id_settings = @user.voice_id_settings
+    @privacy_gaze_settings = @user.privacy_gaze_settings
+    @privacy_sections = User::PRIVACY_SECTIONS.map { |k| [ k, User::PRIVACY_SECTION_LABELS[k] ] }
     @mobile_uplink_settings = @user.mobile_uplink_settings
     @authenticator_app_qr_svg = AuthenticatorApp.qr_svg(@user.authenticator_app_provisioning_uri) if @user.authenticator_app_configured?
     @mobile_uplink_install_url = MobileUplink.install_url
@@ -882,7 +895,7 @@ class SettingsController < ApplicationController
   end
 
   def privacy_gaze_params
-    params.fetch(:privacy_gaze, {}).permit(:enabled)
+    params.fetch(:privacy_gaze, {}).permit(:enabled, :away_ms, :clear_ms, :sensitivity, :haze_strength, sections: [])
   end
 
   def mobile_uplink_params

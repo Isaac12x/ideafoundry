@@ -82,6 +82,7 @@ test("a bare key with nothing to act on is not swallowed", async () => {
 
 test("typing activity locks on the effective lock binding only", async () => {
   const bindings = await import("../../app/javascript/lib/shortcut_bindings.mjs")
+  const guard = await import("../../app/javascript/lib/privacy_guard.mjs")
   const source = await readFile(
     new URL("../../app/javascript/controllers/typing_activity_controller.js", import.meta.url),
     "utf8"
@@ -196,6 +197,7 @@ test("matches handles chords, symbols and bare keys", async () => {
 })
 
 async function loadShortcutsController() {
+  const guard = await import("../../app/javascript/lib/privacy_guard.mjs")
   const bindings = await import("../../app/javascript/lib/shortcut_bindings.mjs")
   const source = await readFile(
     new URL("../../app/javascript/controllers/shortcuts_controller.js", import.meta.url),
@@ -205,8 +207,8 @@ async function loadShortcutsController() {
     .replace(/^import .*\n/gm, "")
     .replace("export default class extends Controller", "return class ShortcutsController extends Controller")
 
-  return new Function("Controller", "DEFAULT_BINDINGS", "binding", "matches", "sequenceKeys", runnableSource)(
-    class {}, bindings.DEFAULT_BINDINGS, bindings.binding, bindings.matches, bindings.sequenceKeys
+  return new Function("Controller", "DEFAULT_BINDINGS", "binding", "matches", "privacyToggleAllowed", "sequenceKeys", "indicatorState", "paintIndicator", runnableSource)(
+    class {}, bindings.DEFAULT_BINDINGS, bindings.binding, bindings.matches, bindings.privacyToggleAllowed, bindings.sequenceKeys, guard.indicatorState, guard.paintIndicator
   )
 }
 

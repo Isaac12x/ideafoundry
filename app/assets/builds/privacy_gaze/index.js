@@ -50576,14 +50576,25 @@ _sanity = /* @__PURE__ */ new WeakMap();
 _loops = /* @__PURE__ */ new WeakMap();
 
 // app/javascript/privacy_gaze/gaze_state.js
-var MAX_YAW_DEG = 25;
-var MAX_PITCH_DEG = 20;
-var MAX_EYE_H = 0.35;
-var MAX_EYE_V = 0.4;
-var AWAY_AFTER_MS = 500;
-var LOOK_AFTER_MS = 150;
-var DEFAULT_BASELINE = { yaw: 0, pitch: 0, h: 0, v: 0 };
-var STORE_KEY = "privacy-gaze:baseline";
+var FEATURES = ["yaw", "pitch", "h", "v"];
+var MARGIN_AT_5 = { yaw: 12, pitch: 10, h: 0.15, v: 0.2 };
+var DEFAULT_SENSITIVITY = 5;
+var DEFAULT_AWAY_MS = 2500;
+var DEFAULT_CLEAR_MS = 150;
+var MIN_POINT_SAMPLES = 5;
+var DEFAULT_ENVELOPE = {
+  center: { yaw: 0, pitch: 0, h: 0, v: 0 },
+  min: { yaw: -15, pitch: -12, h: -0.25, v: -0.3 },
+  max: { yaw: 15, pitch: 12, h: 0.25, v: 0.3 }
+};
+var CALIBRATION_POINTS = [
+  { x: 0.5, y: 0.5 },
+  { x: 0.08, y: 0.1 },
+  { x: 0.92, y: 0.1 },
+  { x: 0.92, y: 0.9 },
+  { x: 0.08, y: 0.9 }
+];
+var STORE_KEY = "privacy-gaze:envelope";
 var clamp2 = (n9, lo3, hi3) => Math.min(hi3, Math.max(lo3, n9));
 var deg = (rad) => rad * 180 / Math.PI;
 var score = (shapes, name) => shapes?.find((c8) => c8.categoryName === name)?.score ?? 0;
@@ -50611,22 +50622,38 @@ function extractFaces(result) {
   }
   return out;
 }
-function isLooking(f8, baseline = DEFAULT_BASELINE) {
+function marginScale(sensitivity = DEFAULT_SENSITIVITY) {
+  const s10 = clamp2(Number(sensitivity) || DEFAULT_SENSITIVITY, 1, 10);
+  const yaw = s10 <= 5 ? 25 + (12 - 25) * ((s10 - 1) / 4) : 12 + (5 - 12) * ((s10 - 5) / 5);
+  return yaw / 12;
+}
+function margins(sensitivity = DEFAULT_SENSITIVITY) {
+  const k8 = marginScale(sensitivity);
+  return Object.fromEntries(FEATURES.map((n9) => [n9, MARGIN_AT_5[n9] * k8]));
+}
+function isLooking(f8, envelope = DEFAULT_ENVELOPE, sensitivity = DEFAULT_SENSITIVITY) {
   if (!f8) return false;
-  const b8 = { ...DEFAULT_BASELINE, ...baseline };
-  return Math.abs(f8.yaw - b8.yaw) <= MAX_YAW_DEG && Math.abs(f8.pitch - b8.pitch) <= MAX_PITCH_DEG && Math.abs(f8.h - b8.h) <= MAX_EYE_H && Math.abs(f8.v - b8.v) <= MAX_EYE_V;
+  const env2 = envelope?.min && envelope?.max ? envelope : DEFAULT_ENVELOPE;
+  const m8 = margins(sensitivity);
+  return FEATURES.every((k8) => f8[k8] >= env2.min[k8] - m8[k8] && f8[k8] <= env2.max[k8] + m8[k8]);
 }
 var median = (xs3) => {
   const s10 = [...xs3].sort((a10, b8) => a10 - b8);
   const i10 = s10.length >> 1;
   return s10.length % 2 ? s10[i10] : (s10[i10 - 1] + s10[i10]) / 2;
 };
-function calibrate(samples) {
-  const good = samples.filter(Boolean);
-  if (!good.length) return null;
-  return Object.fromEntries(["yaw", "pitch", "h", "v"].map((k8) => [k8, median(good.map((f8) => f8[k8]))]));
+function pointMedian(samples, min = MIN_POINT_SAMPLES) {
+  const good = (samples || []).filter(Boolean);
+  if (good.length < min) return null;
+  return Object.fromEntries(FEATURES.map((k8) => [k8, median(good.map((f8) => f8[k8]))]));
 }
-function createHysteresis({ awayMs = AWAY_AFTER_MS, lookMs = LOOK_AFTER_MS, initial = "away" } = {}) {
+function buildEnvelope(perPoint, min = MIN_POINT_SAMPLES) {
+  const pts = (perPoint || []).map((s10) => pointMedian(s10, min));
+  if (!pts.length || pts.some((p8) => !p8)) return null;
+  const each = (fn3) => Object.fromEntries(FEATURES.map((k8) => [k8, fn3(pts.map((p8) => p8[k8]))]));
+  return { center: pts[0], min: each((xs3) => Math.min(...xs3)), max: each((xs3) => Math.max(...xs3)) };
+}
+function createHysteresis({ awayMs = DEFAULT_AWAY_MS, clearMs = DEFAULT_CLEAR_MS, initial = "away" } = {}) {
   let state = initial, since = null;
   return {
     get state() {
@@ -50636,12 +50663,16 @@ function createHysteresis({ awayMs = AWAY_AFTER_MS, lookMs = LOOK_AFTER_MS, init
       state = "away";
       since = null;
     },
+    setDelays(a10, c8) {
+      awayMs = a10 ?? awayMs;
+      clearMs = c8 ?? clearMs;
+    },
     step(looking, now2) {
       const target = looking ? "looking" : "away";
       if (target === state) since = null;
       else {
         since ??= now2;
-        if (now2 - since >= (looking ? lookMs : awayMs)) {
+        if (now2 - since >= (looking ? clearMs : awayMs)) {
           state = target;
           since = null;
         }
@@ -50650,23 +50681,25 @@ function createHysteresis({ awayMs = AWAY_AFTER_MS, lookMs = LOOK_AFTER_MS, init
     }
   };
 }
-function loadBaseline(storage = globalThis.localStorage) {
+var validEnvelope = (e10) => !!e10 && ["center", "min", "max"].every((p8) => FEATURES.every((k8) => Number.isFinite(e10[p8]?.[k8])));
+function loadEnvelope(storage = globalThis.localStorage) {
   try {
-    return { ...DEFAULT_BASELINE, ...JSON.parse(storage.getItem(STORE_KEY)) };
+    const e10 = JSON.parse(storage.getItem(STORE_KEY));
+    return validEnvelope(e10) ? e10 : DEFAULT_ENVELOPE;
   } catch {
-    return DEFAULT_BASELINE;
+    return DEFAULT_ENVELOPE;
   }
 }
-function hasBaseline(storage = globalThis.localStorage) {
+function hasEnvelope(storage = globalThis.localStorage) {
   try {
-    return !!storage.getItem(STORE_KEY);
+    return validEnvelope(JSON.parse(storage.getItem(STORE_KEY)));
   } catch {
     return false;
   }
 }
-function saveBaseline(b8, storage = globalThis.localStorage) {
+function saveEnvelope(e10, storage = globalThis.localStorage) {
   try {
-    storage.setItem(STORE_KEY, JSON.stringify(b8));
+    storage.setItem(STORE_KEY, JSON.stringify(e10));
     return true;
   } catch {
     return false;
@@ -50756,12 +50789,19 @@ function cameraStatus({ stats, frozen = false, muted = false } = {}) {
   return { ok: true };
 }
 var dist = (a10, b8) => Math.hypot(a10.x - b8.x, a10.y - b8.y);
-function createGuard({ baseline, enrolled = false, ttl = VERIFY_TTL_MS } = {}) {
-  const hyst = createHysteresis();
-  let verified = null, camera = { ok: false, reason: "stale" }, owner = null, othersLooking = false, now0 = 0;
+var SOFT = ["no_face", "ears"];
+function createGuard({ envelope = DEFAULT_ENVELOPE, sensitivity = DEFAULT_SENSITIVITY, awayMs = DEFAULT_AWAY_MS, clearMs = DEFAULT_CLEAR_MS, enrolled = false, ttl = VERIFY_TTL_MS } = {}) {
+  const hyst = createHysteresis({ awayMs, clearMs });
+  let verified = null, camera = { ok: false, reason: "stale" }, owner = null, othersLooking = false, now0 = 0, lastOk = null;
+  const look = (f8) => isLooking(f8, envelope, sensitivity);
   return {
-    setBaseline(b8) {
-      baseline = b8;
+    setCalibration(e10) {
+      envelope = e10;
+    },
+    setTuning(t11 = {}) {
+      sensitivity = t11.sensitivity ?? sensitivity;
+      awayMs = t11.awayMs ?? awayMs;
+      hyst.setDelays(t11.awayMs, t11.clearMs);
     },
     setEnrolled(e10) {
       enrolled = e10;
@@ -50774,10 +50814,12 @@ function createGuard({ baseline, enrolled = false, ttl = VERIFY_TTL_MS } = {}) {
       verified = null;
       owner = null;
       othersLooking = false;
+      lastOk = null;
     },
     // result of verifyOwner() at time `now`
     verify(r15, now2) {
       verified = { ...r15, at: now2 };
+      if (r15.ok) lastOk = now2;
       if (r15.center) owner = r15.center;
     },
     // faces: [{ yaw, pitch, h, v, center }] from the fast mediapipe loop
@@ -50792,8 +50834,8 @@ function createGuard({ baseline, enrolled = false, ttl = VERIFY_TTL_MS } = {}) {
         }
       }
       if (mine?.center) owner = mine.center;
-      othersLooking = faces.some((f8) => f8 !== mine && isLooking(f8, baseline));
-      hyst.step(!!mine && isLooking(mine, baseline), now2);
+      othersLooking = faces.some((f8) => f8 !== mine && look(f8));
+      hyst.step(!!mine && look(mine), now2);
     },
     decision(now2 = now0) {
       const d8 = (reason) => ({ hazy: true, reason });
@@ -50801,7 +50843,10 @@ function createGuard({ baseline, enrolled = false, ttl = VERIFY_TTL_MS } = {}) {
       if (!camera.ok) return d8(camera.reason);
       if (!verified) return d8("stale");
       if (now2 - verified.at > ttl) return d8("stale");
-      if (!verified.ok) return d8(verified.reason);
+      if (!verified.ok) {
+        const grace = SOFT.includes(verified.reason) && lastOk !== null && now2 - lastOk < awayMs;
+        if (!grace) return d8(verified.reason);
+      }
       if (othersLooking) return d8("other_looking");
       if (hyst.state !== "looking") return d8("away");
       return { hazy: false, reason: null };
@@ -51004,26 +51049,27 @@ async function startGazeSession({ assets, video, onSample, onError, onHealth, on
 }
 export {
   ANTISPOOF_MIN,
-  AWAY_AFTER_MS,
   BLACK_MEAN,
-  DEFAULT_BASELINE,
+  CALIBRATION_POINTS,
+  DEFAULT_AWAY_MS,
+  DEFAULT_CLEAR_MS,
+  DEFAULT_ENVELOPE,
+  DEFAULT_SENSITIVITY,
   EAR_BOX_SLACK,
   EAR_MIN,
   EAR_REACH,
+  FEATURES,
   FLAT_STD,
   FROZEN_MS,
   LIVENESS_MIN,
-  LOOK_AFTER_MS,
+  MARGIN_AT_5,
   MATCH_THRESHOLD,
-  MAX_EYE_H,
-  MAX_EYE_V,
-  MAX_PITCH_DEG,
-  MAX_YAW_DEG,
   MESSAGES,
+  MIN_POINT_SAMPLES,
   OWNER_TRACK_DIST,
   VERIFY_TTL_MS,
   allChecks,
-  calibrate,
+  buildEnvelope,
   cameraStatus,
   createFrozenWatch,
   createGuard,
@@ -51033,11 +51079,14 @@ export {
   enrollChecks,
   extractFaces,
   extractFeatures,
-  hasBaseline,
+  hasEnvelope,
   isLooking,
-  loadBaseline,
+  loadEnvelope,
   lumaStats,
-  saveBaseline,
+  marginScale,
+  margins,
+  pointMedian,
+  saveEnvelope,
   startGazeSession,
   verifyOwner
 };
