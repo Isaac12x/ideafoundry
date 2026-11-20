@@ -1,3 +1,5 @@
+require "set"
+
 module Kb
   class TreeBuilder
     CACHE_GENERATION_KEY = "kb/tree/generation"
@@ -225,7 +227,8 @@ module Kb
       end
       # "<file>.source.json" (download link + description) is hidden too; the viewer shows it.
       hidden += files.filter_map { |f| side = Kb::Source.sidecar(f[:rel]); side if !Kb::Source.sidecar?(f[:rel]) && rels.key?(side) }
-      files.reject! { |f| hidden.include?(f[:rel]) }
+      hidden_paths = hidden.to_set
+      files.reject! { |f| hidden_paths.include?(f[:rel]) }
     end
 
     # Not every filesystem records a birth time; fall back to mtime.
