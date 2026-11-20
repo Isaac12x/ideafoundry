@@ -17,10 +17,9 @@ class KbTranscriptsController < ApplicationController
 
     return render json: { error: "This project is locking or unlocking. Try again in a moment." }, status: :conflict if Kb::ProjectLock.busy_path?(@file[:abs])
 
-    if Kb::Transcript.claim!(@file[:abs])
-      @download&.update!(transcript_status: "transcribing")
-      KbTranscribeJob.perform_later(@file[:abs], @download&.id)
-    end
+    enqueue_status = KbTranscribeJob.enqueue_claimed(@file[:abs], @download)
+    return render json: { error: "Could not queue transcription. Try again." }, status: :service_unavailable if enqueue_status == :failed
+
     render json: payload, status: :accepted
   end
 

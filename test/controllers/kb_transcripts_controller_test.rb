@@ -66,6 +66,46 @@ class KbTranscriptsControllerTest < ActionDispatch::IntegrationTest
     assert_response :unprocessable_content
   end
 
+  test "failed enqueue releases the file claim and reports an error" do
+    Kb::Transcript.stub(:available?, true) do
+      KbTranscribeJob.stub(:perform_later, false) do
+        post kb_transcript_path, params: { src: 0, file: "talk.mp4" }
+      end
+    end
+
+    assert_response :service_unavailable
+    assert_not Kb::Transcript.running?(File.join(@kb_dir, "talk.mp4"))
+  end
+
+  test "failed manual enqueue preserves completed captions" do
+    download = @user.kb_downloads.create!(source_index: 0, dir: "", url: "https://example.com/talk.mp4", status: "done",
+                                          filename: "talk.mp4", transcript: "00:00 - existing captions\n", transcript_status: "done")
+    Kb::Transcript.stub(:available?, true) do
+      KbTranscribeJob.stub(:perform_later, false) do
+        post kb_transcript_path, params: { src: 0, file: "talk.mp4" }
+      end
+    end
+
+    assert_response :service_unavailable
+    assert_equal [ "done", "00:00 - existing captions\n" ], [ download.reload.transcript_status, download.transcript ]
+  end
+
+  test "manual enqueue can be retried successfully after queue rejection" do
+    Kb::Transcript.stub(:available?, true) do
+      KbTranscribeJob.stub(:perform_later, false) do
+        post kb_transcript_path, params: { src: 0, file: "talk.mp4" }
+      end
+      assert_response :service_unavailable
+      assert_not Kb::Transcript.running?(File.join(@kb_dir, "talk.mp4"))
+
+      assert_enqueued_jobs 1, only: KbTranscribeJob do
+        post kb_transcript_path, params: { src: 0, file: "talk.mp4" }
+      end
+      assert_response :accepted
+      assert_equal "running", response.parsed_body["status"]
+    end
+  end
+
   test "rejects non-media, traversal and missing files" do
     File.write(File.join(@kb_dir, "n.md"), "x")
     get kb_transcript_path(src: 0, file: "n.md")
