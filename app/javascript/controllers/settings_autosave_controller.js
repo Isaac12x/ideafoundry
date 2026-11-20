@@ -26,6 +26,15 @@ export default class extends Controller {
     }
   }
 
+  // Live value next to a range: <output data-echo="<input id>"> (data-echo-scale / data-echo-unit on the input).
+  echo(event) {
+    const input = event.target
+    const out = input.id && this.element.querySelector(`[data-echo="${input.id}"]`)
+    if (!out) return
+    const scale = Number(input.dataset.echoScale) || 1
+    out.textContent = `${Math.round((Number(input.value) / scale) * 100) / 100}${input.dataset.echoUnit || ""}`
+  }
+
   showIndicator(status) {
     let indicator = this.element.querySelector(".settings-autosave-indicator")
     if (!indicator) {
