@@ -319,6 +319,62 @@ class SettingsControllerTest < ActionDispatch::IntegrationTest
     assert_select "body[data-controller~=?]", "privacy-gaze", count: 0
   end
 
+  def enroll_privacy_face!
+    @user.store_privacy_face_template!(Array.new(3) { Array.new(128) { |i| i / 128.0 } })
+  end
+
+  test "toggle_privacy flips when enrolled and 422s when not" do
+    patch settings_security_privacy_toggle_path, as: :json
+    assert_response :unprocessable_entity
+    assert_equal({ "enabled" => false, "error" => "Set up face ID first" }, response.parsed_body)
+    refute @user.reload.privacy_gaze_enabled?
+
+    enroll_privacy_face!
+    patch settings_security_privacy_toggle_path, as: :json
+    assert_response :success
+    assert_equal({ "enabled" => true }, response.parsed_body)
+    assert @user.reload.privacy_gaze_enabled?
+
+    patch settings_security_privacy_toggle_path, as: :json
+    assert_equal({ "enabled" => false }, response.parsed_body)
+    refute @user.reload.privacy_gaze_enabled?
+  end
+
+  test "update_privacy partial updates keep tuning and face template" do
+    enroll_privacy_face!
+    patch settings_security_privacy_path, params: { privacy_gaze: { sections: [ "", "kb" ], away_ms: "9999999", sensitivity: "7" } }, as: :json
+    patch settings_security_privacy_path, params: { privacy_gaze: { enabled: "1" } }, as: :json
+    s = @user.reload.privacy_gaze_settings
+    assert_equal %w[kb], s["sections"]
+    assert_equal 15_000, s["away_ms"]
+    assert_equal 7, s["sensitivity"]
+    assert s["enabled"]
+    assert @user.privacy_face_enrolled?
+  end
+
+  test "layout privacy attrs: toggle only when configured, active follows sections" do
+    get settings_path
+    assert_select "body[data-privacy-toggle-url]", count: 0
+
+    enroll_privacy_face!
+    get settings_path
+    assert_select "body[data-privacy-toggle-url=?][data-privacy-enabled=?]", settings_security_privacy_toggle_path, "false"
+    assert_select "body[data-privacy-gaze-away-ms-value]", count: 0
+
+    @user.update_privacy_gaze_settings("enabled" => "1", "sections" => [ "ideas" ], "away_ms" => "4000", "clear_ms" => "200", "sensitivity" => "8")
+    get ideas_path
+    assert_select "body[data-privacy-enabled=?]", "true"
+    assert_select "body[data-privacy-gaze-active-value=?]", "true"
+    assert_select "body[data-privacy-gaze-away-ms-value=?]", "4000"
+    assert_select "body[data-privacy-gaze-clear-ms-value=?]", "200"
+    assert_select "body[data-privacy-gaze-sensitivity-value=?]", "8"
+    assert_select "body[data-privacy-gaze-lock-url-value=?]", ""
+
+    @user.update_privacy_gaze_settings("sections" => [ "" ])
+    get ideas_path
+    assert_select "body[data-privacy-gaze-active-value=?]", "false"
+  end
+
   test "privacy face endpoints store, serve no-store, reject and clear" do
     get settings_security_privacy_face_path
     assert_response :success

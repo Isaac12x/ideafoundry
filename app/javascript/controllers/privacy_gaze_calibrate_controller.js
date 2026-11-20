@@ -1,9 +1,12 @@
 import { Controller } from "@hotwired/stimulus"
 
-// Settings panel: look at the middle of the screen for ~2s to store this device's baseline (camera sits above the
-// screen, so "looking" is never yaw/pitch 0). Also a live Looking/Away test.
-const WARMUP_MS = 700
-const SAMPLE_MS = 2000
+// Settings panel: guided 5-point calibration (a dot at the centre, then the four corners of the viewport, ~1.5s each)
+// stores this device's "screen envelope" (the camera sits above the screen, so "looking" is never yaw/pitch 0).
+// Afterwards the camera stays on as a live Looking/Away test next to the preview. Also shows the live haze status.
+const SETTLE_MS = 700 // dot travel + eyes catching up
+const COLLECT_MS = 800
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
+const STORE_KEY = "privacy-gaze:envelope" // same key as gaze_state.js (the bundle may not be loaded yet)
 const assets = () => { try { return JSON.parse(document.querySelector('meta[name="privacy-gaze-assets"]')?.content) } catch { return null } }
 
 const SAMPLES = 5 // face descriptors stored per enrollment
@@ -17,11 +20,24 @@ const call = (url, method, body) => fetch(url, {
 
 export default class extends Controller {
   static targets = ["button", "status", "preview", "live", "message",
-    "enrollButton", "enrollStatus", "enrollStage", "enrollPreview", "enrollMessage", "enrollSteps", "check", "removeButton"]
+    "stage", "haze", "enrollButton", "enrollStatus", "enrollStage", "enrollPreview", "enrollMessage", "enrollSteps", "check", "removeButton"]
   static values = { faceUrl: String }
 
-  connect() { this.gone = false; this.showStatus(); this.loadFace() }
-  disconnect() { this.gone = true; this.stop(); this.stopEnroll() }
+  connect() {
+    this.gone = false
+    this.showStatus()
+    this.loadFace()
+    this.onStatus = (e) => this.paintHaze(e.detail)
+    window.addEventListener("privacy-gaze:status", this.onStatus)
+  }
+  disconnect() { this.gone = true; window.removeEventListener("privacy-gaze:status", this.onStatus); this.stop(); this.stopEnroll() }
+
+  paintHaze({ hazy, text }) {
+    if (!this.hasHazeTarget) return
+    this.hazeTarget.hidden = false
+    this.hazeTarget.dataset.hazy = hazy
+    this.hazeTarget.textContent = hazy ? `Hazed: ${text}` : "Haze: clear"
+  }
 
   // ---- face ID enrollment ----
   async loadFace() {
@@ -137,14 +153,12 @@ export default class extends Controller {
     try {
       this.lib ??= await import(a.bundle)
       if (this.gone) return
-      this.baseline = this.lib.loadBaseline()
-      this.samples = []
-      this.t0 = null
-      this.done = false
+      this.envelope = this.lib.loadEnvelope()
+      this.collecting = null
       this.session = await this.lib.startGazeSession({
         assets: a,
         video: this.previewTarget,
-        onSample: (f, now) => this.sample(f, now),
+        onSample: (f) => this.sample(f),
         onError: () => { this.stop(); this.say("Camera unavailable") }
       })
       if (this.gone) return this.stop()
@@ -152,51 +166,92 @@ export default class extends Controller {
       this.say("Camera unavailable")
     }
     this.buttonTarget.disabled = false
-    if (this.session) {
-      this.previewTarget.hidden = false
-      this.buttonTarget.textContent = "Stop"
-      this.say("Look at the middle of the screen…")
+    if (!this.session) return
+    this.buttonTarget.textContent = "Stop"
+    this.calibrate()
+  }
+
+  // Dot at the centre, then each corner. Samples are collected per point only after the settle time.
+  async calibrate() {
+    const lib = this.lib
+    const run = this.run = (this.run || 0) + 1
+    const live = () => this.run === run && this.session && !this.gone
+    const stage = this.buildStage(() => this.stop())
+    const perPoint = lib.CALIBRATION_POINTS.map(() => [])
+    await sleep(500) // camera warm-up
+    for (let i = 0; i < lib.CALIBRATION_POINTS.length && live(); i++) {
+      const p = lib.CALIBRATION_POINTS[i]
+      stage.go(p, i + 1, lib.CALIBRATION_POINTS.length)
+      await sleep(SETTLE_MS)
+      if (!live()) break
+      this.collecting = perPoint[i]
+      await sleep(COLLECT_MS)
+      this.collecting = null
     }
-  }
-
-  sample(f, now) {
-    const looking = this.lib.isLooking(f, this.baseline)
-    this.liveTarget.textContent = looking ? "Looking" : "Away"
-    this.liveTarget.dataset.looking = looking
-    this.t0 ??= now
-    if (this.done) return
-    if (now - this.t0 < WARMUP_MS) return
-    if (f) this.samples.push(f)
-    if (now - this.t0 >= WARMUP_MS + SAMPLE_MS) this.finish()
-  }
-
-  finish() {
-    this.done = true
-    const b = this.lib.calibrate(this.samples)
-    if (b && this.samples.length >= 5 && this.lib.saveBaseline(b)) {
-      this.baseline = b
+    stage.remove()
+    if (!live()) return
+    const env = lib.buildEnvelope(perPoint)
+    if (env && lib.saveEnvelope(env)) {
+      this.envelope = env
       window.dispatchEvent(new CustomEvent("privacy-gaze:calibrated"))
-      this.say("Calibrated. Look away to test.")
+      this.say("Calibrated. Look around the screen, then away, to test.")
     } else {
-      this.say("No face seen. Try again.")
+      this.say("Could not see your face at every point. Try again in better light.")
     }
     this.showStatus()
+    this.stageTarget.hidden = false
+    this.previewTarget.hidden = false
+  }
+
+  buildStage(onCancel) {
+    const el = document.createElement("div")
+    el.className = "privacy-stage"
+    el.setAttribute("role", "dialog")
+    el.setAttribute("aria-label", "Calibration")
+    el.innerHTML = `<span class="privacy-stage__count"></span><span class="privacy-stage__dot"></span>
+      <p class="privacy-stage__hint">Keep your head still and follow the dot with your eyes.</p>
+      <button type="button" class="btn btn-secondary btn-sm privacy-stage__cancel">Cancel</button>`
+    const dot = el.querySelector(".privacy-stage__dot"), count = el.querySelector(".privacy-stage__count")
+    dot.style.left = "50%"; dot.style.top = "50%"
+    el.querySelector("button").addEventListener("click", onCancel)
+    document.body.appendChild(el)
+    el.querySelector("button").focus()
+    this.stageEl = el
+    return {
+      go: (p, n, total) => { dot.style.left = `${p.x * 100}%`; dot.style.top = `${p.y * 100}%`; count.textContent = `${n} / ${total}` },
+      remove: () => { el.remove(); if (this.stageEl === el) this.stageEl = null },
+    }
+  }
+
+  sample(f) {
+    if (this.collecting && f) this.collecting.push(f)
+    if (this.stageEl) return
+    const looking = this.lib.isLooking(f, this.envelope, this.currentSensitivity())
+    this.liveTarget.textContent = looking ? "Looking" : "Away"
+    this.liveTarget.dataset.looking = looking
+  }
+
+  currentSensitivity() {
+    return Number(document.getElementById("privacy_gaze_sensitivity")?.value) || 5
   }
 
   stop() {
+    this.run = (this.run || 0) + 1
+    this.collecting = null
+    this.stageEl?.remove()
+    this.stageEl = null
     this.session?.stop()
     this.session = null
-    this.done = false
     if (this.hasPreviewTarget) this.previewTarget.hidden = true
+    if (this.hasStageTarget) this.stageTarget.hidden = true
     if (this.hasButtonTarget) { this.buttonTarget.textContent = "Calibrate"; this.buttonTarget.disabled = false }
     if (this.hasLiveTarget) this.liveTarget.textContent = ""
   }
 
   showStatus() {
     if (!this.hasStatusTarget) return
-    // the bundle may not be loaded yet, so read the key directly (same key as gaze_state.js)
     let ok = false
-    try { ok = !!localStorage.getItem("privacy-gaze:baseline") } catch {}
+    try { ok = !!JSON.parse(localStorage.getItem(STORE_KEY))?.min } catch {}
     this.statusTarget.textContent = ok ? "Calibrated" : "Not calibrated"
   }
 

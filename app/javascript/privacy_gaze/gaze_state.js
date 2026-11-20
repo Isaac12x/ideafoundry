@@ -1,15 +1,25 @@
 // Pure gaze logic (no DOM, no mediapipe): classify a frame as looking/away and debounce the result.
 
-// ponytail: calibration is the tuning knob. These are deltas from the per-device baseline (the camera sits above the
-// screen, so "looking at the screen" is never yaw/pitch 0). Widen if the haze flickers, tighten if it is too lax.
-export const MAX_YAW_DEG = 25;
-export const MAX_PITCH_DEG = 20;
-export const MAX_EYE_H = 0.35; // blendshape units, eyeLookIn/Out
-export const MAX_EYE_V = 0.4; // eyeLookUp/Down (noisier)
-export const AWAY_AFTER_MS = 500;
-export const LOOK_AFTER_MS = 150;
-export const DEFAULT_BASELINE = { yaw: 0, pitch: 0, h: 0, v: 0 };
-const STORE_KEY = "privacy-gaze:baseline";
+// "Looking" = the features sit inside this device's screen envelope (per-feature min/max over a 5-point calibration:
+// centre + four viewport corners) widened by a margin that shrinks as sensitivity (1..10) grows.
+// ponytail: MARGIN_AT_5 is the tuning knob; sensitivity scales it (about 2x at 1, 0.4x at 10).
+export const FEATURES = ["yaw", "pitch", "h", "v"]
+export const MARGIN_AT_5 = { yaw: 12, pitch: 10, h: 0.15, v: 0.2 } // deg / deg / blendshape units
+export const DEFAULT_SENSITIVITY = 5
+export const DEFAULT_AWAY_MS = 2500
+export const DEFAULT_CLEAR_MS = 150
+export const MIN_POINT_SAMPLES = 5
+// Without calibration: generous (camera above the screen, wide monitors). Plus the margin this is yaw +-27 at default.
+export const DEFAULT_ENVELOPE = {
+  center: { yaw: 0, pitch: 0, h: 0, v: 0 },
+  min: { yaw: -15, pitch: -12, h: -0.25, v: -0.3 },
+  max: { yaw: 15, pitch: 12, h: 0.25, v: 0.3 },
+}
+// Calibration stage targets, in viewport fractions: centre first, then the corners.
+export const CALIBRATION_POINTS = [
+  { x: 0.5, y: 0.5 }, { x: 0.08, y: 0.1 }, { x: 0.92, y: 0.1 }, { x: 0.92, y: 0.9 }, { x: 0.08, y: 0.9 },
+]
+const STORE_KEY = "privacy-gaze:envelope"
 
 const clamp = (n, lo, hi) => Math.min(hi, Math.max(lo, n))
 const deg = (rad) => (rad * 180) / Math.PI
@@ -43,15 +53,22 @@ export function extractFaces(result) {
   return out
 }
 
-export function isLooking(f, baseline = DEFAULT_BASELINE) {
+// Margin multiplier vs sensitivity 5: 1 -> ~2.08x (yaw 25deg), 5 -> 1x (12deg), 10 -> ~0.42x (5deg). Monotonic.
+export function marginScale(sensitivity = DEFAULT_SENSITIVITY) {
+  const s = clamp(Number(sensitivity) || DEFAULT_SENSITIVITY, 1, 10)
+  const yaw = s <= 5 ? 25 + (12 - 25) * ((s - 1) / 4) : 12 + (5 - 12) * ((s - 5) / 5)
+  return yaw / 12
+}
+export function margins(sensitivity = DEFAULT_SENSITIVITY) {
+  const k = marginScale(sensitivity)
+  return Object.fromEntries(FEATURES.map((n) => [n, MARGIN_AT_5[n] * k]))
+}
+
+export function isLooking(f, envelope = DEFAULT_ENVELOPE, sensitivity = DEFAULT_SENSITIVITY) {
   if (!f) return false // no face = away
-  const b = { ...DEFAULT_BASELINE, ...baseline }
-  return (
-    Math.abs(f.yaw - b.yaw) <= MAX_YAW_DEG &&
-    Math.abs(f.pitch - b.pitch) <= MAX_PITCH_DEG &&
-    Math.abs(f.h - b.h) <= MAX_EYE_H &&
-    Math.abs(f.v - b.v) <= MAX_EYE_V
-  )
+  const env = envelope?.min && envelope?.max ? envelope : DEFAULT_ENVELOPE
+  const m = margins(sensitivity)
+  return FEATURES.every((k) => f[k] >= env.min[k] - m[k] && f[k] <= env.max[k] + m[k])
 }
 
 const median = (xs) => {
@@ -60,37 +77,48 @@ const median = (xs) => {
   return s.length % 2 ? s[i] : (s[i - 1] + s[i]) / 2
 }
 
-// Median of feature samples (looking at the middle of the screen); null when there are none.
-export function calibrate(samples) {
-  const good = samples.filter(Boolean)
-  if (!good.length) return null
-  return Object.fromEntries(["yaw", "pitch", "h", "v"].map((k) => [k, median(good.map((f) => f[k]))]))
+// Median of feature samples for one calibration point; null when there are too few.
+export function pointMedian(samples, min = MIN_POINT_SAMPLES) {
+  const good = (samples || []).filter(Boolean)
+  if (good.length < min) return null
+  return Object.fromEntries(FEATURES.map((k) => [k, median(good.map((f) => f[k]))]))
+}
+
+// perPoint: one array of feature samples per calibration point (centre first).
+// -> { center, min, max } over the per-point medians, or null when any point was not seen.
+export function buildEnvelope(perPoint, min = MIN_POINT_SAMPLES) {
+  const pts = (perPoint || []).map((s) => pointMedian(s, min))
+  if (!pts.length || pts.some((p) => !p)) return null
+  const each = (fn) => Object.fromEntries(FEATURES.map((k) => [k, fn(pts.map((p) => p[k]))]))
+  return { center: pts[0], min: each((xs) => Math.min(...xs)), max: each((xs) => Math.max(...xs)) }
 }
 
 // Starts "away" (fail closed) unless told otherwise. Flips only after the opposite reading has held for the whole delay.
-export function createHysteresis({ awayMs = AWAY_AFTER_MS, lookMs = LOOK_AFTER_MS, initial = "away" } = {}) {
+export function createHysteresis({ awayMs = DEFAULT_AWAY_MS, clearMs = DEFAULT_CLEAR_MS, initial = "away" } = {}) {
   let state = initial, since = null
   return {
     get state() { return state },
     reset() { state = "away"; since = null },
+    setDelays(a, c) { awayMs = a ?? awayMs; clearMs = c ?? clearMs },
     step(looking, now) {
       const target = looking ? "looking" : "away"
       if (target === state) since = null
       else {
         since ??= now
-        if (now - since >= (looking ? lookMs : awayMs)) { state = target; since = null }
+        if (now - since >= (looking ? clearMs : awayMs)) { state = target; since = null }
       }
       return state
     },
   }
 }
 
-export function loadBaseline(storage = globalThis.localStorage) {
-  try { return { ...DEFAULT_BASELINE, ...JSON.parse(storage.getItem(STORE_KEY)) } } catch { return DEFAULT_BASELINE }
+const validEnvelope = (e) => !!e && ["center", "min", "max"].every((p) => FEATURES.every((k) => Number.isFinite(e[p]?.[k])))
+export function loadEnvelope(storage = globalThis.localStorage) {
+  try { const e = JSON.parse(storage.getItem(STORE_KEY)); return validEnvelope(e) ? e : DEFAULT_ENVELOPE } catch { return DEFAULT_ENVELOPE }
 }
-export function hasBaseline(storage = globalThis.localStorage) {
-  try { return !!storage.getItem(STORE_KEY) } catch { return false }
+export function hasEnvelope(storage = globalThis.localStorage) {
+  try { return validEnvelope(JSON.parse(storage.getItem(STORE_KEY))) } catch { return false }
 }
-export function saveBaseline(b, storage = globalThis.localStorage) {
-  try { storage.setItem(STORE_KEY, JSON.stringify(b)); return true } catch { return false }
+export function saveEnvelope(e, storage = globalThis.localStorage) {
+  try { storage.setItem(STORE_KEY, JSON.stringify(e)); return true } catch { return false }
 }
