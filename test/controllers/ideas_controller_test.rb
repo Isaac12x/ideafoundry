@@ -23,6 +23,17 @@ class IdeasControllerTest < ActionDispatch::IntegrationTest
     assert_select ".idea-links-group .idea-link-chip", text: "Foundation"
   end
 
+  test "show has exactly one General tab; template general fields render inside it" do
+    template = @user.templates.create!(name: "T", section_order: [], tab_definitions: [ { "name" => "general", "label" => "General", "position" => 0 } ], field_definitions: [
+      { "name" => "color", "label" => "Colour", "type" => "text", "tab" => "general", "instance_id" => "color_1", "position" => 0 }
+    ])
+    @idea.update_columns(template_id: template.id, metadata: { "color_1" => "teal" })
+    get idea_url(@idea)
+    assert_select ".tabs-nav .tab-button", text: /\AGeneral\z/, count: 1
+    assert_select ".tabs-nav .tab-button", text: /Custom fields/, count: 0
+    assert_select "[data-tab-panel=general] .metadata-item-detail", text: /Colour\s*teal/
+  end
+
   test "new uses title param for the draft" do
     assert_difference -> { @user.ideas.drafts.count }, 1 do
       get new_idea_url, params: { title: "  Solar   kettle " }

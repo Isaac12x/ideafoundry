@@ -24,7 +24,9 @@
     <% end %>
   </span>
   <span class="current-attachments__filename"><%= attachment.filename %> (<%= number_to_human_size(attachment.byte_size) %>)</span>
-  <span class="current-attachments__ocr-status"><%= attachment.ocr_status.to_s.humanize %></span>
+  <span class="current-attachments__ocr-status"<%= tag.attributes(title: attachment.ocr_error.presence) if attachment.ocr_status == "failed" %>>
+    <% if attachment.ocr_status == "failed" %>OCR failed<%= ": #{attachment.ocr_error.to_s.truncate(80)}" if attachment.ocr_error.present? %><% else %><%= attachment.ocr_status.to_s.humanize %><% end %>
+  </span>
   <span class="current-attachments__actions">
     <button type="button" class="btn btn-sm" data-action="attachment-reorder#moveUp" aria-label="Move up">↑</button>
     <button type="button" class="btn btn-sm" data-action="attachment-reorder#moveDown" aria-label="Move down">↓</button>

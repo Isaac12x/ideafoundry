@@ -739,6 +739,12 @@ has_many :media_digests, dependent: :destroy
     privacy_face_enrolled?
   end
 
+  # Turning the haze off (or swapping/removing the face ID) is only allowed with a verified-looking owner. `clear` is the
+  # client's attestation (the camera lives in the browser). Nothing to protect without an enrolled face or when off.
+  def privacy_gaze_off_allowed?(clear)
+    !privacy_gaze_enabled? || !privacy_gaze_configured? || ActiveModel::Type::Boolean.new.cast(clear) == true
+  end
+
   # Defaults merged with stored tuning (string keys). Never includes the face template.
   def privacy_gaze_settings
     stored = settings&.dig("privacy_gaze") || {}

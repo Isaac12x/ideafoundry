@@ -77,6 +77,23 @@
   display: none;
 }
 
+.idea-entries-add { margin-bottom: 0.75rem; }
+.idea-entries-add__toggle {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.3rem 0.7rem;
+  border: 1px dashed var(--border-emphasis);
+  border-radius: var(--radius-sm);
+  color: var(--accent);
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  list-style: none;
+}
+.idea-entries-add__toggle::-webkit-details-marker { display: none; }
+.idea-entries-add__toggle:hover { border-style: solid; }
+.idea-entries-add[open] > .idea-entries-add__toggle { margin-bottom: 0.5rem; }
+
 .idea-entries-add-section {
   background: var(--bg-surface);
   border: 1px solid var(--border-default);

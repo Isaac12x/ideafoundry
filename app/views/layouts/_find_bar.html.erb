@@ -1,0 +1,10 @@
+<%# In-app Cmd/Ctrl+F; see find_bar_controller.js. %>
+<div class="find-bar" role="search" aria-label="Find in page" data-find-bar-target="bar" hidden>
+  <input type="text" class="find-bar__input" placeholder="Find in page" aria-label="Find in page" autocomplete="off" spellcheck="false"
+         data-find-bar-target="input" data-action="input->find-bar#run keydown->find-bar#inputKey">
+  <span class="find-bar__count" aria-live="polite" data-find-bar-target="count"></span>
+  <label class="find-bar__case" title="Match case"><input type="checkbox" data-find-bar-target="case" data-action="change->find-bar#toggleCase"><span>Aa</span></label>
+  <button type="button" class="find-bar__btn" aria-label="Previous match" data-action="find-bar#prev">&uarr;</button>
+  <button type="button" class="find-bar__btn" aria-label="Next match" data-action="find-bar#next">&darr;</button>
+  <button type="button" class="find-bar__btn" aria-label="Close find" data-action="find-bar#close">&times;</button>
+</div>

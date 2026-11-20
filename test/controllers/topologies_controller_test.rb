@@ -6,6 +6,24 @@ class TopologiesControllerTest < ActionDispatch::IntegrationTest
     @topology = @user.topologies.create!(name: "Test Topo #{SecureRandom.hex(4)}", topology_type: :custom, color: "#ff0000")
   end
 
+  test "create without a colour gives a root the next unused palette colour" do
+    @user.topologies.roots.where.not(id: @topology.id).destroy_all
+    @topology.update!(color: Topology::PALETTE.first)
+    post topologies_path(format: :json), params: { topology: { name: "Clothing #{SecureRandom.hex(3)}" } }, as: :json
+    assert_response :created
+    assert_equal Topology::PALETTE.second, JSON.parse(response.body)["color"]
+  end
+
+  test "create without a colour inherits the parent colour" do
+    post topologies_path(format: :json), params: { topology: { name: "Child #{SecureRandom.hex(3)}", parent_id: @topology.id } }, as: :json
+    assert_equal "#ff0000", JSON.parse(response.body)["color"]
+  end
+
+  test "create keeps an explicitly picked colour" do
+    post topologies_path(format: :json), params: { topology: { name: "Picked #{SecureRandom.hex(3)}", color: "#3b82f6" } }, as: :json
+    assert_equal "#3b82f6", JSON.parse(response.body)["color"]
+  end
+
   test "graph_data includes settings in JSON" do
     get graph_data_topologies_path(format: :json)
     assert_response :success

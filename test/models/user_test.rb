@@ -132,7 +132,19 @@ class UserTest < ActiveSupport::TestCase
     assert_equal 3, user.reload.privacy_gaze_settings["haze_strength"]
   end
 
-  test "privacy gaze tuning defaults, clamps, filters and ignores junk" do
+  test "privacy gaze off needs a clear attestation only while enabled with an enrolled face" do
+  user = users(:one)
+  assert user.privacy_gaze_off_allowed?(nil) # off already
+  user.update_privacy_gaze_settings("enabled" => "1")
+  assert user.privacy_gaze_off_allowed?(nil) # no face to protect
+  user.store_privacy_face_template!(Array.new(3) { Array.new(128) { |i| i / 128.0 } })
+  refute user.privacy_gaze_off_allowed?(nil)
+  refute user.privacy_gaze_off_allowed?("0")
+  assert user.privacy_gaze_off_allowed?("1")
+  assert user.privacy_gaze_off_allowed?(true)
+end
+
+test "privacy gaze tuning defaults, clamps, filters and ignores junk" do
     user = users(:one)
     s = user.privacy_gaze_settings
     assert_equal User::NAV_PAGE_KEYS, s["sections"]

@@ -232,6 +232,46 @@ test("tree arrow keys move between visible items and collapse/expand folders", a
   assert.equal(focused, folder)
 })
 
+test("arrow keys work when a mouse click left focus on the row's inner link", async () => {
+  const Controller = await loadController()
+  const controller = new Controller()
+  const row = { matches: () => true }
+  const next = { matches: () => true }
+  const link = { matches: () => false, closest: (sel) => (sel === '[role="treeitem"]' ? row : link) }
+  let focused
+  controller._items = () => [row, next]
+  controller._focusItem = (r) => { focused = r }
+  controller._treeKeydown({ target: link, key: "ArrowDown", preventDefault() {} })
+  assert.equal(focused, next)
+  const input = { matches: () => false, closest: () => null }
+  focused = null
+  controller._treeKeydown({ target: input, key: "ArrowDown", preventDefault() {} })
+  assert.equal(focused, null, "keys inside inputs stay theirs")
+})
+
+test("tree type-ahead jumps to the next item starting with the typed letters", async () => {
+  const Controller = await loadController()
+  const controller = new Controller()
+  const mk = (name) => ({ name, matches: () => true, getAttribute: () => name })
+  const items = [mk("Alpha"), mk("Beta"), mk("Bravo"), mk("Charlie")]
+  let focused
+  controller._items = () => items
+  controller._isDir = () => false
+  controller._focusItem = (r) => { focused = r.name }
+  const type = (key, at = items.findIndex((r) => r.name === focused)) => controller._treeKeydown({ target: items[at < 0 ? 0 : at], key, preventDefault() {} })
+  type("b")
+  assert.equal(focused, "Beta")
+  type("b")
+  assert.equal(focused, "Bravo", "same letter cycles")
+  type("r")
+  assert.equal(focused, "Bravo", "prefix keeps the match")
+  clearTimeout(controller._typedTimer)
+  controller._typed = ""
+  type("c")
+  assert.equal(focused, "Charlie")
+  clearTimeout(controller._typedTimer)
+})
+
 test("deleting a folder named like a number submits its path (Stimulus casts the param to Number)", async () => {
   const KbTreeController = await loadController()
   const controller = new KbTreeController()

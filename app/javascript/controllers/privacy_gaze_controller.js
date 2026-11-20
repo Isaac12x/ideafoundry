@@ -1,12 +1,12 @@
 import { Controller } from "@hotwired/stimulus"
-import { devtoolsKey, devtoolsOpen, hazeVars, indicatorState, paintIndicator, windowGap } from "lib/privacy_guard"
-import { binding } from "lib/shortcut_bindings"
+import { devtoolsKey, devtoolsOpen, hazeOffAllowed, hazeVars, windowGap } from "lib/privacy_guard"
 
 // On protected sections (activeValue) the page CONTENT (<main id="main-content">, never the navigation) is hazed unless
 // the ENROLLED person is verified (face match + anti-spoof + liveness + ears), the camera is live, they look at the
 // screen, and nobody else does. Hazed = opacity/blur/transform + inert; no text, no overlay. Everything fails closed and
 // silently: the reason is only broadcast (privacy-gaze:status) for the settings page.
-// Exception: the settings page stays usable with no face ID / camera, so this can be set up or switched off.
+// The settings page is never hazed (so this can be set up or switched off) but still verifies the owner: turning the
+// haze off needs a verified, looking owner (body[data-privacy-gaze-verified]).
 // Inactive pages: no camera, no haze (the session is dropped after RESUME_MS).
 // The bundle (mediapipe + Human) is lazy and strictly local; see app/javascript/privacy_gaze/.
 const assets = () => { try { return JSON.parse(document.querySelector('meta[name="privacy-gaze-assets"]')?.content) } catch { return null } }
@@ -14,7 +14,7 @@ const RESUME_MS = 3000 // a Turbo visit rebuilds <body>: keep the camera session
 const DEVTOOLS_POLL_MS = 1000
 
 // survives controller reconnects (Turbo navigation)
-const shared = { session: null, guard: null, lib: null, timer: null, ctl: null, run: 0, last: null, gapBase: null, locked: false }
+const shared = { session: null, guard: null, lib: null, timer: null, ctl: null, run: 0, last: null, gapBase: null, locked: false, screen: null, prompted: new Set() }
 const teardown = () => { clearTimeout(shared.timer); shared.run++; shared.session?.stop(); shared.session = null; shared.guard = null }
 
 const getFace = async (url) => {
@@ -35,6 +35,7 @@ export default class extends Controller {
     this.devtools = false
     this.onChanged = () => { teardown(); this.start() }
     this.onCalibrated = () => shared.guard?.setCalibration(shared.lib.loadEnvelope())
+    this.onScreenChange = () => this.checkScreen()
     this.onVisibility = () => { if (!document.hidden) { shared.guard?.reset(); this.apply(true) } }
     // capture: a page script must not swallow these. Only while hazed on a protected page.
     this.onKey = (e) => { if (this.locking() && devtoolsKey(e)) { e.preventDefault(); e.stopPropagation() } }
@@ -46,15 +47,15 @@ export default class extends Controller {
     window.addEventListener("keydown", this.onKey, true)
     window.addEventListener("contextmenu", this.onMenu, true)
     window.addEventListener("resize", this.onResize)
+    screen.addEventListener?.("change", this.onScreenChange) // Chrome multi-screen: window moved to another monitor
     shared.ctl = this
     this.applyStrength()
-    this.paint(false)
 
     if (!this.activeValue) { // inactive page: nothing hazed; a running session ends after RESUME_MS (timer set on disconnect)
       this.setHazy(false, true)
       return
     }
-    this.poll = setInterval(() => this.checkDevtools(), DEVTOOLS_POLL_MS)
+    this.poll = setInterval(() => { this.checkDevtools(); this.checkScreen() }, DEVTOOLS_POLL_MS)
     if (shared.session || shared.guard) {
       clearTimeout(shared.timer)
       shared.guard?.setTuning(this.tuning()) // resumed after a Turbo visit
@@ -69,6 +70,7 @@ export default class extends Controller {
     window.removeEventListener("keydown", this.onKey, true)
     window.removeEventListener("contextmenu", this.onMenu, true)
     window.removeEventListener("resize", this.onResize)
+    screen.removeEventListener?.("change", this.onScreenChange)
     clearInterval(this.poll)
     if (shared.ctl === this) shared.ctl = null
     clearTimeout(shared.timer)
@@ -79,8 +81,33 @@ export default class extends Controller {
 
   applyStrength() { for (const [k, v] of Object.entries(hazeVars(this.strengthValue))) this.element.style.setProperty(k, v) }
 
-  // nav eye: this controller only exists while the feature is on
-  paint(hazy) { paintIndicator(document.querySelector("[data-privacy-indicator]"), indicatorState(true, hazy), binding("privacy_haze")) }
+  // Each screen has its own calibration profile: switch to the one of the screen the window is on now (the window
+  // may sit on the laptop or an external monitor), and ask for a calibration once per uncalibrated screen.
+  // ponytail: polled (screen.onchange / window moves are not reliable everywhere); 1s is plenty.
+  checkScreen() {
+    const lib = shared.lib
+    if (!lib?.screenKey) return
+    const key = lib.screenKey()
+    if (key === shared.screen) return
+    shared.screen = key
+    shared.guard?.setCalibration(lib.loadEnvelope())
+    if (lib.hasEnvelope() || shared.prompted.has(key)) return
+    shared.prompted.add(key)
+    this.promptCalibrate()
+  }
+
+  promptCalibrate() {
+    const box = document.getElementById("flash")
+    if (!box) return
+    const el = document.createElement("div")
+    el.className = "alert alert-error"
+    el.setAttribute("role", "alert")
+    el.dataset.controller = "flash"
+    el.dataset.action = "click->flash#dismiss"
+    el.append("This screen is not calibrated for gaze privacy. ")
+    el.appendChild(Object.assign(document.createElement("a"), { href: `${this.settingsUrlValue}#privacy-calibration`, textContent: "Calibrate it" }))
+    box.replaceChildren(el)
+  }
 
   tuning() { return { sensitivity: this.sensitivityValue, awayMs: this.awayMsValue, clearMs: this.clearMsValue } }
 
@@ -133,6 +160,7 @@ export default class extends Controller {
       shared.lib ??= await import(a.bundle)
       if (!live()) return
       const lib = shared.lib
+      shared.screen = lib.screenKey()
       const guard = shared.guard = lib.createGuard({ envelope: lib.loadEnvelope(), enrolled: true, ...this.tuning() })
       this.messages = lib.MESSAGES
       const session = await lib.startGazeSession({
@@ -146,6 +174,7 @@ export default class extends Controller {
       })
       if (!live()) return session.stop()
       shared.session = session
+      this.checkScreen() // prompt for an uncalibrated first screen
     } catch {
       if (live()) { shared.guard = null; this.show("error") }
     }
@@ -160,15 +189,20 @@ export default class extends Controller {
   show(reason) { this.render(true, reason) }
 
   render(hazy, reason, instant = false) {
-    // never haze the settings page while there is no face ID / camera: the user must be able to set it up or turn it off
+    // body[data-privacy-gaze-verified]: the owner is verified looking right now (or there is no face ID to verify).
+    // Turning the haze off (shortcut, settings toggle, removing face ID) needs it, unless there is no usable camera or face ID; absent = unknown (inactive page).
+    const verified = hazeOffAllowed(hazy, reason)
+    document.body.dataset.privacyGazeVerified = verified
+    // the settings page never hazes its content (so the haze can be configured), but still verifies the owner
     const onSettings = this.settingsUrlValue && location.pathname === new URL(this.settingsUrlValue, location.href).pathname
-    if (hazy && onSettings && !this.devtools && (reason === "not_enrolled" || reason === "error")) hazy = false
+    const raw = hazy
+    if (hazy && onSettings && !this.devtools) hazy = false
     this.setHazy(hazy, instant)
-    const text = hazy ? (this.messages?.[reason] || (reason === "error" ? "Camera unavailable" : reason === "not_enrolled" ? "Face ID is not set up" : "Privacy haze is on")) : "Clear"
-    const key = `${hazy}:${reason}`
+    const text = raw ? (this.messages?.[reason] || (reason === "error" ? "Camera unavailable" : reason === "not_enrolled" ? "Face ID is not set up" : "Privacy haze is on")) : "Clear"
+    const key = `${raw}:${reason}:${verified}`
     if (shared.last !== key) {
       shared.last = key
-      window.dispatchEvent(new CustomEvent("privacy-gaze:status", { detail: { hazy, reason, text } }))
+      window.dispatchEvent(new CustomEvent("privacy-gaze:status", { detail: { hazy: raw, reason, text, verified } }))
     }
   }
 
@@ -176,7 +210,6 @@ export default class extends Controller {
   setHazy(hazy, instant = false) {
     const main = document.getElementById("main-content")
     document.body.dataset.privacyGazeState = hazy ? "hazy" : "clear"
-    this.paint(hazy)
     if (hazy === this.hazy && !instant) return
     this.hazy = hazy
     if (!main) return

@@ -12,7 +12,7 @@ module TemplatesHelper
         value
       end
     when "textarea"
-      simple_format(value.to_s)
+      render_prose(value.to_s)
     when "url"
       link_to value.to_s, value.to_s, target: "_blank", rel: "noopener"
     else

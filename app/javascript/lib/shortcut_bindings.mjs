@@ -107,8 +107,8 @@ export function sequenceKeys(bind) {
   return /^\S \S$/.test(bind || "") ? bind.toLowerCase().split(" ") : null
 }
 
-// Privacy-haze shortcut: turning it ON is always fine; turning it OFF is refused while the haze is currently on, so a
-// stranger at the keyboard cannot disable it. state = body[data-privacy-gaze-state] ("hazy" | "clear" | undefined).
-export function privacyToggleAllowed(enabled, state) {
-  return !(enabled && state === "hazy")
+// Privacy-haze shortcut: turning it ON is always fine; turning it OFF needs the owner verified looking right now
+// (body[data-privacy-gaze-verified] === "true"; absent/"false" = hazed, away, unknown face or inactive page).
+export function privacyToggleAllowed(enabled, verified) {
+  return !enabled || verified === true || verified === "true"
 }

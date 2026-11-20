@@ -33,6 +33,12 @@ class KbProjectSystemTest < ApplicationSystemTestCase
     click_button "Add test"
     assert_selector ".kbp-test-name", text: "Fridge"
 
+    # "Draw" is offered in the forms and opens the Excalidraw dialog
+    find(".kbp-draw", match: :first).click
+    assert_selector ".idea-drawings__modal:not(.hidden) .excalidraw-mount .excalidraw", visible: :all, wait: 15
+    find(".idea-drawings__modal:not(.hidden) [data-modal-close]").click
+    assert_selector ".idea-drawings__modal.hidden", visible: :all
+
     [ [ "2026-10-06", "4.0" ], [ "2026-10-20", "4.5" ] ].each do |date, value|
       find(".kbp-log summary").click
       within ".kbp-log" do

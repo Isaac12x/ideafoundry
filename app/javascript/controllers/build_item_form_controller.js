@@ -3,7 +3,8 @@ import { Controller } from "@hotwired/stimulus"
 export default class extends Controller {
   static targets = ["input", "descRow", "descToggle"]
 
-  reset() {
+  reset(event) {
+    if (event?.detail && !event.detail.success) return // a rejected save keeps what was typed
     this.element.reset()
     if (this.hasDescRowTarget) {
       this.descRowTarget.style.display = "none"
@@ -14,9 +15,8 @@ export default class extends Controller {
         Add details
       `
     }
-    if (this.hasInputTarget) {
-      this.inputTarget.focus()
-    }
+    // The stream swaps in a fresh form right after submit-end: focus whichever input is live then.
+    setTimeout(() => (document.querySelector("#build_item_form [data-build-item-form-target=input]") || (this.hasInputTarget && this.inputTarget))?.focus())
   }
 
   toggleDesc() {

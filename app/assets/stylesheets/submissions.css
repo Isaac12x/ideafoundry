@@ -185,9 +185,9 @@
 
 /* ---- Detail View ---- */
 .submission-detail-container {
-  max-width: 1200px;
+  max-width: var(--page-width);
   margin: 0 auto;
-  padding: 2rem;
+  /* .app-main already pads 2rem */
 }
 
 .submission-header {
@@ -390,7 +390,7 @@
 
 /* ---- Container ---- */
 .submissions-container {
-  max-width: 1200px;
+  max-width: var(--page-width);
   margin: 0 auto;
   /* .app-main already pads 2rem; padding here double-indented the page */
 }

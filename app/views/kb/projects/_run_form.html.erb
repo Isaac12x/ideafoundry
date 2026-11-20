@@ -11,7 +11,7 @@
     <label class="kbp-field"><span class="kbp-label">Date</span>
       <input type="date" name="date" required class="kbp-input" value="<%= (run&.date || Date.current).iso8601 %>"></label>
     <label class="kbp-field kbp-field--grow"><span class="kbp-label">Conditions</span>
-      <input type="text" name="conditions" class="kbp-input" value="<%= run&.conditions %>" placeholder="Temperature, batch, setup…" autocomplete="off"></label>
+      <input type="text" name="conditions" data-mention class="kbp-input" value="<%= run&.conditions %>" placeholder="Temperature, batch, setup…" autocomplete="off"></label>
   </div>
   <label class="kbp-field"><span class="kbp-label">Result</span>
     <textarea name="result" rows="3" class="kbp-input" placeholder="What happened"><%= run&.result %></textarea></label>
@@ -23,5 +23,5 @@
   </fieldset>
   <label class="kbp-field"><span class="kbp-label"><%= run ? "Add files" : "Files" %></span>
     <input type="file" name="files[]" multiple class="kbp-file-input"></label>
-  <div class="kbp-actions"><button class="kbp-btn kbp-btn--primary"><%= run ? "Save run" : "Log run" %></button></div>
+  <div class="kbp-actions"><button type="button" class="kbp-link kbp-draw" data-action="kb-project#draw">Draw</button> <button class="kbp-btn kbp-btn--primary"><%= run ? "Save run" : "Log run" %></button></div>
 <% end %>

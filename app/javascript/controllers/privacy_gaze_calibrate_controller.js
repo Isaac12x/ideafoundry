@@ -1,16 +1,18 @@
 import { Controller } from "@hotwired/stimulus"
+import { defaultScreenName, deleteProfile, loadProfiles, profileFor, renameProfile, saveEnvelope, screenKey } from "lib/gaze_profiles"
 
 // Settings panel: guided 5-point calibration (a dot at the centre, then the four corners of the viewport, ~1.5s each)
-// stores this device's "screen envelope" (the camera sits above the screen, so "looking" is never yaw/pitch 0).
+// stores this device's "screen envelope" (the camera sits above the screen, so "looking" is never yaw/pitch 0), one
+// profile per screen (laptop, external monitor above or beside it): listed here to rename / recalibrate / delete.
 // Afterwards the camera stays on as a live Looking/Away test next to the preview. Also shows the live haze status.
 const SETTLE_MS = 700 // dot travel + eyes catching up
 const COLLECT_MS = 800
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
-const STORE_KEY = "privacy-gaze:envelope" // same key as gaze_state.js (the bundle may not be loaded yet)
 const assets = () => { try { return JSON.parse(document.querySelector('meta[name="privacy-gaze-assets"]')?.content) } catch { return null } }
 
 const SAMPLES = 5 // face descriptors stored per enrollment
 const CAPTURE_MS = 400
+const verified = () => document.body.dataset.privacyGazeVerified === "true" // see privacy_gaze_controller render()
 const csrf = () => document.querySelector('meta[name="csrf-token"]')?.content
 const call = (url, method, body) => fetch(url, {
   method, credentials: "same-origin",
@@ -20,17 +22,19 @@ const call = (url, method, body) => fetch(url, {
 
 export default class extends Controller {
   static targets = ["button", "status", "preview", "live", "message",
-    "stage", "haze", "enrollButton", "enrollStatus", "enrollStage", "enrollPreview", "enrollMessage", "enrollSteps", "check", "removeButton"]
+    "stage", "haze", "profiles", "enrollButton", "enrollStatus", "enrollStage", "enrollPreview", "enrollMessage", "enrollSteps", "check", "removeButton"]
   static values = { faceUrl: String }
 
   connect() {
     this.gone = false
     this.showStatus()
+    this.shownKey = screenKey()
+    this.screenPoll = setInterval(() => { if (screenKey() !== this.shownKey) { this.shownKey = screenKey(); this.showStatus() } }, 1000)
     this.loadFace()
     this.onStatus = (e) => this.paintHaze(e.detail)
     window.addEventListener("privacy-gaze:status", this.onStatus)
   }
-  disconnect() { this.gone = true; window.removeEventListener("privacy-gaze:status", this.onStatus); this.stop(); this.stopEnroll() }
+  disconnect() { this.gone = true; clearInterval(this.screenPoll); window.removeEventListener("privacy-gaze:status", this.onStatus); this.stop(); this.stopEnroll() }
 
   paintHaze({ hazy, text }) {
     if (!this.hasHazeTarget) return
@@ -110,7 +114,7 @@ export default class extends Controller {
     const descriptors = this.captured.map((d) => Array.from(d))
     this.stopEnroll()
     this.sayEnroll("Saving…")
-    const { ok, data } = await call(this.faceUrlValue, "PUT", { descriptors }).catch(() => ({ ok: false, data: {} }))
+    const { ok, data } = await call(this.faceUrlValue, "PUT", { descriptors, clear: verified() }).catch(() => ({ ok: false, data: {} }))
     this.saving = false
     this.sayEnroll(ok && data.saved ? "Face ID saved. Only you clear the haze." : (data.error || "Could not save face ID. Try again."))
     if (ok && data.saved) window.dispatchEvent(new CustomEvent("privacy-gaze:enrolled"))
@@ -118,8 +122,8 @@ export default class extends Controller {
   }
 
   async removeFace() {
-    const { ok } = await call(this.faceUrlValue, "DELETE").catch(() => ({ ok: false }))
-    this.sayEnroll(ok ? "Face ID removed. The haze stays on until you enroll again." : "Could not remove face ID.")
+    const { ok, data } = await call(this.faceUrlValue, "DELETE", { clear: verified() }).catch(() => ({ ok: false }))
+    this.sayEnroll(ok ? "Face ID removed. The haze stays on until you enroll again." : (data?.error || "Could not remove face ID."))
     if (ok) window.dispatchEvent(new CustomEvent("privacy-gaze:enrolled"))
     this.loadFace()
   }
@@ -153,7 +157,7 @@ export default class extends Controller {
     try {
       this.lib ??= await import(a.bundle)
       if (this.gone) return
-      this.envelope = this.lib.loadEnvelope()
+      this.envelope = this.lib.loadEnvelope() // this screen's profile
       this.collecting = null
       this.session = await this.lib.startGazeSession({
         assets: a,
@@ -191,8 +195,10 @@ export default class extends Controller {
     stage.remove()
     if (!live()) return
     const env = lib.buildEnvelope(perPoint)
-    if (env && lib.saveEnvelope(env)) {
+    const known = profileFor(loadProfiles(), screenKey())
+    if (env && saveEnvelope(env, undefined, undefined, known ? undefined : defaultScreenName(screen, await this.screenLabel()))) {
       this.envelope = env
+      this.shownKey = screenKey()
       window.dispatchEvent(new CustomEvent("privacy-gaze:calibrated"))
       this.say("Calibrated. Look around the screen, then away, to test.")
     } else {
@@ -244,15 +250,51 @@ export default class extends Controller {
     this.session = null
     if (this.hasPreviewTarget) this.previewTarget.hidden = true
     if (this.hasStageTarget) this.stageTarget.hidden = true
-    if (this.hasButtonTarget) { this.buttonTarget.textContent = "Calibrate"; this.buttonTarget.disabled = false }
+    if (this.hasButtonTarget) { this.buttonTarget.disabled = false; this.showStatus() }
     if (this.hasLiveTarget) this.liveTarget.textContent = ""
   }
 
+  // Display name of the current screen. Needs the window-management permission (Chrome); anything else -> null.
+  async screenLabel() {
+    try {
+      if (!window.getScreenDetails) return null
+      const state = (await navigator.permissions.query({ name: "window-management" })).state
+      if (state === "denied") return null
+      return (await window.getScreenDetails()).currentScreen?.label || null
+    } catch { return null }
+  }
+
   showStatus() {
-    if (!this.hasStatusTarget) return
-    let ok = false
-    try { ok = !!JSON.parse(localStorage.getItem(STORE_KEY))?.min } catch {}
-    this.statusTarget.textContent = ok ? "Calibrated" : "Not calibrated"
+    const key = screenKey()
+    const profiles = loadProfiles()
+    const here = profileFor(profiles, key)
+    if (this.hasStatusTarget) this.statusTarget.textContent = here ? `Calibrated · ${here.name}` : "This screen is not calibrated"
+    if (this.hasButtonTarget && !this.session) this.buttonTarget.textContent = here ? "Recalibrate" : "Calibrate"
+    if (!this.hasProfilesTarget) return
+    this.profilesTarget.hidden = !profiles.length
+    this.profilesTarget.replaceChildren(...profiles.map((p) => this.profileRow(p, p.key === key)))
+  }
+
+  profileRow(p, current) {
+    const li = document.createElement("li")
+    li.className = "privacy-profile"
+    const name = Object.assign(document.createElement("input"), { type: "text", value: p.name, maxLength: 60 })
+    name.className = "privacy-profile__name"
+    name.setAttribute("aria-label", `Name of screen ${p.name}`)
+    name.addEventListener("change", () => { if (!renameProfile(p.key, name.value)) name.value = p.name; this.showStatus() })
+    const tag = Object.assign(document.createElement("span"), { className: "privacy-profile__tag", textContent: current ? "This screen" : "" })
+    const recal = Object.assign(document.createElement("button"), { type: "button", className: "btn btn-secondary btn-sm", textContent: "Recalibrate", disabled: !current })
+    recal.title = current ? "" : "Move this window to that screen to recalibrate it"
+    recal.addEventListener("click", () => this.toggle())
+    const del = Object.assign(document.createElement("button"), { type: "button", className: "btn btn-secondary btn-sm", textContent: "Delete" })
+    del.setAttribute("aria-label", `Delete calibration of ${p.name}`)
+    del.addEventListener("click", () => {
+      deleteProfile(p.key)
+      window.dispatchEvent(new CustomEvent("privacy-gaze:calibrated"))
+      this.showStatus()
+    })
+    li.append(name, tag, recal, del)
+    return li
   }
 
   say(t) { if (this.hasMessageTarget) this.messageTarget.textContent = t }
