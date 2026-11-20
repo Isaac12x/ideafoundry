@@ -286,3 +286,15 @@ Both manual and background transcription use the same claim and enqueue path. An
 
 The Rails suite passed with 1,331 tests and 6,444 assertions on Ruby 4.0.7. The change requires no migration. Work was isolated on branch perf/resilient-kb.
 Browser system suite: 108 runs, 878 assertions, 0 failures, 0 errors, 0 skips
+
+## 2026-11-20 — Note import retries, KB tree scans and backup recovery
+
+This pass follows the capture promise in VISION.md. GPT-6-Luna implemented the changes on branch `perf/intake-browse-recovery`. The branch includes the merged draft and transcription improvements from PR #125 and the app fixes from PR #126.
+
+- Note imports match the current user's existing submission references before inserting within the SQLite write transaction. Replaying a signed preview returns the new import count, including zero. An expanded selection imports the newly selected notes. Existing batch/index references remain recognizable.
+- For a prebuilt tree of 5,000 media files paired with 5,000 note sidecars, the sidecar filter averaged 243 ms before and 36.5 ms after across three runs per version. The fixture isolates filtering from directory traversal, note reads and rendering.
+- Ordinary backups check archive creation, discard partial tar output and serialize retention after a replacement completes. Idea attachment metadata accompanies its blob. Automatic cleanup preserves manual exports, shared files and older scheduled backups that were historically recorded as exports.
+
+Recovery coverage extracts a tar archive and checks its attachment metadata and payload path. A complete workspace restore and password-protected ZIP export are separate verification targets. The pinned rubyzip 3.7.0 lacks the `Zip::File::CREATE` constant used by the password export path. Retention also cannot reclaim orphan files left by a process termination after its database commit and before its filesystem cleanup.
+
+Verification on Ruby 4.0.7 passed with 1,392 Rails tests and 6,718 assertions on a fresh test database, 115 browser tests and 903 assertions, 287 JavaScript tests, and RuboCop on all seven changed Ruby files. Earlier runs on a reused test database failed the local-agent work-list assertion. An earlier browser run timed out on the napkin editor redirect, which passed both in isolation and in the full rerun.
