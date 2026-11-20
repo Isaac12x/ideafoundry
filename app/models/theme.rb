@@ -1,5 +1,7 @@
 # User-scoped label for grouping ideas (e.g. "Productizing"). Many-to-many with ideas.
 class Theme < ApplicationRecord
+  include SemanticIndexable
+  semantic_index type: "theme", owner: ->(r) { r.user_id }, sections: ->(r) { [ r.name ] }, parents: ->(r) { r.saved_change_to_name? ? r.ideas : [] }
   belongs_to :user
   has_many :idea_themes, dependent: :destroy
   has_many :ideas, through: :idea_themes

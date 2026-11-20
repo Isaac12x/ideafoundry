@@ -34,6 +34,7 @@ class KbTranscribeJob < ApplicationJob
     # Locking started meanwhile: the sidecar stays, the sweep adopts it after unlock.
     return release(abs, download) if Kb::ProjectLock.busy_path?(abs) || !File.exist?(path)
 
+    bust_kb_cache(abs, download) # the new .vtt must reach the semantic index
     text = Kb::VideoTranscript.render(File.read(path), "vtt")
     download&.update!(transcript: text, transcript_status: "done", transcript_error: nil) if text
     download&.update!(transcript_status: "awaiting_audio", transcript_error: "Transcript came back empty.") unless text
@@ -46,6 +47,12 @@ class KbTranscribeJob < ApplicationJob
   end
 
   private
+
+  # Owner: the download's user, else whichever user's KB source contains the file (dropped-in files have no row).
+  def bust_kb_cache(abs, download)
+    user = download&.user || User.find_each.find { |u| KbSource.list(u).any? { |s| abs.start_with?("#{File.expand_path(s[:path])}/") } }
+    Kb::TreeBuilder.bust_cache!(user) if user
+  end
 
   # Project is locking: write nothing, free the claim, let the sweep retry.
   def release(abs, download)

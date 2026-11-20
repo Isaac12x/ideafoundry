@@ -1,12 +1,10 @@
 # Command palette search: grouped hits across ideas, notes, lists, topologies and the KB.
-# mode=quick (title/substring), similar (TF-IDF vs a seed idea/KB entry or the typed text), deep (all words in full text, with snippets).
+# mode=quick (title/substring), similar (semantic via the SemanticSearch sidecar when up, else TF-IDF; vs a seed idea/KB entry or the typed text), deep (all words in full text, with snippets).
 class SearchController < ApplicationController
   include KbEntrySearch
 
   PER_GROUP = 6
   DEEP_PER_GROUP = 8
-  DEEP_EXT = %w[.md .markdown .txt .vtt].freeze
-  DEEP_FILE_BYTES = 256.kilobytes
   DEEP_BUDGET = 1.5 # seconds; ponytail: bounded scan of the KB, FTS5 index if this gets cut off
   CORPUS = 500
 
@@ -57,6 +55,54 @@ class SearchController < ApplicationController
   # --- Similar ---
 
   def similar_groups(q)
+    semantic_similar_groups(q) || tfidf_similar_groups(q)
+  end
+
+  # nil = sidecar off/down/seed not indexed yet -> caller falls back to TF-IDF.
+  # Hits of every indexed type (or ?types=idea,note) are re-loaded through the user's own scopes (gone/foreign ids drop out) and grouped by registry label.
+  def semantic_similar_groups(q)
+    return unless SemanticSearch.enabled?
+
+    seed = if params[:idea].present? then { id: SemanticSearch.idea_id(@user.id, params[:idea].to_i) }
+    elsif params[:path].present? then { id: SemanticSearch.kb_id(@user.id, params[:src].to_i, params[:path].to_s) }
+    elsif params[:seed].present? then { id: params[:seed].to_s }
+    elsif q.present? then { query: q }
+    end
+    return unless seed
+
+    types = params[:types].to_s.split(",").presence
+    hits = SemanticSearch.search(prefix: SemanticSearch.prefix(@user.id), k: 24, exclude: [ seed[:id] ].compact, types: types, **seed)
+    return if hits.blank?
+
+    rows = hits.filter_map { |h| (t, key = SemanticIndex.parse(@user, h["id"])) && [ t, key, h ] }
+    loaded = rows.group_by(&:first).to_h { |t, rs| [ t, SemanticIndex.records(@user, t, rs.map { |r| r[1] }) ] }
+    entries = kb_entry_index.index_by { |e| SemanticSearch.kb_id(@user.id, e[:src], e[:path]) } if hits.any? { |h| h["id"].include?(":kb:") }
+    pct = ->(h) { "#{(h['score'].to_f * 100).round}% match" }
+
+    groups = Hash.new { |hash, k| hash[k] = [] }
+    hits.each do |h|
+      if (t, key = SemanticIndex.parse(@user, h["id"]))
+        rec = loaded.dig(t, key) or next
+        groups[SemanticIndex.label(t)] << semantic_item(t, rec, pct.(h))
+      elsif (e = entries&.dig(h["id"]))
+        groups["Knowledge Base"] << kb_item(e.slice(:src, :path, :name, :type, :source), hint: pct.(h))
+      end
+    end
+    return if groups.empty?
+
+    # Items can pick their own group (drafts), so regroup after building.
+    regrouped = groups.flat_map { |label, items| items.map { |i| [ i.delete(:group) || label, i ] } }.group_by(&:first)
+    regrouped.map { |label, pairs| [ label, pairs.map(&:last).first(PER_GROUP) ] }
+  end
+
+  def semantic_item(type, rec, hint)
+    return idea_item(rec, hint: hint) if type == "idea" && !rec.draft?
+
+    item = SemanticIndex.item(type, rec)
+    item.merge(hint: [ hint, item[:hint] ].compact_blank.join(" · "), actions: basic_actions(item[:url]))
+  end
+
+  def tfidf_similar_groups(q)
     seed_text, skip_idea, skip_kb = similar_seed(q)
     return [] if seed_text.blank?
 
@@ -124,22 +170,12 @@ class SearchController < ApplicationController
     end
   end
 
-  def kb_file_text(entry, bytes)
-    return "" unless entry[:type] == "file" && DEEP_EXT.include?(File.extname(entry[:name]).downcase)
-
-    File.read(File.join(File.expand_path(KbSource.list(@user)[entry[:src]][:path]), entry[:path]), bytes).to_s.scrub
-  rescue SystemCallError
-    ""
-  end
-
   def idea_corpus
     @user.ideas.non_draft.where(discarded_at: nil).includes(:rich_text_description, :notes, :topologies, :themes)
          .order(updated_at: :desc).limit(CORPUS)
   end
 
-  def idea_text(idea)
-    [ idea.title, idea.title, idea.tldr, idea.description.to_plain_text, idea.notes.map(&:body), idea.topologies.map(&:name), idea.themes.map(&:name) ].flatten.compact.join(" ")
-  end
+  def idea_text(idea) = idea.search_text
 
   # --- Items + drill-in actions. run: go (visit) | tab | copy | post (JSON, then refresh) | similar (client re-queries) ---
 

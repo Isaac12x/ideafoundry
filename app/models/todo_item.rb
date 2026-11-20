@@ -1,4 +1,6 @@
 class TodoItem < ApplicationRecord
+  include SemanticIndexable
+  semantic_index type: "todo", owner: ->(r) { r.user_id || r.idea&.user_id }, sections: ->(r) { [ r.title ] }, parents: ->(r) { [ r.idea ] }
   include RecordsIdeaHistory
   include NotificationScope
 

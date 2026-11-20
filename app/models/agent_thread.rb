@@ -1,5 +1,8 @@
 # A conversation with the in-app agent: question/answer AgentEvents sharing agent_thread_id. Each turn picks its own agent.
 class AgentThread < ApplicationRecord
+  include SemanticIndexable
+  semantic_index type: "agent_thread", owner: ->(r) { r.user_id },
+                 sections: ->(r) { [ r.title, *r.agent_events.where(event_type: "question").order(:id).last(20).map(&:summary) ] }
   HISTORY_TURNS = 8
   HISTORY_CHARS = 1200
 

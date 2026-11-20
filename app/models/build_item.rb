@@ -1,4 +1,6 @@
 class BuildItem < ApplicationRecord
+  include SemanticIndexable
+  semantic_index type: "build_item", owner: ->(r) { r.user_id }, sections: ->(r) { [ r.title, *SemanticIndex.split(r.description) ] }
   CHECKLIST_LINE_PATTERN = /\A(?<indent>\s*)(?<marker>[-*])\s+\[(?<state>[ xX])\]\s+(?<title>.*)\z/
 
   belongs_to :user

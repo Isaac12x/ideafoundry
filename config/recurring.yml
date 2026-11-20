@@ -20,6 +20,11 @@ development:
     command: "KbTranscriptJob.sweep"
     schedule: every 15 minutes
 
+  # Embed ideas + KB for the palette's semantic Similar (no-op without SEMANTIC_SERVICE_URL)
+  sweep_semantic_index:
+    command: "SemanticIndexJob.sweep"
+    schedule: every 15 minutes
+
   # Planner stats: PRAGMA optimize + ANALYZE so new indexes/data volumes are used
   db_optimize:
     class: DbOptimizeJob
@@ -84,6 +89,11 @@ production:
   # Lost/stale YouTube transcript fetches + backfill of older downloads
   sweep_kb_transcripts:
     command: "KbTranscriptJob.sweep"
+    schedule: every 15 minutes
+
+  # Embed ideas + KB for the palette's semantic Similar (no-op without SEMANTIC_SERVICE_URL)
+  sweep_semantic_index:
+    command: "SemanticIndexJob.sweep"
     schedule: every 15 minutes
 
   # Planner stats: PRAGMA optimize + ANALYZE so new indexes/data volumes are used

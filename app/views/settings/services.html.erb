@@ -1,0 +1,73 @@
+<%= render 'settings/upgrade_bar' %>
+<div class="settings-container" data-controller="service-settings" data-service-settings-test-url-value="<%= settings_services_test_path %>">
+  <div class="page-header">
+    <h2>Services</h2>
+    <div class="svc-header-actions">
+      <button type="button" class="btn btn-sm" data-action="service-settings#testAll" data-service-settings-target="testAllButton">Test all</button>
+      <%= link_to settings_path, class: "btn btn-sm" do %>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        Back to Settings
+      <% end %>
+    </div>
+  </div>
+
+  <p class="svc-intro">Addresses and binaries for the helper services. A value saved here overrides the environment variable; clear it to fall back to the environment, then the default.</p>
+
+  <%= form_with url: settings_services_path, method: :patch, local: true, class: "svc-form" do %>
+    <ol class="svc-list">
+      <% @services.each do |svc| %>
+        <li class="svc-row" data-service-settings-target="row" data-key="<%= svc[:key] %>" data-state="unknown">
+          <div class="svc-head">
+            <span class="svc-lamp" aria-hidden="true"></span>
+            <div class="svc-title">
+              <h3><%= svc[:name] %> <span class="svc-kind"><%= svc[:kind] == "bin" ? "binary" : "http" %></span></h3>
+              <p><%= svc[:summary] %></p>
+            </div>
+            <div class="svc-test">
+              <span class="svc-result" role="status" aria-live="polite" data-role="result">not tested</span>
+              <button type="button" class="btn btn-sm btn-ghost" data-action="service-settings#test" data-key="<%= svc[:key] %>">Test</button>
+            </div>
+          </div>
+
+          <div class="svc-fields">
+            <% svc[:fields].each do |f| %>
+              <% id = "svc_#{f[:env].downcase}" %>
+              <div class="svc-field">
+                <label for="<%= id %>"><span><%= f[:label] %></span> <code><%= f[:env] %></code></label>
+                <div class="svc-input-row">
+                  <input type="text" id="<%= id %>" name="services[<%= f[:env] %>]" class="form-control svc-input"
+                         value="<%= f[:override] %>" placeholder="<%= f[:override].present? ? f[:default] : f[:value].presence || f[:default] %>"
+                         data-env="<%= f[:env] %>" data-effective="<%= f[:value] %>" data-service-settings-target="input"
+                         autocomplete="off" autocapitalize="off" spellcheck="false"
+                         data-action="input->service-settings#touched" aria-describedby="<%= id %>_hint">
+                  <span class="svc-source" data-source="<%= f[:source] %>" data-role="source"><%= f[:source] %></span>
+                  <button type="button" class="svc-reset" data-action="service-settings#reset" <%= "hidden" if f[:override].blank? %> aria-label="Reset <%= f[:env] %> to environment or default">reset</button>
+                </div>
+                <small id="<%= id %>_hint"><%= f[:hint] %><% if f[:source] != "settings" && f[:value].present? %> Effective: <code><%= f[:value] %></code><% end %></small>
+              </div>
+            <% end %>
+          </div>
+
+          <% if svc[:setup].present? || svc[:docs].present? %>
+            <details class="svc-setup">
+              <summary>Set it up</summary>
+              <% if svc[:setup].present? %>
+                <div class="svc-code">
+                  <pre><code data-role="setup"><%= svc[:setup].join("\n") %></code></pre>
+                  <button type="button" class="btn btn-sm btn-ghost" data-action="service-settings#copy">Copy</button>
+                </div>
+              <% end %>
+              <% if svc[:docs].present? %>
+                <p class="svc-docs">Full guide: <code><%= svc[:docs] %></code></p>
+              <% end %>
+            </details>
+          <% end %>
+        </li>
+      <% end %>
+    </ol>
+
+    <div class="svc-actions">
+      <button type="submit" class="btn btn-primary">Save</button>
+    </div>
+  <% end %>
+</div>
