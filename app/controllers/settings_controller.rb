@@ -196,7 +196,7 @@ class SettingsController < ApplicationController
     return head :forbidden unless @user.local_agent_enabled?
 
     response.headers["Cache-Control"] = "no-store"
-    render partial: "layouts/ask_agent_threads", layout: false
+    render partial: "layouts/ask_agent_threads", layout: false, locals: { thread_param: params[:thread].to_s }
   end
 
   def create_local_agent_question
@@ -216,16 +216,24 @@ class SettingsController < ApplicationController
       return
     end
 
-    @user.agent_events.create!(
+    agent = LocalAgent::Agents.normalize(local_agent_question_params[:agent])
+    thread = local_agent_question_thread(local_agent_question_params[:thread_id], question)
+    event = @user.agent_events.create!(
       event_type: "question",
+      agent_thread: thread,
       summary: question.truncate(160),
       payload: {
         "question" => question,
+        "agent" => agent,
         "status" => "pending"
       }
     )
-    LocalAgentSupervisorJob.perform_later(@user.id, run_once: true)
-    return render json: { ok: true, live: @user.local_agent_live?, settings_url: settings_local_agent_path } if request.format.json?
+    if agent == "model"
+      AgentModelTurnJob.perform_later(event.id)
+    else
+      LocalAgentSupervisorJob.perform_later(@user.id, run_once: true)
+    end
+    return render json: { ok: true, thread_id: thread.id, live: @user.local_agent_live?, settings_url: settings_local_agent_path } if request.format.json?
 
     redirect_to local_agent_question_return_path, notice: "Question queued for the local agent."
   end
@@ -869,7 +877,12 @@ class SettingsController < ApplicationController
   end
 
   def local_agent_question_params
-    params.fetch(:agent_question, {}).permit(:body)
+    params.fetch(:agent_question, {}).permit(:body, :thread_id, :agent)
+  end
+
+  # An existing own thread continues; anything else (blank, "new", someone else's id) starts a new one.
+  def local_agent_question_thread(id, question)
+    @user.agent_threads.find_by(id: id) || @user.agent_threads.create!(title: AgentThread.title_for(question))
   end
 
   # The sidebar poll is background traffic: it must not count as activity, or an unanswered question would keep the typing lock open forever.

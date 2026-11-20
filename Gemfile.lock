@@ -325,6 +325,11 @@ GEM
       rubyzip (>= 1.2.2, < 4.0)
       websocket (~> 1.0)
     sha3 (2.2.4)
+    solid_cable (4.1.0)
+      actioncable (>= 7.2)
+      activejob (>= 7.2)
+      activerecord (>= 7.2)
+      railties (>= 7.2)
     solid_cache (1.0.10)
       activejob (>= 7.2)
       activerecord (>= 7.2)
@@ -412,6 +417,7 @@ DEPENDENCIES
   rubyzip (~> 3.7)
   selenium-webdriver
   sha3
+  solid_cable (~> 4.1)
   solid_cache
   solid_queue
   sprockets-rails

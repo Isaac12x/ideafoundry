@@ -1,8 +1,20 @@
+# Multi-process Puma (6 workers) + bin/jobs: the async adapter only reaches subscribers in the
+# broadcasting process, so use the DB-backed adapter everywhere except test.
 development:
-  adapter: async
+  adapter: solid_cable
+  connects_to:
+    database:
+      writing: cable
+  polling_interval: 0.1.seconds
+  message_retention: 1.day
 
 test:
   adapter: test
 
 production:
-  adapter: async
+  adapter: solid_cable
+  connects_to:
+    database:
+      writing: cable
+  polling_interval: 0.1.seconds
+  message_retention: 1.day

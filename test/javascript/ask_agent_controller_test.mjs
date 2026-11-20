@@ -362,3 +362,34 @@ function installLocalStorage() {
     globalThis.window = previousWindow;
   };
 }
+
+test("ask agent sends on Cmd/Ctrl+Enter only", async () => {
+  const AskAgentController = await loadAskAgentController();
+  const controller = new AskAgentController();
+  let submitted = 0;
+  const press = (init) => {
+    let prevented = false;
+    controller.submitOnShortcut({ key: "Enter", preventDefault: () => (prevented = true), currentTarget: { form: { requestSubmit: () => submitted++ } }, ...init });
+    return prevented;
+  };
+
+  assert.equal(press({ metaKey: true }), true);
+  assert.equal(press({ ctrlKey: true }), true);
+  assert.equal(press({}), false);
+  assert.equal(press({ metaKey: true, key: "a" }), false);
+  assert.equal(submitted, 2);
+});
+
+test("ask agent follows the thread: polls it by id and keeps the form field in step", async () => {
+  const AskAgentController = await loadAskAgentController();
+  const controller = new AskAgentController();
+  const field = { value: "new" };
+  Object.assign(controller, { questionsUrlValue: "/q", hasThreadTarget: true, threadTarget: field });
+
+  assert.equal(controller.questionsUrl(), "/q");
+  controller.setThread("7");
+  assert.equal(field.value, "7");
+  assert.equal(controller.questionsUrl(), "/q?thread=7");
+  controller.setThread("legacy");
+  assert.equal(field.value, "new");
+});

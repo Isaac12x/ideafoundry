@@ -1,6 +1,7 @@
 class AgentEvent < ApplicationRecord
   belongs_to :user
   belongs_to :agent_run, optional: true
+  belongs_to :agent_thread, optional: true, touch: true
   belongs_to :target, polymorphic: true, optional: true
 
   serialize :payload, coder: JSON

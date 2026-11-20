@@ -1,0 +1,15 @@
+<%# locals: task, return_to, show_scope (bool) %>
+<li class="inbox-row inbox-row--task<%= ' is-done' if task.completed? %>">
+  <%= button_to toggle_task_path(task, return_to: return_to), method: :patch, class: "inbox-check", form_class: "inbox-inline",
+        aria: { label: task.completed? ? "Mark task open" : "Complete task" } do %>
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <rect x="3" y="3" width="18" height="18" rx="5" stroke="currentColor" stroke-width="1.6"<%= ' fill="currentColor"'.html_safe if task.completed? %>/>
+      <% if task.completed? %><polyline points="8.5 12.5 11 15 15.5 9.5" stroke="var(--bg-base)" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/><% end %>
+    </svg>
+  <% end %>
+  <div class="inbox-main">
+    <span class="inbox-title"><%= task.title %></span>
+    <% if show_scope %><span class="inbox-chip"><%= task.scope_label %></span><% end %>
+  </div>
+  <%= button_to task_path(task, return_to: return_to), method: :delete, class: "inbox-x", form_class: "inbox-inline", aria: { label: "Delete task" }, data: { turbo_confirm: "Delete this task?" } do %>&times;<% end %>
+</li>

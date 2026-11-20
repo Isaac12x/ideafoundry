@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_10_130000) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_18_123517) do
   create_table "action_mailbox_inbound_emails", force: :cascade do |t|
     t.integer "status", default: 0, null: false
     t.string "message_id", null: false
@@ -88,7 +88,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_10_130000) do
     t.text "payload"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.integer "agent_thread_id"
     t.index ["agent_run_id"], name: "index_agent_events_on_agent_run_id"
+    t.index ["agent_thread_id"], name: "index_agent_events_on_agent_thread_id"
     t.index ["target_type", "target_id"], name: "index_agent_events_on_target_type_and_target_id"
     t.index ["user_id", "event_type"], name: "index_agent_events_on_user_id_and_event_type"
     t.index ["user_id"], name: "index_agent_events_on_user_id"
@@ -127,6 +129,15 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_10_130000) do
     t.index ["user_id", "last_heartbeat_at"], name: "index_agent_runs_on_user_id_and_last_heartbeat_at"
     t.index ["user_id", "status"], name: "index_agent_runs_on_user_id_and_status"
     t.index ["user_id"], name: "index_agent_runs_on_user_id"
+  end
+
+  create_table "agent_threads", force: :cascade do |t|
+    t.integer "user_id", null: false
+    t.string "title"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["user_id", "updated_at"], name: "index_agent_threads_on_user_id_and_updated_at"
+    t.index ["user_id"], name: "index_agent_threads_on_user_id"
   end
 
   create_table "api_keys", force: :cascade do |t|
@@ -212,6 +223,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_10_130000) do
     t.integer "user_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.index ["user_id"], name: "index_facts_on_user_id"
   end
 
   create_table "github_repositories", force: :cascade do |t|
@@ -355,6 +367,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_10_130000) do
     t.index ["integrity_hash"], name: "index_ideas_on_integrity_hash"
     t.index ["state"], name: "index_ideas_on_state"
     t.index ["template_id"], name: "index_ideas_on_template_id"
+    t.index ["user_id", "discarded_at", "updated_at"], name: "index_ideas_on_user_id_and_discarded_at_and_updated_at"
     t.index ["user_id", "draft"], name: "index_ideas_on_user_id_and_draft"
     t.index ["user_id", "for_licensing"], name: "index_ideas_on_user_id_and_for_licensing"
     t.index ["user_id"], name: "index_ideas_on_user_id"
@@ -432,6 +445,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_10_130000) do
     t.index ["transcript_status"], name: "index_kb_downloads_on_transcript_status"
     t.index ["user_id", "status"], name: "index_kb_downloads_on_user_id_and_status"
     t.index ["user_id"], name: "index_kb_downloads_on_user_id"
+    t.index ["video_id"], name: "index_kb_downloads_on_video_id"
   end
 
   create_table "kb_entry_preferences", force: :cascade do |t|
@@ -527,6 +541,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_10_130000) do
     t.datetime "updated_at", null: false
     t.index ["attachment_id"], name: "index_knowledge_extractions_on_attachment_id"
     t.index ["idea_id"], name: "index_knowledge_extractions_on_idea_id"
+    t.index ["output_attachment_id"], name: "index_knowledge_extractions_on_output_attachment_id"
     t.index ["status"], name: "index_knowledge_extractions_on_status"
   end
 
@@ -615,6 +630,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_10_130000) do
     t.index ["kb_download_id", "pipeline"], name: "index_media_digests_on_kb_download_id_and_pipeline"
     t.index ["kb_download_id"], name: "index_media_digests_on_kb_download_id"
     t.index ["superseded_at"], name: "index_media_digests_on_superseded_at"
+    t.index ["superseded_by_id"], name: "index_media_digests_on_superseded_by_id"
     t.index ["user_id"], name: "index_media_digests_on_user_id"
   end
 
@@ -643,6 +659,35 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_10_130000) do
     t.index ["idea_id"], name: "index_notes_on_idea_id"
     t.index ["parent_note_id", "created_at"], name: "index_notes_on_parent_note_id_and_created_at"
     t.index ["parent_note_id"], name: "index_notes_on_parent_note_id"
+  end
+
+  create_table "notifications", force: :cascade do |t|
+    t.integer "user_id", null: false
+    t.integer "idea_id"
+    t.string "project_src"
+    t.string "project_path"
+    t.string "title", null: false
+    t.text "body"
+    t.string "url"
+    t.datetime "read_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["idea_id"], name: "index_notifications_on_idea_id"
+    t.index ["user_id", "read_at"], name: "index_notifications_on_user_id_and_read_at"
+    t.index ["user_id"], name: "index_notifications_on_user_id"
+  end
+
+  create_table "problems", force: :cascade do |t|
+    t.integer "user_id", null: false
+    t.string "title", null: false
+    t.text "need"
+    t.string "folder", null: false
+    t.string "status", default: "pending", null: false
+    t.string "result"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["user_id", "folder"], name: "index_problems_on_user_id_and_folder", unique: true
+    t.index ["user_id"], name: "index_problems_on_user_id"
   end
 
   create_table "submissions", force: :cascade do |t|
@@ -680,6 +725,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_10_130000) do
     t.text "scoring_system_ids", default: "[]", null: false
     t.integer "topology_id"
     t.string "primary_scoring_system_id"
+    t.index ["topology_id"], name: "index_templates_on_topology_id"
     t.index ["user_id", "is_default"], name: "index_templates_on_user_id_and_is_default"
     t.index ["user_id", "name"], name: "index_templates_on_user_id_and_name", unique: true
     t.index ["user_id", "topology_id"], name: "index_templates_on_user_id_and_topology_id"
@@ -697,16 +743,20 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_10_130000) do
   end
 
   create_table "todo_items", force: :cascade do |t|
-    t.integer "idea_id", null: false
+    t.integer "idea_id"
     t.string "title", null: false
     t.integer "position"
     t.boolean "completed", default: false, null: false
     t.datetime "completed_at"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.integer "user_id"
+    t.string "project_src"
+    t.string "project_path"
     t.index ["idea_id", "completed"], name: "index_todo_items_on_idea_id_and_completed"
     t.index ["idea_id", "position"], name: "index_todo_items_on_idea_id_and_position"
     t.index ["idea_id"], name: "index_todo_items_on_idea_id"
+    t.index ["user_id"], name: "index_todo_items_on_user_id"
   end
 
   create_table "topologies", force: :cascade do |t|
@@ -750,10 +800,12 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_10_130000) do
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "agent_events", "agent_runs"
+  add_foreign_key "agent_events", "agent_threads"
   add_foreign_key "agent_events", "users"
   add_foreign_key "agent_recommendations", "agent_events"
   add_foreign_key "agent_recommendations", "users"
   add_foreign_key "agent_runs", "users"
+  add_foreign_key "agent_threads", "users"
   add_foreign_key "api_keys", "users"
   add_foreign_key "build_items", "users"
   add_foreign_key "capture_jobs", "users"
@@ -794,11 +846,15 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_10_130000) do
   add_foreign_key "mood_images", "users"
   add_foreign_key "notes", "ideas"
   add_foreign_key "notes", "notes", column: "parent_note_id"
+  add_foreign_key "notifications", "ideas"
+  add_foreign_key "notifications", "users"
+  add_foreign_key "problems", "users"
   add_foreign_key "submissions", "ideas"
   add_foreign_key "submissions", "users"
   add_foreign_key "templates", "users"
   add_foreign_key "themes", "users"
   add_foreign_key "todo_items", "ideas"
+  add_foreign_key "todo_items", "users"
   add_foreign_key "topologies", "topologies", column: "parent_id"
   add_foreign_key "topologies", "users"
   add_foreign_key "versions", "ideas"

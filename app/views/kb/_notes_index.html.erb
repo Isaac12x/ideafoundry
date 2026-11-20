@@ -1,0 +1,16 @@
+<%# KB-wide index of "why I saved this" notes: switching files no longer hides them. %>
+  <% noted = folders.flat_map { |f| f[:files].select { |file| file[:note] }.map { |file| [ f[:index], file ] } } %>
+  <div id="kb-notes-index-wrap">
+  <% if noted.any? %>
+    <div class="kb-notes-index" data-controller="kb-collapse" data-kb-collapse-key-value="kb-notes-index" data-kb-collapse-open-value="false">
+      <button type="button" class="kb-notes-index__toggle" aria-expanded="false" data-kb-collapse-target="toggle" data-action="kb-collapse#toggle">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 4h16v12H8l-4 4z"/></svg> Notes <span class="kb-notes-index__count"><%= noted.size %></span>
+      </button>
+      <ul hidden data-kb-collapse-target="body">
+        <% noted.each do |index, file| %>
+          <li><%= link_to kb_file_path(file: file[:rel], src: index, note: 1), title: file[:rel], data: { turbo_frame: "kb-content" } do %><span class="kb-notes-index__file"><%= File.basename(file[:rel]) %></span><span class="kb-notes-index__text"><%= file[:note] %></span><% end %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+  </div>

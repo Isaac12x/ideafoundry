@@ -107,6 +107,7 @@ Rails.application.routes.draw do
       end
     end
     resources :kb_links, only: [ :create, :destroy ], controller: :idea_kb_links do
+      member { post :promote }
       collection { get :search }
     end
     resources :versions, only: [ :index, :show ] do
@@ -198,6 +199,13 @@ Rails.application.routes.draw do
   get "settings/scoring/weights", to: "settings#get_scoring_weights"
   get "settings/email", to: "settings#email"
   patch "settings/notifications", to: "settings#update_notifications"
+  # In-app inbox + tasks at three scopes (general / idea / KB project)
+  resources :notifications, only: [ :index, :update, :destroy ] do
+    post :read_all, on: :collection
+  end
+  resources :tasks, only: [ :create, :destroy ] do
+    patch :toggle, on: :member
+  end
   get "settings/security", to: "settings#security"
   patch "settings/security", to: "settings#update_security"
   post "settings/security/encrypt-database", to: "settings#encrypt_database", as: :settings_security_encrypt_database
@@ -320,6 +328,12 @@ Rails.application.routes.draw do
   delete "knowledge-base/downloads/:id/references", to: "kb_references#destroy"
   resources :facts, only: [ :create, :destroy ]
   resources :maxims, only: [ :create, :destroy ]
+  resources :problems, only: [ :create, :destroy ] do
+    member do
+      post :find
+      post :link
+    end
+  end
 
   # Settings - KB folders
   get  "settings/kb/pick-folder", to: "settings#pick_folder_dialog", as: :settings_kb_pick_folder

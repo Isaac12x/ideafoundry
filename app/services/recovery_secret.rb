@@ -26,6 +26,15 @@ class RecoverySecret
   @keychain_cache = nil
   @keychain_mutex = Mutex.new
 
+  # Cross-process lock/unlock signal. The passphrase itself lives only in the OS keychain
+  # (every Puma worker, respawned or not, reads it on demand); this file holds a random
+  # token that carries NO secret. Any process that stores/clears the passphrase rewrites it,
+  # and every other process notices on its next request, drops its keychain cache and
+  # re-keys its SQLite connections. Mac sleep/wake or a worker respawn needs no re-unlock.
+  GENERATION_FILE = "recovery_generation".freeze
+  @cache_generation = nil
+  @connection_generation = nil
+
   class Missing < KeyError; end
 
   class << self
@@ -42,6 +51,46 @@ class RecoverySecret
 
     def present?
       raw_secret.present?
+    end
+
+    def generation_path
+      Rails.root.join("tmp", GENERATION_FILE)
+    end
+
+    def bump_generation!
+      path = generation_path
+      FileUtils.mkdir_p(path.dirname)
+      token = SecureRandom.hex(8)
+      File.write(path, token)
+      File.chmod(0o600, path)
+      @keychain_mutex.synchronize { @cache_generation = @connection_generation = token; @keychain_cache = nil }
+    end
+
+    # True once per change made by ANOTHER process since this one last looked; the caller
+    # (once per request) must then drop its DB connections so they re-key.
+    def generation_changed?
+      current = read_generation
+      return false if current.nil?
+
+      @keychain_mutex.synchronize do
+        first_look = @connection_generation.nil?
+        changed = current != @connection_generation
+        @connection_generation = current
+        changed && !first_look
+      end
+    end
+
+    # Drop the keychain cache and every pool's connections when another process changed the
+    # passphrase. Shared by the web request hook and background jobs.
+    def reset_connections_if_changed!
+      return false unless generation_changed?
+
+      ActiveRecord::Base.connection_handler.connection_pool_list.each do |pool|
+        pool.disconnect
+      rescue ActiveRecord::ExclusiveConnectionTimeoutError
+        pool.disconnect!
+      end
+      true
     end
 
     def required!
@@ -167,7 +216,18 @@ class RecoverySecret
 
     def keychain_credential
       return nil if Rails.env.test?
-      @keychain_mutex.synchronize { @keychain_cache ||= RecoveryKeychain.retrieve(app_node_id: app_node_id) }
+      current = read_generation
+      @keychain_mutex.synchronize do
+        # another worker re-stored the passphrase: our cached copy is stale
+        (@keychain_cache = nil; @cache_generation = current) if current != @cache_generation
+        @keychain_cache ||= RecoveryKeychain.retrieve(app_node_id: app_node_id)
+      end
+    end
+
+    def read_generation
+      File.read(generation_path).strip
+    rescue SystemCallError
+      nil
     end
 
     def invalidate_keychain_cache!
@@ -242,6 +302,7 @@ class RecoverySecret
       # File fallback: always written for Docker, backward compat, and test isolation
       path = write_passphrase_file!(passphrase, kdf_params)
       ENV[PASSPHRASE_FILE_ENV] = path.to_s
+      bump_generation!
       path
     end
 

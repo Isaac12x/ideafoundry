@@ -16,6 +16,7 @@ class Idea < ApplicationRecord
   has_many :versions, -> { order(created_at: :desc) }, dependent: :destroy
   has_many :idea_agent_tokens, dependent: :destroy
   has_many :todo_items, dependent: :destroy
+  has_many :notifications, dependent: :destroy
   has_many :notes, dependent: :destroy
   has_many :idea_entries, dependent: :destroy
   has_many :licensors, dependent: :destroy
@@ -84,6 +85,16 @@ has_many :kb_links, class_name: "IdeaKbLink", dependent: :destroy
   scope :for_licensing, -> { where(for_licensing: true) }
   scope :drafts, -> { where(draft: true) }
   scope :stale_drafts, ->(older_than = 24.hours.ago) { drafts.where("ideas.updated_at < ?", older_than) }
+  # A draft is blank until it has a title, description text/image, attachment or drawing.
+  # ponytail: Ruby-side check (description is rich text); drafts are few, move to SQL if they pile up.
+  def self.resumable_drafts = drafts.where(discarded_at: nil).includes(:rich_text_description).order(updated_at: :desc).reject(&:blank_draft?)
+  def self.blank_drafts = drafts.includes(:rich_text_description).select(&:blank_draft?)
+
+  def blank_draft?
+    draft? && title.blank? && description.to_plain_text.strip.blank? && description.to_s.exclude?("<img") &&
+      !attachments.attached? && !hero_images.attached? && !drawings.exists?
+  end
+
   scope :by_state, ->(state) { where(state: state) }
   scope :by_score_range, ->(min, max) { where(computed_score: min..max) }
   scope :in_cool_off, -> { where("cool_off_until > ?", Time.current) }

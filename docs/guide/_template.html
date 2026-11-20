@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>$if(title)$$title$ | $endif$Idea Foundry docs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..700&amp;display=swap" rel="stylesheet">
+<style>
+:root {
+  color-scheme: dark light;
+  --ink: oklch(0.17 0.018 40);
+  --ink-deep: oklch(0.14 0.015 40);
+  --text: oklch(0.94 0.018 75);
+  --text-dim: oklch(0.78 0.025 70);
+  --muted: oklch(0.66 0.028 55);
+  --line: oklch(0.32 0.02 50);
+  --accent: oklch(0.66 0.17 38);
+  --gold: oklch(0.8 0.11 82);
+  --display: "Fraunces", Charter, "Iowan Old Style", Georgia, serif;
+  --body: Charter, "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+  --ui: "Avenir Next", "Trebuchet MS", sans-serif;
+  --mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+@media (prefers-color-scheme: light) {
+  :root {
+    --ink: oklch(0.97 0.012 80);
+    --ink-deep: oklch(0.93 0.016 78);
+    --text: oklch(0.22 0.02 40);
+    --text-dim: oklch(0.36 0.025 45);
+    --muted: oklch(0.48 0.03 50);
+    --line: oklch(0.85 0.02 75);
+    --accent: oklch(0.52 0.17 38);
+    --gold: oklch(0.45 0.1 75);
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--ink); color: var(--text); font-family: var(--body); line-height: 1.65; }
+a { color: var(--accent); text-underline-offset: 0.18em; }
+a:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; border-radius: 2px; }
+.skip { position: absolute; left: -999px; top: 0; background: var(--ink-deep); color: var(--text); padding: .5rem 1rem; z-index: 10; }
+.skip:focus { left: 0; }
+header.site { border-bottom: 1px solid var(--line); background: var(--ink-deep); }
+header.site div { max-width: 68rem; margin: 0 auto; padding: 0.9rem 1rem; display: flex; justify-content: space-between; gap: 1rem; align-items: baseline; flex-wrap: wrap; }
+.brand { font-family: var(--display); font-size: 1.25rem; color: var(--text); text-decoration: none; }
+.tag { font-family: var(--ui); font-size: .8rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.layout { max-width: 68rem; margin: 0 auto; padding: 1.5rem 1rem 4rem; display: grid; gap: 2rem; grid-template-columns: 1fr; }
+@media (min-width: 52rem) { .layout { grid-template-columns: 15rem minmax(0, 1fr); } .side { position: sticky; top: 1rem; align-self: start; } }
+.side ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: .25rem; }
+@media (min-width: 52rem) { .side ul { flex-direction: column; flex-wrap: nowrap; } }
+.side a { display: block; font-family: var(--ui); font-size: .95rem; padding: .4rem .7rem; border-radius: .4rem; color: var(--text-dim); text-decoration: none; border: 1px solid transparent; }
+.side a:hover { color: var(--text); border-color: var(--line); }
+.side a[aria-current="page"] { color: var(--text); border-color: var(--accent); }
+main { min-width: 0; max-width: 44rem; }
+h1, h2, h3 { font-family: var(--display); line-height: 1.2; font-weight: 600; }
+h1 { font-size: clamp(1.9rem, 5vw, 2.6rem); margin: 0 0 1rem; }
+h2 { margin-top: 2.2rem; padding-top: .5rem; border-top: 1px solid var(--line); }
+nav#TOC { font-family: var(--ui); font-size: .9rem; border: 1px solid var(--line); border-radius: .5rem; padding: .6rem 1rem; margin-bottom: 1.5rem; color: var(--text-dim); }
+nav#TOC ul { margin: .3rem 0; padding-left: 1.1rem; }
+code, pre { font-family: var(--mono); font-size: .88em; }
+code { background: var(--ink-deep); padding: .1em .35em; border-radius: .25rem; }
+pre { background: var(--ink-deep); border: 1px solid var(--line); border-radius: .5rem; padding: .9rem 1rem; overflow-x: auto; }
+pre code { background: none; padding: 0; }
+table { border-collapse: collapse; display: block; overflow-x: auto; max-width: 100%; }
+th, td { border: 1px solid var(--line); padding: .4rem .7rem; text-align: left; }
+blockquote { margin-left: 0; padding-left: 1rem; border-left: 3px solid var(--accent); color: var(--text-dim); }
+img { max-width: 100%; height: auto; }
+footer { max-width: 68rem; margin: 0 auto; padding: 1rem; border-top: 1px solid var(--line); font-family: var(--ui); font-size: .85rem; color: var(--muted); }
+</style>
+</head>
+<body>
+<a class="skip" href="#content">Skip to content</a>
+<header class="site"><div>
+  <a class="brand" href="../index.html">Idea Foundry</a>
+  <span class="tag">Documentation</span>
+</div></header>
+<div class="layout">
+  <nav class="side" aria-label="Documentation">
+    <ul>
+      <li><a href="index.html">Overview</a></li>
+      <li><a href="install.html">Install</a></li>
+      <li><a href="configuration.html">Configuration</a></li>
+      <li><a href="services.html">Local services (AI, OCR, voice)</a></li>
+      <li><a href="development.html">Development</a></li>
+    </ul>
+  </nav>
+  <main id="content">
+$if(title)$<h1>$title$</h1>$endif$
+$if(toc)$<nav id="TOC" aria-label="On this page">
+$table-of-contents$
+</nav>$endif$
+$body$
+  </main>
+</div>
+<footer><a href="../index.html">Back to the landing page</a></footer>
+<script>
+/* mark current page in nav (tiny, no deps) */
+document.querySelectorAll('.side a').forEach(function (a) {
+  var here = location.pathname.split('/').pop() || 'index.html';
+  if (a.getAttribute('href') === here) a.setAttribute('aria-current', 'page');
+});
+</script>
+</body>
+</html>
