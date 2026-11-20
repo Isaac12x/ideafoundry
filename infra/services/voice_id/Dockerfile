@@ -1,4 +1,4 @@
-FROM python:3.15-slim
+FROM python:3.14-slim
 
 ARG WHISPER_MODEL=Systran/faster-whisper-base.en
 ENV WHISPER_MODEL=${WHISPER_MODEL} \
@@ -21,7 +21,6 @@ from huggingface_hub import snapshot_download
 snapshot_download(
     repo_id=os.environ.get("WHISPER_MODEL", "Systran/faster-whisper-base.en"),
     local_dir=os.environ.get("VOICE_ID_MODEL_PATH", "/models/whisper-base.en"),
-    local_dir_use_symlinks=False,
 )
 PY
 
