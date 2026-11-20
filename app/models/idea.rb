@@ -1,6 +1,8 @@
 class Idea < ApplicationRecord
   include Notifiable
   include TracksActivity
+  include SemanticIndexable
+  semantic_index type: "idea", owner: ->(r) { r.user_id }, sections: ->(r) { r.semantic_section_list }
   tracks_activity name_method: :title
 
   belongs_to :user
@@ -780,6 +782,19 @@ has_many :kb_links, class_name: "IdeaKbLink", dependent: :destroy
     end
 
     changed
+  end
+
+  # Sections for the semantic index (drafts included, discarded excluded): one per paragraph/note so an edit re-embeds only its section.
+  def semantic_section_list
+    return [] if discarded_at
+
+    [ [ title, tldr ].compact_blank.join(" - "), *SemanticIndex.split(description.to_plain_text), *notes.map(&:body),
+      topologies.map(&:name).join(", "), themes.map(&:name).join(", "), todo_items.map(&:title).join("; ") ]
+  end
+
+  # Text the palette's TF-IDF Similar / Deep matches on (semantic indexing uses semantic_section_list).
+  def search_text
+    [ title, title, tldr, description.to_plain_text, notes.map(&:body), topologies.map(&:name), themes.map(&:name) ].flatten.compact.join(" ")
   end
 
   private

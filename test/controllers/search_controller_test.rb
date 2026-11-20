@@ -89,6 +89,55 @@ class SearchControllerTest < ActionDispatch::IntegrationTest
     assert_equal "Zebrafish tracker", response.parsed_body["groups"].first["items"].first["title"]
   end
 
+  test "similar uses semantic hits when the sidecar answers" do
+    close = @user.ideas.create!(title: "Aquarium filter")
+    hits = [ { "id" => SemanticSearch.idea_id(@user.id, close.id), "score" => 0.87 } ]
+    seen = nil
+    search = ->(**kw) { seen = kw; hits }
+    SemanticSearch.stub(:enabled?, true) do
+      SemanticSearch.stub(:search, search) do
+        get global_search_path, params: { mode: "similar", idea: @idea.id }
+      end
+    end
+    item = response.parsed_body["groups"].first["items"].first
+    assert_equal [ "Aquarium filter", "87% match" ], [ item["title"], item["hint"] ]
+    assert_equal SemanticSearch.idea_id(@user.id, @idea.id), seen[:id]
+  end
+
+  test "similar groups hits of several types and drops ones the user can't see" do
+    note = @idea.notes.create!(body: "gill count")
+    topo = @user.topologies.create!(name: "Tank gear", topology_type: :custom)
+    foreign = User.where.not(id: @user.id).first.facts.create!(body: "secret")
+    fact = @user.facts.create!(body: "Fish sleep")
+    hits = [ { "id" => SemanticSearch.record_id(@user.id, "note", note.id), "score" => 0.9 },
+             { "id" => SemanticSearch.record_id(@user.id, "topology", topo.id), "score" => 0.8 },
+             { "id" => SemanticSearch.record_id(@user.id, "fact", foreign.id), "score" => 0.7 },
+             { "id" => SemanticSearch.record_id(@user.id, "fact", fact.id), "score" => 0.6 },
+             { "id" => SemanticSearch.record_id(@user.id, "note", 0), "score" => 0.5 } ]
+    seen = nil
+    SemanticSearch.stub(:enabled?, true) do
+      SemanticSearch.stub(:search, ->(**kw) { seen = kw; hits }) do
+        get global_search_path, params: { mode: "similar", q: "gills", types: "note,topology,fact" }
+      end
+    end
+    assert_equal %w[note topology fact], seen[:types]
+    groups = response.parsed_body["groups"].to_h { |g| [ g["label"], g["items"] ] }
+    assert_equal [ "Notes", "Topologies", "Facts" ], groups.keys
+    assert_equal [ "Fish sleep" ], groups["Facts"].map { |i| i["title"] }
+    assert_equal "90% match · #{@idea.title}", groups["Notes"].first["hint"]
+    assert_equal idea_path(@idea), groups["Notes"].first["url"]
+  end
+
+  test "similar falls back to TF-IDF when the sidecar returns nil" do
+    close = @user.ideas.create!(title: "Aquarium zebrafish filter", tldr: "tank filter for zebrafish")
+    SemanticSearch.stub(:enabled?, true) do
+      SemanticSearch.stub(:search, nil) do
+        get global_search_path, params: { mode: "similar", idea: @idea.id }
+      end
+    end
+    assert_equal close.title, response.parsed_body["groups"].first["items"].first["title"]
+  end
+
   test "deep finds words inside descriptions, notes and KB files, with snippets and terms" do
     use_kb_folder
     File.write(File.join(@kb_dir, "log.md"), "Long prelude. The axolotl regeneration experiment worked.")
