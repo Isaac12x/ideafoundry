@@ -37,3 +37,5 @@ Status: active development. The workbench, notes, knowledge base, planning, loca
 | [Development](development.md) | Running from source, tests, repo layout |
 
 Source: [github.com/Isaac12x/ideafoundry](https://github.com/Isaac12x/ideafoundry). Release history: [CHANGELOG.md](https://github.com/Isaac12x/ideafoundry/blob/master/CHANGELOG.md).
+
+License: MIT, see [LICENSE](https://github.com/Isaac12x/ideafoundry/blob/master/LICENSE).

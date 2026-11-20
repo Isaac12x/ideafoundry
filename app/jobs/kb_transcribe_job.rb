@@ -4,6 +4,28 @@
 class KbTranscribeJob < ApplicationJob
   queue_as :transcribe # own low-priority worker (config/queue.yml): whisper can't starve other jobs
 
+  # Claim and enqueue as one recoverable operation for both the sweep and UI.
+  # A queue rejection must not strand the file lease or DB row in transcribing.
+  def self.enqueue_claimed(abs, download)
+    return :already_running unless Kb::Transcript.claim!(abs)
+
+    previous_status = download&.transcript_status
+    begin
+      download&.update!(transcript_status: "transcribing")
+      job = perform_later(abs, download&.id)
+      raise "Transcription job was not enqueued" if job == false || !job.successfully_enqueued?
+      :queued
+    rescue => e
+      Rails.logger.warn("KbTranscribeJob enqueue #{abs}: #{e.class}: #{e.message}")
+      begin
+        download&.update_columns(transcript_status: previous_status)
+      ensure
+        FileUtils.rm_f(Kb::Transcript.state_file(abs, "lock"))
+      end
+      :failed
+    end
+  end
+
   def perform(abs, download_id = nil)
     download = KbDownload.find_by(id: download_id)
     return release(abs, download) if Kb::ProjectLock.busy_path?(abs)

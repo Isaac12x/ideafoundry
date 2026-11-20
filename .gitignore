@@ -591,6 +591,9 @@ graphify-out/
 
 .kiro/
 
+# Session notes stay local; cover every filename casing.
+[Hh][Aa][Nn][Dd][Oo][Ff][Ff].[Mm][Dd]
+
 
 # App source: the generic web-file ignores above must not hide Rails assets/controllers
 !app/javascript/**/*.js
