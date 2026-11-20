@@ -6,7 +6,7 @@ class NotificationsController < ApplicationController
     @kind = %w[general idea project].include?(params[:kind]) ? params[:kind] : "all"
     @notifications = @user.notifications.in_scope_kind(@kind).recent.limit(30)
     @tasks = TodoItem.visible_to(@user).pending.in_scope_kind(@kind).limit(50)
-    @drafts = @kind == "all" || @kind == "idea" ? @user.ideas.resumable_drafts.first(10) : []
+    @drafts = @kind == "all" || @kind == "idea" ? @user.ideas.resumable_drafts(limit: 10) : []
   end
 
   def update
