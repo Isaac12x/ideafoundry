@@ -32,7 +32,7 @@ module LongOcr
       new
     end
 
-    def initialize(env: ENV)
+    def initialize(env: ServiceSettings)
       @env = env
       @name = resolve_name
       config = DEFAULTS[@name] || {}

@@ -17,6 +17,7 @@ services:
       - RAILS_ENV=production
       - PORT=3000
       - VOICE_ID_SERVICE_URL=http://voice-id:8000
+      - SEMANTIC_SERVICE_URL=http://semantic:8000
       - OCR_SERVICE_URL=http://ocr:8000/extract
       # On-demand heavy OCR (Unlimited-OCR). Backend auto-selects: remote URL ->
       # remote, NVIDIA present -> vllm, otherwise -> llamacpp.
@@ -43,6 +44,8 @@ services:
         condition: service_healthy
       ocr:
         condition: service_healthy
+      semantic:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000/up"]
       interval: 30s
@@ -62,6 +65,26 @@ services:
       - VOICE_ID_MODEL_PATH=/models/whisper-base.en
       - VOICE_ID_DEVICE=${VOICE_ID_DEVICE:-cpu}
       - VOICE_ID_COMPUTE_TYPE=${VOICE_ID_COMPUTE_TYPE:-int8}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health').read()"]
+      interval: 30s
+      timeout: 10s
+      start_period: 30s
+      retries: 5
+    restart: unless-stopped
+
+  semantic:
+    build:
+      context: ./services/semantic
+      args:
+        SEMANTIC_MODEL: ${SEMANTIC_MODEL:-BAAI/bge-small-en-v1.5}
+    ports:
+      - "127.0.0.1:${SEMANTIC_SERVICE_PORT:-8004}:8000"
+    environment:
+      - SEMANTIC_MODEL=${SEMANTIC_MODEL:-BAAI/bge-small-en-v1.5}
+      - SEMANTIC_DB=/data/semantic.sqlite3
+    volumes:
+      - semantic-data:/data
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health').read()"]
       interval: 30s
@@ -147,5 +170,6 @@ services:
     restart: "no"
 
 volumes:
+  semantic-data:
   ocr-model-cache:
   long-ocr-model-cache:

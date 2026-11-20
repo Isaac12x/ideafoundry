@@ -12,6 +12,7 @@ Everything that runs outside the Rails process. Rails-side clients (`app/service
 | `services/ocr/` | Surya OCR sidecar (FastAPI + llama.cpp) |
 | `services/long_ocr/` | llama.cpp Unlimited-OCR heavy backend (`gpu` profile) |
 | `services/voice_id/` | faster-whisper Voice ID sidecar |
+| `services/semantic/` | fastembed + sqlite vector index (semantic search/related) |
 
 ## Compose
 
@@ -22,6 +23,7 @@ Always pass the file: `docker compose -f infra/docker-compose.yml <cmd>`. Defaul
 | Service | Port (host) | Key env | Rails reaches it via |
 |---------|-------------|---------|----------------------|
 | `voice-id` (`services/voice_id`) | 127.0.0.1:8000 (`VOICE_ID_PORT`) | `VOICE_ID_WHISPER_MODEL`, `VOICE_ID_DEVICE`, `VOICE_ID_COMPUTE_TYPE` | `VOICE_ID_SERVICE_URL` (`LocalVoiceIdClient`) |
+| `semantic` (`services/semantic`) | 127.0.0.1:8004 (`SEMANTIC_SERVICE_PORT`) | `SEMANTIC_MODEL` (build arg + env), `SEMANTIC_DB` | `SEMANTIC_SERVICE_URL` |
 | `ocr` (`services/ocr`) | 127.0.0.1:8001 (`OCR_SERVICE_PORT`) | `SURYA_INFERENCE_*`, `OCR_PAGE_BATCH_SIZE`, `OCR_PDF_DPI`, `OCR_LONG_DOC_PAGE_THRESHOLD` | `OCR_SERVICE_URL` (`.../extract`) |
 | `unlimited-ocr` (vLLM image, NVIDIA) | 127.0.0.1:8002 (`OCR_LONG_VLLM_PORT`) | `OCR_LONG_MODEL` | `OCR_LONG_VLLM_URL` |
 | `unlimited-ocr-llama` (`services/long_ocr`) | 127.0.0.1:8003 (`OCR_LONG_LLAMA_PORT`) | `OCR_LONG_MODEL_URL`, `OCR_LONG_MMPROJ_URL`, `OCR_LONG_LLAMA_NGL`, `OCR_LONG_LLAMA_CTX` | `OCR_LONG_LLAMACPP_URL`; lifecycle by `LongOcr::ServiceSupervisor` |

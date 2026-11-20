@@ -4,6 +4,8 @@ module KbEntrySearch
 
   SEARCH_LIMIT = 30
   SEARCH_VISIT_CAP = 5000 # ponytail: bounded walk, index if KBs outgrow this
+  DEEP_EXT = %w[.md .markdown .txt .vtt].freeze
+  DEEP_FILE_BYTES = 256.kilobytes
 
   private
 
@@ -65,6 +67,15 @@ module KbEntrySearch
       end
     end
     found
+  end
+
+  # First `bytes` of a text-ish KB file ("" for anything else or unreadable).
+  def kb_file_text(entry, bytes)
+    return "" unless entry[:type] == "file" && DEEP_EXT.include?(File.extname(entry[:name]).downcase)
+
+    File.read(File.join(File.expand_path(KbSource.list(@user)[entry[:src]][:path]), entry[:path]), bytes).to_s.scrub
+  rescue SystemCallError
+    ""
   end
 
   def children(dir)

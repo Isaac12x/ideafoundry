@@ -1270,4 +1270,31 @@ class SettingsControllerTest < ActionDispatch::IntegrationTest
       ENV[RecoverySecret::PASSPHRASE_ENV] = original_passphrase
     end
   end
+
+  test "services page renders" do
+    get settings_services_path
+    assert_response :success
+    assert_select "[data-service-settings-test-url-value=?]", settings_services_test_path
+    ServiceRegistry::SERVICES.each do |s|
+      assert_select ".svc-row[data-key=?] h3", s[:key], text: /#{Regexp.escape(s[:name])}/
+      s[:fields].each { |f| assert_select "input[name=?]", "services[#{f[:env]}]" }
+    end
+  end
+
+  test "update_services saves allowlisted keys, blank deletes, ignores others" do
+    ServiceSetting.create!(key: "WHISPER_MODEL", value: "small")
+    patch settings_services_path, params: { services: { "SEMANTIC_SERVICE_URL" => " http://s:1 ", "WHISPER_MODEL" => "", "EVIL" => "x" } }
+    assert_redirected_to settings_services_path
+    assert_equal "http://s:1", ServiceSetting.find_by(key: "SEMANTIC_SERVICE_URL").value
+    assert_nil ServiceSetting.find_by(key: "WHISPER_MODEL")
+    assert_nil ServiceSetting.find_by(key: "EVIL")
+  end
+
+  test "test_service renders result json" do
+    post settings_services_test_path, params: { key: "semantic", overrides: { "SEMANTIC_SERVICE_URL" => "ftp://x" } }, as: :json
+    assert_response :success
+    assert_equal({ "ok" => false, "status" => "error", "detail" => "only http(s) URLs" }, response.parsed_body.except("ms"))
+    post settings_services_test_path, params: { key: "nope" }, as: :json
+    assert_response :not_found
+  end
 end

@@ -1,0 +1,47 @@
+/* Settings > Services: a quiet patch bay. One row per service. */
+.svc-header-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.svc-intro { margin: 1.25rem 0 0; color: var(--text-muted); font-size: 0.85rem; line-height: 1.5; max-width: 60ch; }
+.svc-list { list-style: none; margin: 1rem 0 0; padding: 0; background: var(--bg-surface); border: 1px solid var(--border-default); border-radius: var(--radius-md); overflow: hidden; }
+.svc-row { padding: 1rem 1.25rem; border-top: 1px solid var(--border-subtle); }
+.svc-row:first-child { border-top: 0; }
+.svc-head { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 0.75rem; align-items: start; }
+.svc-lamp { width: 10px; height: 10px; margin-top: 0.4rem; border-radius: 50%; border: 1.5px solid var(--text-muted); background: transparent; }
+.svc-row[data-state="ok"] .svc-lamp { background: var(--success); border-color: var(--success); }
+.svc-row[data-state="error"] .svc-lamp { background: var(--danger); border-color: var(--danger); }
+.svc-row[data-state="off"] .svc-lamp { border-style: dashed; }
+.svc-row[data-state="testing"] .svc-lamp { border-color: var(--accent); animation: svc-pulse 1s ease-in-out infinite; }
+@keyframes svc-pulse { 50% { opacity: 0.3; } }
+.svc-title h3 { margin: 0; font-size: 0.95rem; font-weight: 600; color: var(--text-primary); }
+.svc-title p { margin: 2px 0 0; font-size: 0.8rem; color: var(--text-muted); line-height: 1.4; }
+.svc-kind { margin-left: 0.4rem; font-size: 0.65rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); }
+.svc-test { display: flex; align-items: center; gap: 0.6rem; }
+.svc-result { font-size: 0.78rem; color: var(--text-muted); font-variant-numeric: tabular-nums; text-align: right; max-width: 22ch; overflow-wrap: anywhere; }
+.svc-row[data-state="ok"] .svc-result { color: var(--success); }
+.svc-row[data-state="error"] .svc-result { color: var(--danger); }
+.svc-fields { display: grid; gap: 0.75rem; margin: 0.9rem 0 0 calc(10px + 0.75rem); }
+.svc-field label { display: flex; gap: 0.5rem; align-items: baseline; flex-wrap: wrap; font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 4px; }
+.svc-field code, .svc-docs code, .svc-field small code { font-family: var(--font-mono, "JetBrains Mono", monospace); font-size: 0.72rem; color: var(--text-muted); }
+.svc-field small { display: block; margin-top: 4px; font-size: 0.72rem; color: var(--text-muted); line-height: 1.4; overflow-wrap: anywhere; }
+.svc-input-row { display: flex; gap: 0.5rem; align-items: center; }
+.svc-input { flex: 1; min-width: 0; font-family: var(--font-mono, "JetBrains Mono", monospace); font-size: 0.8rem; }
+.svc-source { font-size: 0.65rem; letter-spacing: 0.06em; text-transform: uppercase; padding: 2px 6px; border: 1px solid var(--border-default); border-radius: var(--radius-sm); color: var(--text-muted); white-space: nowrap; }
+.svc-source[data-source="settings"] { color: var(--accent); border-color: var(--accent-emphasis); background: var(--accent-muted); }
+.svc-source[data-source="unset"] { border-style: dashed; }
+.svc-reset { background: none; border: 0; padding: 4px; color: var(--text-secondary); font: inherit; font-size: 0.75rem; text-decoration: underline; cursor: pointer; }
+.svc-reset:hover { color: var(--text-primary); }
+.svc-setup { margin: 0.8rem 0 0 calc(10px + 0.75rem); }
+.svc-setup summary { cursor: pointer; font-size: 0.78rem; color: var(--text-secondary); width: fit-content; }
+.svc-code { position: relative; margin-top: 0.5rem; }
+.svc-code pre { margin: 0; padding: 0.7rem 4.5rem 0.7rem 0.8rem; background: var(--bg-base); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); overflow-x: auto; font-size: 0.75rem; line-height: 1.5; color: var(--text-secondary); }
+.svc-code .btn { position: absolute; top: 6px; right: 6px; }
+.svc-docs { margin: 0.5rem 0 0; font-size: 0.75rem; color: var(--text-muted); }
+.svc-actions { display: flex; justify-content: flex-end; margin-top: 1rem; }
+.svc-row:focus-within { background: var(--bg-elevated); }
+@media (max-width: 640px) {
+  .svc-head { grid-template-columns: auto minmax(0, 1fr); }
+  .svc-test { grid-column: 2; justify-content: space-between; }
+  .svc-result { text-align: left; }
+  .svc-fields, .svc-setup { margin-left: 0; }
+  .svc-row { padding: 1rem; }
+}
+@media (prefers-reduced-motion: reduce) { .svc-lamp { animation: none !important; } }

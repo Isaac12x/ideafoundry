@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_20_170701) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_20_180000) do
   create_table "action_mailbox_inbound_emails", force: :cascade do |t|
     t.integer "status", default: 0, null: false
     t.string "message_id", null: false
@@ -690,6 +690,14 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_20_170701) do
     t.datetime "updated_at", null: false
     t.index ["user_id", "folder"], name: "index_problems_on_user_id_and_folder", unique: true
     t.index ["user_id"], name: "index_problems_on_user_id"
+  end
+
+  create_table "service_settings", force: :cascade do |t|
+    t.string "key", null: false
+    t.string "value"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["key"], name: "index_service_settings_on_key", unique: true
   end
 
   create_table "submissions", force: :cascade do |t|
