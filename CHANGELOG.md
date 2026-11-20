@@ -9,10 +9,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The project is now MIT licensed: `LICENSE` added and the README license section corrected.
+- Local session handoff notes are ignored in every directory and filename casing.
+- Retrying a note import from the same preview skips notes already imported by that user and adds any newly selected notes.
+- The knowledge-base tree uses a set to match hidden sidecar paths, speeding up folder scans with many annotated media files.
+- Workspace backups include attachment metadata for ideas with files. A failed tar command marks the backup as failed. Automatic cleanup waits for a completed backup and preserves manual exports.
+
+- Opening a new idea keeps drafts in other tabs available for autosave. Daily cleanup preserves captured work and removes only old, untouched empty drafts.
+- The ideas list and inbox check for resumable drafts in batches. The ideas list skips loading structured entries when their tabs are disabled.
+- When the transcription queue rejects a job, the file becomes available for retry immediately. The Transcribe action reports the queue failure, and the background sweep can try again.
+
 - Infra reorganized under `infra/`: `Brewfile`, `Dockerfile`, `docker-compose.yml`, `Caddyfile*` and the launchd plist moved there; sidecars now live in `infra/services/{ocr,long_ocr,voice_id}` (was `ocr_service/`, `long_ocr_service/`, `services/voice_id/`). Run compose with `docker compose -f infra/docker-compose.yml ...`, `brew bundle --file=infra/Brewfile`, build the app image with `docker build -f infra/Dockerfile .`. Compose project name is pinned to `idea-app`, so containers and volumes keep their names. Map in `infra/README.md`.
 
 ### Added
 
+- Repository security policy and private vulnerability reporting guidance, plus weekly Dependabot update configuration for maintained dependency manifests.
 - Render marked standalone HTML artifacts with inline JavaScript in an opaque sandbox, including nested source previews. Deny app-origin access, remote connections and form submissions; keep ordinary HTML script-free and annotatable.
 
 - Knowledge base transcript: karaoke view. The current line stays centered (smooth, none under reduced motion, paused briefly while you scroll) and its words fill with the accent in step with playback; finished lines go back to grey. Text stays selectable.
@@ -138,6 +149,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 
 - Remediated the open GitHub dependency alerts by pinning patched DOMPurify, Immutable, lodash-es, Nano ID, and Pillow releases across npm, Yarn, and the local OCR image.
+- Consolidated all 12 open Dependabot updates: Kaminari 1.3.3; Python service dependencies; and GitHub Pages actions checkout 7, configure-pages 6, and deploy-pages 5. Patched Yarn resolutions to @xmldom/xmldom 0.8.15, DOMPurify 3.4.17, and Nano ID 5.1.16, then rebuilt the affected book and Mermaid bundles.
+- Updated OCR to Surya 0.24.0 and Pillow 13.0.0, removed the obsolete Pillow override, and moved the OCR and voice ID images to Python 3.14 because onnxruntime has no CPython 3.15 wheel; updated the voice ID model download call for Hugging Face Hub 2.4.0.
 - Knowledge-base media edits validate configured source paths, reject symlink/traversal access, invoke local tools without a shell, preserve original bytes, and record before/after checksums plus edit recipes in the human activity trail.
 - Persisted recovery passphrases are moved out of app-local storage into platform secure storage when available.
 - SQLCipher and recovery-secret configuration values are filtered from logs.

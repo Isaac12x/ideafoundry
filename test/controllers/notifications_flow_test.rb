@@ -36,12 +36,12 @@ class NotificationsFlowTest < ActionDispatch::IntegrationTest
     assert_equal 1, TodoItem.for_project("2", "a/b").count
   end
 
-  test "empty drafts are not resumable and are purged by new" do
+  test "empty drafts are not resumable and remain available when another capture starts" do
     blank = @user.ideas.create!(draft: true, state: :idea_new)
     kept = @user.ideas.create!(draft: true, state: :idea_new, title: "Keep me")
     assert_equal [ kept ], @user.ideas.resumable_drafts
     get new_idea_path
-    assert_nil Idea.find_by(id: blank.id)
+    assert Idea.find_by(id: blank.id)
     assert Idea.find_by(id: kept.id)
   end
 

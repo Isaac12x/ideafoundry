@@ -88,13 +88,63 @@ has_many :kb_links, class_name: "IdeaKbLink", dependent: :destroy
   scope :drafts, -> { where(draft: true) }
   scope :stale_drafts, ->(older_than = 24.hours.ago) { drafts.where("ideas.updated_at < ?", older_than) }
   # A draft is blank until it has a title, description text/image, attachment or drawing.
-  # ponytail: Ruby-side check (description is rich text); drafts are few, move to SQL if they pile up.
-  def self.resumable_drafts = drafts.where(discarded_at: nil).includes(:rich_text_description).order(updated_at: :desc).reject(&:blank_draft?)
+  DRAFT_CHILD_EXISTS_SQL = <<~SQL.squish.freeze
+    EXISTS (SELECT 1 FROM drawings WHERE drawings.idea_id = ideas.id) OR
+    EXISTS (SELECT 1 FROM idea_entries WHERE idea_entries.idea_id = ideas.id) OR
+    EXISTS (SELECT 1 FROM idea_kb_links WHERE idea_kb_links.idea_id = ideas.id) OR
+    EXISTS (SELECT 1 FROM idea_themes WHERE idea_themes.idea_id = ideas.id) OR
+    EXISTS (SELECT 1 FROM idea_topologies WHERE idea_topologies.idea_id = ideas.id) OR
+    EXISTS (SELECT 1 FROM idea_lists WHERE idea_lists.idea_id = ideas.id) OR
+    EXISTS (SELECT 1 FROM todo_items WHERE todo_items.idea_id = ideas.id) OR
+    EXISTS (SELECT 1 FROM notes WHERE notes.idea_id = ideas.id) OR
+    EXISTS (SELECT 1 FROM mood_images WHERE mood_images.idea_id = ideas.id) OR
+    EXISTS (SELECT 1 FROM idea_dependencies WHERE idea_dependencies.idea_id = ideas.id OR idea_dependencies.prerequisite_id = ideas.id) OR
+    EXISTS (SELECT 1 FROM versions WHERE versions.idea_id = ideas.id) OR
+    EXISTS (SELECT 1 FROM licensors WHERE licensors.idea_id = ideas.id) OR
+    EXISTS (SELECT 1 FROM licensor_imports WHERE licensor_imports.idea_id = ideas.id) OR
+    EXISTS (SELECT 1 FROM notifications WHERE notifications.idea_id = ideas.id) OR
+    EXISTS (SELECT 1 FROM idea_agent_tokens WHERE idea_agent_tokens.idea_id = ideas.id) OR
+    EXISTS (SELECT 1 FROM github_repositories WHERE github_repositories.idea_id = ideas.id) OR
+    EXISTS (SELECT 1 FROM active_storage_attachments WHERE active_storage_attachments.record_type = 'Idea'
+      AND active_storage_attachments.record_id = ideas.id AND active_storage_attachments.name IN ('attachments', 'hero_images'))
+  SQL
+
+  # Blankness spans Action Text and related records. Keep those checks in one
+  # correlated EXISTS expression so previews and counts do not load each child
+  # association for every draft.
+  def self.resumable_drafts(limit: nil)
+    resumable = []
+    drafts.where(discarded_at: nil)
+          .select("ideas.*", "(#{DRAFT_CHILD_EXISTS_SQL}) AS has_draft_children")
+          .includes(:rich_text_description)
+          .find_each(batch_size: 100, cursor: [ :updated_at, :id ], order: [ :desc, :desc ]) do |idea|
+      resumable << idea unless idea.blank_draft?(has_children: idea[:has_draft_children])
+      return resumable if limit && resumable.size >= limit
+    end
+
+    resumable
+  end
   def self.blank_drafts = drafts.includes(:rich_text_description).select(&:blank_draft?)
 
-  def blank_draft?
+  def blank_draft?(has_children: nil)
     draft? && title.blank? && description.to_plain_text.strip.blank? && description.to_s.exclude?("<img") &&
-      !attachments.attached? && !hero_images.attached? && !drawings.exists?
+      !description.body&.attachments&.any? && state == "idea_new" && attempt_count.to_i.zero? &&
+      [ tldr, difficulty_explanation, opportunity_explanation, timing_explanation,
+        location, situation, category ].all?(&:blank?) && latitude.nil? && longitude.nil? &&
+      napkin_calculations.blank? && metadata.blank? && template_id.nil? &&
+      [ trl, difficulty, opportunity, timing ].all? { |score| score.to_i.zero? } &&
+      !for_licensing? && !(has_children.nil? ? draft_children_exist? : ActiveModel::Type::Boolean.new.cast(has_children))
+  end
+
+  def draft_children_exist?
+    if persisted?
+      self.class.where(id: id).pick(Arel.sql("(#{DRAFT_CHILD_EXISTS_SQL})")).to_i.positive?
+    else
+      attachments.attached? || hero_images.attached? || drawings.any? || idea_entries.any? || kb_links.any? ||
+        idea_themes.any? || idea_topologies.any? || idea_lists.any? || todo_items.any? || notes.any? || mood_images.any? ||
+        prerequisite_links.any? || versions.any? || licensors.any? || licensor_imports.any? || notifications.any? ||
+        idea_agent_tokens.any? || github_repository.present?
+    end
   end
 
   scope :by_state, ->(state) { where(state: state) }
