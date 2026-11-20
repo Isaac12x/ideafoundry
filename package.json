@@ -19,7 +19,7 @@
     "pdfjs-dist": "4.10.38",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
-    "three": "^0.186.1",
+    "three": "^0.187.0",
     "three-spritetext": "^1.10.0"
   },
   "resolutions": {
