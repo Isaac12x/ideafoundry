@@ -298,3 +298,11 @@ This pass follows the capture promise in VISION.md. GPT-6-Luna implemented the c
 Recovery coverage extracts a tar archive and checks its attachment metadata and payload path. A complete workspace restore and password-protected ZIP export are separate verification targets. The pinned rubyzip 3.7.0 lacks the `Zip::File::CREATE` constant used by the password export path. Retention also cannot reclaim orphan files left by a process termination after its database commit and before its filesystem cleanup.
 
 Verification on Ruby 4.0.7 passed with 1,392 Rails tests and 6,718 assertions on a fresh test database, 115 browser tests and 903 assertions, 287 JavaScript tests, and RuboCop on all seven changed Ruby files. Earlier runs on a reused test database failed the local-agent work-list assertion. An earlier browser run timed out on the napkin editor redirect, which passed both in isolation and in the full rerun.
+
+## 2026-11-20 — Security reporting and dependency updates
+
+Prepared on branch `codex/security-dependabot-nov20` from `origin/master`. This change adds a repository `SECURITY.md` explaining private vulnerability reporting and a weekly Dependabot schedule for maintained dependency manifests. GitHub private vulnerability reporting is enabled for the repository. No application runtime behavior changes.
+
+Excalidraw upkeep was not due: `CLAUDE.md` records 2026-11-10, ten days before this change. Dependabot YAML validation passed during implementation review, and `git diff --check` passed before commit. No application tests were needed because this changes repository policy and dependency automation only.
+
+Published as PR https://github.com/Isaac12x/ideafoundry/pull/128 against `master` (created 2026-11-20 21:28:07 UTC). GitHub reports exactly four changed files: `.github/dependabot.yml`, `CHANGELOG.md`, `SECURITY.md`, and `handoff.md`.
