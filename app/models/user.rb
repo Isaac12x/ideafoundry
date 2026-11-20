@@ -255,8 +255,8 @@ has_many :media_digests, dependent: :destroy
 
   PRIVACY_SECTIONS = (NAV_PAGE_KEYS + [ "other" ]).freeze
   PRIVACY_SECTION_LABELS = NAV_PAGE_LABELS.merge("other" => "Everything else").freeze
-  PRIVACY_GAZE_DEFAULTS = { "sections" => NAV_PAGE_KEYS, "away_ms" => 2500, "clear_ms" => 150, "sensitivity" => 5 }.freeze
-  PRIVACY_GAZE_RANGES = { "away_ms" => 500..15_000, "clear_ms" => 0..2000, "sensitivity" => 1..10 }.freeze
+  PRIVACY_GAZE_DEFAULTS = { "sections" => NAV_PAGE_KEYS, "away_ms" => 2500, "clear_ms" => 150, "sensitivity" => 5, "haze_strength" => 6 }.freeze
+  PRIVACY_GAZE_RANGES = { "away_ms" => 500..15_000, "clear_ms" => 0..2000, "sensitivity" => 1..10, "haze_strength" => 1..10 }.freeze
 
   # Quote assignment defaults preserve prior behaviour: banner everywhere except KB.
   DEFAULT_QUOTE_ASSIGNMENTS = NAV_PAGE_KEYS.index_with { |k| k == "kb" ? "none" : "default" }.freeze

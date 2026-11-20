@@ -895,7 +895,7 @@ class SettingsController < ApplicationController
   end
 
   def privacy_gaze_params
-    params.fetch(:privacy_gaze, {}).permit(:enabled, :away_ms, :clear_ms, :sensitivity, sections: [])
+    params.fetch(:privacy_gaze, {}).permit(:enabled, :away_ms, :clear_ms, :sensitivity, :haze_strength, sections: [])
   end
 
   def mobile_uplink_params

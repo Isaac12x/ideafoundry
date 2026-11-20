@@ -1,4 +1,5 @@
 import { Controller } from "@hotwired/stimulus"
+import { indicatorState, paintIndicator } from "lib/privacy_guard"
 import { DEFAULT_BINDINGS, binding, labelShortcuts, matches, platformBinding, privacyToggleAllowed, sequenceKeys } from "lib/shortcut_bindings"
 
 const SUBMIT = "button:not([type]), button[type='submit'], input[type='submit']"
@@ -51,6 +52,10 @@ export default class extends Controller {
     this.visibleActions = []
     this.rendering = false
     labelShortcuts()
+    paintIndicator(document.querySelector("[data-privacy-indicator]"), document.body.dataset.privacyGazeState === "hazy" ? "hazed" : indicatorState(document.body.dataset.privacyEnabled === "true", false), binding("privacy_haze"))
+    // the nav eye is the same action as the shortcut
+    this.onIndicator = (e) => { if (e.target.closest?.("[data-privacy-indicator]")) this.togglePrivacy() }
+    document.addEventListener("click", this.onIndicator)
 
     this.boundKeydown = this.onKeydown.bind(this)
     this.boundRefresh = this.scheduleRefresh.bind(this)
@@ -72,6 +77,7 @@ export default class extends Controller {
 
   disconnect() {
     document.removeEventListener("keydown", this.boundKeydown)
+    document.removeEventListener("click", this.onIndicator)
     document.removeEventListener("turbo:load", this.boundRefresh)
     document.removeEventListener("turbo:frame-render", this.boundRefresh)
     document.removeEventListener("turbo:render", this.boundRefresh)

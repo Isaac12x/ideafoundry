@@ -4,8 +4,8 @@ import {
   isLooking, margins, marginScale, pointMedian, buildEnvelope, createHysteresis, extractFeatures,
   loadEnvelope, saveEnvelope, hasEnvelope, DEFAULT_ENVELOPE, DEFAULT_AWAY_MS, DEFAULT_CLEAR_MS, CALIBRATION_POINTS,
 } from "../../app/javascript/privacy_gaze/gaze_state.js"
-import { devtoolsOpen, devtoolsKey, windowGap } from "../../app/javascript/lib/privacy_guard.mjs"
-import { privacyToggleAllowed, DEFAULT_BINDINGS, matches } from "../../app/javascript/lib/shortcut_bindings.mjs"
+import { devtoolsOpen, devtoolsKey, windowGap, hazeVars, indicatorState, indicatorTitle, paintIndicator } from "../../app/javascript/lib/privacy_guard.mjs"
+import { privacyToggleAllowed, DEFAULT_BINDINGS, matches, platformBinding, binding } from "../../app/javascript/lib/shortcut_bindings.mjs"
 
 const f = (o = {}) => ({ yaw: 0, pitch: 0, h: 0, v: 0, ...o })
 
@@ -163,10 +163,44 @@ test("privacy shortcut: ON always allowed; OFF refused while hazed", () => {
   assert.equal(privacyToggleAllowed(true, undefined), true) // controller not running
 })
 
-test("privacy_haze binding exists and matches Ctrl/Cmd+Shift+. even though Shift turns the key into '>'", () => {
-  assert.equal(DEFAULT_BINDINGS.privacy_haze.key, "Ctrl/Cmd+Shift+.")
-  assert.ok(matches("Ctrl/Cmd+Shift+.", { key: ">", code: "Period", metaKey: true, shiftKey: true, ctrlKey: false, altKey: false }))
-  assert.ok(!matches("Ctrl/Cmd+Shift+.", { key: ".", code: "Period", metaKey: true, shiftKey: false, ctrlKey: false, altKey: false }))
+test("privacy_haze: Cmd+Shift+G on Mac (native opt-out), Alt+Shift+G elsewhere", () => {
+  assert.equal(DEFAULT_BINDINGS.privacy_haze.key, "Ctrl/Cmd+Shift+G")
+  const ev = (o) => ({ key: "G", code: "KeyG", metaKey: false, ctrlKey: false, altKey: false, shiftKey: true, ...o })
+  const plat = (p) => Object.defineProperty(globalThis, "navigator", { value: { platform: p }, configurable: true })
+  plat("MacIntel")
+  assert.equal(binding("privacy_haze"), "Ctrl/Cmd+Shift+G")
+  assert.ok(matches(binding("privacy_haze"), ev({ metaKey: true })))
+  assert.equal(binding("save"), "Ctrl+S") // other browser-owned keys still move
+  plat("Win32")
+  assert.equal(binding("privacy_haze"), "Alt+Shift+G")
+  assert.ok(matches(binding("privacy_haze"), ev({ altKey: true })))
+  delete globalThis.navigator
+})
+
+test("hazeVars: monotonic, 1 = light veil, 10 = near invisible, bad input = default", () => {
+  const num = (s, k) => parseFloat(hazeVars(s)[k])
+  for (let s = 1; s < 10; s++) {
+    assert.ok(num(s, "--privacy-haze-opacity") > num(s + 1, "--privacy-haze-opacity"))
+    assert.ok(num(s, "--privacy-haze-blur") < num(s + 1, "--privacy-haze-blur"))
+  }
+  assert.ok(num(1, "--privacy-haze-opacity") >= 0.4)
+  assert.ok(num(10, "--privacy-haze-opacity") <= 0.05)
+  assert.deepEqual(hazeVars(undefined), hazeVars(6))
+  assert.deepEqual(hazeVars(99), hazeVars(10))
+  assert.deepEqual(hazeVars(0), hazeVars(6))
+})
+
+test("indicator state + title + paint", () => {
+  assert.equal(indicatorState(false, true), "off")
+  assert.equal(indicatorState(true, false), "watching")
+  assert.equal(indicatorState(true, true), "hazed")
+  assert.match(indicatorTitle("hazed", "Alt+Shift+G"), /Look at the screen.*Alt\+Shift\+G/)
+  const attrs = {}
+  const el = { dataset: {}, title: "", setAttribute: (k, v) => { attrs[k] = v } }
+  paintIndicator(el, "watching", "X")
+  assert.equal(el.dataset.state, "watching")
+  assert.equal(attrs["aria-pressed"], "true")
+  paintIndicator(null, "off")
 })
 
 // ---- identity + camera health ----
