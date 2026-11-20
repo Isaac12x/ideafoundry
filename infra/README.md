@@ -38,3 +38,7 @@ docker compose -f infra/docker-compose.yml --profile gpu build unlimited-ocr-lla
 
 - New out-of-process service (AI, voice, OCR, ...): `infra/services/<name>/` with `Dockerfile` + `README.md`; register in `infra/docker-compose.yml`; Rails gets its URL from an ENV var (client code stays in `app/`).
 - New shell-out CLI: add to `infra/Brewfile`, the `infra/Dockerfile` final-stage apt list, and `PACKAGES` in `test/brewfile_test.rb` (CI fails otherwise).
+
+## Process model
+
+Launchd runs `bin/start_idea_app.sh` -> Puma cluster (6 workers, `preload_app!`, `WEB_CONCURRENCY=1` for single mode) + `bin/jobs` (Solid Queue) as separate processes. Workers share the unlock state through the OS keychain plus `tmp/recovery_generation`; see DEVELOPMENT.md "Process model".

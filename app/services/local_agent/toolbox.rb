@@ -596,11 +596,15 @@ module LocalAgent
 
     def record_event!(event_type:, target:, summary:, payload:)
       payload ||= {}
+      thread = nil
       if event_type.to_s == "answer" && target.is_a?(AgentEvent) && target.event_type == "question"
         payload = payload.merge("answer" => summary) if payload["answer"].blank?
+        payload = payload.merge("agent" => target.payload&.dig("agent") || LocalAgent::Agents::DEFAULT)
+        thread = target.agent_thread
       end
 
       user.agent_events.create!(
+        agent_thread: thread,
         agent_run: agent_run,
         event_type: event_type,
         target: target,

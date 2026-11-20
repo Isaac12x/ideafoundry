@@ -717,6 +717,19 @@ details[open] > .kb-meta-toggle { color: var(--accent); }
   position: relative;
 }
 
+/* GFM tables: scroll sideways rather than blow out the measure. */
+.kb-markdown table {
+  display: block; max-width: 100%; overflow-x: auto;
+  border-collapse: collapse; margin: 1rem 0; font-size: 0.9em;
+}
+.kb-markdown th,
+.kb-markdown td {
+  padding: 0.4rem 0.75rem; border: 1px solid var(--border-default);
+  text-align: left; vertical-align: top;
+}
+.kb-markdown th { background: var(--bg-surface); font-weight: 600; }
+.kb-markdown tbody tr:nth-child(even) td { background: color-mix(in srgb, var(--bg-surface) 50%, transparent); }
+
 .kb-content-edit-link,
 .kb-media-copy-btn {
   display: inline-flex;
@@ -2485,6 +2498,7 @@ html.kb-linking, html.kb-linking * { cursor: grabbing !important; user-select: n
 .kb-emoji-picker { display: grid; gap: 0.5rem; min-height: 6rem; }
 .kb-emoji-groups { max-height: min(50vh, 22rem); overflow-y: auto; }
 .kb-emoji-search { width: 100%; padding: 0.35rem 0.5rem; border: 1px solid var(--border-default); border-radius: 5px; background: var(--bg-elevated); color: var(--text-primary); font: inherit; font-size: 0.8rem; }
+.kb-emoji-choice[hidden], .kb-emoji-group[hidden] { display: none; }
 .kb-emoji-group { content-visibility: auto; contain-intrinsic-size: auto 12rem; }
 .kb-emoji-group__name { margin: 0.5rem 0 0.25rem; color: var(--text-muted); font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
 
@@ -3766,8 +3780,25 @@ html.kb-linking, html.kb-linking * { cursor: grabbing !important; user-select: n
   flex: none;
   display: inline-flex;
   align-items: center;
-  color: var(--text-muted);
+  color: var(--accent);
 }
+
+/* KB-wide notes index above the tree */
+.kb-notes-index { margin: 0 0 0.4rem; border-bottom: 1px solid var(--border-subtle); font-size: 0.78rem; }
+.kb-notes-index__toggle {
+  display: flex; align-items: center; gap: 0.35rem; width: 100%; padding: 0.3rem var(--kb-row-pad, 6px);
+  border: 0; background: none; font: inherit; color: var(--accent); cursor: pointer; text-align: left;
+}
+.kb-notes-index__count { color: var(--text-muted); }
+.kb-notes-index ul { margin: 0; padding: 0 0 0.3rem; list-style: none; max-height: 14rem; overflow-y: auto; }
+.kb-notes-index a {
+  display: flex; flex-direction: column; padding: 0.2rem var(--kb-row-pad, 6px) 0.2rem 1.2rem;
+  color: var(--text-primary); text-decoration: none; min-width: 0;
+}
+.kb-notes-index a:hover { background: var(--accent-muted); }
+.kb-notes-index__file,
+.kb-notes-index__text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.kb-notes-index__text { color: var(--text-muted); font-size: 0.72rem; }
 
 .kb-note { display: contents; color: var(--text-primary); }
 .kb-note[hidden],

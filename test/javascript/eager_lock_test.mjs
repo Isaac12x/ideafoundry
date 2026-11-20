@@ -8,6 +8,6 @@ const index = readFileSync("app/javascript/controllers/index.js", "utf8")
 test("typing-activity is registered statically, before the lazy loader runs", () => {
   assert.match(index, /^import TypingActivityController from "controllers\/typing_activity_controller"/m)
   const register = index.indexOf('application.register("typing-activity"')
-  const loader = index.indexOf('eagerLoadControllersFrom("controllers"')
+  const loader = index.indexOf('lazyLoadControllersFrom("controllers"')
   assert.ok(register > 0 && register < loader, "registered after (or without) the loader")
 })

@@ -1,32 +1,84 @@
-<% agent_threads = ask_agent_question_threads %>
-<% if agent_threads.any? %>
-  <% agent_threads.each do |thread| %>
+<% thread_param = local_assigns[:thread_param].to_s %>
+<% active_thread = ask_agent_active_thread(thread_param) %>
+<% turns = ask_agent_question_threads(active_thread, thread_param) %>
+<% thread_list = @user ? @user.agent_threads.recent.limit(30).to_a : [] %>
+<% has_legacy = @user&.agent_events&.where(event_type: "question", agent_thread_id: nil)&.exists? %>
+<% active_key = active_thread ? active_thread.id.to_s : (thread_param == "new" || turns.empty? ? "new" : "legacy") %>
+<div class="ask-agent-threadbar" data-active-thread="<%= active_key == "legacy" ? "new" : active_key %>">
+  <details class="ask-agent-threadbar__menu">
+    <summary>
+      <span class="ask-agent-threadbar__title"><%= active_thread&.title.presence || (active_key == "legacy" ? "Earlier questions" : "New thread") %></span>
+      <span class="ask-agent-threadbar__count"><%= pluralize(turns.size, "turn") %></span>
+    </summary>
+    <ul class="ask-agent-threadbar__list">
+      <% thread_list.each do |item| %>
+        <li>
+          <button type="button" data-action="ask-agent#selectThread" data-thread-id="<%= item.id %>" aria-current="<%= item == active_thread %>">
+            <span><%= item.title.presence || "Untitled" %></span>
+            <time><%= time_ago_in_words(item.updated_at) %> ago</time>
+          </button>
+        </li>
+      <% end %>
+      <% if has_legacy %>
+        <li>
+          <button type="button" data-action="ask-agent#selectThread" data-thread-id="legacy" aria-current="<%= active_key == "legacy" %>">
+            <span>Earlier questions</span>
+          </button>
+        </li>
+      <% end %>
+      <% if thread_list.empty? && !has_legacy %>
+        <li class="ask-agent-threadbar__none">No threads yet.</li>
+      <% end %>
+    </ul>
+  </details>
+  <button type="button" class="ask-agent-threadbar__new" data-action="ask-agent#newThread">New thread</button>
+</div>
+
+<% if turns.any? %>
+  <% turns.each do |thread| %>
     <% question = thread[:question] %>
     <% answer = thread[:answer] %>
+    <% asked_to = LocalAgent::Agents.label(question.payload&.dig("agent")) %>
     <article class="ask-agent-thread">
       <div class="ask-agent-message ask-agent-message--user">
         <div class="ask-agent-message__meta">
-          <span>You</span>
+          <span>You <em>to <%= asked_to %></em></span>
           <time><%= time_ago_in_words(question.created_at) %> ago</time>
         </div>
         <p><%= question.payload&.dig("question").presence || question.summary %></p>
       </div>
 
+      <% if thread[:activity].any? %>
+        <details class="ask-agent-activity">
+          <summary>Activity <span><%= thread[:activity].size %></span></summary>
+          <ol>
+            <% thread[:activity].each do |event| %>
+              <li>
+                <code><%= event.event_type %></code>
+                <span><%= event.summary %></span>
+                <time><%= time_ago_in_words(event.created_at) %> ago</time>
+              </li>
+            <% end %>
+          </ol>
+        </details>
+      <% end %>
+
       <% if answer %>
-        <div class="ask-agent-message ask-agent-message--agent">
+        <% failed = answer.payload&.dig("error") == true %>
+        <div class="ask-agent-message ask-agent-message--agent<%= " ask-agent-message--error" if failed %>">
           <div class="ask-agent-message__meta">
-            <span>Agent</span>
+            <span><%= failed ? "Failed" : LocalAgent::Agents.label(answer.payload&.dig("agent")) %></span>
             <time><%= time_ago_in_words(answer.created_at) %> ago</time>
           </div>
           <p><%= answer.payload&.dig("answer").presence || answer.summary %></p>
         </div>
       <% else %>
-        <div class="ask-agent-message ask-agent-message--pending">
+        <div class="ask-agent-message ask-agent-message--pending" aria-busy="true">
           <div class="ask-agent-message__meta">
-            <span>Agent</span>
+            <span><%= asked_to %></span>
             <time>Pending</time>
           </div>
-          <p><%= question.created_at < 10.minutes.ago ? "No answer yet. The agent may not be running or may have failed." : "Waiting for an answer." %></p>
+          <p><span class="ask-agent-working" aria-hidden="true"><i></i><i></i><i></i></span><%= question.created_at < 10.minutes.ago ? "No answer yet. The agent may not be running or may have failed." : "Waiting for an answer." %></p>
         </div>
       <% end %>
     </article>

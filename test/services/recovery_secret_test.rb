@@ -1,6 +1,37 @@
 require "test_helper"
 
 class RecoverySecretTest < ActiveSupport::TestCase
+  test "generation change by another process is reported once and holds no secret" do
+    path = Rails.root.join("tmp/recovery_generation_test_#{SecureRandom.hex(4)}")
+    RecoverySecret.stub(:generation_path, path) do
+      RecoverySecret.bump_generation!
+      refute RecoverySecret.generation_changed?, "own bump is not a foreign change"
+
+      File.write(path, "written-by-another-worker") # what a sibling's bump_generation! does
+      assert RecoverySecret.generation_changed?
+      refute RecoverySecret.generation_changed?, "reported once per change"
+    end
+  ensure
+    FileUtils.rm_f(path)
+  end
+
+  test "missing generation file never reports a change" do
+    RecoverySecret.stub(:generation_path, Rails.root.join("tmp/nonexistent_generation")) do
+      refute RecoverySecret.generation_changed?
+    end
+  end
+
+  test "bump_generation! writes an owner-only token without the passphrase" do
+    path = Rails.root.join("tmp/recovery_generation_test_#{SecureRandom.hex(4)}")
+    RecoverySecret.stub(:generation_path, path) do
+      RecoverySecret.with("super secret phrase") { RecoverySecret.bump_generation! }
+      assert_equal 0o600, File.stat(path).mode & 0o777
+      refute_includes File.read(path), "super secret"
+    end
+  ensure
+    FileUtils.rm_f(path)
+  end
+
   test "request scoped passphrase satisfies required secret in production" do
     with_recovery_env_cleared do
       Rails.env.stub(:production?, true) do

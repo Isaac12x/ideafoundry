@@ -4,6 +4,12 @@ on:
   push:
     branches:
       - master
+    paths:
+      - docs/index.html
+      - docs/assets/**
+      - docs/guide/**
+      - bin/build-site
+      - .github/workflows/pages.yml
   workflow_dispatch:
 
 permissions:
@@ -28,10 +34,16 @@ jobs:
       - name: Configure Pages
         uses: actions/configure-pages@v5
 
+      - name: Install pandoc
+        run: sudo apt-get update && sudo apt-get install -y pandoc
+
+      - name: Build site
+        run: bin/build-site
+
       - name: Upload static site
         uses: actions/upload-pages-artifact@v3
         with:
-          path: docs
+          path: _site
 
       - name: Deploy
         id: deployment

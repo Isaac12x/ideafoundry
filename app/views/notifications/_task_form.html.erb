@@ -1,0 +1,7 @@
+<%# locals: scope (:general | Idea | {src:, path:}), return_to %>
+<%= form_with url: tasks_path, class: "inbox-add", data: { controller: "todo-form", action: "turbo:submit-end->todo-form#reset" } do %>
+  <%= task_scope_fields(scope) %>
+  <%= hidden_field_tag :return_to, return_to, id: nil %>
+  <input type="text" name="title" class="inbox-add__input" placeholder="Add a task..." maxlength="255" required autocomplete="off" aria-label="Add a task" data-todo-form-target="input">
+  <button class="inbox-btn inbox-btn--primary">Add</button>
+<% end %>

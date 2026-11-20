@@ -17,7 +17,7 @@ module IdeaFoundrySqlcipherConnectionKey
     # hook runs. Treat that file as an uninitialized database so db:prepare can
     # create the first-run plaintext schema. Encryption remains an explicit
     # action in Settings; there is no recovery secret to request yet.
-    if empty_sqlite_database?(path)
+    if empty_sqlite_database?(path) && !(@config[:auto_encrypt] && RecoverySecret.present?)
       Rails.logger.info("SQLCipher database at #{path} is empty; allowing first-run database preparation before UI encryption is enabled.")
       return
     end

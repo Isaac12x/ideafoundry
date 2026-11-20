@@ -18,6 +18,10 @@ default: &default
     journal_mode: wal
     journal_size_limit: 67108864
     wal_autocheckpoint: 1000
+    # Single-user Mac with ample RAM: 64MB page cache per connection, 1GB mmap, temp tables in memory.
+    cache_size: -65536
+    mmap_size: 1073741824
+    temp_store: memory
 
 development:
   primary:
@@ -32,6 +36,9 @@ development:
     <<: *default
     database: storage/development_cache.sqlite3
     migrations_paths: db/cache_migrate
+  cable:
+    <<: *default
+    database: storage/development_cable.sqlite3
 
 # Warning: The database defined as "test" will be erased and
 # re-generated from your development database when you run "rake".
@@ -49,6 +56,9 @@ test:
     <<: *default
     database: storage/test_cache.sqlite3
     migrations_paths: db/cache_migrate
+  cable:
+    <<: *default
+    database: storage/test_cable.sqlite3
 
 production:
   primary:
@@ -68,3 +78,12 @@ production:
     <<: *default
     database: storage/cache.sqlite3
     migrations_paths: db/cache_migrate
+  cable:
+    <<: *default
+    database: storage/cable.sqlite3
+    # Broadcast payloads carry rendered user content (KB tree, graph), so encrypt like queue.
+    sqlcipher: true
+    # Unlike the opt-in primary DB this one is new: it is created keyed, or converted on
+    # unlock/boot (SqlcipherDatabaseMigrator.encrypt_auto!), whenever a recovery key exists.
+    auto_encrypt: true
+    timeout: 10000

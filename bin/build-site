@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+# Assemble the public GitHub Pages site into _site/ (landing page + rendered guide only).
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+OUT="$ROOT/_site"
+
+if ! command -v pandoc >/dev/null 2>&1; then
+  echo "bin/build-site: pandoc not found (brew install pandoc / apt-get install pandoc)" >&2
+  exit 1
+fi
+
+rm -rf "$OUT"
+mkdir -p "$OUT/docs"
+cp "$ROOT/docs/index.html" "$OUT/index.html"
+cp -R "$ROOT/docs/assets" "$OUT/assets"
+
+shopt -s nullglob
+pages=("$ROOT"/docs/guide/*.md)
+if [ ${#pages[@]} -eq 0 ]; then
+  echo "bin/build-site: no docs/guide/*.md pages found" >&2
+  exit 1
+fi
+
+for md in "${pages[@]}"; do
+  name="$(basename "$md" .md)"
+  case "$name" in _*) continue ;; esac
+  pandoc "$md" --from gfm --to html5 --standalone --toc --toc-depth=2 \
+    --template="$ROOT/docs/guide/_template.html" \
+    --lua-filter="$ROOT/docs/guide/_links.lua" \
+    --metadata "pagetitle=$name" \
+    --metadata "page=$name" \
+    -o "$OUT/docs/$name.html"
+done
+
+echo "Built $OUT"
