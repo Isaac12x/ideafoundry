@@ -1,6 +1,7 @@
 require "digest"
 require "json"
 require "securerandom"
+require "set"
 require "stringio"
 require "zip"
 
@@ -52,30 +53,42 @@ class NoteImportService
 
       source = normalize_source!(data["source"])
       source_label = source_label_for(source)
-      notes = selected_notes(Array(data["notes"]), selected_folder_keys: selected_keys, selected_note_keys: selected_note_keys)
+      all_notes = Array(data["notes"])
+      all_notes.each_with_index { |note, index| note["import_index"] ||= index }
+      notes = selected_notes(all_notes, selected_folder_keys: selected_keys, selected_note_keys: selected_note_keys)
       raise ImportError, "No notes matched the selected folders or notes." if notes.empty?
 
-      batch_id = data["batch_id"].presence || SecureRandom.uuid
-      matched_folder_count = notes.flat_map { |note| Array(note["folder_keys"]) }.uniq.size
+      batch_id = data["batch_id"].presence || Digest::SHA256.hexdigest(payload.to_s)
+      matched_folder_count = 0
+      imported_count = 0
 
       ActiveRecord::Base.transaction do
-        notes.each do |note|
+        references = notes.map { |note| import_references_for(user, batch_id, note) }
+        all_references = references.flatten.uniq
+        imported_references = user.submissions.where(source: source, source_reference: all_references).pluck(:source_reference).to_set
+        import_rows = notes.zip(references).reject { |_note, refs| refs.any? { |reference| imported_references.include?(reference) } }
+        imported_notes = []
+
+        import_rows.each do |note, refs|
           IntakeSubmissionService.new(
             user: user,
             title: note["title"],
             body: note["body"],
             source: source,
-            source_reference: "#{batch_id}:#{note["import_index"]}",
+            source_reference: refs.first,
             raw_payload: raw_payload_for(note, source:, source_label:, batch_id:)
           ).call
+          imported_notes << note
         end
+        imported_count = imported_notes.size
+        matched_folder_count = imported_notes.flat_map { |note| Array(note["folder_keys"]) }.uniq.size
       end
 
       Result.new(
         source: source,
         source_label: source_label,
         batch_id: batch_id,
-        imported_count: notes.size,
+        imported_count: imported_count,
         folder_count: matched_folder_count
       )
     rescue ActiveSupport::MessageVerifier::InvalidSignature
@@ -133,6 +146,11 @@ class NoteImportService
         },
         "metadata" => note["metadata"].presence
       }.compact
+    end
+
+    def import_references_for(user, batch_id, note)
+      identifier = note.fetch("import_index")
+      [ "#{batch_id}:user-#{user.id}:#{identifier}", "#{batch_id}:#{identifier}" ]
     end
 
     def selected_notes(notes, selected_folder_keys:, selected_note_keys:)
