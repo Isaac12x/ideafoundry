@@ -4,6 +4,8 @@ class User < ApplicationRecord
   has_many :lists, dependent: :destroy
   has_many :kanban_boards, dependent: :destroy
   has_many :ideas, dependent: :destroy
+  has_many :notifications, dependent: :destroy
+  has_many :tasks, class_name: "TodoItem", dependent: :destroy # general + project tasks; idea tasks hang off the idea
   has_many :templates, dependent: :destroy
   has_many :export_jobs, dependent: :destroy
   has_many :topologies, dependent: :destroy
@@ -14,8 +16,10 @@ class User < ApplicationRecord
   has_many :capture_jobs, dependent: :destroy
   has_many :facts, dependent: :destroy
   has_many :maxims, dependent: :destroy
+  has_many :problems, dependent: :destroy
   has_many :agent_runs, dependent: :destroy
   has_many :agent_events, dependent: :destroy
+  has_many :agent_threads, dependent: :destroy
   has_many :agent_recommendations, dependent: :destroy
   has_many :activity_logs, dependent: :destroy
   has_many :kb_downloads, dependent: :destroy
@@ -838,18 +842,21 @@ has_many :media_digests, dependent: :destroy
     latest.status
   end
 
-  def local_agent_question_threads(limit: 10)
-    questions = agent_events.where(event_type: "question").recent.limit(limit).to_a
-    answers_by_question_id =
+  # Turns (question + its answer + activity) of one thread, oldest first. thread nil = questions from before threads existed.
+  def local_agent_question_threads(limit: 10, thread: nil)
+    questions = agent_events.where(event_type: "question", agent_thread_id: thread&.id).recent.limit(limit).to_a
+    replies =
       agent_events
-        .where(event_type: "answer", target_type: "AgentEvent", target_id: questions.map(&:id))
-        .recent
+        .where(target_type: "AgentEvent", target_id: questions.map(&:id))
+        .order(:id)
         .group_by(&:target_id)
 
     questions.map do |question|
+      events = replies[question.id] || []
       {
         question: question,
-        answer: answers_by_question_id[question.id]&.first
+        answer: events.reverse.find { |event| event.event_type == "answer" },
+        activity: events.reject { |event| event.event_type == "answer" }
       }
     end
   end

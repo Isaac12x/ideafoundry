@@ -85,6 +85,10 @@ bin/rails server -p 3000         # Rails only
 yarn build:watch                 # esbuild graph watcher only
 ```
 
+### Process model (production)
+
+Production Puma runs 6 forked workers x 4 threads (`WEB_CONCURRENCY=1` -> single mode, `RAILS_MAX_THREADS` overrides; dev stays single). The recovery passphrase is never held in master memory or inherited: each worker reads it on demand from the OS keychain (`RecoverySecret`), so a respawned worker is unlocked without user input. `tmp/recovery_generation` (a random token, no secret) is rewritten on unlock/clear; every worker checks it per request, drops its keychain cache and re-keys its SQLite connections. The typing lock is a signed cookie, so it is already per-browser, not per-worker. Puma's master compares wall-clock time to worker check-ins, so a Mac sleep killed all workers; `worker_timeout` is therefore 7 days (`PUMA_WORKER_TIMEOUT`). Action Cable uses `solid_cable` (encrypted `storage/cable.sqlite3`, like queue) so broadcasts from any worker or `bin/jobs` reach every subscriber; jobs also honor the generation (`ApplicationJob` around_perform). The cable DB (flagged `auto_encrypt` in database.yml) is created keyed when a recovery key exists, otherwise converted on boot (`db:prepare_if_unlocked`) or on unlock; no Settings visit needed.
+
 ### Optional Backlog
 
 Backlog is disabled by default. To include it in a local or production build, set `BACKLOG_ENABLED=true` in the environment used to build and run the app, for example `BACKLOG_ENABLED=true bin/dev` or `BACKLOG_ENABLED=true bin/rails assets:precompile`.

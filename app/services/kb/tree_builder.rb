@@ -15,6 +15,26 @@ module Kb
         Rails.cache.increment(key) || Rails.cache.write(key, cache_generation(user.id) + 1)
       end
 
+      # After moving `old_rel` -> `new_rel` (old_rel nil: `new_rel` was just created) inside one source: bump the generation like bust_cache! but carry the
+      # cached scan over, rescanning only the moved subtree and the two parent dirs instead of the whole source.
+      # No cached scan (cold/expired) just means the next build scans in full.
+      def patch!(user, base, old_rel, new_rel)
+        base = File.expand_path(base)
+        old_key = [ "kb/tree/fs-v6", user.id, base, cache_generation(user.id) ]
+        cached = Rails.cache.read(old_key)
+        patched = cached && new(user).send(:patch_entries, cached, base, old_rel, new_rel)
+        bust_cache!(user)
+        Rails.cache.write([ "kb/tree/fs-v6", user.id, base, cache_generation(user.id) ], patched) if patched
+      rescue StandardError => error
+        Rails.logger.warn("KB tree patch failed: #{error.class}: #{error.message}")
+        bust_cache!(user)
+      end
+
+      # DOM id of a folder's children container ("" = the source root), so a stream can swap just that list.
+      def children_id(src, rel)
+        "kb-children-#{src}-#{Digest::MD5.hexdigest(rel.to_s)[0, 12]}"
+      end
+
       def cache_generation(user_id)
         Rails.cache.read(cache_generation_key(user_id)) || 0
       end
@@ -153,6 +173,38 @@ module Kb
       end
       hide_sidecars(files)
       { files: files, dirs: dirs }
+    end
+
+    def patch_entries(cached, base, old_rel, new_rel)
+      parent = ->(rel) { File.dirname(rel).then { |d| d == "." ? "" : d } }
+      dest_dir = parent.(new_rel)
+      src_dir = old_rel && parent.(old_rel)
+      under = ->(rel, root) { root && (rel == root || rel.start_with?("#{root}/")) }
+      # Everything rescanned: the moved subtree, the entries beside it, and both parent dirs' own rows.
+      redo_dir = ->(rel) { parent.(rel) == dest_dir && !rel.empty? }
+      files = cached[:files].reject { |f| under.(f[:rel], old_rel) || under.(f[:rel], new_rel) || parent.(f[:rel]) == dest_dir }
+      dirs = cached[:dirs].reject { |d| under.(d[:rel], old_rel) || under.(d[:rel], new_rel) || redo_dir.(d[:rel]) || (src_dir && d[:rel] == src_dir) || d[:rel] == dest_dir }
+      fresh_files = []
+      fresh_dirs = []
+      scan = lambda do |path|
+        rel = path.delete_prefix("#{base}/")
+        next if File.symlink?(path) || hidden_path?(rel)
+
+        if File.directory?(path)
+          fresh_dirs << { rel: rel, mtime: File.mtime(path).to_f, btime: birthtime(path) }
+        elsif File.file?(path)
+          fresh_files << { rel: rel, abs: path, mtime: File.mtime(path).to_f, btime: birthtime(path), size: File.size(path) }
+        end
+      end
+      join = ->(rel) { rel.empty? ? base : File.join(base, rel) }
+      Dir.glob(File.join(join.(dest_dir), "*"), File::FNM_DOTMATCH).each { |path| scan.(path) unless %w[. ..].include?(File.basename(path)) }
+      Dir.glob(File.join(base, new_rel, "**", "*"), File::FNM_DOTMATCH).each { |path| scan.(path) unless %w[. ..].include?(File.basename(path)) }
+      [ src_dir, dest_dir ].compact.uniq.reject(&:empty?).each { |rel| scan.(File.join(base, rel)) }
+      fresh_files.uniq! { |f| f[:rel] }
+      fresh_dirs.uniq! { |d| d[:rel] }
+      hide_sidecars(fresh_files)
+      # Sidecar flags (CC, note) of files left behind in the source dir are unchanged, so no rescan there.
+      { files: (files + fresh_files).sort_by { |f| f[:abs] }, dirs: (dirs + fresh_dirs).sort_by { |d| d[:rel] } }
     end
 
     # "<stem>.vtt" next to same-stem media is the media's captions: hidden, shown as a CC mark on the media row.

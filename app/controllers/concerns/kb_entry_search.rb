@@ -7,7 +7,26 @@ module KbEntrySearch
 
   private
 
+  INDEX_TTL = 1.hour # safety net only; KB writes bump the generation below
+
+  # Filters the cached walk in memory: typing never re-walks the disk.
   def search_entries(query)
+    found = kb_entry_index.filter_map do |e|
+      next unless e[:rel_down].include?(query) || (!query.empty? && e[:note_down].include?(query))
+      next if query.empty? && e[:type] != "project"
+
+      e.merge(rank: [ { "project" => 0, "dir" => 1, "file" => 2 }[e[:type]], e[:name_down].include?(query) ? 0 : 1 ])
+    end
+    found.sort_by { |e| e[:rank] }.first(SEARCH_LIMIT).map { |e| e.slice(:src, :path, :name, :type, :source) }
+  end
+
+  # Keyed on the KB tree generation: every KB write already calls Kb::TreeBuilder.bust_cache!, which invalidates this.
+  def kb_entry_index
+    key = [ "kb_entry_index", @user.id, Kb::TreeBuilder.cache_generation(@user.id), KbSource.list(@user).map { |s| s[:path] } ]
+    Rails.cache.fetch(key, expires_in: INDEX_TTL) { walk_kb_entries }
+  end
+
+  def walk_kb_entries
     found = []
     KbSource.list(@user).each_with_index do |source, index|
       base = File.expand_path(source[:path])
@@ -27,18 +46,15 @@ module KbEntrySearch
           next if File.symlink?(abs) || Kb::Note.sidecar?(name) || Kb::Source.sidecar?(name) # the note rides on its file's row
 
           is_dir = File.directory?(abs)
-          queue << rel if is_dir && !Kb::Project.at(base, rel)&.locked? # locked projects stay behind the lock
-          next unless rel.downcase.include?(query) || (!query.empty? && !is_dir && Kb::Note.read(abs).downcase.include?(query))
+          project = Kb::Project.at(base, rel) if is_dir
+          queue << rel if is_dir && !project&.locked? # locked projects stay behind the lock
 
-          type = is_dir ? (Kb::Project.at(base, rel) ? "project" : "dir") : "file"
-          next if query.empty? && type != "project"
-
-          found << { src: index, path: rel, name: name, type: type, source: source[:label],
-                     rank: [ { "project" => 0, "dir" => 1, "file" => 2 }[type], name.downcase.include?(query) ? 0 : 1 ] }
+          found << { src: index, path: rel, name: name, type: is_dir ? (project ? "project" : "dir") : "file", source: source[:label],
+                     rel_down: rel.downcase, name_down: name.downcase, note_down: is_dir ? "" : Kb::Note.read(abs).to_s.downcase }
         end
       end
     end
-    found.sort_by { |e| e[:rank] }.first(SEARCH_LIMIT).each { |e| e.delete(:rank) }
+    found
   end
 
   def children(dir)

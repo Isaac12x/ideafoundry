@@ -76,4 +76,10 @@ class Kb::MarkdownRendererTest < ActiveSupport::TestCase
     assert_no_match(/kb-ingredients/, html("- 3 apples\n- buy milk\n- call mom\n"))
     assert_no_match(/kb-ingredients/, html("- 200 g of regret\n"))
   end
+
+  test "renders GFM tables" do
+    html = Kb::MarkdownRenderer.render("| a | b |\n|---|---|\n| 1 | 2 |\n")
+    assert_includes html, "<table>"
+    assert_includes html, "<th>a</th>"
+  end
 end

@@ -1,0 +1,6 @@
+<% scope = { src: @src, path: project.rel } %>
+<% tasks = TodoItem.for_project(@src, project.rel).pending %>
+<% notes = @user.notifications.for_project(@src, project.rel).recent.limit(10) %>
+<%= render layout: "kb/projects/section", locals: { id: "tasks", title: "Tasks", summary: (tasks.empty? ? "None open" : "#{tasks.size} open"), open: open, lead: lead, mode: mode, project: project } do %>
+  <%= render "notifications/scope", scope: scope, notifications: notes, tasks: tasks, return_to: kb_project_path(src: @src, path: project.rel) %>
+<% end %>

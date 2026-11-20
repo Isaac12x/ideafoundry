@@ -132,10 +132,18 @@ module ApplicationHelper
     idea.idea_lists.map(&:list_id).join(",")
   end
 
-  def ask_agent_question_threads(limit: 10)
-    return [] unless @user
+  # The thread shown in the sidebar: the requested one, else the newest. "new" shows an empty thread; nil when none exist
+  # (questions from before threads existed then show under no thread).
+  def ask_agent_active_thread(param = nil)
+    return nil if %w[new legacy].include?(param.to_s) || !@user
 
-    @user.local_agent_question_threads(limit: limit).reverse
+    @user.agent_threads.find_by(id: param) || @user.agent_threads.recent.first
+  end
+
+  def ask_agent_question_threads(thread, param = nil, limit: 20)
+    return [] if !@user || param.to_s == "new"
+
+    @user.local_agent_question_threads(limit: limit, thread: thread).reverse
   end
 
   def ask_agent_return_path

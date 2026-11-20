@@ -1,0 +1,14 @@
+<%# Queue entry for an unfinished idea draft. locals: idea, return_to %>
+<li class="inbox-row is-unread">
+  <span class="inbox-dot" aria-hidden="true"></span>
+  <div class="inbox-main">
+    <span class="inbox-title">Unfinished idea draft</span>
+    <span class="inbox-body"><%= idea.title.presence || "Untitled" %></span>
+    <span class="inbox-meta"><%= time_ago_in_words(idea.updated_at) %> ago</span>
+  </div>
+  <span class="inbox-actions">
+    <%= link_to "Resume", edit_idea_path(idea, draft: 1), class: "inbox-link", data: { turbo_frame: "_top" } %>
+    <%= button_to "Discard", idea_path(idea, return_to: return_to), method: :delete, class: "inbox-link inbox-link--danger", form_class: "inbox-inline",
+          data: { turbo_confirm: "Discard this draft?" } %>
+  </span>
+</li>

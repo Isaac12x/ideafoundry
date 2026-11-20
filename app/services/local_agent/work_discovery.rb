@@ -40,15 +40,17 @@ module LocalAgent
           .where.not(id: answered_question_ids)
           .recent
           .limit(10)
+          .select { |question| Agents.runner?(question.payload&.dig("agent")) }
           .map do |question|
         candidate(question, 95, "Answer user question to the local agent", {
           question: question.payload&.dig("question").presence || question.summary,
           asked_at: question.created_at,
+          thread_history: question.agent_thread&.history(before: question).presence,
           context_record: {
             record_type: "User",
             record_id: user.id
           },
-          response_instructions: "Read the User context record before answering. Record the answer with record_event event_type=answer, target_type=AgentEvent, target_id=#{question.id}. Put the answer in summary and payload.answer."
+          response_instructions: "Read the User context record before answering; thread_history, when present, holds the earlier turns of this conversation. Record the answer with record_event event_type=answer, target_type=AgentEvent, target_id=#{question.id}. Put the answer in summary and payload.answer."
         })
       end
     end

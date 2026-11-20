@@ -126,4 +126,28 @@ class SqlcipherDatabaseMigratorTest < ActiveSupport::TestCase
       end
     end
   end
+
+  test "encrypt_auto! converts only plaintext databases flagged auto_encrypt" do
+    optional_path = @root.join("optin.sqlite3")
+    FileUtils.cp(@database_path, optional_path)
+    cfg = ->(path, extra) { Struct.new(:configuration_hash).new({ sqlcipher: true, database: path.to_s }.merge(extra)) }
+    configs = [ cfg.(@database_path, auto_encrypt: true), cfg.(optional_path, {}) ]
+
+    ActiveRecord::Base.configurations.stub(:configs_for, configs) do
+      RecoverySecret.stub(:present?, true) do
+        assert_equal [ @database_path.to_s ], SqlcipherDatabaseMigrator.encrypt_auto!(env: "production")
+        assert_empty SqlcipherDatabaseMigrator.encrypt_auto!(env: "production"), "already encrypted is skipped"
+      end
+    end
+
+    refute_equal "SQLite format 3\0", File.binread(@database_path, 16)
+    assert_equal "SQLite format 3\0", File.binread(optional_path, 16), "opt-in database stays plaintext"
+  end
+
+  test "encrypt_auto! does nothing without a recovery key" do
+    RecoverySecret.stub(:present?, false) do
+      assert_empty SqlcipherDatabaseMigrator.encrypt_auto!(env: "production")
+    end
+    assert_equal "SQLite format 3\0", File.binread(@database_path, 16)
+  end
 end

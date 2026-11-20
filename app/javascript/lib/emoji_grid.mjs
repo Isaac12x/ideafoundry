@@ -4,6 +4,9 @@
 let data
 const load = (url) => (data ||= fetch(url).then((response) => response.json()))
 
+// Every whitespace-separated term must appear (partial, case-insensitive) in the name or keywords.
+export const emojiMatches = (haystack, query) => query.toLowerCase().split(/\s+/).filter(Boolean).every((term) => haystack.includes(term))
+
 export function mountEmojiGrid(host, { url, selected, onPick }) {
   const observer = new IntersectionObserver(async (entries) => {
     if (!entries.some((entry) => entry.isIntersecting)) return
@@ -16,8 +19,8 @@ export function mountEmojiGrid(host, { url, selected, onPick }) {
 
 function build(host, groups, { selected, onPick }) {
   host.replaceChildren()
-  const search = Object.assign(document.createElement("input"), { type: "search", className: "kb-emoji-search", placeholder: "Search emoji by name", autocomplete: "off" })
-  search.setAttribute("aria-label", "Search emoji by name")
+  const search = Object.assign(document.createElement("input"), { type: "search", className: "kb-emoji-search", placeholder: "Search emoji by name or keyword", autocomplete: "off" })
+  search.setAttribute("aria-label", "Search emoji by name or keyword")
   const body = document.createElement("div")
   body.className = "kb-emoji-groups"
   const buttons = []
@@ -27,10 +30,10 @@ function build(host, groups, { selected, onPick }) {
     section.innerHTML = `<h4 class="kb-emoji-group__name"></h4><div class="kb-emoji-grid"></div>`
     section.firstChild.textContent = name
     const grid = section.lastChild
-    for (const [emoji, label] of list) {
+    for (const [emoji, label, keywords = ""] of list) {
       const button = Object.assign(document.createElement("button"), { type: "button", className: "kb-emoji-choice", textContent: emoji, title: label })
       button.dataset.emoji = emoji
-      button.dataset.name = label.toLowerCase()
+      button.dataset.name = `${label} ${keywords}`.toLowerCase()
       button.setAttribute("aria-label", label)
       if (emoji === selected) button.classList.add("is-selected")
       buttons.push(button)
@@ -48,8 +51,8 @@ function build(host, groups, { selected, onPick }) {
   })
   search.addEventListener("keydown", (event) => { if (event.key === "Enter") event.preventDefault() }) // never submit the form
   search.addEventListener("input", () => {
-    const query = search.value.trim().toLowerCase()
-    buttons.forEach((button) => { button.hidden = !!query && !button.dataset.name.includes(query) })
+    const query = search.value
+    buttons.forEach((button) => { button.hidden = !emojiMatches(button.dataset.name, query) })
     body.querySelectorAll(".kb-emoji-group").forEach((section) => { section.hidden = !section.querySelector(".kb-emoji-choice:not([hidden])") })
   })
 }

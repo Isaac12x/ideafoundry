@@ -595,3 +595,7 @@ graphify-out/
 # App source: the generic web-file ignores above must not hide Rails assets/controllers
 !app/javascript/**/*.js
 !app/assets/stylesheets/**/*.css
+
+# GitHub Pages build output (bin/build-site)
+_site/
+!docs/guide/_template.html

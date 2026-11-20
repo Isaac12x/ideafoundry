@@ -51,6 +51,8 @@ export default class extends Controller {
         this._show()
         URL.revokeObjectURL(img.src)
       }
+      // Undecodable image (HEIC, corrupt): skip the editor instead of hanging the dropzone forever.
+      img.onerror = () => resolve(file)
       img.src = URL.createObjectURL(file)
     })
   }

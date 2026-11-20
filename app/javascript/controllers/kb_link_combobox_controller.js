@@ -5,17 +5,24 @@ export default class extends Controller {
   static targets = ["input", "list"]
   static values = { searchUrl: String, createUrl: String }
 
-  disconnect() { clearTimeout(this.timer) }
+  disconnect() { clearTimeout(this.timer); this.abort?.abort() }
 
   // Blank query lists the KB projects, so they show up on focus.
   search() {
     clearTimeout(this.timer)
     const q = this.inputTarget.value.trim()
+    if (q.length === 1) return // 1-char queries match everything
     this.timer = setTimeout(async () => {
-      const response = await fetch(`${this.searchUrlValue}?q=${encodeURIComponent(q)}`, { headers: { Accept: "application/json" } })
-      if (!response.ok || this.inputTarget.value.trim() !== q || document.activeElement !== this.inputTarget) return
-      this.render((await response.json()).results)
-    }, 150)
+      this.abort?.abort() // cancel the stale request
+      this.abort = new AbortController()
+      try {
+        const response = await fetch(`${this.searchUrlValue}?q=${encodeURIComponent(q)}`, { headers: { Accept: "application/json" }, signal: this.abort.signal })
+        if (!response.ok || this.inputTarget.value.trim() !== q || document.activeElement !== this.inputTarget) return
+        this.render((await response.json()).results)
+      } catch (error) {
+        if (error.name !== "AbortError") this.render([])
+      }
+    }, 120)
   }
 
   render(results) {
@@ -85,8 +92,9 @@ export default class extends Controller {
       method: "POST",
       headers: { Accept: "text/vnd.turbo-stream.html", "X-CSRF-Token": document.querySelector("meta[name=csrf-token]")?.content },
       body
-    })
+    }).catch(() => ({ ok: false }))
     if (response.ok) window.Turbo.renderStreamMessage(await response.text())
+    else this.inputTarget.value = "" // keep the picker usable; the list below shows what actually got linked
     this.close()
   }
 

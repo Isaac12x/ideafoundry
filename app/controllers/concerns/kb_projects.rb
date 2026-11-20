@@ -209,6 +209,7 @@ module KbProjects
   def render_project_page(base, project)
     @project = project
     @src = params[:src].to_i
+    remember_document(@src, nil, project: project.rel)
     @lock_op = Kb::ProjectLock.op_for(project.abs)
     @lock_error = Kb::ProjectLock.take_error(project.abs)
     @entries = project.locked? || @lock_op || project.build? ? [] : project_entries(project)
@@ -304,6 +305,8 @@ module KbProjects
     base = writable_base(params[:src].to_i)
     kind = project_kind
     name = File.basename(unique_fs_path(File.join(parent, kind == "build" ? UNNAMED_PLAN : UNNAMED_PROJECT))) if name.blank?
+    # A same-named FILE is not a project clash: take a free sibling name instead of erroring.
+    name = File.basename(unique_fs_path(File.join(parent, name))) if File.file?(File.join(parent, name))
     project = Kb::Project.create!(base: base, parent_rel: params[:dir].to_s, name: name, goal: params[:goal].to_s, kind: kind)
     respond_fs(editing: project.rel)
   rescue ArgumentError => error

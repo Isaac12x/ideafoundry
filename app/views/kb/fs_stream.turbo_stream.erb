@@ -1,7 +1,18 @@
 <%= turbo_stream.update "flash", partial: "layouts/flash" %>
-<%= turbo_stream.replace "kb-sidebar-tree", partial: "kb/tree" %>
+<% if @tree_parts %>
+  <% @tree_parts.each do |part| %>
+    <%= turbo_stream.update part[:id], partial: "kb/tree_node", locals: { tree: part[:tree], folder_index: part[:src], selected_file: @selected_file, selected_folder_index: @selected_folder_index,
+                                                                     default_folder_preference: part[:default_folder_preference], editing_src: @editing_src, editing_rel: @editing_rel } %>
+  <% end %>
+  <%= turbo_stream.replace "kb-notes-index-wrap", partial: "kb/notes_index", locals: { folders: @folders } %>
+<% else %>
+  <%= turbo_stream.replace "kb-sidebar-tree", partial: "kb/tree" %>
+<% end %>
 <% if @raw_content %>
   <%= turbo_stream.replace "kb-content", template: "kb/edit" %>
 <% elsif @update_content %>
   <%= turbo_stream.update "kb-content", partial: "kb/content", locals: { content: @content, selected_file: @selected_file } %>
+<% end %>
+<% if @update_content && @moved_open_file %>
+  <%= tag.turbo_stream(action: "kb_url", url: kb_path(src: @selected_folder_index, file: @selected_file)) %>
 <% end %>
