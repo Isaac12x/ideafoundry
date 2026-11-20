@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Retrying a note import from the same preview skips notes already imported by that user and adds any newly selected notes.
+- The knowledge-base tree uses a set to match hidden sidecar paths, speeding up folder scans with many annotated media files.
+- Workspace backups include attachment metadata for ideas with files. A failed tar command marks the backup as failed. Automatic cleanup waits for a completed backup and preserves manual exports.
+
 - Opening a new idea keeps drafts in other tabs available for autosave. Daily cleanup preserves captured work and removes only old, untouched empty drafts.
 - The ideas list and inbox check for resumable drafts in batches. The ideas list skips loading structured entries when their tabs are disabled.
 - When the transcription queue rejects a job, the file becomes available for retry immediately. The Transcribe action reports the queue failure, and the background sweep can try again.

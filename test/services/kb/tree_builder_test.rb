@@ -123,4 +123,19 @@ class Kb::TreeBuilderTest < ActiveSupport::TestCase
     refute_includes rels, "clip.vtt"
     assert files.find { |f| f[:rel] == "clip.mp4" }[:cc]
   end
+
+  test "hides many paired note sidecars while keeping their media rows marked" do
+    files = 1_000.times.flat_map do |index|
+      media = "clip-#{index}.mp4"
+      [ { rel: media, abs: File.join(@root, media) },
+        { rel: "#{media}.note.md", abs: File.join(@root, "#{media}.note.md") } ]
+    end
+
+    Kb::Note.stub(:preview, "Saved note") do
+      @builder.send(:hide_sidecars, files)
+    end
+
+    assert_equal 1_000, files.size
+    assert files.all? { |file| file[:rel].end_with?(".mp4") && file[:note] == "Saved note" }
+  end
 end

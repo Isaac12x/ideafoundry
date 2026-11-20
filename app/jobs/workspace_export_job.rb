@@ -35,6 +35,17 @@ class WorkspaceExportJob < ApplicationJob
       # Complete the export
       export_job.complete!(final_path)
 
+      if export_job.backup?
+        settings = export_job.user.backup_settings
+        if settings["auto_cleanup"].to_s == "true"
+          begin
+            ScheduledBackupJob.enforce_retention(export_job.user, settings, keep_job_id: export_job.id)
+          rescue => e
+            Rails.logger.error "Backup retention for export job #{export_job.id} failed: #{e.message}"
+          end
+        end
+      end
+
       # Cleanup temporary directory
       FileUtils.rm_rf(temp_dir)
 
@@ -158,7 +169,7 @@ class WorkspaceExportJob < ApplicationJob
   end
 
   def attachment_data(attachment)
-    return nil unless attachment.attached?
+    return nil unless attachment&.blob
 
     {
       filename: attachment.filename.to_s,
@@ -294,31 +305,47 @@ class WorkspaceExportJob < ApplicationJob
 
   def package_export(temp_dir, will_encrypt = false)
     timestamp = Time.current.strftime("%Y%m%d_%H%M%S")
+    attempt_id = SecureRandom.hex(8)
     output_dir = Rails.root.join("exports", "backup")
     FileUtils.mkdir_p(output_dir)
 
     if will_encrypt
       # Create ZIP for encryption
-      zip_path = Rails.root.join("exports", "backup", "export_#{timestamp}.zip")
+      zip_path = output_dir.join("export_#{timestamp}_#{attempt_id}.zip")
 
-      Zip::File.open(zip_path, Zip::File::CREATE) do |zipfile|
-        Dir.glob(File.join(temp_dir, "**", "*")).each do |file|
-          next if File.directory?(file)
+      with_partial_archive_cleanup(zip_path) do
+        Zip::File.open(zip_path, Zip::File::CREATE) do |zipfile|
+          Dir.glob(File.join(temp_dir, "**", "*")).each do |file|
+            next if File.directory?(file)
 
-          relative_path = file.sub("#{temp_dir}/", "")
-          zipfile.add(relative_path, file)
+            relative_path = file.sub("#{temp_dir}/", "")
+            zipfile.add(relative_path, file)
+          end
         end
+        raise "Failed to create export archive" unless File.file?(zip_path) && File.size(zip_path).positive?
       end
 
       zip_path.to_s
     else
       # Create tar.gz
-      tar_path = Rails.root.join("exports", "backup", "export_#{timestamp}.tar.gz")
+      tar_path = output_dir.join("export_#{timestamp}_#{attempt_id}.tar.gz")
 
-      system("cd #{temp_dir} && tar -czf #{tar_path} .")
+      with_partial_archive_cleanup(tar_path) do
+        success = system("tar", "-czf", tar_path.to_s, "-C", temp_dir.to_s, ".")
+        unless success && File.file?(tar_path) && File.size(tar_path).positive?
+          raise "Failed to create export archive"
+        end
+      end
 
       tar_path.to_s
     end
+  end
+
+  def with_partial_archive_cleanup(path)
+    yield
+  rescue
+    FileUtils.rm_f(path)
+    raise
   end
 
   def encrypt_export(file_path, password)
