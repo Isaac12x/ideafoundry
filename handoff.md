@@ -286,3 +286,11 @@ Both manual and background transcription use the same claim and enqueue path. An
 
 The Rails suite passed with 1,331 tests and 6,444 assertions on Ruby 4.0.7. The change requires no migration. Work was isolated on branch perf/resilient-kb.
 Browser system suite: 108 runs, 878 assertions, 0 failures, 0 errors, 0 skips
+
+## 2026-11-20 — Security reporting and dependency updates
+
+Prepared on branch `codex/security-dependabot-nov20` from `origin/master`. This change adds a repository `SECURITY.md` explaining private vulnerability reporting and a weekly Dependabot schedule for maintained dependency manifests. GitHub private vulnerability reporting is enabled for the repository. No application runtime behavior changes.
+
+Excalidraw upkeep was not due: `CLAUDE.md` records 2026-11-10, ten days before this change. Dependabot YAML validation passed during implementation review, and `git diff --check` passed before commit. No application tests were needed because this changes repository policy and dependency automation only.
+
+Published as PR https://github.com/Isaac12x/ideafoundry/pull/128 against `master` (created 2026-11-20 21:28:07 UTC). GitHub reports exactly four changed files: `.github/dependabot.yml`, `CHANGELOG.md`, `SECURITY.md`, and `handoff.md`.
