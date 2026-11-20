@@ -342,12 +342,13 @@ class SettingsControllerTest < ActionDispatch::IntegrationTest
 
   test "update_privacy partial updates keep tuning and face template" do
     enroll_privacy_face!
-    patch settings_security_privacy_path, params: { privacy_gaze: { sections: [ "", "kb" ], away_ms: "9999999", sensitivity: "7" } }, as: :json
+    patch settings_security_privacy_path, params: { privacy_gaze: { sections: [ "", "kb" ], away_ms: "9999999", sensitivity: "7", haze_strength: "4" } }, as: :json
     patch settings_security_privacy_path, params: { privacy_gaze: { enabled: "1" } }, as: :json
     s = @user.reload.privacy_gaze_settings
     assert_equal %w[kb], s["sections"]
     assert_equal 15_000, s["away_ms"]
     assert_equal 7, s["sensitivity"]
+    assert_equal 4, s["haze_strength"]
     assert s["enabled"]
     assert @user.privacy_face_enrolled?
   end
@@ -355,19 +356,23 @@ class SettingsControllerTest < ActionDispatch::IntegrationTest
   test "layout privacy attrs: toggle only when configured, active follows sections" do
     get settings_path
     assert_select "body[data-privacy-toggle-url]", count: 0
+    assert_select "[data-privacy-indicator]", count: 0
 
     enroll_privacy_face!
     get settings_path
     assert_select "body[data-privacy-toggle-url=?][data-privacy-enabled=?]", settings_security_privacy_toggle_path, "false"
     assert_select "body[data-privacy-gaze-away-ms-value]", count: 0
+    assert_select "button[data-privacy-indicator][data-state=?]", "off"
 
-    @user.update_privacy_gaze_settings("enabled" => "1", "sections" => [ "ideas" ], "away_ms" => "4000", "clear_ms" => "200", "sensitivity" => "8")
+    @user.update_privacy_gaze_settings("enabled" => "1", "sections" => [ "ideas" ], "away_ms" => "4000", "clear_ms" => "200", "sensitivity" => "8", "haze_strength" => "9")
     get ideas_path
     assert_select "body[data-privacy-enabled=?]", "true"
     assert_select "body[data-privacy-gaze-active-value=?]", "true"
     assert_select "body[data-privacy-gaze-away-ms-value=?]", "4000"
     assert_select "body[data-privacy-gaze-clear-ms-value=?]", "200"
     assert_select "body[data-privacy-gaze-sensitivity-value=?]", "8"
+    assert_select "body[data-privacy-gaze-strength-value=?]", "9"
+    assert_select "button[data-privacy-indicator][data-state=?]", "watching"
     assert_select "body[data-privacy-gaze-lock-url-value=?]", ""
 
     @user.update_privacy_gaze_settings("sections" => [ "" ])

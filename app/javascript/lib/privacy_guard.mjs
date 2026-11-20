@@ -26,3 +26,36 @@ export function devtoolsKey(e) {
   if (mod && !e.shiftKey && !e.altKey && letter("u")) return true
   return false
 }
+
+// Haze strength 1 (light veil: faint but shapes visible) .. 10 (near invisible) -> CSS custom properties.
+export const DEFAULT_HAZE_STRENGTH = 6
+export function hazeVars(strength) {
+  const n = Number(strength)
+  const s = Math.min(10, Math.max(1, Math.round(Number.isFinite(n) && n > 0 ? n : DEFAULT_HAZE_STRENGTH)))
+  const t = (s - 1) / 9
+  const r = (x, d = 3) => Number(x.toFixed(d))
+  return {
+    "--privacy-haze-opacity": String(r(0.45 - 0.42 * t)),
+    "--privacy-haze-blur": `${r(4 + 14 * t, 1)}px`,
+    "--privacy-haze-saturate": String(r(0.8 - 0.6 * t, 2)),
+    "--privacy-haze-scale": String(r(1 - 0.02 * t, 4)),
+  }
+}
+
+// Nav eye: "off" (feature off / controller absent), "watching" (on, content clear), "hazed".
+export const indicatorState = (enabled, hazy) => (!enabled ? "off" : hazy ? "hazed" : "watching")
+
+export function indicatorTitle(state, shortcut) {
+  const tail = shortcut ? ` (${shortcut})` : ""
+  if (state === "hazed") return `Privacy haze is on. Look at the screen to clear it${tail}`
+  if (state === "watching") return `Privacy haze is watching. Turn off${tail}`
+  return `Privacy haze is off. Turn on${tail}`
+}
+
+export function paintIndicator(el, state, shortcut) {
+  if (!el) return
+  el.dataset.state = state
+  el.title = indicatorTitle(state, shortcut)
+  el.setAttribute("aria-label", el.title)
+  el.setAttribute("aria-pressed", state === "off" ? "false" : "true")
+}

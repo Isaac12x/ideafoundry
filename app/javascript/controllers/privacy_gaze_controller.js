@@ -1,5 +1,6 @@
 import { Controller } from "@hotwired/stimulus"
-import { devtoolsKey, devtoolsOpen, windowGap } from "lib/privacy_guard"
+import { devtoolsKey, devtoolsOpen, hazeVars, indicatorState, paintIndicator, windowGap } from "lib/privacy_guard"
+import { binding } from "lib/shortcut_bindings"
 
 // On protected sections (activeValue) the page CONTENT (<main id="main-content">, never the navigation) is hazed unless
 // the ENROLLED person is verified (face match + anti-spoof + liveness + ears), the camera is live, they look at the
@@ -26,7 +27,7 @@ export default class extends Controller {
   static values = {
     settingsUrl: String, faceUrl: String, lockUrl: String,
     active: { type: Boolean, default: false },
-    awayMs: { type: Number, default: 2500 }, clearMs: { type: Number, default: 150 }, sensitivity: { type: Number, default: 5 },
+    awayMs: { type: Number, default: 2500 }, clearMs: { type: Number, default: 150 }, sensitivity: { type: Number, default: 5 }, strength: { type: Number, default: 6 },
   }
 
   connect() {
@@ -46,6 +47,8 @@ export default class extends Controller {
     window.addEventListener("contextmenu", this.onMenu, true)
     window.addEventListener("resize", this.onResize)
     shared.ctl = this
+    this.applyStrength()
+    this.paint(false)
 
     if (!this.activeValue) { // inactive page: nothing hazed; a running session ends after RESUME_MS (timer set on disconnect)
       this.setHazy(false, true)
@@ -71,6 +74,13 @@ export default class extends Controller {
     clearTimeout(shared.timer)
     shared.timer = setTimeout(teardown, RESUME_MS)
   }
+
+  strengthValueChanged() { this.applyStrength() }
+
+  applyStrength() { for (const [k, v] of Object.entries(hazeVars(this.strengthValue))) this.element.style.setProperty(k, v) }
+
+  // nav eye: this controller only exists while the feature is on
+  paint(hazy) { paintIndicator(document.querySelector("[data-privacy-indicator]"), indicatorState(true, hazy), binding("privacy_haze")) }
 
   tuning() { return { sensitivity: this.sensitivityValue, awayMs: this.awayMsValue, clearMs: this.clearMsValue } }
 
@@ -166,6 +176,7 @@ export default class extends Controller {
   setHazy(hazy, instant = false) {
     const main = document.getElementById("main-content")
     document.body.dataset.privacyGazeState = hazy ? "hazy" : "clear"
+    this.paint(hazy)
     if (hazy === this.hazy && !instant) return
     this.hazy = hazy
     if (!main) return
