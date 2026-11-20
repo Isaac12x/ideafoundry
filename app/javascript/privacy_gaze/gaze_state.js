@@ -16,9 +16,9 @@ const deg = (rad) => (rad * 180) / Math.PI
 const score = (shapes, name) => shapes?.find((c) => c.categoryName === name)?.score ?? 0
 
 // FaceLandmarker result -> { yaw, pitch, h, v } or null when no face. matrix is column-major 4x4.
-export function extractFeatures(result) {
-  const m = result?.facialTransformationMatrixes?.[0]?.data
-  const shapes = result?.faceBlendshapes?.[0]?.categories
+export function extractFeatures(result, i = 0) {
+  const m = result?.facialTransformationMatrixes?.[i]?.data
+  const shapes = result?.faceBlendshapes?.[i]?.categories
   if (!m || !shapes) return null
   const r02 = clamp(m[8], -1, 1), r12 = m[9], r22 = m[10]
   const s = (n) => score(shapes, n)
@@ -28,6 +28,19 @@ export function extractFeatures(result) {
     h: (s("eyeLookOutLeft") - s("eyeLookInLeft") + s("eyeLookInRight") - s("eyeLookOutRight")) / 2,
     v: (s("eyeLookUpLeft") + s("eyeLookUpRight") - s("eyeLookDownLeft") - s("eyeLookDownRight")) / 2,
   }
+}
+
+// Every face in the frame: features + normalized centre (to pair with Human's faces and tell the owner from others).
+export function extractFaces(result) {
+  const n = result?.faceLandmarks?.length ?? 0
+  const out = []
+  for (let i = 0; i < n; i++) {
+    const f = extractFeatures(result, i)
+    if (!f) continue
+    const xs = result.faceLandmarks[i].map((p) => p.x), ys = result.faceLandmarks[i].map((p) => p.y)
+    out.push({ ...f, center: { x: (Math.min(...xs) + Math.max(...xs)) / 2, y: (Math.min(...ys) + Math.max(...ys)) / 2 } })
+  }
+  return out
 }
 
 export function isLooking(f, baseline = DEFAULT_BASELINE) {

@@ -79,3 +79,139 @@ test("hysteresis can start looking (Turbo resume) and still hazes after the away
   assert.equal(h.step(false, 499), "looking")
   assert.equal(h.step(false, 500), "away")
 })
+
+// ---- identity + camera health ----
+import {
+  verifyOwner, enrollChecks, allChecks, createGuard, lumaStats, cameraStatus, createFrozenWatch,
+  MATCH_THRESHOLD, VERIFY_TTL_MS, FROZEN_MS,
+} from "../../app/javascript/privacy_gaze/identity_state.js"
+
+const ME = { x: 0.4, y: 0.5 }, THEM = { x: 0.8, y: 0.5 }
+const face = (o = {}) => ({ similarity: 0.9, real: 0.9, live: 0.9, center: ME, box: BOX, ...o })
+// face box centred on ME; ears at the box sides, mid-height
+const BOX = { x: 0.3, y: 0.3, w: 0.2, h: 0.4 }
+const ear = (x, y = 0.5, score = 0.8) => ({ score, x, y })
+const ears = [{ leftEar: ear(0.28), rightEar: ear(0.52) }]
+const mp = (center, o = {}) => ({ ...f(o), center })
+
+// guard with a healthy camera, enrolled; owner verified at t=0
+const guard = (verifyArg = { faces: [face()], bodies: ears }) => {
+  const g = createGuard({ enrolled: true })
+  g.setCamera({ ok: true })
+  g.verify(verifyOwner(verifyArg), 0)
+  return g
+}
+// drive gaze frames long enough for the look hysteresis to settle
+const look = (g, faces, from = 0, to = 400) => { for (let t = from; t <= to; t += 80) g.gaze(faces, t) }
+
+test("verifyOwner: owner alone passes; stranger, spoof, missing ears, no face fail", () => {
+  assert.equal(verifyOwner({ faces: [face()], bodies: ears }).ok, true)
+  assert.equal(verifyOwner({ faces: [face({ similarity: MATCH_THRESHOLD - 0.01 })], bodies: ears }).reason, "not_owner")
+  assert.equal(verifyOwner({ faces: [face({ real: 0.1 })], bodies: ears }).reason, "spoof")
+  assert.equal(verifyOwner({ faces: [face({ live: 0.1 })], bodies: ears }).reason, "spoof")
+  assert.equal(verifyOwner({ faces: [face()], bodies: [{ leftEar: ear(0.28), rightEar: ear(0.52, 0.5, 0.05) }] }).reason, "ears")
+  assert.equal(verifyOwner({ faces: [face()], bodies: [] }).reason, "ears")
+  assert.equal(verifyOwner({ faces: [], bodies: ears }).reason, "no_face")
+  assert.equal(verifyOwner({ faces: [face(), face()], bodies: ears }).reason, "multiple_match")
+  // owner plus a stranger: still verified, the stranger is unmatched
+  assert.equal(verifyOwner({ faces: [face(), face({ similarity: 0.1, center: THEM })], bodies: ears }).ok, true)
+})
+
+test("ears must belong to the matched face", () => {
+  const v = (bodies) => verifyOwner({ faces: [face()], bodies })
+  assert.equal(v(ears).ok, true)
+  assert.equal(v([{ leftEar: ear(0.52), rightEar: ear(0.28) }]).ok, true) // mirrored naming
+  // a second person's ears elsewhere in the frame
+  assert.equal(v([{ leftEar: ear(0.78), rightEar: ear(0.92) }]).reason, "ears")
+  assert.equal(v([{ leftEar: ear(0.7, 0.5), rightEar: ear(0.95, 0.5) }]).reason, "ears")
+  // ears split across two bodies do not count
+  assert.equal(v([{ leftEar: ear(0.28), rightEar: null }, { leftEar: null, rightEar: ear(0.52) }]).reason, "ears")
+  // both on the same side of the face
+  assert.equal(v([{ leftEar: ear(0.27), rightEar: ear(0.29) }]).reason, "ears")
+  // far below the face
+  assert.equal(v([{ leftEar: ear(0.28, 0.95), rightEar: ear(0.52, 0.95) }]).reason, "ears")
+  // low confidence
+  assert.equal(v([{ leftEar: ear(0.28, 0.5, 0.1), rightEar: ear(0.52) }]).reason, "ears")
+  // a real body elsewhere plus the owner's own: still ok
+  assert.equal(v([{ leftEar: ear(0.78), rightEar: ear(0.92) }, ...ears]).ok, true)
+})
+
+test("guard: owner alone looking clears", () => {
+  const g = guard()
+  look(g, [mp(ME)])
+  assert.equal(g.decision(400).hazy, false)
+})
+
+test("guard: stranger alone looking hazes", () => {
+  const g = guard({ faces: [face({ similarity: 0.1 })], bodies: ears })
+  look(g, [mp(THEM)])
+  assert.deepEqual(g.decision(400), { hazy: true, reason: "not_owner" })
+})
+
+test("guard: owner + stranger both looking hazes; stranger looking away does not", () => {
+  const g = guard({ faces: [face(), face({ similarity: 0.1, center: THEM })], bodies: ears })
+  look(g, [mp(ME), mp(THEM)])
+  assert.deepEqual(g.decision(400), { hazy: true, reason: "other_looking" })
+  look(g, [mp(ME), mp(THEM, { yaw: 60 })], 480, 900)
+  assert.equal(g.decision(900).hazy, false)
+})
+
+test("guard: owner looking away hazes; ears missing / spoof never clear", () => {
+  const g = guard()
+  look(g, [mp(ME, { yaw: 60 })])
+  assert.equal(g.decision(400).reason, "away")
+  for (const [arg, reason] of [
+    [{ faces: [face()], bodies: [{ leftEar: ear(0.28), rightEar: ear(0.52, 0.5, 0) }] }, "ears"],
+    [{ faces: [face({ real: 0 })], bodies: ears }, "spoof"],
+  ]) {
+    const h = guard(arg)
+    look(h, [mp(ME)])
+    assert.deepEqual(h.decision(400), { hazy: true, reason })
+  }
+})
+
+test("guard: verification goes stale after the TTL; not enrolled always hazes", () => {
+  const g = guard()
+  look(g, [mp(ME)], 0, 2000)
+  assert.equal(g.decision(VERIFY_TTL_MS).hazy, false)
+  assert.deepEqual(g.decision(VERIFY_TTL_MS + 1), { hazy: true, reason: "stale" })
+  const n = createGuard({ enrolled: false })
+  n.setCamera({ ok: true })
+  assert.equal(n.decision(0).reason, "not_enrolled")
+})
+
+test("guard: bad camera hazes even with a verified owner looking", () => {
+  const g = guard()
+  look(g, [mp(ME)])
+  g.setCamera(cameraStatus({ stats: { mean: 3, std: 10 } }))
+  assert.deepEqual(g.decision(400), { hazy: true, reason: "dark" })
+})
+
+test("enrollChecks: all four must pass", () => {
+  const ok = { faces: [face()], bodies: ears, camera: { ok: true } }
+  assert.equal(allChecks(enrollChecks(ok)), true)
+  assert.equal(enrollChecks({ ...ok, faces: [face(), face()] }).oneFace, false)
+  assert.equal(enrollChecks({ ...ok, bodies: [{ leftEar: ear(0.28), rightEar: null }] }).ears, false)
+  assert.equal(enrollChecks({ ...ok, faces: [face({ real: 0.2 })] }).real, false)
+  assert.equal(allChecks(enrollChecks({ ...ok, camera: { ok: false } })), false)
+})
+
+const px = (n, fn) => Uint8ClampedArray.from({ length: n * 4 }, (_, i) => (i % 4 === 3 ? 255 : fn(i >> 2)))
+
+test("camera health: black, flat, ok, frozen, muted", () => {
+  const black = lumaStats(px(192, () => 2))
+  const flat = lumaStats(px(192, () => 128))
+  const good = lumaStats(px(192, (p) => (p % 2 ? 60 : 180)))
+  assert.equal(cameraStatus({ stats: black }).reason, "dark")
+  assert.equal(cameraStatus({ stats: flat }).reason, "dark")
+  assert.equal(cameraStatus({ stats: good }).ok, true)
+  assert.equal(cameraStatus({}).ok, false) // no frame yet
+  assert.equal(cameraStatus({ stats: good, muted: true }).reason, "frozen")
+  const frozen = createFrozenWatch()
+  assert.equal(frozen(1.0, 0), false)
+  assert.equal(frozen(1.4, 500), false) // advancing
+  assert.equal(frozen(1.4, 500 + FROZEN_MS), false)
+  assert.equal(frozen(1.4, 500 + FROZEN_MS + 1), true) // stuck for > 2s
+  assert.equal(cameraStatus({ stats: good, frozen: true }).reason, "frozen")
+  assert.equal(frozen(2.0, 5000), false) // recovers when frames advance
+})
