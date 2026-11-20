@@ -209,6 +209,7 @@ Rails.application.routes.draw do
   get "settings/security", to: "settings#security"
   patch "settings/security", to: "settings#update_security"
 patch "settings/security/privacy", to: "settings#update_privacy", as: :settings_security_privacy
+  patch "settings/security/privacy/toggle", to: "settings#toggle_privacy", as: :settings_security_privacy_toggle, defaults: { format: :json }
   get "settings/security/privacy/face", to: "settings#privacy_face", as: :settings_security_privacy_face
   put "settings/security/privacy/face", to: "settings#update_privacy_face"
   delete "settings/security/privacy/face", to: "settings#destroy_privacy_face"

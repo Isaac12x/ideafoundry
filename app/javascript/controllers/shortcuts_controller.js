@@ -1,5 +1,6 @@
 import { Controller } from "@hotwired/stimulus"
-import { DEFAULT_BINDINGS, binding, labelShortcuts, matches, platformBinding, sequenceKeys } from "lib/shortcut_bindings"
+import { indicatorState, paintIndicator } from "lib/privacy_guard"
+import { DEFAULT_BINDINGS, binding, labelShortcuts, matches, platformBinding, privacyToggleAllowed, sequenceKeys } from "lib/shortcut_bindings"
 
 const SUBMIT = "button:not([type]), button[type='submit'], input[type='submit']"
 const SUBMIT_PRIMARY = "button:not([type]).btn-primary, button[type='submit'].btn-primary, input[type='submit'].btn-primary"
@@ -51,6 +52,10 @@ export default class extends Controller {
     this.visibleActions = []
     this.rendering = false
     labelShortcuts()
+    paintIndicator(document.querySelector("[data-privacy-indicator]"), document.body.dataset.privacyGazeState === "hazy" ? "hazed" : indicatorState(document.body.dataset.privacyEnabled === "true", false), binding("privacy_haze"))
+    // the nav eye is the same action as the shortcut
+    this.onIndicator = (e) => { if (e.target.closest?.("[data-privacy-indicator]")) this.togglePrivacy() }
+    document.addEventListener("click", this.onIndicator)
 
     this.boundKeydown = this.onKeydown.bind(this)
     this.boundRefresh = this.scheduleRefresh.bind(this)
@@ -72,6 +77,7 @@ export default class extends Controller {
 
   disconnect() {
     document.removeEventListener("keydown", this.boundKeydown)
+    document.removeEventListener("click", this.onIndicator)
     document.removeEventListener("turbo:load", this.boundRefresh)
     document.removeEventListener("turbo:frame-render", this.boundRefresh)
     document.removeEventListener("turbo:render", this.boundRefresh)
@@ -159,6 +165,7 @@ export default class extends Controller {
       focus_search: () => this.focusSearch(),
       save: (event) => this.saveCurrentContext(event.target),
       submit: (event) => this.submitCurrentContext(event.target),
+      privacy_haze: () => this.togglePrivacy(),
       ask_agent: () => this.clickFirst("[data-shortcut-role~='ask-agent'], .ask-agent-launcher"),
       edit: () => this.clickFirst("[data-shortcut-role~='edit'], a[href$='/edit'], a[href*='/edit?']"),
       prev_tab: () => this.moveTab(-1),
@@ -166,6 +173,36 @@ export default class extends Controller {
     }
     Object.entries(urls).forEach(([id, url]) => { actions[id] = go(url) })
     return actions
+  }
+
+  // Works on every screen. Without face ID configured (no body url) it only says how to set it up.
+  togglePrivacy() {
+    const body = document.body
+    const url = body.dataset.privacyToggleUrl
+    if (!url) return this.flash("Set up face ID in Security first")
+    const enabled = body.dataset.privacyEnabled === "true"
+    if (!privacyToggleAllowed(enabled, body.dataset.privacyGazeState)) return this.flash("Look at the screen to clear the haze before turning it off")
+    fetch(url, {
+      method: "PATCH",
+      credentials: "same-origin",
+      headers: { Accept: "application/json", "Content-Type": "application/json", "X-CSRF-Token": document.querySelector('meta[name="csrf-token"]')?.content || "" },
+    }).then(async (r) => {
+      const data = await r.json().catch(() => ({}))
+      if (!r.ok) return this.flash(data.error || "Could not toggle privacy haze")
+      window.Turbo?.visit(location.href, { action: "replace" })
+    }).catch(() => this.flash("Could not toggle privacy haze"))
+  }
+
+  flash(text) {
+    const box = document.getElementById("flash")
+    if (!box) return
+    const el = document.createElement("div")
+    el.className = "alert alert-error"
+    el.setAttribute("role", "alert")
+    el.dataset.controller = "flash"
+    el.dataset.action = "click->flash#dismiss"
+    el.textContent = text
+    box.replaceChildren(el)
   }
 
   navigationUrls() {

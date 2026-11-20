@@ -253,6 +253,11 @@ has_many :media_digests, dependent: :destroy
     "topologies" => "Topologies", "kb" => "KB", "backlog" => "Backlog"
   }.freeze
 
+  PRIVACY_SECTIONS = (NAV_PAGE_KEYS + [ "other" ]).freeze
+  PRIVACY_SECTION_LABELS = NAV_PAGE_LABELS.merge("other" => "Everything else").freeze
+  PRIVACY_GAZE_DEFAULTS = { "sections" => NAV_PAGE_KEYS, "away_ms" => 2500, "clear_ms" => 150, "sensitivity" => 5, "haze_strength" => 6 }.freeze
+  PRIVACY_GAZE_RANGES = { "away_ms" => 500..15_000, "clear_ms" => 0..2000, "sensitivity" => 1..10, "haze_strength" => 1..10 }.freeze
+
   # Quote assignment defaults preserve prior behaviour: banner everywhere except KB.
   DEFAULT_QUOTE_ASSIGNMENTS = NAV_PAGE_KEYS.index_with { |k| k == "kb" ? "none" : "default" }.freeze
 
@@ -730,10 +735,32 @@ has_many :media_digests, dependent: :destroy
     ActiveModel::Type::Boolean.new.cast(settings&.dig("privacy_gaze", "enabled")) == true
   end
 
+  def privacy_gaze_configured?
+    privacy_face_enrolled?
+  end
+
+  # Defaults merged with stored tuning (string keys). Never includes the face template.
+  def privacy_gaze_settings
+    stored = settings&.dig("privacy_gaze") || {}
+    out = PRIVACY_GAZE_DEFAULTS.dup
+    out["sections"] = Array(stored["sections"]).map(&:to_s) & PRIVACY_SECTIONS if stored.key?("sections")
+    PRIVACY_GAZE_RANGES.each do |key, range|
+      out[key] = stored[key].to_i.clamp(range.begin, range.end) if stored[key].to_s.match?(/\A-?\d+\z/)
+    end
+    out.merge("enabled" => privacy_gaze_enabled?)
+  end
+
+  # Only keys present in params are updated, so partial forms don't clobber each other.
   def update_privacy_gaze_settings(params)
     self.settings ||= {}
-    # merge: keep the encrypted face template when toggling
-    self.settings["privacy_gaze"] = (settings["privacy_gaze"] || {}).merge("enabled" => ActiveModel::Type::Boolean.new.cast(params.fetch("enabled", false)) == true)
+    gaze = (settings["privacy_gaze"] || {}).dup # merge: keep the encrypted face template
+    gaze["enabled"] = ActiveModel::Type::Boolean.new.cast(params["enabled"]) == true if params.key?("enabled")
+    gaze["sections"] = Array(params["sections"]).map(&:to_s) & PRIVACY_SECTIONS if params.key?("sections")
+    PRIVACY_GAZE_RANGES.each do |key, range|
+      next unless params[key].to_s.strip.match?(/\A-?\d+\z/)
+      gaze[key] = params[key].to_s.strip.to_i.clamp(range.begin, range.end)
+    end
+    self.settings["privacy_gaze"] = gaze
     save
   end
 
@@ -1061,6 +1088,21 @@ has_many :media_digests, dependent: :destroy
   # Maps a controller_path back to a nav page key (or nil if not a nav section).
   def self.nav_page_key(controller_path)
     NAV_PAGES.key(controller_path.to_s)
+  end
+
+  # Which privacy-haze section a controller belongs to: a NAV_PAGE_KEY, "other", or nil (never protected).
+  def self.privacy_section_for(controller_path)
+    path = controller_path.to_s
+    return nil if path.start_with?("settings", "typing_locks", "recovery_secrets")
+    case path
+    when /\Akb(_|\z)/ then "kb"
+    when /\Alist(s|_items)\z/ then "plan"
+    when %r{\Alicens(ing/|or)} then "licensing"
+    when "build_items" then "backlog"
+    when /\Aideas?(_|\z)/ then "ideas"
+    when "topologies" then "topologies"
+    else "other"
+    end
   end
 
   def display_contrast

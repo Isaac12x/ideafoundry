@@ -1,9 +1,11 @@
 import { test } from "node:test"
 import assert from "node:assert/strict"
 import {
-  isLooking, calibrate, createHysteresis, extractFeatures, loadBaseline, saveBaseline, hasBaseline,
-  MAX_YAW_DEG, AWAY_AFTER_MS, LOOK_AFTER_MS,
+  isLooking, margins, marginScale, pointMedian, buildEnvelope, createHysteresis, extractFeatures,
+  loadEnvelope, saveEnvelope, hasEnvelope, DEFAULT_ENVELOPE, DEFAULT_AWAY_MS, DEFAULT_CLEAR_MS, CALIBRATION_POINTS,
 } from "../../app/javascript/privacy_gaze/gaze_state.js"
+import { devtoolsOpen, devtoolsKey, windowGap, hazeVars, indicatorState, indicatorTitle, paintIndicator } from "../../app/javascript/lib/privacy_guard.mjs"
+import { privacyToggleAllowed, DEFAULT_BINDINGS, matches, platformBinding, binding } from "../../app/javascript/lib/shortcut_bindings.mjs"
 
 const f = (o = {}) => ({ yaw: 0, pitch: 0, h: 0, v: 0, ...o })
 
@@ -11,44 +13,86 @@ test("no face is away", () => {
   assert.equal(isLooking(null), false)
 })
 
-test("within thresholds is looking, beyond any one is away", () => {
-  assert.equal(isLooking(f({ yaw: MAX_YAW_DEG - 1, pitch: -10, h: 0.2 })), true)
-  assert.equal(isLooking(f({ yaw: MAX_YAW_DEG + 1 })), false)
+test("uncalibrated defaults are generous: wide yaw / pitch still looking", () => {
+  assert.equal(isLooking(f({ yaw: 26, pitch: -20, h: 0.3 })), true)
+  assert.equal(isLooking(f({ yaw: 40 })), false)
   assert.equal(isLooking(f({ pitch: 30 })), false)
-  assert.equal(isLooking(f({ h: 0.5 })), false)
-  assert.equal(isLooking(f({ v: -0.6 })), false)
+  assert.equal(isLooking(f({ v: -0.7 })), false)
 })
 
-test("baseline offsets the thresholds (camera above the screen)", () => {
-  const baseline = { yaw: 0, pitch: -15, h: 0, v: 0 }
-  assert.equal(isLooking(f({ pitch: -15 }), baseline), true)
-  assert.equal(isLooking(f({ pitch: -15 }), undefined), true)
-  assert.equal(isLooking(f({ pitch: -40 }), baseline), false)
-  assert.equal(isLooking(f({ pitch: 10 }), baseline), false)
+test("margins scale monotonically with sensitivity: 25deg at 1, 12 at 5, 5 at 10", () => {
+  assert.ok(Math.abs(margins(1).yaw - 25) < 1e-9)
+  assert.ok(Math.abs(margins(5).yaw - 12) < 1e-9)
+  assert.ok(Math.abs(margins(10).yaw - 5) < 1e-9)
+  for (let s = 1; s < 10; s++) for (const k of ["yaw", "pitch", "h", "v"]) assert.ok(margins(s)[k] > margins(s + 1)[k], `${k} at ${s}`)
+  assert.equal(marginScale(undefined), 1)
+  assert.equal(marginScale(99), marginScale(10)) // clamped
 })
 
-test("calibrate takes the median and ignores missing frames", () => {
-  const b = calibrate([f({ yaw: 1 }), null, f({ yaw: 3 }), f({ yaw: 100 }), f({ yaw: 2 })])
-  assert.equal(b.yaw, 2.5)
-  assert.equal(calibrate([null]), null)
+// 5-point calibration: centre + the four corners; the camera sits above the screen so pitch is offset
+const pt = (o) => Array.from({ length: 6 }, () => f(o))
+const perPoint = [
+  pt({ yaw: 0, pitch: -10 }), pt({ yaw: -20, pitch: -2 }), pt({ yaw: 20, pitch: -2 }), pt({ yaw: 20, pitch: -22 }), pt({ yaw: -20, pitch: -22 }),
+]
+
+test("buildEnvelope: min/max over the per-point medians, centre first; null when any point is unseen", () => {
+  const e = buildEnvelope(perPoint)
+  assert.equal(e.min.yaw, -20); assert.equal(e.max.yaw, 20)
+  assert.equal(e.min.pitch, -22); assert.equal(e.max.pitch, -2)
+  assert.equal(e.center.pitch, -10)
+  assert.equal(buildEnvelope([...perPoint.slice(0, 4), [f(), null, null]]), null) // too few samples at a point
+  assert.equal(buildEnvelope([]), null)
+  assert.equal(pointMedian([f({ yaw: 1 }), null, f({ yaw: 3 }), f({ yaw: 100 }), f({ yaw: 2 }), f({ yaw: 2 })]).yaw, 2)
+  assert.equal(CALIBRATION_POINTS.length, 5)
+  assert.deepEqual(CALIBRATION_POINTS[0], { x: 0.5, y: 0.5 })
 })
 
-test("hysteresis: starts away, hazes after AWAY_AFTER_MS, clears after LOOK_AFTER_MS", () => {
+test("envelope: every corner is looking, beyond-margin is away, stricter sensitivity shrinks the margin", () => {
+  const e = buildEnvelope(perPoint)
+  for (const p of perPoint) assert.equal(isLooking(p[0], e, 5), true)
+  assert.equal(isLooking(f({ yaw: 30, pitch: -10 }), e, 5), true) // inside the default 12deg margin
+  assert.equal(isLooking(f({ yaw: 33, pitch: -10 }), e, 5), false) // 13deg beyond the edge
+  assert.equal(isLooking(f({ yaw: 33, pitch: -10 }), e, 1), true) // relaxed: 25deg margin
+  assert.equal(isLooking(f({ yaw: 26, pitch: -10 }), e, 10), false) // strict: 5deg margin
+  assert.equal(isLooking(f({ yaw: 24, pitch: -10 }), e, 10), true)
+  assert.equal(isLooking(f({ yaw: 0, pitch: 30 }), e, 5), false) // looking up/away
+  // eyes count too
+  assert.equal(isLooking(f({ yaw: 0, pitch: -10, h: 0.5 }), e, 5), false)
+})
+
+test("a malformed envelope falls back to the generous defaults", () => {
+  assert.equal(isLooking(f({ yaw: 20 }), { min: null }), true)
+  assert.equal(isLooking(f({ yaw: 20 }), undefined), true)
+})
+
+test("hysteresis: starts away, clears after clearMs, hazes only after awayMs", () => {
   const h = createHysteresis()
+  assert.equal(DEFAULT_AWAY_MS, 2500); assert.equal(DEFAULT_CLEAR_MS, 150)
   assert.equal(h.step(false, 0), "away")
   assert.equal(h.step(true, 1000), "away")
-  assert.equal(h.step(true, 1000 + LOOK_AFTER_MS - 1), "away")
-  assert.equal(h.step(true, 1000 + LOOK_AFTER_MS), "looking")
-  // a glance shorter than the delay does not haze
+  assert.equal(h.step(true, 1000 + DEFAULT_CLEAR_MS - 1), "away")
+  assert.equal(h.step(true, 1000 + DEFAULT_CLEAR_MS), "looking")
+  // a glance (even ~2s) shorter than awayMs never hazes, and the interrupted run restarts its clock
   assert.equal(h.step(false, 2000), "looking")
-  assert.equal(h.step(true, 2000 + AWAY_AFTER_MS - 1), "looking")
-  // and the interrupted away run restarts its clock
-  assert.equal(h.step(false, 3000), "looking")
-  assert.equal(h.step(false, 3000 + AWAY_AFTER_MS - 1), "looking")
-  assert.equal(h.step(false, 3000 + AWAY_AFTER_MS), "away")
-  h.step(true, 4000); h.step(true, 5000)
+  assert.equal(h.step(false, 2000 + DEFAULT_AWAY_MS - 1), "looking")
+  assert.equal(h.step(true, 2000 + DEFAULT_AWAY_MS), "looking")
+  assert.equal(h.step(false, 5000), "looking")
+  assert.equal(h.step(false, 5000 + DEFAULT_AWAY_MS - 1), "looking")
+  assert.equal(h.step(false, 5000 + DEFAULT_AWAY_MS), "away")
+  h.step(true, 9000); h.step(true, 10000)
   h.reset()
   assert.equal(h.state, "away")
+})
+
+test("hysteresis honours custom delays and can start looking (Turbo resume)", () => {
+  const h = createHysteresis({ awayMs: 800, clearMs: 0, initial: "looking" })
+  assert.equal(h.step(false, 0), "looking")
+  assert.equal(h.step(false, 799), "looking")
+  assert.equal(h.step(false, 800), "away")
+  assert.equal(h.step(true, 900), "looking") // clearMs 0: immediate
+  h.setDelays(100, 100)
+  assert.equal(h.step(false, 1000), "looking")
+  assert.equal(h.step(false, 1100), "away")
 })
 
 test("extractFeatures: null without a face, zero pose for identity matrix", () => {
@@ -63,21 +107,100 @@ test("extractFeatures: null without a face, zero pose for identity matrix", () =
   assert.ok(Math.abs(r.h - 0.2) < 1e-9)
 })
 
-test("baseline storage survives a throwing localStorage", () => {
+test("envelope storage survives a throwing localStorage and rejects junk", () => {
   const boom = { getItem() { throw new Error("no") }, setItem() { throw new Error("no") } }
-  assert.equal(saveBaseline(f(), boom), false)
-  assert.equal(hasBaseline(boom), false)
-  assert.equal(loadBaseline(boom).yaw, 0)
+  const e = buildEnvelope(perPoint)
+  assert.equal(saveEnvelope(e, boom), false)
+  assert.equal(hasEnvelope(boom), false)
+  assert.equal(loadEnvelope(boom), DEFAULT_ENVELOPE)
   const mem = { d: {}, getItem(k) { return this.d[k] ?? null }, setItem(k, v) { this.d[k] = v } }
-  saveBaseline(f({ pitch: -12 }), mem)
-  assert.equal(loadBaseline(mem).pitch, -12)
+  assert.equal(hasEnvelope(mem), false)
+  saveEnvelope(e, mem)
+  assert.equal(hasEnvelope(mem), true)
+  assert.equal(loadEnvelope(mem).min.yaw, -20)
+  mem.d["privacy-gaze:envelope"] = '{"min":1}'
+  assert.equal(loadEnvelope(mem), DEFAULT_ENVELOPE)
 })
 
-test("hysteresis can start looking (Turbo resume) and still hazes after the away delay", () => {
-  const h = createHysteresis({ initial: "looking" })
-  assert.equal(h.step(false, 0), "looking")
-  assert.equal(h.step(false, 499), "looking")
-  assert.equal(h.step(false, 500), "away")
+// ---- devtools + shortcut guards ----
+test("devtoolsOpen: only a gap increase of more than 160px over the clear baseline counts", () => {
+  const w = (o) => ({ outerWidth: 1400, innerWidth: 1400, outerHeight: 900, innerHeight: 800, ...o })
+  const base = windowGap(w())
+  assert.equal(devtoolsOpen(windowGap(w()), base), false)
+  assert.equal(devtoolsOpen(windowGap(w({ innerWidth: 1000 })), base), true) // docked right
+  assert.equal(devtoolsOpen(windowGap(w({ innerHeight: 600 })), base), true) // docked bottom
+  assert.equal(devtoolsOpen(windowGap(w({ innerWidth: 1240 })), base), false) // exactly 160
+  // sidebar already open at baseline (Arc / side panel): not devtools
+  const side = windowGap(w({ innerWidth: 1150 }))
+  assert.equal(devtoolsOpen(side, side), false)
+  assert.equal(devtoolsOpen(windowGap(w({ innerWidth: 950 })), side), true) // baseline + 200
+  assert.equal(devtoolsOpen(windowGap(w({ innerWidth: 1400 })), side), false) // gap shrinks
+  assert.equal(devtoolsOpen(null, base), false)
+  assert.equal(devtoolsOpen(base, null), false)
+})
+
+test("devtoolsKey: F12, Ctrl/Cmd+Shift+I/J/C, Cmd+Alt+I/J/C (by code), Ctrl/Cmd+U", () => {
+  const k = (o) => devtoolsKey({ key: "", code: "", ...o })
+  assert.equal(k({ key: "F12", code: "F12" }), true)
+  assert.equal(k({ key: "I", code: "KeyI", ctrlKey: true, shiftKey: true }), true)
+  assert.equal(k({ key: "j", code: "KeyJ", metaKey: true, shiftKey: true }), true)
+  assert.equal(k({ key: "C", code: "KeyC", ctrlKey: true, shiftKey: true }), true)
+  assert.equal(k({ key: "ˆ", code: "KeyI", metaKey: true, altKey: true }), true) // Alt changes e.key on Mac
+  assert.equal(k({ key: "∆", code: "KeyJ", metaKey: true, altKey: true }), true)
+  assert.equal(k({ key: "ç", code: "KeyC", metaKey: true, altKey: true }), true)
+  assert.equal(k({ key: "u", code: "KeyU", ctrlKey: true }), true)
+  assert.equal(k({ key: "u", code: "KeyU", metaKey: true }), true)
+  assert.equal(k({ key: "i", code: "KeyI", ctrlKey: true }), false) // plain Ctrl+I (italic)
+  assert.equal(k({ key: "c", code: "KeyC", ctrlKey: true }), false) // copy
+  assert.equal(k({ key: "u", code: "KeyU" }), false)
+})
+
+test("privacy shortcut: ON always allowed; OFF refused while hazed", () => {
+  assert.equal(privacyToggleAllowed(false, "hazy"), true)
+  assert.equal(privacyToggleAllowed(false, "clear"), true)
+  assert.equal(privacyToggleAllowed(true, "hazy"), false)
+  assert.equal(privacyToggleAllowed(true, "clear"), true)
+  assert.equal(privacyToggleAllowed(true, undefined), true) // controller not running
+})
+
+test("privacy_haze: Cmd+Shift+G on Mac (native opt-out), Alt+Shift+G elsewhere", () => {
+  assert.equal(DEFAULT_BINDINGS.privacy_haze.key, "Ctrl/Cmd+Shift+G")
+  const ev = (o) => ({ key: "G", code: "KeyG", metaKey: false, ctrlKey: false, altKey: false, shiftKey: true, ...o })
+  const plat = (p) => Object.defineProperty(globalThis, "navigator", { value: { platform: p }, configurable: true })
+  plat("MacIntel")
+  assert.equal(binding("privacy_haze"), "Ctrl/Cmd+Shift+G")
+  assert.ok(matches(binding("privacy_haze"), ev({ metaKey: true })))
+  assert.equal(binding("save"), "Ctrl+S") // other browser-owned keys still move
+  plat("Win32")
+  assert.equal(binding("privacy_haze"), "Alt+Shift+G")
+  assert.ok(matches(binding("privacy_haze"), ev({ altKey: true })))
+  delete globalThis.navigator
+})
+
+test("hazeVars: monotonic, 1 = light veil, 10 = near invisible, bad input = default", () => {
+  const num = (s, k) => parseFloat(hazeVars(s)[k])
+  for (let s = 1; s < 10; s++) {
+    assert.ok(num(s, "--privacy-haze-opacity") > num(s + 1, "--privacy-haze-opacity"))
+    assert.ok(num(s, "--privacy-haze-blur") < num(s + 1, "--privacy-haze-blur"))
+  }
+  assert.ok(num(1, "--privacy-haze-opacity") >= 0.4)
+  assert.ok(num(10, "--privacy-haze-opacity") <= 0.05)
+  assert.deepEqual(hazeVars(undefined), hazeVars(6))
+  assert.deepEqual(hazeVars(99), hazeVars(10))
+  assert.deepEqual(hazeVars(0), hazeVars(6))
+})
+
+test("indicator state + title + paint", () => {
+  assert.equal(indicatorState(false, true), "off")
+  assert.equal(indicatorState(true, false), "watching")
+  assert.equal(indicatorState(true, true), "hazed")
+  assert.match(indicatorTitle("hazed", "Alt+Shift+G"), /Look at the screen.*Alt\+Shift\+G/)
+  const attrs = {}
+  const el = { dataset: {}, title: "", setAttribute: (k, v) => { attrs[k] = v } }
+  paintIndicator(el, "watching", "X")
+  assert.equal(el.dataset.state, "watching")
+  assert.equal(attrs["aria-pressed"], "true")
+  paintIndicator(null, "off")
 })
 
 // ---- identity + camera health ----
@@ -214,4 +337,35 @@ test("camera health: black, flat, ok, frozen, muted", () => {
   assert.equal(frozen(1.4, 500 + FROZEN_MS + 1), true) // stuck for > 2s
   assert.equal(cameraStatus({ stats: good, frozen: true }).reason, "frozen")
   assert.equal(frozen(2.0, 5000), false) // recovers when frames advance
+})
+
+test("guard: turning away (no face / ears) is held for awayMs, a stranger is not", () => {
+  const g = guard()
+  look(g, [mp(ME)])
+  g.verify(verifyOwner({ faces: [], bodies: [] }), 1000)
+  assert.equal(g.decision(1000).hazy, false) // within awayMs of the last ok
+  look(g, [mp(ME)], 480, 1000)
+  g.verify(verifyOwner({ faces: [], bodies: [] }), 2400)
+  look(g, [mp(ME)], 1080, 2400)
+  assert.equal(g.decision(2499).hazy, false)
+  g.verify(verifyOwner({ faces: [], bodies: [] }), 3000)
+  assert.deepEqual(g.decision(3000), { hazy: true, reason: "no_face" })
+  const s = guard()
+  look(s, [mp(ME)])
+  s.verify(verifyOwner({ faces: [face({ similarity: 0.1 })], bodies: ears }), 500)
+  assert.deepEqual(s.decision(500), { hazy: true, reason: "not_owner" })
+})
+
+test("guard: tuning (awayMs) applies to the gaze delay", () => {
+  const g = createGuard({ enrolled: true, awayMs: 5000 })
+  g.setCamera({ ok: true })
+  g.verify(verifyOwner({ faces: [face()], bodies: ears }), 0)
+  look(g, [mp(ME)])
+  assert.equal(g.decision(400).hazy, false)
+  for (let t = 480; t <= 4000; t += 80) g.gaze([mp(ME, { yaw: 80 })], t)
+  g.verify(verifyOwner({ faces: [face()], bodies: ears }), 3900)
+  assert.equal(g.decision(4000).hazy, false) // 3.5s away < 5s
+  g.setTuning({ awayMs: 1000 })
+  g.gaze([mp(ME, { yaw: 80 })], 4080)
+  assert.equal(g.decision(4080).reason, "away")
 })
