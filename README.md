@@ -109,4 +109,4 @@ Your machine is the vault and source of truth. Capture should be immediate, shar
 
 ## License
 
-This project is not currently licensed for redistribution. All rights reserved.
+MIT, see [LICENSE](LICENSE).
