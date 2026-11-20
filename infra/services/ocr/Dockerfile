@@ -1,4 +1,4 @@
-FROM python:3.12-slim
+FROM python:3.14-slim
 
 ARG LLAMA_CPP_REF=b9360
 ARG TARGETARCH
@@ -35,13 +35,12 @@ ENV LLAMA_CPP_BINARY=/opt/llama.cpp/llama-server \
     SURYA_INFERENCE_PARALLEL=1
 
 WORKDIR /app
-COPY requirements.txt overrides.txt ./
+COPY requirements.txt ./
 RUN uv pip install \
       --system \
       --no-cache \
-      --requirement requirements.txt \
-      --override overrides.txt && \
-    python -c "import PIL; from surya.inference import SuryaInferenceManager; from surya.recognition import RecognitionPredictor; assert PIL.__version__ == '12.3.0'"
+      --requirement requirements.txt && \
+    python -c "import PIL; from surya.inference import SuryaInferenceManager; from surya.recognition import RecognitionPredictor; assert PIL.__version__ == '13.0.0'"
 COPY app.py .
 
 EXPOSE 8000
