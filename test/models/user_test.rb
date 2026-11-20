@@ -110,6 +110,56 @@ class UserTest < ActiveSupport::TestCase
     assert_nil user.authenticator_app_secret
   end
 
+  test "privacy gaze settings default off and cast enabled" do
+    user = users(:one)
+    refute user.privacy_gaze_enabled?
+
+    assert user.update_privacy_gaze_settings("enabled" => "1")
+    assert user.reload.privacy_gaze_enabled?
+
+    assert user.update_privacy_gaze_settings("enabled" => "0")
+    refute user.reload.privacy_gaze_enabled?
+  end
+
+  test "privacy face template roundtrips encrypted and survives gaze toggle" do
+    user = users(:one)
+    refute user.privacy_face_enrolled?
+    d = Array.new(3) { Array.new(128) { rand } }
+
+    assert user.store_privacy_face_template!(d)
+    user.reload
+    assert user.privacy_face_enrolled?
+    assert_equal 3, user.privacy_face_template["sample_count"]
+    assert_equal d, user.privacy_face_template["descriptors"]
+    assert_nil user.settings["privacy_gaze"]["face"]
+    assert user.settings["privacy_gaze"]["face_ciphertext"].present?
+
+    user.update_privacy_gaze_settings("enabled" => "0")
+    assert user.reload.privacy_face_enrolled?
+
+    assert user.clear_privacy_face_template!
+    refute user.reload.privacy_face_enrolled?
+    assert_nil user.privacy_face_template
+  end
+
+  test "privacy face template rejects invalid descriptors" do
+    user = users(:one)
+    ok = -> { Array.new(128) { 0.5 } }
+    bad = [
+      [ ok.call, ok.call ],
+      Array.new(11) { ok.call },
+      [ ok.call, ok.call, Array.new(129) { 0.5 } ],
+      [ ok.call, ok.call, Array.new(128) { "x" } ],
+      [ ok.call, ok.call, Array.new(128) { Float::NAN } ],
+      [ ok.call, ok.call, Array.new(128) { Float::INFINITY } ],
+      Array.new(3) { Array.new(127) { 0.5 } },
+      Array.new(3) { Array.new(2049) { 0.5 } },
+      "nope", nil
+    ]
+    bad.each { |b| refute user.store_privacy_face_template!(b), b.inspect[0, 40] }
+    refute user.reload.privacy_face_enrolled?
+  end
+
   test "mobile uplink settings generate and clear a connection id" do
     user = users(:one)
 

@@ -23,6 +23,7 @@
 
     <%= stylesheet_link_tag "application", "data-turbo-track": "reload" %>
     <%= javascript_importmap_tags %>
+    <%= render "shared/privacy_gaze_assets" %>
   </head>
 
   <%
@@ -32,6 +33,7 @@
       controller_path.to_s == "recovery_secrets"
     backlog_only = backlog_lock_bypass_active?
     typing_activity_enabled = @user&.security_lock_enabled? && !security_lock_screen && !backlog_only
+    privacy_gaze_enabled = @user&.privacy_gaze_enabled? && !security_lock_screen && !backlog_only
     typing_lock_shortcut = @user&.shortcut_binding("lock") || User::DEFAULT_SHORTCUTS.dig("lock", "key")
     quote_page_key = User.nav_page_key(controller_path)
     display_quote = @user&.quote_for_page(quote_page_key).to_s.strip
@@ -40,6 +42,7 @@
     body_controllers = []
     body_controllers << "shortcuts" unless security_lock_screen || backlog_only
     body_controllers << "typing-activity" if typing_activity_enabled
+    body_controllers << "privacy-gaze" if privacy_gaze_enabled
     body_controllers << "kb-notes" if show_notes
     body_controllers << "draft-keeper" if @user && !security_lock_screen
     body_controllers << "voice-dictation" if @user && !security_lock_screen
@@ -65,6 +68,10 @@
           data-shortcuts-new-list-url-value="<%= new_list_path(kind: 'named') %>"
           data-shortcuts-new-topology-url-value="<%= new_topology_path %>"
           data-shortcuts-import-url-value="<%= new_submission_import_path %>"
+        <% end %>
+        <% if privacy_gaze_enabled %>
+          data-privacy-gaze-settings-url-value="<%= settings_security_path %>"
+          data-privacy-gaze-face-url-value="<%= settings_security_privacy_face_path %>"
         <% end %>
         <% if typing_activity_enabled %>
           data-typing-activity-url-value="<%= typing_lock_activity_path %>"

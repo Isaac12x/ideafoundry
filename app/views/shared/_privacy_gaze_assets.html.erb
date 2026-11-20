@@ -1,0 +1,4 @@
+<%# Local-only URLs for the lazy gaze bundle (mediapipe wasm + model, Human identity models); read by privacy_gaze controllers.
+    Production assets are fingerprinted, so every model file gets its own asset_path (no directory URL). %>
+<% human_models = %w[blazeface facemesh faceres antispoof liveness movenet-lightning].index_with { |m| { json: asset_path("privacy_gaze/human/#{m}.json"), bin: asset_path("privacy_gaze/human/#{m}.bin") } } %>
+<meta name="privacy-gaze-assets" content="<%= { bundle: asset_path('privacy_gaze/index.js'), wasmLoader: asset_path('privacy_gaze/vision_wasm_internal.js'), wasm: asset_path('privacy_gaze/vision_wasm_internal.wasm'), model: asset_path('privacy_gaze/face_landmarker.task'), human: human_models }.to_json %>">

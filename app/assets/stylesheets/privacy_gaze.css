@@ -1,0 +1,166 @@
+/* ============================================
+   Privacy gaze haze: a fog that rolls in from the edges when you look away.
+   transform / opacity / filter only; exponential ease-out, no bounce.
+   ============================================ */
+
+.privacy-haze {
+  --haze-ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --haze-mist: var(--text-primary, #ece8e1);
+  position: fixed;
+  inset: 0;
+  z-index: 2147483000;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+  backdrop-filter: blur(22px) saturate(0.2) brightness(0.8);
+  -webkit-backdrop-filter: blur(22px) saturate(0.2) brightness(0.8);
+  transition: opacity 180ms var(--haze-ease); /* clearing is quick */
+}
+
+.privacy-haze[data-state="hazy"] {
+  opacity: 1;
+  pointer-events: auto;
+  transition-duration: 900ms; /* rolling in is slow */
+}
+
+/* the veil is darker at the rim and thinner at the centre, so fog seems to close in from the edges */
+.privacy-haze__veil {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse at center,
+    color-mix(in srgb, var(--bg-surface, #14141a) 55%, transparent) 0%,
+    color-mix(in srgb, var(--bg-base, #0c0c0f) 94%, transparent) 85%
+  );
+  transform: scale(1.6);
+  opacity: 0;
+  transition: transform 180ms var(--haze-ease), opacity 180ms var(--haze-ease);
+}
+
+.privacy-haze[data-state="hazy"] .privacy-haze__veil {
+  transform: scale(1);
+  opacity: 1;
+  transition-duration: 1100ms;
+}
+
+/* two drifting layers of fractal-noise cloud, tinted warm like the app's amber accent */
+.privacy-haze__fog {
+  position: absolute;
+  inset: -50%;
+  opacity: 0.5;
+  mix-blend-mode: screen;
+  background-size: 900px 900px;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='900' height='900'><filter id='f' x='0' y='0' width='100%' height='100%'><feTurbulence type='fractalNoise' baseFrequency='0.0035 0.006' numOctaves='4' seed='7' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.83  0 0 0 0 0.78  0 0 0 0 0.7  0 0 0 1.5 -0.35'/></filter><rect width='100%' height='100%' filter='url(%23f)'/></svg>");
+  animation: privacy-haze-drift-a 90s linear infinite;
+  animation-play-state: paused;
+  will-change: transform;
+}
+
+.privacy-haze__fog--b {
+  opacity: 0.35;
+  background-size: 1300px 1300px;
+  animation-name: privacy-haze-drift-b;
+  animation-duration: 140s;
+}
+
+.privacy-haze[data-state="hazy"] .privacy-haze__fog { animation-play-state: running; }
+
+@keyframes privacy-haze-drift-a { to { transform: translate3d(900px, 300px, 0); } }
+@keyframes privacy-haze-drift-b { to { transform: translate3d(-1300px, -400px, 0); } }
+
+.privacy-haze__sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+
+/* camera trouble: small readable card on top of the haze */
+.privacy-haze__error {
+  display: none;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  max-width: min(420px, calc(100vw - 32px));
+  padding: 18px 20px;
+  background: var(--bg-elevated, #1c1c24);
+  border: 1px solid var(--border-emphasis, #38384a);
+  border-radius: 12px;
+  color: var(--text-primary, #ece8e1);
+  text-align: center;
+}
+
+.privacy-haze__error p { margin: 0 0 12px; }
+.privacy-haze__error div { display: flex; gap: 8px; justify-content: center; }
+.privacy-haze.has-error .privacy-haze__error { display: block; }
+
+/* settings page + camera error: let the user reach the toggle */
+.privacy-haze.is-exempt { opacity: 0; pointer-events: none; }
+.privacy-haze.is-instant,
+.privacy-haze.is-instant * { transition-duration: 0s !important; }
+
+@media (prefers-reduced-motion: reduce) {
+  .privacy-haze,
+  .privacy-haze * { transition-duration: 0s !important; animation: none !important; }
+}
+
+/* settings: calibration panel */
+.privacy-calibrate { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--border-subtle, #1f1f28); }
+.privacy-calibrate__row { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.privacy-calibrate__row p { margin: 4px 0 0; color: var(--text-secondary, #9a9498); font-size: 13px; }
+.privacy-calibrate__stage { position: relative; width: 200px; margin-top: 12px; }
+.privacy-calibrate__preview { width: 100%; border-radius: 10px; transform: scaleX(-1); background: var(--bg-input, #18181f); }
+.privacy-calibrate__live {
+  position: absolute; left: 8px; bottom: 8px; padding: 2px 8px; border-radius: 999px; font-size: 12px;
+  background: var(--danger-bg, rgba(248, 113, 113, 0.1)); color: var(--danger, #f87171);
+}
+.privacy-calibrate__live[data-looking="true"] { background: var(--success-bg, rgba(52, 211, 153, 0.1)); color: var(--success, #34d399); }
+.privacy-calibrate__live:empty { display: none; }
+
+/* settings: face ID enrollment */
+.privacy-enroll { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--border-subtle, #1f1f28); }
+.privacy-enroll [hidden] { display: none !important; }
+.privacy-enroll__actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+.privacy-enroll__stage { display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap; margin-top: 14px; }
+.privacy-enroll__frame { position: relative; width: 240px; aspect-ratio: 4 / 3; border-radius: 12px; overflow: hidden; background: var(--bg-input, #18181f); }
+.privacy-enroll__frame video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); display: block; }
+/* oval to line your face up in; dashed while checks fail, solid + glow when every check passes */
+.privacy-enroll__oval {
+  position: absolute; left: 50%; top: 50%; width: 52%; height: 84%; transform: translate(-50%, -50%);
+  border: 2px dashed color-mix(in srgb, var(--text-primary, #ece8e1) 55%, transparent); border-radius: 50%;
+  box-shadow: 0 0 0 999px rgba(0, 0, 0, 0.38);
+  transition: border-color 200ms ease-out, box-shadow 200ms ease-out;
+}
+.privacy-enroll__stage[data-ready="true"] .privacy-enroll__oval {
+  border-style: solid; border-color: var(--success, #34d399);
+  box-shadow: 0 0 0 999px rgba(0, 0, 0, 0.38), 0 0 18px color-mix(in srgb, var(--success, #34d399) 60%, transparent);
+}
+.privacy-enroll__side { display: flex; flex-direction: column; gap: 12px; flex: 1 1 200px; min-width: 200px; }
+.privacy-enroll__guide { margin: 0; font-size: 13px; color: var(--text-secondary, #9a9498); }
+.privacy-enroll__checks { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.privacy-enroll__checks li {
+  display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px 3px 6px; border-radius: 999px; font-size: 12px;
+  color: var(--text-secondary, #9a9498); border: 1px solid var(--border-subtle, #1f1f28); background: var(--bg-input, #18181f);
+  transition: color 200ms ease-out, border-color 200ms ease-out, background-color 200ms ease-out;
+}
+.privacy-enroll__checks li::before {
+  content: ""; width: 14px; height: 14px; border-radius: 50%; box-sizing: border-box;
+  border: 1.5px solid currentColor; opacity: 0.6;
+  transition: background-color 200ms ease-out, border-color 200ms ease-out, opacity 200ms;
+}
+.privacy-enroll__checks li[data-ok="true"] {
+  color: var(--success, #34d399); border-color: color-mix(in srgb, var(--success, #34d399) 45%, transparent); background: var(--success-bg, rgba(52, 211, 153, 0.1));
+}
+.privacy-enroll__checks li[data-ok="true"]::before {
+  opacity: 1; border-color: var(--success, #34d399);
+  background: var(--success, #34d399) center / 10px no-repeat url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'><path d='M2 5.2l2 2 4-4.4' fill='none' stroke='%230c0c0f' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+}
+.privacy-enroll__steps { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; max-width: 240px; }
+.privacy-enroll__steps i { height: 4px; border-radius: 2px; background: var(--border-subtle, #1f1f28); transition: background-color 200ms ease-out; }
+.privacy-enroll__steps i[data-on="true"] { background: var(--success, #34d399); }
+
+@media (prefers-reduced-motion: reduce) {
+  .privacy-enroll *, .privacy-enroll *::before { transition-duration: 0s !important; }
+}
