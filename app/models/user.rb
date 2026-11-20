@@ -732,7 +732,43 @@ has_many :media_digests, dependent: :destroy
 
   def update_privacy_gaze_settings(params)
     self.settings ||= {}
-    self.settings["privacy_gaze"] = { "enabled" => ActiveModel::Type::Boolean.new.cast(params.fetch("enabled", false)) == true }
+    # merge: keep the encrypted face template when toggling
+    self.settings["privacy_gaze"] = (settings["privacy_gaze"] || {}).merge("enabled" => ActiveModel::Type::Boolean.new.cast(params.fetch("enabled", false)) == true)
+    save
+  end
+
+  PRIVACY_FACE_MIN_SAMPLES = 3
+  PRIVACY_FACE_MAX_SAMPLES = 10
+  PRIVACY_FACE_DIMENSIONS = (128..2048).freeze
+
+  def privacy_face_template
+    secure_settings_value(settings&.dig("privacy_gaze") || {}, "face")
+  end
+
+  def privacy_face_enrolled?
+    privacy_face_template.present? && privacy_face_template["sample_count"].to_i >= PRIVACY_FACE_MIN_SAMPLES
+  end
+
+  # Face embeddings only (numbers computed in the browser), never images. Returns false when invalid.
+  def store_privacy_face_template!(descriptors)
+    return false unless valid_privacy_face_descriptors?(descriptors)
+
+    self.settings ||= {}
+    self.settings["privacy_gaze"] ||= {}
+    self.settings["privacy_gaze"]["face_ciphertext"] = SecureSettingsPayload.encrypt(
+      "descriptors" => descriptors.map { |d| d.map(&:to_f) },
+      "sample_count" => descriptors.size,
+      "updated_at" => Time.current.iso8601
+    )
+    self.settings["privacy_gaze"].delete("face")
+    save
+  end
+
+  def clear_privacy_face_template!
+    self.settings ||= {}
+    self.settings["privacy_gaze"] ||= {}
+    self.settings["privacy_gaze"].delete("face")
+    self.settings["privacy_gaze"].delete("face_ciphertext")
     save
   end
 
@@ -1294,6 +1330,15 @@ has_many :media_digests, dependent: :destroy
   def positive_integer_or_default(value, default)
     integer = value.to_i
     integer.positive? ? integer : default
+  end
+
+  def valid_privacy_face_descriptors?(descriptors)
+    return false unless descriptors.is_a?(Array) && descriptors.size.between?(PRIVACY_FACE_MIN_SAMPLES, PRIVACY_FACE_MAX_SAMPLES)
+
+    descriptors.all? do |d|
+      d.is_a?(Array) && d.size == descriptors.first.size && PRIVACY_FACE_DIMENSIONS.cover?(d.size) &&
+        d.all? { |n| n.is_a?(Numeric) && n.to_f.finite? }
+    end
   end
 
   def secure_settings_value(settings_hash, key)

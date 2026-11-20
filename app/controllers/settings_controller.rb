@@ -269,6 +269,29 @@ class SettingsController < ApplicationController
     end
   end
 
+  def privacy_face
+    response.headers["Cache-Control"] = "no-store"
+    template = @user.privacy_face_template || {}
+    render json: { enrolled: @user.privacy_face_enrolled?, sample_count: template["sample_count"].to_i, descriptors: template["descriptors"] || [] }
+  end
+
+  def update_privacy_face
+    descriptors = params[:descriptors]
+    descriptors = descriptors.as_json if descriptors.respond_to?(:as_json)
+    if @user.store_privacy_face_template!(descriptors)
+      ActivityLog.record_settings!(user: @user, setting: "Privacy face ID")
+      render json: { saved: true, sample_count: @user.privacy_face_template["sample_count"] }
+    else
+      render json: { saved: false, error: "Face samples invalid: need #{User::PRIVACY_FACE_MIN_SAMPLES}-#{User::PRIVACY_FACE_MAX_SAMPLES} numeric descriptors of equal length." }, status: :unprocessable_entity
+    end
+  end
+
+  def destroy_privacy_face
+    @user.clear_privacy_face_template!
+    ActivityLog.record_settings!(user: @user, setting: "Privacy face ID")
+    render json: { saved: true }
+  end
+
   def update_security
     was_voice_id_configured = @user.voice_id_configured?
     typing_lock_updated = @user.update_typing_lock_settings(typing_lock_params)
