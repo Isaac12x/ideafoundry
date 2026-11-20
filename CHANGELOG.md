@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Local session handoff notes are ignored in every directory and filename casing.
 - Retrying a note import from the same preview skips notes already imported by that user and adds any newly selected notes.
 - The knowledge-base tree uses a set to match hidden sidecar paths, speeding up folder scans with many annotated media files.
 - Workspace backups include attachment metadata for ideas with files. A failed tar command marks the backup as failed. Automatic cleanup waits for a completed backup and preserves manual exports.
