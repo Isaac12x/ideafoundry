@@ -40,6 +40,7 @@ module KbEntrySearch
 
   def walk_kb_entries
     found = []
+    @walk_capped = [] # source indexes whose walk stopped at the visit cap (entries beyond it were never seen)
     KbSource.list(@user).each_with_index do |source, index|
       base = File.expand_path(source[:path])
       next unless File.directory?(base)
@@ -65,6 +66,7 @@ module KbEntrySearch
                      rel_down: rel.downcase, name_down: name.downcase, note_down: is_dir ? "" : Kb::Note.read(abs).to_s.downcase }
         end
       end
+      @walk_capped << index unless queue.empty?
     end
     found
   end

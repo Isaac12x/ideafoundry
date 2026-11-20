@@ -37,6 +37,16 @@ class KbTranscribeJobTest < ActiveJob::TestCase
     assert_equal "00:00 - hi there\n", @download.transcript
   end
 
+  test "busts the KB cache so the new transcript gets indexed" do
+    fake = ->(abs) { File.write(Kb::Transcript.sidecar(abs), "WEBVTT\n\n00:00.000 --> 00:02.000\nhi\n"); Kb::Transcript.sidecar(abs) }
+    busted = []
+    Kb::TreeBuilder.stub(:bust_cache!, ->(u) { busted << u.id }) do
+      Kb::Transcript.stub(:transcribe!, fake) { KbTranscribeJob.perform_now(@media, @download.id) }
+      KbTranscribeJob.perform_now(@media, nil) # dropped-in file: owner found via KbSource
+    end
+    assert_includes busted, @user.id
+  end
+
   test "a whisper failure is recorded for the UI and the download" do
     boom = ->(_abs) { raise Kb::Transcript::Error, "whisper failed." }
     Kb::Transcript.stub(:transcribe!, boom) { KbTranscribeJob.perform_now(@media, @download.id) }

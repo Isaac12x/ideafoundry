@@ -1,4 +1,6 @@
 class Note < ApplicationRecord
+  include SemanticIndexable
+  semantic_index type: "note", owner: ->(r) { r.idea&.user_id }, sections: ->(r) { [ r.body ] }, parents: ->(r) { [ r.idea ] }
   include RecordsIdeaHistory
 
   belongs_to :idea

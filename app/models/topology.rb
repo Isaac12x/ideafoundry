@@ -1,4 +1,6 @@
 class Topology < ApplicationRecord
+  include SemanticIndexable
+  semantic_index type: "topology", owner: ->(r) { r.user_id }, sections: ->(r) { [ r.name ] }, parents: ->(r) { r.saved_change_to_name? ? r.ideas : [] }
   include TracksActivity
   tracks_activity
 
