@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Repository security policy and private vulnerability reporting guidance, plus weekly Dependabot update configuration for maintained dependency manifests.
 - Render marked standalone HTML artifacts with inline JavaScript in an opaque sandbox, including nested source previews. Deny app-origin access, remote connections and form submissions; keep ordinary HTML script-free and annotatable.
 
 - Knowledge base transcript: karaoke view. The current line stays centered (smooth, none under reduced motion, paused briefly while you scroll) and its words fill with the accent in step with playback; finished lines go back to grey. Text stays selectable.
