@@ -7,7 +7,7 @@
     "verify:excalidraw-local-only": "node scripts/check_excalidraw_bundle.mjs"
   },
   "dependencies": {
-    "3d-force-graph": "^1.80.1",
+    "3d-force-graph": "^1.80.2",
     "@excalidraw/excalidraw": "0.18.0-3c916c5",
     "@mediapipe/tasks-vision": "1.2.3",
     "@rails/actioncable": "^8.1.400",
