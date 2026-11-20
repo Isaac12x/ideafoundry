@@ -1,5 +1,6 @@
 <% licensing_feature = feature_enabled?(:licensing) %>
 <% idea_licensing_active = licensing_feature && @idea.for_licensing? %>
+<%# A template's default tab is also called "General", which collides with the built-in General tab. %>
 <% if params[:idea_draft_saved].present? %>
   <div data-controller="idea-draft-persist"
        data-idea-draft-persist-clear-on-connect-value="true"
@@ -18,6 +19,31 @@
 <% end %>
 
 <div class="idea-detail-container">
+  <%# Hero banner caps the page: it sits ABOVE the title card and the two read as one stacked unit. %>
+  <% hero_media = @idea.hero_items.select(&:media) %>
+  <% if hero_media.one? %>
+    <% item = hero_media.first %>
+    <div class="idea-hero-cap">
+      <%= image_tag item.media, class: "idea-hero-cap__img #{'idea-hero-cap__img--drawing' if item.drawing?}", alt: item.title %>
+    </div>
+  <% elsif hero_media.any? %>
+    <%# At most 5 cells: past that, 4 tiles plus a "+N" cell that leads to the hero panel in the editor. %>
+    <% overflow = hero_media.size > 5 ? hero_media.size - 4 : 0 %>
+    <% shown = overflow.zero? ? hero_media : hero_media.first(4) %>
+    <div class="idea-hero-cap idea-hero-cap--mosaic" data-cells="<%= shown.size + (overflow.zero? ? 0 : 1) %>">
+      <% shown.each do |item| %>
+        <div class="idea-hero-cap__tile <%= 'idea-hero-cap__tile--drawing' if item.drawing? %>">
+          <%= image_tag item.media, class: "idea-hero-cap__img", alt: item.title %>
+        </div>
+      <% end %>
+      <% if overflow.positive? %>
+        <%= link_to edit_idea_path(@idea, anchor: "hero"), class: "idea-hero-cap__tile idea-hero-cap__more",
+              aria: { label: "#{overflow} more hero #{'item'.pluralize(overflow)}. Open the editor to manage them." } do %>
+          <span aria-hidden="true">+<%= overflow %></span>
+        <% end %>
+      <% end %>
+    </div>
+  <% end %>
   <!-- Header Section -->
   <div class="idea-header">
     <div class="idea-header-top">
@@ -144,7 +170,7 @@
             </p>
           <% end %>
           <% if @idea.situation.present? %>
-            <div class="idea-context__situation"><%= simple_format(@idea.situation) %></div>
+            <div class="idea-context__situation"><%= render_prose(@idea.situation) %></div>
           <% end %>
         </div>
       <% end %>
@@ -268,38 +294,16 @@
 
   <%= render "agent_access", idea: @idea if @user.idea_work_tokens_enabled? %>
 
-  <!-- Main Content — Tabbed (hero image caps the card, blending into the tab bar) -->
+  <!-- Main Content — Tabbed -->
   <div class="idea-main-content">
-    <% hero_media = @idea.hero_items.select(&:media) %>
-    <% if hero_media.one? %>
-      <% item = hero_media.first %>
-      <div class="idea-hero-cap">
-        <%= image_tag item.media, class: "idea-hero-cap__img #{'idea-hero-cap__img--drawing' if item.drawing?}", alt: item.title %>
-      </div>
-    <% elsif hero_media.any? %>
-      <%# At most 5 cells: past that, 4 tiles plus a "+N" cell that leads to the hero panel in the editor. %>
-      <% overflow = hero_media.size > 5 ? hero_media.size - 4 : 0 %>
-      <% shown = overflow.zero? ? hero_media : hero_media.first(4) %>
-      <div class="idea-hero-cap idea-hero-cap--mosaic" data-cells="<%= shown.size + (overflow.zero? ? 0 : 1) %>">
-        <% shown.each do |item| %>
-          <div class="idea-hero-cap__tile <%= 'idea-hero-cap__tile--drawing' if item.drawing? %>">
-            <%= image_tag item.media, class: "idea-hero-cap__img", alt: item.title %>
-          </div>
-        <% end %>
-        <% if overflow.positive? %>
-          <%= link_to edit_idea_path(@idea, anchor: "hero"), class: "idea-hero-cap__tile idea-hero-cap__more",
-                aria: { label: "#{overflow} more hero #{'item'.pluralize(overflow)}. Open the editor to manage them." } do %>
-            <span aria-hidden="true">+<%= overflow %></span>
-          <% end %>
-        <% end %>
-      </div>
-    <% end %>
     <% comp_enabled    = @user.idea_tab_enabled?('competitor') %>
     <% pot_enabled     = @user.idea_tab_enabled?('potential_competitor') %>
     <% tool_enabled    = @user.idea_tab_enabled?('tool') && !idea_licensing_active %>
     <% media_enabled   = @user.idea_tab_enabled?('media') %>
     <% drawing_enabled = @user.idea_tab_enabled?('drawing') %>
-    <% general_enabled = @user.idea_tab_enabled?('metadata') || tool_enabled || comp_enabled || pot_enabled %>
+    <%# A template tab named "general" is the built-in General tab: its fields render inside it, never a second tab. %>
+    <% general_fields = @idea.effective_fields_by_tab['general'] || [] %>
+    <% general_enabled = @user.idea_tab_enabled?('metadata') || tool_enabled || comp_enabled || pot_enabled || general_fields.any? %>
     <div data-controller="tabs" data-tabs-default-tab-value="description">
       <div class="tabs-nav" data-controller="drag-scroll">
         <button type="button" data-tabs-target="tab" data-tab-name="description" data-action="click->tabs#switch" class="tab-button active">
@@ -329,9 +333,9 @@
         <% if @idea.effective_field_definitions.present? %>
           <% @idea.effective_tab_definitions.sort_by { |t| t['position'].to_i }.each do |tab| %>
             <% tab_fields = @idea.effective_fields_by_tab[tab['name']] || [] %>
-            <% next if tab_fields.empty? %>
+            <% next if tab_fields.empty? || tab['name'] == 'general' %>
             <button type="button" data-tabs-target="tab" data-tab-name="custom-<%= tab['name'] %>" data-action="click->tabs#switch" class="tab-button">
-              <%= tab['label'] || tab['name'].humanize %>
+              <%= tab['label'].presence || tab['name'].humanize %>
             </button>
           <% end %>
         <% end %>
@@ -362,7 +366,7 @@
         <div data-tabs-target="panel" data-tab-panel="description" class="tab-panel">
           <% if @idea.description.present? %>
             <div class="rich-text-content">
-              <%= link_idea_mentions(@idea.description.to_s, @user) %>
+              <%= render_rich_prose(link_idea_mentions(@idea.description.to_s, @user)) %>
             </div>
           <% else %>
             <div class="empty-state-small">
@@ -496,7 +500,7 @@
                       <%= render "idea_attachments/card", attachment: attachment, idea: @idea %>
                     <% end %>
                   </div>
-                  <p class="media-manager__empty" data-attachment-empty="image" <%= "hidden" if image_attachments.any? %>>No images yet. Add some from Edit idea.</p>
+                  <p class="media-manager__empty" data-attachment-empty="image" <%= "hidden" if image_attachments.any? %>>No images yet. Drop some in below.</p>
                 </section>
 
                 <section class="media-manager__section">
@@ -509,7 +513,7 @@
                       <%= render "idea_attachments/card", attachment: attachment, idea: @idea %>
                     <% end %>
                   </div>
-                  <p class="media-manager__empty" data-attachment-empty="document" <%= "hidden" if document_attachments.any? %>>No documents yet. Add PDFs or files from Edit idea.</p>
+                  <p class="media-manager__empty" data-attachment-empty="document" <%= "hidden" if document_attachments.any? %>>No documents yet. Drop PDFs or other files in below.</p>
                 </section>
 
                 <% if attachment_drawings.any? %>
@@ -549,12 +553,12 @@
                        data-action="click->dropzone#click dragover->dropzone#dragover dragenter->dropzone#dragenter dragleave->dropzone#dragleave drop->dropzone#drop">
                     <div class="dropzone__label" data-dropzone-target="placeholder">
                       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
-                      <span>Drop files here, or <strong>browse</strong></span>
+                      <span>Drop images or documents here, or <strong>browse</strong></span>
                     </div>
                     <div class="dropzone__preview-grid" data-dropzone-target="preview"></div>
                   </div>
                   <p class="media-manager__status" data-dropzone-status aria-live="polite"></p>
-                  <input type="file" multiple style="display:none" aria-label="Attach files" data-dropzone-target="input">
+                  <input type="file" multiple style="display:none" accept="*/*" aria-label="Attach images or documents" data-dropzone-target="input">
                 </div>
 
                 <%= render "idea_attachments/viewer_modal" %>
@@ -695,6 +699,20 @@
               <%= render "idea_entries/tab", idea: @idea, kind: 'tool' %>
             </div>
             <% end %>
+
+            <% if general_fields.any? %>
+            <div class="media-section__group">
+              <h3>Custom fields</h3>
+              <div class="metadata-group">
+                <% general_fields.each do |field| %>
+                  <div class="metadata-item-detail">
+                    <label><%= field['label'] || field['name'].humanize %></label>
+                    <span><%= format_custom_field_value(@idea.metadata&.dig(field['instance_id'] || field['name']), field['type']) %></span>
+                  </div>
+                <% end %>
+              </div>
+            </div>
+            <% end %>
           </div>
         </div>
         <% end %>
@@ -703,11 +721,11 @@
         <% if @idea.effective_field_definitions.present? %>
           <% @idea.effective_tab_definitions.sort_by { |t| t['position'].to_i }.each do |tab| %>
             <% tab_fields = @idea.effective_fields_by_tab[tab['name']] || [] %>
-            <% next if tab_fields.empty? %>
+            <% next if tab_fields.empty? || tab['name'] == 'general' %>
             <div data-tabs-target="panel" data-tab-panel="custom-<%= tab['name'] %>" class="tab-panel hidden">
               <div class="metadata-grid">
                 <div class="metadata-group">
-                  <h3><%= tab['label'] || tab['name'].humanize %></h3>
+                  <h3><%= tab['label'].presence || tab['name'].humanize %></h3>
                   <% tab_fields.each do |field| %>
                     <% meta_key = field['instance_id'] || field['name'] %>
                     <% value = @idea.metadata&.dig(meta_key) %>

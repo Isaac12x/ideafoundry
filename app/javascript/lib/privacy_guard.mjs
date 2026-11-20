@@ -42,20 +42,8 @@ export function hazeVars(strength) {
   }
 }
 
-// Nav eye: "off" (feature off / controller absent), "watching" (on, content clear), "hazed".
-export const indicatorState = (enabled, hazy) => (!enabled ? "off" : hazy ? "hazed" : "watching")
-
-export function indicatorTitle(state, shortcut) {
-  const tail = shortcut ? ` (${shortcut})` : ""
-  if (state === "hazed") return `Privacy haze is on. Look at the screen to clear it${tail}`
-  if (state === "watching") return `Privacy haze is watching. Turn off${tail}`
-  return `Privacy haze is off. Turn on${tail}`
-}
-
-export function paintIndicator(el, state, shortcut) {
-  if (!el) return
-  el.dataset.state = state
-  el.title = indicatorTitle(state, shortcut)
-  el.setAttribute("aria-label", el.title)
-  el.setAttribute("aria-pressed", state === "off" ? "false" : "true")
+// Haze-off is allowed when the owner is verified looking, or when the haze cannot work at all (no face ID, or the camera
+// is missing/broken/frozen/dark): otherwise a broken camera would trap the user in the haze.
+export function hazeOffAllowed(hazy, reason) {
+  return !hazy || ["not_enrolled", "error", "frozen", "dark"].includes(reason)
 }

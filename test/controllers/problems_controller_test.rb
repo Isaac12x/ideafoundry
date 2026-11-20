@@ -23,4 +23,13 @@ class ProblemsControllerTest < ActionDispatch::IntegrationTest
     p = @user.problems.create!(title: "x #{SecureRandom.hex(3)}")
     assert_enqueued_with(job: ProblemLookupJob) { post find_problem_path(p), as: :turbo_stream }
   end
+
+  test "rejected create keeps what was typed and success blanks the form" do
+    post problems_path, params: { problem: { title: "", need: "keep this need" } }, as: :turbo_stream
+    assert_select "turbo-stream[target=problem_form] textarea", text: /keep this need/
+    assert_select "turbo-stream[target=problem_form] .alert-error"
+
+    post problems_path, params: { problem: { title: "Fresh #{SecureRandom.hex(3)}", need: "gone" } }, as: :turbo_stream
+    assert_select "turbo-stream[action=replace][target=problem_form] textarea", text: ""
+  end
 end

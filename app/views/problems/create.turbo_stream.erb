@@ -1,7 +1,7 @@
 <% if @problem.persisted? %>
   <%= turbo_stream.prepend "problems-list", partial: "problems/problem", locals: { problem: @problem } %>
   <%= turbo_stream.remove "problems-empty-state" %>
-  <%= turbo_stream.replace "problem_form", partial: "problems/form" %>
+  <%= turbo_stream.replace "problem_form", partial: "problems/form", locals: { refocus: true } %>
 <% else %>
-  <%= turbo_stream.replace "problem_form", partial: "problems/form", locals: { error: @problem.errors.full_messages.first } %>
+  <%= turbo_stream.replace "problem_form", partial: "problems/form", locals: { error: @problem.errors.full_messages.first, problem: @problem, refocus: true } %>
 <% end %>

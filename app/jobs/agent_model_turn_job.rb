@@ -7,7 +7,7 @@ class AgentModelTurnJob < ApplicationJob
     return unless question
     return if question.user.agent_events.exists?(event_type: "answer", target: question)
 
-    text = question.payload&.dig("question").presence || question.summary
+    text = question.question_prompt
     history = question.agent_thread&.history(before: question).presence
     answer, error =
       begin

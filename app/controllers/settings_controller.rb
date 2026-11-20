@@ -226,7 +226,7 @@ class SettingsController < ApplicationController
         "question" => question,
         "agent" => agent,
         "status" => "pending"
-      }
+      }.merge(local_agent_question_params[:context].present? ? { "context" => local_agent_question_params[:context].to_s.truncate(500) } : {})
     )
     if agent == "model"
       AgentModelTurnJob.perform_later(event.id)
@@ -255,6 +255,8 @@ class SettingsController < ApplicationController
   end
 
   def update_privacy
+    return refuse_privacy_gaze_off if privacy_gaze_params.key?(:enabled) && !gaze_enabled_param? && !privacy_gaze_off_allowed?
+
     if @user.update_privacy_gaze_settings(privacy_gaze_params)
       ActivityLog.record_settings!(user: @user, setting: "Privacy")
       respond_to do |format|
@@ -275,6 +277,8 @@ class SettingsController < ApplicationController
       return render json: { enabled: false, error: "Set up face ID first" }, status: :unprocessable_entity
     end
 
+    return refuse_privacy_gaze_off unless enable || privacy_gaze_off_allowed?
+
     @user.update_privacy_gaze_settings("enabled" => enable)
     ActivityLog.record_settings!(user: @user, setting: "Privacy")
     render json: { enabled: @user.privacy_gaze_enabled? }
@@ -287,6 +291,8 @@ class SettingsController < ApplicationController
   end
 
   def update_privacy_face
+    return refuse_privacy_gaze_off unless privacy_gaze_off_allowed? # replacing the face = changing who clears the haze
+
     descriptors = params[:descriptors]
     descriptors = descriptors.as_json if descriptors.respond_to?(:as_json)
     if @user.store_privacy_face_template!(descriptors)
@@ -298,6 +304,8 @@ class SettingsController < ApplicationController
   end
 
   def destroy_privacy_face
+    return refuse_privacy_gaze_off unless privacy_gaze_off_allowed?
+
     @user.clear_privacy_face_template!
     ActivityLog.record_settings!(user: @user, setting: "Privacy face ID")
     render json: { saved: true }
@@ -894,8 +902,26 @@ class SettingsController < ApplicationController
     params.fetch(:voice_id, {}).permit(:enabled)
   end
 
+  # The server cannot see the camera, so the client attests (`clear`) that the owner is verified looking right now
+  # (body[data-privacy-gaze-verified]). Weaker than a server-side proof, but it blocks plain requests and forms.
+  def privacy_gaze_off_allowed?
+    @user.privacy_gaze_off_allowed?(params.dig(:privacy_gaze, :clear) || params[:clear])
+  end
+
+  def gaze_enabled_param?
+    ActiveModel::Type::Boolean.new.cast(privacy_gaze_params[:enabled]) == true
+  end
+
+  def refuse_privacy_gaze_off
+    error = "Look at the screen so the haze clears before turning it off or changing face ID."
+    respond_to do |format|
+      format.html { redirect_to settings_security_path, alert: error }
+      format.json { render json: { saved: false, enabled: @user.privacy_gaze_enabled?, error: error }, status: :forbidden }
+    end
+  end
+
   def privacy_gaze_params
-    params.fetch(:privacy_gaze, {}).permit(:enabled, :away_ms, :clear_ms, :sensitivity, :haze_strength, sections: [])
+    params.fetch(:privacy_gaze, {}).permit(:enabled, :clear, :away_ms, :clear_ms, :sensitivity, :haze_strength, sections: [])
   end
 
   def mobile_uplink_params
@@ -932,7 +958,7 @@ class SettingsController < ApplicationController
   end
 
   def local_agent_question_params
-    params.fetch(:agent_question, {}).permit(:body, :thread_id, :agent)
+    params.fetch(:agent_question, {}).permit(:body, :thread_id, :agent, :context)
   end
 
   # An existing own thread continues; anything else (blank, "new", someone else's id) starts a new one.

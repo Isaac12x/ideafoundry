@@ -10,7 +10,7 @@ class MaximsController < ApplicationController
       end
     else
       respond_to do |format|
-        format.turbo_stream { render turbo_stream: turbo_stream.replace("maxim_form", partial: "maxims/form", locals: { error: @maxim.errors.full_messages.first }) }
+        format.turbo_stream { render turbo_stream: turbo_stream.replace("maxim_form", partial: "maxims/form", locals: { error: @maxim.errors.full_messages.first, draft: @maxim.body, refocus: true }) }
         format.html { redirect_to kb_path(tab: "maxims") }
       end
     end

@@ -116,11 +116,19 @@
               <div class="topology-picker__new-panel" data-topology-picker-target="newPanel" data-action="keydown->topology-picker#collapseNew" hidden>
                 <input type="text" class="form-control" placeholder="Name" aria-label="New topology name" maxlength="80"
                        data-topology-picker-target="newName" data-action="keydown->topology-picker#newKeydown">
-                <select class="form-control" aria-label="Parent topology (optional)" data-topology-picker-target="newParent">
+                <select class="form-control" aria-label="Parent topology (optional)" data-controller="select-menu" data-topology-picker-target="newParent">
                   <option value="">No parent</option>
                   <% topologies.each do |t| %><option value="<%= t.id %>"><%= t.full_path %></option><% end %>
                 </select>
                 <button type="button" class="btn btn-sm btn-primary" data-action="topology-picker#createTopology">Add</button>
+                <div class="topology-picker__swatches" role="radiogroup" aria-label="Topology colour">
+                  <button type="button" role="radio" aria-checked="true" class="topology-picker__swatch topology-picker__swatch--auto" title="Automatic: inherits the parent's colour, or the next unused one"
+                          data-color="" data-topology-picker-target="swatch" data-action="topology-picker#pickColor">Auto</button>
+                  <% Topology::PALETTE.each do |hex| %>
+                    <button type="button" role="radio" aria-checked="false" class="topology-picker__swatch" aria-label="<%= hex %>" title="<%= hex %>"
+                            style="--swatch: <%= hex %>" data-color="<%= hex %>" data-topology-picker-target="swatch" data-action="topology-picker#pickColor"></button>
+                  <% end %>
+                </div>
                 <p class="topology-picker__error" role="alert" data-topology-picker-target="newError" hidden></p>
               </div>
             </div>

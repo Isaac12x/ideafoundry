@@ -30,6 +30,20 @@ class KbControllerTest < ActionDispatch::IntegrationTest
     assert_equal [ missing_path ], @user.reload.kb_folders
   end
 
+  test "a doubly percent-encoded file param opens the real file" do
+    native_dir = KbSource::NATIVE_PATH
+    @kb_dir = File.join(native_dir, "esc-#{SecureRandom.hex(4)}")
+    FileUtils.mkdir_p(@kb_dir)
+    File.write(File.join(@kb_dir, "Note two.md"), "# Escaped ok")
+    rel = "#{File.basename(@kb_dir)}/Note two.md"
+    @user.update!(settings: (@user.settings || {}).merge("kb" => { "folders" => [] }))
+
+    get kb_file_path(src: 0, file: rel.sub("/", "%2F")) # the link's file= param is "esc-x%2FNote two.md" (literal %2F)
+
+    assert_response :success
+    assert_includes response.body, "<h1>Escaped ok</h1>"
+  end
+
   test "markdown files in native kb folder are included automatically" do
     native_dir = KbSource::NATIVE_PATH
     filename = "native-kb-#{SecureRandom.hex(8)}.md"

@@ -554,8 +554,8 @@
 
 /* ---- Standalone page styles (kept for deep-link fallback) ---- */
 
-.version-history-container { max-width: 1200px; margin: 0 auto; }
-.version-detail-container  { max-width: 1200px; margin: 0 auto; }
+.version-history-container { max-width: var(--page-width); margin: 0 auto; }
+.version-detail-container  { max-width: var(--page-width); margin: 0 auto; }
 .version-compare-container { max-width: 1400px; margin: 0 auto; }
 
 .version-header { margin-bottom: 2rem; }

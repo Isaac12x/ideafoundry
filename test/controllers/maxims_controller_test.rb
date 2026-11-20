@@ -23,4 +23,11 @@ class MaximsControllerTest < ActionDispatch::IntegrationTest
 
     assert_redirected_to kb_path(tab: "maxims")
   end
+
+  test "turbo create answers with a fresh refocused form" do
+    post maxims_path, params: { maxim: { body: "Clear me." } }, as: :turbo_stream
+
+    assert_response :success
+    assert_select "turbo-stream[action=replace][target=maxim_form] form[data-fact-form-refocus-value=true] textarea", text: ""
+  end
 end

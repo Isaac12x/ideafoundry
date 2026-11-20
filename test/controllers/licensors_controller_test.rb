@@ -16,6 +16,22 @@ class LicensorsControllerTest < ActionDispatch::IntegrationTest
     assert_match "Acme", response.body
   end
 
+  test "create captures prospect fields (where, why, link) on a licensor" do
+    post idea_licensors_path(@idea, format: :turbo_stream), params: {
+      licensor: { company: "Toy Co", channel: "Toy Fair", notes: "Sells similar kits", contact_url: "https://toyco.example", stage: "identified" }
+    }
+    l = @idea.licensors.last
+    assert_equal [ "Toy Fair", "Sells similar kits", "https://toyco.example" ], [ l.channel, l.notes, l.contact_url ]
+    assert_match "Toy Fair", response.body
+    assert_match "Sells similar kits", response.body
+  end
+
+  test "licensing notes autosave on the idea" do
+    patch licensing_notes_idea_path(@idea, format: :turbo_stream), params: { idea: { licensing_notes: " Try Hasbro, Mattel " } }
+    assert_response :no_content
+    assert_equal "Try Hasbro, Mattel", @idea.reload.licensing_notes
+  end
+
   test "create with blank company reports errors without persisting" do
     assert_no_difference("Licensor.count") do
       post idea_licensors_path(@idea, format: :turbo_stream), params: { licensor: { company: "" } }

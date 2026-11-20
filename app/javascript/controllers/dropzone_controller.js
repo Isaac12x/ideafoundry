@@ -129,7 +129,8 @@ export default class extends Controller {
         if (this.hasPreviewTarget) this.previewTarget.innerHTML = ""
         if (this.hasPlaceholderTarget) this.placeholderTarget.style.display = ""
       } else {
-        this._setUploadStatus("Upload failed. Please try again.")
+        const data = await response.json().catch(() => ({}))
+        this._setUploadStatus(data.error || `Upload failed (${response.status}). Please try again.`)
       }
     } catch {
       this._setUploadStatus("Upload failed. Please try again.")
@@ -139,8 +140,16 @@ export default class extends Controller {
   }
 
   _setUploadStatus(message) {
-    const statusEl = this.element.querySelector("[data-dropzone-status]")
-    if (statusEl) statusEl.textContent = message
+    let statusEl = this.element.querySelector("[data-dropzone-status]")
+    if (!statusEl) {
+      // The edit form has no status line of its own: without one, failures were silent.
+      statusEl = document.createElement("p")
+      statusEl.className = "media-manager__status"
+      statusEl.dataset.dropzoneStatus = ""
+      statusEl.setAttribute("role", "status")
+      this.element.appendChild(statusEl)
+    }
+    statusEl.textContent = message
   }
 
   _acceptsFiles() {

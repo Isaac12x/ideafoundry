@@ -14,6 +14,9 @@ class Topology < ApplicationRecord
     "instance_id" => "github_url"
   }.freeze
 
+  # Swatches offered when creating a topology; the first is the app accent.
+  PALETTE = %w[#d4953a #e5534b #e879f9 #6366f1 #3b82f6 #14b8a6 #22c55e #84cc16 #f97316 #a8a29e].freeze
+
   belongs_to :user
   belongs_to :parent, class_name: "Topology", optional: true
   has_many :children, class_name: "Topology", foreign_key: :parent_id, dependent: :destroy
@@ -37,6 +40,15 @@ class Topology < ApplicationRecord
   after_commit :broadcast_graph_added, on: :create
   after_commit :broadcast_graph_updated, on: :update
   after_commit :broadcast_graph_removed, on: :destroy
+
+  # Sensible colour for a new topology: children inherit the parent's hue,
+  # roots take the first palette colour no root uses yet (cycling once all are used).
+  def self.default_color_for(user, parent)
+    return parent.color if parent&.color.present?
+
+    used = user.topologies.roots.pluck(:color).compact.map(&:downcase)
+    PALETTE.find { |c| used.exclude?(c) } || PALETTE[used.size % PALETTE.size]
+  end
 
   def ancestors
     path = []
