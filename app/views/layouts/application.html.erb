@@ -34,6 +34,8 @@
     backlog_only = backlog_lock_bypass_active?
     typing_activity_enabled = @user&.security_lock_enabled? && !security_lock_screen && !backlog_only
     privacy_gaze_enabled = @user&.privacy_gaze_enabled? && !security_lock_screen && !backlog_only
+    privacy_gaze_configured = @user&.privacy_gaze_configured? && !security_lock_screen && !backlog_only
+    privacy_settings = privacy_gaze_enabled ? @user.privacy_gaze_settings : {}
     typing_lock_shortcut = @user&.shortcut_binding("lock") || User::DEFAULT_SHORTCUTS.dig("lock", "key")
     quote_page_key = User.nav_page_key(controller_path)
     display_quote = @user&.quote_for_page(quote_page_key).to_s.strip
@@ -69,7 +71,17 @@
           data-shortcuts-new-topology-url-value="<%= new_topology_path %>"
           data-shortcuts-import-url-value="<%= new_submission_import_path %>"
         <% end %>
+        <% if privacy_gaze_configured %>
+          data-privacy-toggle-url="<%= settings_security_privacy_toggle_path %>"
+          data-privacy-enabled="<%= privacy_gaze_enabled ? 'true' : 'false' %>"
+        <% end %>
         <% if privacy_gaze_enabled %>
+          data-privacy-gaze-active-value="<%= privacy_settings["sections"].include?(User.privacy_section_for(controller_path)) %>"
+          data-privacy-gaze-away-ms-value="<%= privacy_settings["away_ms"] %>"
+          data-privacy-gaze-clear-ms-value="<%= privacy_settings["clear_ms"] %>"
+          data-privacy-gaze-sensitivity-value="<%= privacy_settings["sensitivity"] %>"
+          data-privacy-gaze-strength-value="<%= privacy_settings["haze_strength"] %>"
+          data-privacy-gaze-lock-url-value="<%= typing_activity_enabled ? lock_typing_lock_path(return_to: request.fullpath) : '' %>"
           data-privacy-gaze-settings-url-value="<%= settings_security_path %>"
           data-privacy-gaze-face-url-value="<%= settings_security_privacy_face_path %>"
         <% end %>
@@ -137,6 +149,16 @@
           <%= link_to settings_path, class: "nav-pill #{controller_name == 'settings' ? 'active' : ''}", data: { shortcut_key: "g s", shortcut_label: "Go to Settings", shortcut_group: "Navigation" } do %>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12.22 2h-.44a2 2 0 00-2 2v.18a2 2 0 01-1 1.73l-.43.25a2 2 0 01-2 0l-.15-.08a2 2 0 00-2.73.73l-.22.38a2 2 0 00.73 2.73l.15.1a2 2 0 011 1.72v.51a2 2 0 01-1 1.74l-.15.09a2 2 0 00-.73 2.73l.22.38a2 2 0 002.73.73l.15-.08a2 2 0 012 0l.43.25a2 2 0 011 1.73V20a2 2 0 002 2h.44a2 2 0 002-2v-.18a2 2 0 011-1.73l.43-.25a2 2 0 012 0l.15.08a2 2 0 002.73-.73l.22-.39a2 2 0 00-.73-2.73l-.15-.08a2 2 0 01-1-1.74v-.5a2 2 0 011-1.74l.15-.09a2 2 0 00.73-2.73l-.22-.38a2 2 0 00-2.73-.73l-.15.08a2 2 0 01-2 0l-.43-.25a2 2 0 01-1-1.73V4a2 2 0 00-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
             <span class="nav-label">Settings</span>
+          <% end %>
+
+          <% if privacy_gaze_configured %>
+            <button type="button" class="nav-pill privacy-indicator" data-privacy-indicator data-state="<%= @user.privacy_gaze_enabled? ? 'watching' : 'off' %>" aria-label="Privacy haze" title="Privacy haze">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/>
+                <circle cx="12" cy="12" r="3"/>
+                <line class="privacy-indicator__slash" x1="3" y1="3" x2="21" y2="21"/>
+              </svg>
+            </button>
           <% end %>
 
           <% if typing_activity_enabled %>

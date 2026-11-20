@@ -121,6 +121,41 @@ class UserTest < ActiveSupport::TestCase
     refute user.reload.privacy_gaze_enabled?
   end
 
+  test "haze_strength clamps and partial update keeps it" do
+    user = users(:one)
+    user.update_privacy_gaze_settings("haze_strength" => "99")
+    assert_equal 10, user.reload.privacy_gaze_settings["haze_strength"]
+    user.update_privacy_gaze_settings("haze_strength" => "0")
+    assert_equal 1, user.reload.privacy_gaze_settings["haze_strength"]
+    user.update_privacy_gaze_settings("haze_strength" => "3")
+    user.update_privacy_gaze_settings("away_ms" => "1000")
+    assert_equal 3, user.reload.privacy_gaze_settings["haze_strength"]
+  end
+
+  test "privacy gaze tuning defaults, clamps, filters and ignores junk" do
+    user = users(:one)
+    s = user.privacy_gaze_settings
+    assert_equal User::NAV_PAGE_KEYS, s["sections"]
+    assert_equal [ 2500, 150, 5, 6 ], s.values_at("away_ms", "clear_ms", "sensitivity", "haze_strength")
+
+    user.update_privacy_gaze_settings("sections" => [ "", "kb", "bogus", "other" ], "away_ms" => "10", "clear_ms" => "99999", "sensitivity" => "abc")
+    s = user.reload.privacy_gaze_settings
+    assert_equal %w[kb other], s["sections"]
+    assert_equal 500, s["away_ms"]
+    assert_equal 2000, s["clear_ms"]
+    assert_equal 5, s["sensitivity"]
+    refute user.privacy_gaze_configured?
+  end
+
+  test "privacy_section_for maps controllers" do
+    {
+      "kb" => "kb", "kb_viewers" => "kb", "kb_transcripts" => "kb", "lists" => "plan", "list_items" => "plan",
+      "licensing/crm" => "licensing", "licensors" => "licensing", "build_items" => "backlog",
+      "ideas" => "ideas", "idea_entries" => "ideas", "topologies" => "topologies", "search" => "other",
+      "settings" => nil, "typing_locks" => nil, "recovery_secrets" => nil
+    }.each { |path, section| section ? assert_equal(section, User.privacy_section_for(path), path) : assert_nil(User.privacy_section_for(path), path) }
+  end
+
   test "privacy face template roundtrips encrypted and survives gaze toggle" do
     user = users(:one)
     refute user.privacy_face_enrolled?

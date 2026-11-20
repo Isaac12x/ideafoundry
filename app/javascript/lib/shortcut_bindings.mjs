@@ -8,6 +8,7 @@ export const DEFAULT_BINDINGS = {
   "submit": { "key": "Ctrl/Cmd+Enter", "label": "Submit the current form" },
   "ask_agent": { "key": "Ctrl/Cmd+J", "label": "Open Ask Agent" },
   "lock": { "key": "Ctrl/Cmd+L", "label": "Lock workspace" },
+  "privacy_haze": { "key": "Ctrl/Cmd+Shift+G", "label": "Toggle privacy haze", "native": true },
   "dictate": { "key": "Ctrl+Shift+Space", "label": "Dictate into the focused field" },
   "edit": { "key": "e", "label": "Edit the current item" },
   "prev_tab": { "key": "[", "label": "Previous tab" },
@@ -56,6 +57,8 @@ export function platformBinding(bind) {
 
 // Effective binding: the user's if set, else the default.
 export function binding(id) {
+  // ponytail: "native" defaults keep Cmd on Mac; privacy_haze deliberately overrides the browser's Cmd+Shift+G find-previous (user asked). Off Mac it still moves to Alt.
+  if (!overrides()[id] && DEFAULT_BINDINGS[id]?.native && isMac()) return DEFAULT_BINDINGS[id].key
   return platformBinding(overrides()[id] || DEFAULT_BINDINGS[id]?.key)
 }
 
@@ -71,7 +74,9 @@ export function labelShortcuts(root = document) {
   })
 }
 
-const codeKey = (code) => String(code || "").replace(/^(Key|Digit)/, "").toLowerCase()
+// Shift changes event.key for symbols (Shift+. gives ">"), so punctuation chords match the physical key.
+const CODE_SYMBOLS = { Period: ".", Comma: ",", Slash: "/", Semicolon: ";", Quote: "'", BracketLeft: "[", BracketRight: "]", Minus: "-", Equal: "=", Backslash: "\\", Backquote: "`" }
+const codeKey = (code) => CODE_SYMBOLS[code] || String(code || "").replace(/^(Key|Digit)/, "").toLowerCase()
 
 // Single-step binding ("Ctrl/Cmd+Shift+S", "?", "e") vs a keydown event.
 export function matches(bind, event) {
@@ -100,4 +105,10 @@ export function matches(bind, event) {
 // Two-step bindings ("g p"): [first, second] lowercase keys, or null.
 export function sequenceKeys(bind) {
   return /^\S \S$/.test(bind || "") ? bind.toLowerCase().split(" ") : null
+}
+
+// Privacy-haze shortcut: turning it ON is always fine; turning it OFF is refused while the haze is currently on, so a
+// stranger at the keyboard cannot disable it. state = body[data-privacy-gaze-state] ("hazy" | "clear" | undefined).
+export function privacyToggleAllowed(enabled, state) {
+  return !(enabled && state === "hazy")
 }
