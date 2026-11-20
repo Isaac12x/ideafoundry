@@ -1511,10 +1511,10 @@
   resolved "https://registry.yarnpkg.com/@vladmandic/human/-/human-3.3.6.tgz#74397dcda15109f52db36de098de823b8497ddc5"
   integrity sha512-Nr5mPfq1gQ+uKeXY5uM3Fj8UxvF5CEh2s6txM5wRThqaW0mF9huooOuZSrT8hhGho0hGaXLFdAwfD/2+teCv6A==
 
-"@xmldom/xmldom@^0.7.5":
-  version "0.7.13"
-  resolved "https://registry.yarnpkg.com/@xmldom/xmldom/-/xmldom-0.7.13.tgz#ff34942667a4e19a9f4a0996a76814daac364cf3"
-  integrity sha512-lm2GW5PkosIzccsaZIz7tp8cPADSIlIHWDFTR1N0SzfinhhYgeIQjFMz4rYzanCScr3DqQLeomUDArp6MWKm+g==
+"@xmldom/xmldom@0.8.15", "@xmldom/xmldom@^0.7.5":
+  version "0.8.15"
+  resolved "https://registry.yarnpkg.com/@xmldom/xmldom/-/xmldom-0.8.15.tgz#71ebf80729e4e95221d519ac9b1e1eaea7784907"
+  integrity sha512-/5NV/vDALVFDXgLmfsy9TRCBlKwO2LNBFzpzvb9iIj+jR+eSc6DLYYvVOdivT/jm7MtU6TebYuRmzEOI7w40UA==
 
 accessor-fn@1:
   version "1.5.3"
@@ -2012,10 +2012,10 @@ detect-node-es@^1.1.0:
   resolved "https://registry.npmjs.org/detect-node-es/-/detect-node-es-1.1.0.tgz"
   integrity sha512-ypdmJU/TbBby2Dxibuv7ZLW3Bs1QEmM7nHjEANfohJLvE0XVujisn1qPJcZxg+qDucsr+bP6fLD1rPS3AhJ7EQ==
 
-dompurify@3.4.12, dompurify@^3.4.17:
-  version "3.4.12"
-  resolved "https://registry.npmjs.org/dompurify/-/dompurify-3.4.12.tgz"
-  integrity sha512-zQvGet8Z2sWbQhCmfFz/T5QWH2oBmjnqK3qvOjaqaNLrLEF912WamU+ohnTp0TCep/MFVHpdJuCZEdFOdTnEFg==
+dompurify@3.4.17, dompurify@^3.4.17:
+  version "3.4.17"
+  resolved "https://registry.yarnpkg.com/dompurify/-/dompurify-3.4.17.tgz#074bbb24eaa419535ac19ffe7f663104b0e1543d"
+  integrity sha512-B/pSlYVHQ58kqISD/yDjuJ1yfzI34m1gF4lAod2bwSRhiN4K5Cl3H8Af7hqB2PmTL911tdEudnnXn5FnhRoz0w==
   optionalDependencies:
     "@types/trusted-types" "^2.0.7"
 
@@ -2403,10 +2403,10 @@ multimath@^2.0.0:
     glur "^1.1.2"
     object-assign "^4.1.1"
 
-nanoid@3.3.3, nanoid@4.0.2, nanoid@5.0.9:
-  version "5.0.9"
-  resolved "https://registry.npmjs.org/nanoid/-/nanoid-5.0.9.tgz"
-  integrity sha512-Aooyr6MXU6HpvvWXKoVoXwKMs/KyVakWwg7xQfv5/S/RIgJMy0Ifa45H9qqYy7pTCszrHzP21Uk4PZq2HpEM8Q==
+nanoid@3.3.3, nanoid@4.0.2, nanoid@5.1.16:
+  version "5.1.16"
+  resolved "https://registry.yarnpkg.com/nanoid/-/nanoid-5.1.16.tgz#fe345c0a1f9007c32fbb5c139e1208bfd3f41ef7"
+  integrity sha512-kVrnsrJqMR8+oLJnGEmSWw9BivK5mt7H3FZatVRjrc5wGqFYuBxX1yG7+A7Gi5AefkX6t/oCkizcQgpu0cY1dQ==
 
 next-tick@^1.1.0:
   version "1.1.0"

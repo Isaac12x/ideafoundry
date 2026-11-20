@@ -148,6 +148,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 
 - Remediated the open GitHub dependency alerts by pinning patched DOMPurify, Immutable, lodash-es, Nano ID, and Pillow releases across npm, Yarn, and the local OCR image.
+- Consolidated all 12 open Dependabot updates: Kaminari 1.3.3; Python service dependencies; and GitHub Pages actions checkout 7, configure-pages 6, and deploy-pages 5. Patched Yarn resolutions to @xmldom/xmldom 0.8.15, DOMPurify 3.4.17, and Nano ID 5.1.16, then rebuilt the affected book and Mermaid bundles.
+- Updated OCR to Surya 0.24.0 and Pillow 13.0.0, removed the obsolete Pillow override, and moved the image to Python 3.14 because onnxruntime has no CPython 3.15 wheel.
 - Knowledge-base media edits validate configured source paths, reject symlink/traversal access, invoke local tools without a shell, preserve original bytes, and record before/after checksums plus edit recipes in the human activity trail.
 - Persisted recovery passphrases are moved out of app-local storage into platform secure storage when available.
 - SQLCipher and recovery-secret configuration values are filtered from logs.
