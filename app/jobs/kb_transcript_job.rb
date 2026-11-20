@@ -39,9 +39,7 @@ class KbTranscriptJob < ApplicationJob
       if File.file?(Kb::Transcript.sidecar(abs))
         text = Kb::VideoTranscript.render(File.read(Kb::Transcript.sidecar(abs)), "vtt")
         dl.update!(transcript: text, transcript_status: "done", transcript_error: nil) if text
-      elsif Kb::Transcript.claim!(abs)
-        dl.update!(transcript_status: "transcribing")
-        KbTranscribeJob.perform_later(abs, dl.id)
+      elsif KbTranscribeJob.enqueue_claimed(abs, dl) == :queued
         started += 1
       end
     end
