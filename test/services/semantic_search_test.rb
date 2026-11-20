@@ -8,7 +8,7 @@ class SemanticSearchTest < ActiveSupport::TestCase
   test "returns nil instead of raising when the service is unreachable" do
     ENV["SEMANTIC_SERVICE_URL"] = "http://127.0.0.1:1"
     assert_nil SemanticSearch.search(prefix: "u1:", query: "x")
-    assert_nil SemanticSearch.upsert([ { id: "a", text: "b" } ])
+    assert_nil SemanticSearch.enqueue([ { id: "a", sections: [ "b" ] } ])
   ensure
     ENV.delete("SEMANTIC_SERVICE_URL")
   end

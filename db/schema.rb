@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_20_180000) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_20_190000) do
   create_table "action_mailbox_inbound_emails", force: :cascade do |t|
     t.integer "status", default: 0, null: false
     t.string "message_id", null: false
@@ -692,6 +692,16 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_20_180000) do
     t.index ["user_id"], name: "index_problems_on_user_id"
   end
 
+  create_table "semantic_index_entries", force: :cascade do |t|
+    t.integer "user_id", null: false
+    t.string "doc_id", null: false
+    t.string "sig", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["user_id", "doc_id"], name: "index_semantic_index_entries_on_user_id_and_doc_id", unique: true
+    t.index ["user_id"], name: "index_semantic_index_entries_on_user_id"
+  end
+
   create_table "service_settings", force: :cascade do |t|
     t.string "key", null: false
     t.string "value"
@@ -859,6 +869,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_20_180000) do
   add_foreign_key "notifications", "ideas"
   add_foreign_key "notifications", "users"
   add_foreign_key "problems", "users"
+  add_foreign_key "semantic_index_entries", "users"
   add_foreign_key "submissions", "ideas"
   add_foreign_key "submissions", "users"
   add_foreign_key "templates", "users"

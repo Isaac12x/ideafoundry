@@ -1,29 +1,37 @@
 # semantic
 
-Local embedding + vector index sidecar (FastAPI + fastembed/ONNX on CPU, no torch; port 8000 in the container). `semantic` service in `infra/docker-compose.yml`. Rails client reads `SEMANTIC_SERVICE_URL`.
+Local embedding + vector index sidecar (FastAPI + fastembed/ONNX on CPU, no torch). Two compose services, one image and one volume (`semantic-data`):
 
-Model (`BAAI/bge-small-en-v1.5`, build arg/env `SEMANTIC_MODEL`) is baked into the image at build time, so it works offline. Storage is one sqlite file (`SEMANTIC_DB`, default `/data/semantic.sqlite3`, compose volume `semantic-data`): `docs(id, hash)`, `chunks(doc_id, n, vec)` with float32 blobs. Text is chunked (~1000 chars, 200 overlap, max 64 chunks/doc). Search is numpy brute-force cosine, loaded per query: fine to ~100k chunks, then move to sqlite-vec/HNSW.
+- `semantic`: API (`uvicorn app:app`, port 8000). Search + enqueue; embeds only the short search query, never documents.
+- `semantic-worker`: `python app.py worker`. Drains the queue (64 ids/batch, polls every 0.5s when idle), embeds, writes the index.
+
+Rails client reads `SEMANTIC_SERVICE_URL`. Model (`BAAI/bge-small-en-v1.5`, build arg/env `SEMANTIC_MODEL`) is baked into the image.
+
+## Storage (all sqlite, WAL, busy_timeout 10s; base path = `SEMANTIC_DB`)
+
+- `<db>.control`: `queue(id PK, op, payload, enqueued_at)` + `meta` (active/shadow index pointers). Queue payload is section text, held only until processed (secure_delete on), never in the index.
+- `<db>.idx<N>`: `docs(id, hash)`, `chunks(doc_id, n, hash, vec)`, `meta(model)`. Only ids, hashes, float32 vectors.
+- Old pre-queue `semantic.sqlite3` is ignored; delete it. Do a full sweep (or `/rebuild`) after upgrading.
+
+Doc = `sections` (strings). Each section is chunked (~1000 chars, 200 overlap, max 64/section), each chunk sha256-hashed. Worker embeds only hashes not already stored (in live, plus shadow when rebuilding, if the index model == current model), then rewrites that doc's rows in one short transaction. Queue row is removed only if `enqueued_at` is unchanged, so a newer enqueue is never lost. Crash-safe: the queue persists, reprocessing is idempotent.
 
 ## Endpoints (JSON)
 
-- `GET /health` -> `{"status":"ok","model":"..."}`
-- `POST /upsert {"items":[{"id","text"}]}` -> `{"embedded","skipped"}`. Same sha256 of text = skipped; empty text deletes the id.
-- `POST /delete {"ids":[...]}` -> `{"deleted"}`
-- `POST /prune {"prefix","keep":[...]}` -> `{"deleted"}`. Deletes docs starting with `prefix` not in `keep`.
-- `POST /search {"query"|"id","prefix","k":12,"exclude":[]}` -> `{"hits":[{"id","score"}]}`. Exactly one of `query`/`id` (400 otherwise). `prefix` required, non-empty (422). `id` mode uses the mean of that doc's chunks, excludes itself, `[]` if unknown. Doc score = max chunk cosine.
+- `GET /health` -> `{"status":"ok","model","queued","docs","rebuilding"}` (docs = live index)
+- `POST /enqueue {"items":[{"id","sections":[str]}]}` -> 202 `{"queued"}`. Same id again = overwrite (latest wins). Empty/blank `sections` = delete.
+- `POST /delete {"ids"}` -> 202 `{"queued"}`
+- `POST /prune {"prefix","keep"}` -> 202 `{"queued"}`. Ids to delete (indexed docs under prefix not in keep) are resolved at enqueue time into delete ops.
+- `POST /search {"query"|"id","prefix","k":12,"exclude":[],"types":null}` -> `{"hits":[{"id","score"}]}`. One of query/id (400), prefix required (422). `types` filters on the 2nd `:` segment of the id (`u1:idea:5` -> `idea`). Doc score = max chunk cosine; id mode = mean of that doc's chunks.
+- `POST /rebuild` -> `{"rebuilding":true,"started":bool}`: opens an empty shadow index; the worker applies every op to live and shadow. Live keeps serving.
+- `POST /rebuild/commit` -> `{"rebuilding":false,"committed":true}`: atomic pointer flip to shadow, old file deleted. 409 if not rebuilding. Caller must have re-sent everything first (and let `queued` reach 0).
+- `POST /rebuild/abort` -> `{"rebuilding":false,"aborted":true}`.
+- `/upsert` is removed.
 
-```bash
-curl -s localhost:8004/upsert -H 'content-type: application/json' \
-  -d '{"items":[{"id":"u1:idea:1","text":"solar powered boat"}]}'
-curl -s localhost:8004/search -H 'content-type: application/json' \
-  -d '{"query":"electric ship","prefix":"u1:"}'
-curl -s localhost:8004/search -H 'content-type: application/json' \
-  -d '{"id":"u1:idea:1","prefix":"u1:","k":5}'
-```
+If `SEMANTIC_MODEL` changes: `/rebuild`, then resend everything; shadow embeds fresh (no reuse from the old-model live index).
 
 ## Test / build
 
 ```bash
 cd infra/services/semantic && python3 -m pytest -q   # fake embedder, needs fastapi httpx numpy pytest
-docker compose -f infra/docker-compose.yml build semantic
+docker compose -f infra/docker-compose.yml up -d --build semantic semantic-worker
 ```

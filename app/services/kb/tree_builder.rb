@@ -13,6 +13,7 @@ module Kb
         key = cache_generation_key(user.id)
         # increment is atomic; it returns nil when the key is missing (or the store can't), so seed it then.
         Rails.cache.increment(key) || Rails.cache.write(key, cache_generation(user.id) + 1)
+        SemanticIndexJob.perform_later(user.id) if SemanticSearch.enabled? # KB delta; the job serializes per user
       end
 
       # After moving `old_rel` -> `new_rel` (old_rel nil: `new_rel` was just created) inside one source: bump the generation like bust_cache! but carry the
