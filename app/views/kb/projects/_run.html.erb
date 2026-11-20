@@ -4,10 +4,10 @@
     <span class="kbp-run-month"><%= run.date&.strftime("%b %Y") || run.name %></span>
   </time>
   <div class="kbp-run-body">
-    <% if run.conditions.present? %><p class="kbp-run-field"><span class="kbp-label">Conditions</span><%= run.conditions %></p><% end %>
+    <% if run.conditions.present? %><div class="kbp-run-field"><span class="kbp-label">Conditions</span><div class="kb-markdown rich-text-content kbp-prose"><%= render_project_markdown(run.conditions) %></div></div><% end %>
     <% if run.result.present? %>
       <div class="kbp-run-field"><span class="kbp-label">Result</span>
-        <div class="kb-markdown rich-text-content kbp-prose"><%= render_markdown(run.result) %></div>
+        <div class="kb-markdown rich-text-content kbp-prose"><%= render_project_markdown(run.result) %></div>
       </div>
     <% end %>
     <% if run.measurements.any? && !local_assigns[:table] %>

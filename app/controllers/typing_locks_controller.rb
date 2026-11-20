@@ -72,6 +72,14 @@ class TypingLocksController < ApplicationController
     redirect_to root_path
   end
 
+  # Called by the painted lock screen: Chrome blocks the response that carries Clear-Site-Data until the cache is wiped
+  # (seconds with big KB media), so it must never ride on the lock POST or the lock page itself.
+  # Cached media must not outlive the lock; "cache" only, so encrypted localStorage drafts survive.
+  def clear_cache
+    response.set_header("Clear-Site-Data", '"cache"')
+    head :no_content
+  end
+
   def enroll
     @challenge_id = params[:challenge_id].presence || TypingTextLibrary.random_enrollment_id
     @challenge_text = TypingTextLibrary.enrollment_text(@challenge_id)

@@ -75,7 +75,16 @@ export default class extends Controller {
     document.addEventListener("turbo:before-frame-render", adoptRender)
     // The optimistic click state is undone when the pane never gets the file (404, offline, no frame in the response).
     this._onFrameOk = (event) => { if (event.target?.id === "kb-content") this._pendingSwap = null }
-    this._onFrameFail = (event) => { if (event.target?.id === "kb-content") this._undoSwap() }
+    // A response without the frame (server error, expired session) would make Turbo load it as a full page: that is the
+    // top progress bar plus the pane resetting to "Select a document". Keep the page; say so in the pane instead.
+    this._onFrameFail = (event) => {
+      if (event.target?.id !== "kb-content") return
+      this._undoSwap()
+      if (event.type !== "turbo:frame-missing") return
+      event.preventDefault()
+      const notice = Object.assign(document.createElement("p"), { className: "kb-viewer-notice", textContent: "Could not open that file. Try again, or reload the page." })
+      event.target.replaceChildren(notice)
+    }
     this._onFrameResponse = (event) => { if (event.target?.id === "kb-content" && event.detail?.fetchResponse?.response?.ok === false) this._undoSwap() }
     document.addEventListener("turbo:frame-load", this._onFrameOk)
     document.addEventListener("turbo:frame-missing", this._onFrameFail)
@@ -262,8 +271,9 @@ export default class extends Controller {
 
   // ── Tree keyboard / ARIA ─────────────────────────────────────────────
   _treeKeydown(event) {
-    const row = event.target
-    if (!row?.matches?.(TREEITEM)) return // keys inside inputs/buttons stay theirs
+    // A mouse click focuses the row's inner link, not the row: arrows must still move from there.
+    const row = event.target?.matches?.(TREEITEM) ? event.target : event.target?.closest?.(".kb-file-link, .kb-project-link")?.closest(TREEITEM)
+    if (!row) return // keys inside inputs/buttons stay theirs
 
     if (event.key === "ContextMenu" || (event.key === "F10" && event.shiftKey)) {
       event.preventDefault()
@@ -296,15 +306,30 @@ export default class extends Controller {
         else target = this._parentItem(row)
         break
       case "Enter": this._activate(row); break
-      default: return
+      default:
+        if (event.key.length !== 1 || (event.key === " " && !this._typed)) return // a lone space is not a search
+        target = this._typeahead(items, at, event.key)
     }
     event.preventDefault()
     if (target) this._focusItem(target)
   }
 
+  // WAI-ARIA type-ahead: letters typed in quick succession jump to the next visible item whose name starts with them.
+  _typeahead(items, at, key) {
+    clearTimeout(this._typedTimer)
+    this._typedTimer = setTimeout(() => { this._typed = "" }, 700)
+    this._typed = (this._typed || "") + key.toLowerCase()
+    const name = (row) => (row.getAttribute("aria-label") || row.textContent).trim().toLowerCase()
+    // One repeated letter cycles through that letter's items; a longer prefix starts at the current one.
+    const cycle = new Set(this._typed).size === 1
+    const from = cycle ? at + 1 : at
+    const ordered = [...items.slice(from), ...items.slice(0, from)]
+    return ordered.find((candidate) => name(candidate).startsWith(cycle ? this._typed[0] : this._typed))
+  }
+
   _items() {
     return Array.from(this.element.querySelectorAll(TREEITEM)).filter((row) => {
-      if (row.hidden) return false
+      if (row.hidden || row.closest(".is-filtered-out")) return false
       const start = row.matches(".kb-dir-header, .kb-folder-header") ? row.parentElement.parentElement : row.parentElement
       return !start?.closest(".kb-dir-group.is-collapsed")
     })
@@ -345,6 +370,7 @@ export default class extends Controller {
   _focusItem(row) {
     this._setRoving(row)
     row.focus()
+    row.scrollIntoView({ block: "nearest" })
   }
 
   _setRoving(row) {

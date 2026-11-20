@@ -13,8 +13,15 @@
 }[mode] %>
 <%# Every form posts src+path so the server re-resolves inside the source. %>
 <% ids = capture do %><%= hidden_field_tag :src, @src, id: nil %><%= hidden_field_tag :path, project.rel, id: nil %><% end %>
-<div class="kbp kbp--<%= mode %>" data-controller="kb-project kb-materials" data-kb-materials-key-value="<%= project.rel %>"
-     data-kb-project-key-value="<%= @src %>:<%= project.rel %>" data-action="submit->kb-project#remember">
+<div class="kbp kbp--<%= mode %>" data-controller="kb-project kb-materials idea-mention idea-drawings" data-kb-materials-key-value="<%= project.rel %>"
+     data-kb-project-key-value="<%= @src %>:<%= project.rel %>"
+     data-idea-mention-search-url-value="<%= kb_mentions_path %>" data-idea-mention-floating-value="true" data-idea-mention-multiword-value="true"
+     <%= tag.attributes(data: idea_drawings_loader_values.merge(
+       idea_drawings_role_value: "general",
+       idea_drawings_create_url_value: kb_project_drawings_path(src: @src, path: project.rel),
+       idea_drawings_show_url_pattern_value: kb_project_drawing_path("__ID__", src: @src, path: project.rel)
+     )) %>
+     data-action="submit->kb-project#remember input->idea-mention#typed keydown->idea-mention#keydown focusout->idea-mention#close focusin->kb-project#trackField click->kb-project#openDrawing idea-drawings:saved->kb-project#drawingSaved keydown@window->idea-drawings#closeOnEsc">
   <header class="kbp-head">
     <div class="kbp-eyebrow"><span><%= mode == "conclude" ? "Project report" : "Project" %></span>
       <span class="kbp-eyebrow-sep" aria-hidden="true"></span>
@@ -55,6 +62,8 @@
     <% if mode == "conclude" && id == "materials" %><p class="kbp-appendix">Appendix</p><% end %>
     <%= render "kb/projects/sec_#{id}", project: project, ids: ids, mode: mode, lead: i.zero?, open: plan[:open].include?(id) %>
   <% end %>
+
+  <%= render "kb/projects/composer_tools" %>
 
   <% if mode == "conclude" %>
     <footer class="kbp-colophon">

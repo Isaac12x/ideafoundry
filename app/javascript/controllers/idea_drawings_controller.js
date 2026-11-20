@@ -304,6 +304,7 @@ export default class extends Controller {
   _onSaved(event) {
     const data = event.detail;
     if (!data) return;
+    this.element.dispatchEvent(new CustomEvent("idea-drawings:saved", { detail: data, bubbles: true })) // modal is in <body>: hosts listen here
     this._upsertThumbnail(data);
   }
 

@@ -1,0 +1,39 @@
+<%# What a test needs: @-picked references (ideas incl. a version, KB entries, maxims, problems, IPFs/BPFs) and pasted links, whose page text is imported rather than linked. %>
+<% items = test.requirements %>
+<section class="kbp-block kbp-requires" aria-label="Requirements of <%= test.name %>">
+  <h4 class="kbp-subhead kbp-subhead--static">Requires</h4>
+  <% if items.any? %>
+    <ul class="kbp-req-list">
+      <% items.each do |r| %>
+        <li class="kbp-req kbp-req--<%= r["kind"] %>">
+          <div class="kbp-req-main">
+            <% if r["kind"] == "import" %>
+              <details class="kbp-req-import">
+                <summary><span class="kbp-req-title"><%= r["text"] %></span>
+                  <span class="kbp-req-prov" title="<%= r["url"] %>">imported from <%= r["host"] %><% if r["at"].present? %>, <%= (Date.iso8601(r["at"]).strftime("%-d %b %Y") rescue r["at"]) %><% end %></span></summary>
+                <p class="kbp-req-excerpt"><%= r["excerpt"].presence || "No text could be read from this page." %></p>
+              </details>
+            <% else %>
+              <div class="kb-markdown rich-text-content kbp-prose"><%= render_project_markdown(r["text"]) %></div>
+            <% end %>
+          </div>
+          <%= form_with url: kb_project_requirements_path, method: :delete, class: "kbp-inline" do %>
+            <%= hidden_field_tag :src, @src, id: nil %>
+            <%= hidden_field_tag :path, project.rel, id: nil %>
+            <%= hidden_field_tag :test, test.rel, id: nil %>
+            <%= hidden_field_tag :id, r["id"], id: nil %>
+            <button class="kbp-link kbp-link--danger" aria-label="Remove requirement">Remove</button>
+          <% end %>
+        </li>
+      <% end %>
+    </ul>
+  <% end %>
+  <%= form_with url: kb_project_requirements_path, method: :post, class: "kbp-finding-add kbp-input", data: { refocus: "r-#{test.rel}" } do %>
+    <%= hidden_field_tag :src, @src, id: nil %>
+    <%= hidden_field_tag :path, project.rel, id: nil %>
+    <%= hidden_field_tag :test, test.rel, id: nil %>
+    <input type="text" name="text" data-mention maxlength="2000" class="kbp-add-field" autocomplete="off" aria-label="Add a requirement"
+           placeholder="@ an idea (add v3 for a version), KB file, maxim, problem… or paste a link to import">
+    <button class="kbp-btn">Add</button>
+  <% end %>
+</section>

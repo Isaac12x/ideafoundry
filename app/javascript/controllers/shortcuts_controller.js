@@ -1,5 +1,4 @@
 import { Controller } from "@hotwired/stimulus"
-import { indicatorState, paintIndicator } from "lib/privacy_guard"
 import { DEFAULT_BINDINGS, binding, labelShortcuts, matches, platformBinding, privacyToggleAllowed, sequenceKeys } from "lib/shortcut_bindings"
 
 const SUBMIT = "button:not([type]), button[type='submit'], input[type='submit']"
@@ -52,10 +51,6 @@ export default class extends Controller {
     this.visibleActions = []
     this.rendering = false
     labelShortcuts()
-    paintIndicator(document.querySelector("[data-privacy-indicator]"), document.body.dataset.privacyGazeState === "hazy" ? "hazed" : indicatorState(document.body.dataset.privacyEnabled === "true", false), binding("privacy_haze"))
-    // the nav eye is the same action as the shortcut
-    this.onIndicator = (e) => { if (e.target.closest?.("[data-privacy-indicator]")) this.togglePrivacy() }
-    document.addEventListener("click", this.onIndicator)
 
     this.boundKeydown = this.onKeydown.bind(this)
     this.boundRefresh = this.scheduleRefresh.bind(this)
@@ -77,7 +72,6 @@ export default class extends Controller {
 
   disconnect() {
     document.removeEventListener("keydown", this.boundKeydown)
-    document.removeEventListener("click", this.onIndicator)
     document.removeEventListener("turbo:load", this.boundRefresh)
     document.removeEventListener("turbo:frame-render", this.boundRefresh)
     document.removeEventListener("turbo:render", this.boundRefresh)
@@ -181,9 +175,10 @@ export default class extends Controller {
     const url = body.dataset.privacyToggleUrl
     if (!url) return this.flash("Set up face ID in Security first")
     const enabled = body.dataset.privacyEnabled === "true"
-    if (!privacyToggleAllowed(enabled, body.dataset.privacyGazeState)) return this.flash("Look at the screen to clear the haze before turning it off")
+    if (!privacyToggleAllowed(enabled, body.dataset.privacyGazeVerified)) return this.flash("Look at the screen to clear the haze before turning it off")
     fetch(url, {
       method: "PATCH",
+      body: JSON.stringify({ clear: body.dataset.privacyGazeVerified === "true" }), // the server refuses turning it off without this
       credentials: "same-origin",
       headers: { Accept: "application/json", "Content-Type": "application/json", "X-CSRF-Token": document.querySelector('meta[name="csrf-token"]')?.content || "" },
     }).then(async (r) => {

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_18_123517) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_20_170701) do
   create_table "action_mailbox_inbound_emails", force: :cascade do |t|
     t.integer "status", default: 0, null: false
     t.string "message_id", null: false
@@ -361,6 +361,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_18_123517) do
     t.decimal "latitude", precision: 10, scale: 6
     t.decimal "longitude", precision: 10, scale: 6
     t.text "situation"
+    t.text "licensing_notes"
     t.index ["computed_score"], name: "index_ideas_on_computed_score"
     t.index ["cool_off_until"], name: "index_ideas_on_cool_off_until"
     t.index ["discarded_at"], name: "index_ideas_on_discarded_at"
@@ -582,6 +583,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_18_123517) do
     t.integer "position"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "channel"
     t.index ["idea_id", "stage", "position"], name: "index_licensors_on_idea_id_and_stage_and_position"
     t.index ["idea_id"], name: "index_licensors_on_idea_id"
     t.index ["stage"], name: "index_licensors_on_stage"

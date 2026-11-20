@@ -19,6 +19,7 @@ class TopologiesController < ApplicationController
 
   def create
     @topology = @user.topologies.build(topology_params)
+    @topology.color = Topology.default_color_for(@user, @topology.parent) if @topology.color.blank?
 
     if @topology.save
       respond_to do |format|

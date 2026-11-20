@@ -3,14 +3,14 @@ class IdeaAttachmentsController < ApplicationController
   before_action :set_idea
 
   def create
-    files = Array(params[:files]).compact_blank
+    files = Array(params[:files]).select { |f| f.respond_to?(:original_filename) }
     return render json: { error: "No files provided" }, status: :bad_request if files.empty?
 
     existing_ids = @idea.attachments_attachments.pluck(:id)
     new_attachments = []
 
     Idea.without_history_tracking do
-      @idea.attachments.attach(files)
+      attach_without_parent_validation(files)
       @idea.reload
 
       new_attachments = @idea.attachments_attachments.where.not(id: existing_ids).order(:position, :created_at).to_a
@@ -25,6 +25,8 @@ class IdeaAttachmentsController < ApplicationController
     html = new_attachments.map { |attachment| render_attachment(attachment) }.join
 
     render json: { success: true, html: html }
+  rescue ActiveRecord::RecordInvalid, ActiveStorage::Error, SystemCallError => e
+    render json: { error: "Could not attach: #{e.message}" }, status: :unprocessable_content
   end
 
   def destroy
@@ -43,7 +45,7 @@ class IdeaAttachmentsController < ApplicationController
     if params[:file].present?
       position = attachment.position
       attachment.purge
-      @idea.attachments.attach(params[:file])
+      attach_without_parent_validation([ params[:file] ])
       @idea.reload
       attachment = @idea.attachments_attachments.order(created_at: :desc).first
       attachment.update!(position: position)
@@ -107,6 +109,17 @@ class IdeaAttachmentsController < ApplicationController
   end
 
   private
+
+  # `attach` saves the whole idea, so any unrelated invalid field (a stale template-required value,
+  # a scorecard limit) silently dropped the upload. Attachments don't depend on the idea's validity.
+  def attach_without_parent_validation(files)
+    files.each do |file|
+      blob = ActiveStorage::Blob.create_and_upload!(
+        io: file.open, filename: file.original_filename, content_type: file.content_type
+      )
+      ActiveStorage::Attachment.create!(name: "attachments", record: @idea, blob: blob)
+    end
+  end
 
   # "card" for the idea detail grid, list row everywhere else.
   def render_attachment(attachment)

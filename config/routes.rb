@@ -88,6 +88,7 @@ Rails.application.routes.draw do
       post :create_version
       post :make_primary
       post :toggle_licensing
+      patch :licensing_notes
     end
     collection do
       get :archived
@@ -258,6 +259,7 @@ patch "settings/security/privacy", to: "settings#update_privacy", as: :settings_
   # Typing fingerprint lock
   get "typing-lock", to: "typing_locks#new", as: :typing_lock
   post "typing-lock/lock", to: "typing_locks#lock", as: :lock_typing_lock
+  post "typing-lock/clear-cache", to: "typing_locks#clear_cache", as: :clear_cache_typing_lock
   post "typing-lock/verify", to: "typing_locks#verify", as: :verify_typing_lock
   post "typing-lock/authenticator", to: "typing_locks#verify_authenticator", as: :verify_authenticator_typing_lock
   post "typing-lock/voice-id", to: "typing_locks#verify_voice", as: :verify_voice_id_typing_lock
@@ -320,6 +322,12 @@ patch "settings/security/privacy", to: "settings#update_privacy", as: :settings_
   post  "knowledge-base/projects/tests", to: "kb#project_test_create", as: :kb_project_tests
   patch "knowledge-base/projects/tests", to: "kb#project_test_update"
   delete "knowledge-base/projects/tests", to: "kb#project_test_destroy"
+  post "knowledge-base/projects/tests/requirements", to: "kb#project_requirement_create", as: :kb_project_requirements
+  delete "knowledge-base/projects/tests/requirements", to: "kb#project_requirement_destroy"
+  post  "knowledge-base/projects/drawings", to: "kb#project_drawing_create", as: :kb_project_drawings
+  get   "knowledge-base/projects/drawings/:id", to: "kb#project_drawing_show", as: :kb_project_drawing
+  patch "knowledge-base/projects/drawings/:id", to: "kb#project_drawing_update"
+  get   "knowledge-base/mentions", to: "kb_mentions#search", as: :kb_mentions
   post  "knowledge-base/projects/findings", to: "kb#project_finding_create", as: :kb_project_findings
   patch "knowledge-base/projects/findings", to: "kb#project_finding_update"
   delete "knowledge-base/projects/findings", to: "kb#project_finding_destroy"

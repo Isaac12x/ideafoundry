@@ -19,6 +19,8 @@ class ApplicationController < ActionController::Base
   before_action :set_upgrade_info
   rescue_from RecoverySecret::Missing, with: :require_recovery_secret
 
+  class_attribute :recovery_probe_memo, instance_accessor: false, instance_predicate: false
+
   private
 
   def set_upgrade_info
@@ -41,9 +43,21 @@ class ApplicationController < ActionController::Base
     RecoverySecret.reset_connections_if_changed!
   end
 
+  # The probe opens/inspects every encrypted DB (~0.5s measured), on EVERY request: under a page-load burst it
+  # starves the lock POST on the GVL. "Nothing locked" is memoized per (secret present, generation) for 30s;
+  # any passphrase change bumps the generation file, so the memo drops at once.
+  RECOVERY_PROBE_TTL = 30
+
   def require_database_recovery_unlock
+    key = [ RecoverySecret.present?, (File.read(RecoverySecret.generation_path) rescue nil) ]
+    memo = ApplicationController.recovery_probe_memo
+    return if memo && memo[:key] == key && Process.clock_gettime(Process::CLOCK_MONOTONIC) - memo[:at] < RECOVERY_PROBE_TTL
+
     locked_paths = SqlcipherDatabaseMigrator.locked_database_paths_without_recovery_secret(env: Rails.env)
-    return if locked_paths.blank?
+    if locked_paths.blank?
+      ApplicationController.recovery_probe_memo = { key:, at: Process.clock_gettime(Process::CLOCK_MONOTONIC) }
+      return
+    end
 
     require_recovery_secret
   end
@@ -142,14 +156,8 @@ class ApplicationController < ActionController::Base
     else
       session.delete(LEGACY_TYPING_UNLOCK_SESSION_KEY)
       session.delete(TYPING_ACTIVITY_SESSION_KEY)
-      clear_browser_cache
       false
     end
-  end
-
-  # Authenticated media (private max-age) must not outlive the lock; "cache" only, so encrypted localStorage drafts survive.
-  def clear_browser_cache
-    response.set_header("Clear-Site-Data", '"cache"')
   end
 
   def unlock_typing_session!
@@ -164,7 +172,6 @@ class ApplicationController < ActionController::Base
     session.delete(TYPING_ACTIVITY_SESSION_KEY)
     clear_typing_authenticator_challenge!
     clear_voice_id_challenge!
-    clear_browser_cache
   end
 
   def begin_typing_authenticator_challenge!(return_to)

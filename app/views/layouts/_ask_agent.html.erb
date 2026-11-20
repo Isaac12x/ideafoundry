@@ -6,6 +6,7 @@
     controller_path.to_s == "recovery_secrets"
   ask_agent_enabled = @user&.local_agent_enabled?
   ask_agent_live = ask_agent_enabled && @user.local_agent_live?
+  ask_agent_context_idea = @idea if @idea&.persisted? && controller_name == "ideas" && action_name.in?(%w[show edit])
 %>
 
 <% if !ask_agent_lock_screen && ask_agent_enabled %>
@@ -166,11 +167,16 @@
             tabindex="0"></button>
 
     <header class="ask-agent-sidebar__header">
-      <div>
+      <div class="ask-agent-sidebar__heading">
         <h2 id="ask_agent_title">Ask Agent</h2>
-        <span class="ask-agent-sidebar__status ask-agent-sidebar__status--<%= ask_agent_live ? "enabled" : "disabled" %>">
-          <%= ask_agent_live ? "Ready" : "Not running" %>
-        </span>
+        <% if ask_agent_live %>
+          <span class="ask-agent-sidebar__status ask-agent-sidebar__status--enabled">Ready</span>
+        <% else %>
+          <span class="ask-agent-sidebar__status ask-agent-sidebar__status--disabled">
+            Not running
+            <%= link_to "Open Agent settings", settings_local_agent_path, class: "ask-agent-sidebar__status-action" %>
+          </span>
+        <% end %>
       </div>
 
       <button type="button"
@@ -181,10 +187,23 @@
           <path d="M18 6L6 18M6 6l12 12"/>
         </svg>
       </button>
+
+      <% if ask_agent_context_idea %>
+        <%# Context chip: while on, questions are sent as "about this idea". Click to ask in general instead. %>
+        <button type="button" class="ask-agent-context" aria-pressed="true"
+                data-ask-agent-target="context"
+                data-context-text="<%= "Regarding the idea \"#{ask_agent_context_idea.title}\" (#{idea_path(ask_agent_context_idea)})" %>"
+                data-action="click->ask-agent#toggleContext"
+                title="Click to ask without this idea as context">
+          <span class="ask-agent-context__label">About</span>
+          <span class="ask-agent-context__title"><%= ask_agent_context_idea.title %></span>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
+      <% end %>
     </header>
 
     <% unless ask_agent_live %>
-      <p class="ask-agent-sidebar__notice">The answer will appear here once the agent starts. <%= link_to "Agent settings", settings_local_agent_path %></p>
+      <p class="ask-agent-sidebar__notice">The agent isn't running. Questions are saved and answered once it starts.</p>
     <% end %>
 
     <div class="ask-agent-sidebar__messages" data-ask-agent-target="messages">
@@ -195,27 +214,26 @@
       <%= hidden_field_tag :return_to, ask_agent_return_path %>
       <%= hidden_field_tag "agent_question[thread_id]", ask_agent_active_thread&.id || "new", id: "global_agent_question_thread", data: { ask_agent_target: "thread" } %>
 
-      <div class="form-group">
-        <%= label_tag "global_agent_question_body", "Question" %>
+      <p class="ask-agent-sidebar__error" role="alert" data-ask-agent-target="error" hidden></p>
+
+      <div class="ask-agent-composer">
+        <%= label_tag "global_agent_question_body", "Question", class: "sr-only" %>
         <%= text_area_tag "agent_question[body]",
               nil,
               id: "global_agent_question_body",
-              rows: 4,
-              class: "form-control",
-              placeholder: "What should I focus on next?",
+              rows: 1,
+              class: "ask-agent-composer__input",
+              placeholder: "Ask the agent…",
               required: true,
-              data: { ask_agent_target: "body", action: "keydown->ask-agent#submitOnShortcut" } %>
-      </div>
-
-      <p class="ask-agent-sidebar__notice ask-agent-sidebar__error" role="alert" data-ask-agent-target="error" hidden></p>
-
-      <div class="ask-agent-sidebar__actions">
-        <label class="ask-agent-sidebar__agent">
-          <span>Agent</span>
-          <%= select_tag "agent_question[agent]", options_for_select(LocalAgent::Agents.all.map { |key, label| [ label, key ] }, LocalAgent::Agents::DEFAULT), id: "global_agent_question_agent" %>
-        </label>
-        <span class="ask-agent-sidebar__hint" aria-hidden="true">&#8984;&#8629;</span>
-        <%= submit_tag "Send", class: "btn btn-primary" %>
+              data: { ask_agent_target: "body", action: "keydown->ask-agent#submitOnShortcut input->ask-agent#grow" } %>
+        <div class="ask-agent-composer__bar">
+          <label class="ask-agent-sidebar__agent">
+            <span class="sr-only">Agent</span>
+            <%= select_tag "agent_question[agent]", options_for_select(LocalAgent::Agents.all.map { |key, label| [ label, key ] }, LocalAgent::Agents::DEFAULT), id: "global_agent_question_agent", "aria-label": "Agent", data: { controller: "select-menu" } %>
+          </label>
+          <span class="ask-agent-sidebar__hint"><kbd>Enter</kbd> to send &middot; <kbd>Shift</kbd>+<kbd>Enter</kbd> for a new line</span>
+          <%= submit_tag "Send", class: "btn btn-primary btn-sm" %>
+        </div>
       </div>
     <% end %>
   </aside>

@@ -6,15 +6,34 @@
   <div class="command-palette__frame">
     <div class="command-palette__header">
       <h2 id="command_palette_title">Search</h2>
+      <div class="cp-modes" role="group" aria-label="Search mode">
+        <% { "quick" => "Quick", "similar" => "Similar", "deep" => "Deep" }.each_with_index do |(mode, label), i| %>
+          <button type="button" class="cp-mode" data-command-palette-target="mode" data-mode="<%= mode %>"
+                  aria-pressed="<%= mode == 'quick' %>" title="Alt+<%= i + 1 %>"
+                  data-action="command-palette#setModeFromChip"><%= label %></button>
+        <% end %>
+      </div>
       <kbd data-command-palette-target="key">Ctrl/Cmd+K</kbd>
     </div>
+    <div class="cp-crumb" data-command-palette-target="crumb" hidden></div>
     <input type="search"
            aria-label="Search"
+           role="combobox"
+           aria-autocomplete="list"
+           aria-haspopup="listbox"
+           aria-expanded="false"
+           aria-controls="command_palette_results"
+           aria-describedby="command_palette_help"
            class="command-palette__input"
-           placeholder="Search or jump to..."
+           placeholder="Search or jump to...  (> for commands)"
            autocomplete="off"
            data-command-palette-target="input"
            data-action="input->command-palette#search keydown->command-palette#navigate">
-    <div class="command-palette__results" data-command-palette-target="results"></div>
+    <p id="command_palette_help" class="sr-only">Up and down arrows choose a result, Enter opens it. Right arrow or Tab shows actions for the chosen result, Left arrow goes back to your search. Type greater-than for commands. Alt plus 1, 2 or 3 switches between quick, similar and deep search.</p>
+    <div class="command-palette__results" id="command_palette_results" role="listbox" aria-label="Results" data-command-palette-target="results"></div>
+    <div class="cp-keys" aria-hidden="true">
+      <span><kbd>↵</kbd> open</span><span><kbd>→</kbd> actions</span><span><kbd>←</kbd> back</span><span><kbd>&gt;</kbd> commands</span><span><kbd>Alt+1-3</kbd> mode</span>
+      <output class="cp-status" aria-live="polite" data-command-palette-target="status"></output>
+    </div>
   </div>
 </dialog>

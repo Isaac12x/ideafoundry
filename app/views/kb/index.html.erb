@@ -1,5 +1,5 @@
 <% content_for :body_class, "kb-page" %>
-<% kb_default_tab = %w[kb facts maxims images basics].include?(params[:tab].to_s) ? params[:tab] : "kb" %>
+<% kb_default_tab = %w[kb facts problems maxims images basics].include?(params[:tab].to_s) ? params[:tab] : "kb" %>
 <% kb_mood_images = @user.mood_images.global.includes(file_attachment: :blob).ordered.to_a %>
 <div class="kb-shell"
      data-controller="tabs kb-tree"

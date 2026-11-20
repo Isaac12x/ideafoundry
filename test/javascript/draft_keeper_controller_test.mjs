@@ -47,3 +47,15 @@ test("a rejected save keeps the draft; only a successful turbo submit clears it"
   handlers["turbo:submit-end"]({ detail: { success: true }, target: form })
   assert.equal(log.cleared.length, 1)
 })
+
+test("a save still in flight when the form succeeds does not bring the text back", async () => {
+  const { Controller, log } = await load()
+  const keeper = new Controller()
+  keeper.timers = new Map()
+  keeper.cleared = new WeakMap()
+  const field = { name: "body" }
+  const pending = keeper.save(field)
+  keeper.clear(field)
+  await pending
+  assert.equal(log.cleared.length, 2, "cleared again after the late write")
+})

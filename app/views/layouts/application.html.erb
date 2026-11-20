@@ -48,6 +48,7 @@
     body_controllers << "kb-notes" if show_notes
     body_controllers << "draft-keeper" if @user && !security_lock_screen
     body_controllers << "voice-dictation" if @user && !security_lock_screen
+    body_controllers << "find-bar" unless security_lock_screen
   %>
   <body class="<%= [body_class, show_notes ? 'has-notes-bar' : nil].compact.join(' ') %>"
         data-contrast="<%= display_contrast.presence || 'normal' %>"
@@ -76,7 +77,7 @@
           data-privacy-enabled="<%= privacy_gaze_enabled ? 'true' : 'false' %>"
         <% end %>
         <% if privacy_gaze_enabled %>
-          data-privacy-gaze-active-value="<%= privacy_settings["sections"].include?(User.privacy_section_for(controller_path)) %>"
+          data-privacy-gaze-active-value="<%= privacy_settings["sections"].include?(User.privacy_section_for(controller_path)) || controller_path.to_s == "settings" %>"
           data-privacy-gaze-away-ms-value="<%= privacy_settings["away_ms"] %>"
           data-privacy-gaze-clear-ms-value="<%= privacy_settings["clear_ms"] %>"
           data-privacy-gaze-sensitivity-value="<%= privacy_settings["sensitivity"] %>"
@@ -92,6 +93,14 @@
           data-typing-activity-shortcut-value="<%= typing_lock_shortcut %>"
           data-typing-activity-timeout-seconds-value="<%= @user.security_lock_timeout_seconds %>"
         <% end %>>
+    <% if body_class.include?("typing-lock-page") %>
+      <%= javascript_tag nonce: true do %>
+        // Painted first; the response carries Clear-Site-Data, which would otherwise stall the lock page itself.
+        window.addEventListener("load", function () {
+          fetch("<%= clear_cache_typing_lock_path %>", { method: "POST", credentials: "same-origin", keepalive: true, headers: { "X-CSRF-Token": (document.querySelector('meta[name="csrf-token"]') || {}).content || "" } }).catch(function () {});
+        });
+      <% end %>
+    <% end %>
     <% unless security_lock_screen %>
       <a class="skip-link" href="#main-content">Skip to main content</a>
     <% end %>
@@ -151,16 +160,6 @@
             <span class="nav-label">Settings</span>
           <% end %>
 
-          <% if privacy_gaze_configured %>
-            <button type="button" class="nav-pill privacy-indicator" data-privacy-indicator data-state="<%= @user.privacy_gaze_enabled? ? 'watching' : 'off' %>" aria-label="Privacy haze" title="Privacy haze">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/>
-                <circle cx="12" cy="12" r="3"/>
-                <line class="privacy-indicator__slash" x1="3" y1="3" x2="21" y2="21"/>
-              </svg>
-            </button>
-          <% end %>
-
           <% if typing_activity_enabled %>
             <%= button_to lock_typing_lock_path(return_to: request.fullpath),
                   method: :post,
@@ -201,6 +200,8 @@
     <% end %>
 
     <%= render 'upgrades/toast' %>
+
+    <%= render "layouts/find_bar" unless security_lock_screen %>
 
     <main class="app-main" id="main-content" tabindex="-1">
       <div id="flash"><%= render "layouts/flash" %></div>

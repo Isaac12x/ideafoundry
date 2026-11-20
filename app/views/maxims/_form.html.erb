@@ -1,6 +1,6 @@
 <div class="kb-maxim-form-wrap" id="maxim_form">
-  <% error ||= nil %>
-  <%= form_with url: maxims_path, scope: :maxim, data: { controller: "fact-form", action: "turbo:submit-end->fact-form#afterSubmit" } do |f| %>
+  <% error ||= nil; draft ||= nil %>
+  <%= form_with url: maxims_path, scope: :maxim, data: { controller: "fact-form", fact_form_refocus_value: refocus ||= false, action: "turbo:submit-end->fact-form#afterSubmit" } do |f| %>
     <% if error %>
       <div class="alert alert-error" style="margin-bottom: 0.75rem; padding: 0.5rem 0.75rem; font-size: 0.85rem;"><%= error %></div>
     <% end %>
@@ -9,6 +9,7 @@
             placeholder: "e.g. Keep the highest-leverage constraint visible until the work changes it.",
             class: "kb-maxim-textarea",
             rows: 8,
+            value: draft,
             required: true,
             "aria-label": "New maxim",
             data: { action: "keydown->fact-form#submitOnEnter" } %>

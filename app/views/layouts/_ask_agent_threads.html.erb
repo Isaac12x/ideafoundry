@@ -70,7 +70,11 @@
             <span><%= failed ? "Failed" : LocalAgent::Agents.label(answer.payload&.dig("agent")) %></span>
             <time><%= time_ago_in_words(answer.created_at) %> ago</time>
           </div>
+          <% if failed %>
           <p><%= answer.payload&.dig("answer").presence || answer.summary %></p>
+        <% else %>
+          <%= render_prose(answer.payload&.dig("answer").presence || answer.summary) %>
+        <% end %>
         </div>
       <% else %>
         <div class="ask-agent-message ask-agent-message--pending" aria-busy="true">
@@ -78,11 +82,18 @@
             <span><%= asked_to %></span>
             <time>Pending</time>
           </div>
-          <p><span class="ask-agent-working" aria-hidden="true"><i></i><i></i><i></i></span><%= question.created_at < 10.minutes.ago ? "No answer yet. The agent may not be running or may have failed." : "Waiting for an answer." %></p>
+          <p><span class="ask-agent-working" aria-hidden="true"><i></i><i></i><i></i></span><span class="<%= "ask-agent-pending-note" if question.created_at >= 10.minutes.ago %>"><%= question.created_at < 10.minutes.ago ? "No answer yet. The agent may not be running or may have failed." : "Waiting for an answer." %></span></p>
         </div>
       <% end %>
     </article>
   <% end %>
 <% else %>
-  <p class="ask-agent-sidebar__empty">No questions yet.</p>
+  <div class="ask-agent-sidebar__empty">
+    <p class="ask-agent-sidebar__empty-title">What can I help you think through?</p>
+    <div class="ask-agent-suggestions">
+      <% [ "What should I focus on next?", "Summarize this and list the open questions", "What are the biggest risks?", "Suggest three concrete next steps" ].each do |text| %>
+        <button type="button" class="ask-agent-suggestion" data-action="ask-agent#suggest" data-text="<%= text %>"><%= text %></button>
+      <% end %>
+    </div>
+  </div>
 <% end %>
