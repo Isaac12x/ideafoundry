@@ -1,6 +1,7 @@
 {
   "name": "idea-app",
   "private": true,
+  "license": "MIT",
   "scripts": {
     "build": "node esbuild.config.mjs",
     "build:watch": "node esbuild.config.mjs --watch",
