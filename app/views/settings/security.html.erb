@@ -103,6 +103,74 @@
         <% end %>
       </section>
 
+      <section class="tab-toggle-section">
+        <header class="tab-toggle-section__header">
+          <h3>Privacy</h3>
+          <p>Use the camera to notice when you look away. Video never leaves this device.</p>
+        </header>
+
+        <%= form_with url: settings_security_privacy_path, method: :patch, local: true, class: "typing-settings-form", data: { controller: "settings-autosave", action: "change->settings-autosave#toggleChanged" } do %>
+          <%= hidden_field_tag "privacy_gaze[enabled]", "0" %>
+          <label class="tab-toggle" for="privacy_gaze_enabled">
+            <div class="tab-toggle__text">
+              <span class="tab-toggle__name">Gaze privacy haze</span>
+              <span class="tab-toggle__description">When you look away from the screen, the app fogs over. It clears when you look back. If the camera is unavailable the haze stays on.</span>
+            </div>
+            <span class="tab-toggle__switch">
+              <%= check_box_tag "privacy_gaze[enabled]", "1", @user.privacy_gaze_enabled?, id: "privacy_gaze_enabled", class: "tab-toggle__input" %>
+              <span class="tab-toggle__track" aria-hidden="true">
+                <span class="tab-toggle__thumb"></span>
+              </span>
+            </span>
+          </label>
+        <% end %>
+
+        <div class="privacy-calibrate" data-controller="privacy-gaze-calibrate" data-privacy-gaze-calibrate-face-url-value="<%= settings_security_privacy_face_path %>">
+          <div class="privacy-calibrate__row">
+            <div>
+              <span class="typing-settings-status__label">Calibration</span>
+              <strong data-privacy-gaze-calibrate-target="status">Not calibrated</strong>
+              <p data-privacy-gaze-calibrate-target="message" aria-live="polite">Look at the middle of the screen while it runs. This device only.</p>
+            </div>
+            <button type="button" class="btn btn-secondary btn-sm" data-privacy-gaze-calibrate-target="button" data-action="privacy-gaze-calibrate#toggle">Calibrate</button>
+          </div>
+          <div class="privacy-calibrate__stage">
+            <video class="privacy-calibrate__preview" data-privacy-gaze-calibrate-target="preview" muted playsinline hidden></video>
+            <span class="privacy-calibrate__live" data-privacy-gaze-calibrate-target="live" aria-live="off"></span>
+          </div>
+
+          <div class="privacy-enroll">
+            <div class="privacy-calibrate__row">
+              <div>
+                <span class="typing-settings-status__label">Face ID</span>
+                <strong data-privacy-gaze-calibrate-target="enrollStatus">Checking…</strong>
+                <p data-privacy-gaze-calibrate-target="enrollMessage" aria-live="polite">Only you clear the haze. Anyone else looking at the screen fogs it, even with you there. Your face data never leaves your account.</p>
+              </div>
+              <div class="privacy-enroll__actions">
+                <button type="button" class="btn btn-secondary btn-sm" data-privacy-gaze-calibrate-target="enrollButton" data-action="privacy-gaze-calibrate#enroll">Enroll face</button>
+                <button type="button" class="btn btn-secondary btn-sm" data-privacy-gaze-calibrate-target="removeButton" data-action="privacy-gaze-calibrate#removeFace" hidden>Remove face ID</button>
+              </div>
+            </div>
+            <div class="privacy-enroll__stage" data-privacy-gaze-calibrate-target="enrollStage" data-ready="false" hidden>
+              <div class="privacy-enroll__frame">
+                <video data-privacy-gaze-calibrate-target="enrollPreview" muted playsinline></video>
+                <span class="privacy-enroll__oval" aria-hidden="true"></span>
+              </div>
+              <div class="privacy-enroll__side">
+                <p class="privacy-enroll__guide">Look at the screen. Both ears visible. No mask, scarf or hand over your face.</p>
+                <ul class="privacy-enroll__checks" aria-label="Enrollment checks">
+                  <li data-privacy-gaze-calibrate-target="check" data-check="oneFace" data-ok="false">One face</li>
+                  <li data-privacy-gaze-calibrate-target="check" data-check="ears" data-ok="false">Ears visible</li>
+                  <li data-privacy-gaze-calibrate-target="check" data-check="real" data-ok="false">Real person</li>
+                  <li data-privacy-gaze-calibrate-target="check" data-check="camera" data-ok="false">Camera ok</li>
+                </ul>
+                <div class="privacy-enroll__steps" data-privacy-gaze-calibrate-target="enrollSteps" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section class="tab-toggle-section security-database-encryption">
         <header class="tab-toggle-section__header">
           <h3>Database Encryption</h3>
