@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Opening a new idea keeps drafts in other tabs available for autosave. Daily cleanup preserves captured work and removes only old, untouched empty drafts.
+- The ideas list and inbox check for resumable drafts in batches. The ideas list skips loading structured entries when their tabs are disabled.
+- When the transcription queue rejects a job, the file becomes available for retry immediately. The Transcribe action reports the queue failure, and the background sweep can try again.
+
 - Infra reorganized under `infra/`: `Brewfile`, `Dockerfile`, `docker-compose.yml`, `Caddyfile*` and the launchd plist moved there; sidecars now live in `infra/services/{ocr,long_ocr,voice_id}` (was `ocr_service/`, `long_ocr_service/`, `services/voice_id/`). Run compose with `docker compose -f infra/docker-compose.yml ...`, `brew bundle --file=infra/Brewfile`, build the app image with `docker build -f infra/Dockerfile .`. Compose project name is pinned to `idea-app`, so containers and volumes keep their names. Map in `infra/README.md`.
 
 ### Added

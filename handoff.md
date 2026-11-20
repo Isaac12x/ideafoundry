@@ -275,3 +275,14 @@ Tests cover marked and unmarked response/view behavior, nested srcdoc script exe
 Validation: with `PATH="$HOME/.rbenv/versions/4.0.7/bin:$PATH"`, `bundle exec rails test test/controllers/kb_multi_format_test.rb` passed 16 tests / 114 assertions and `bundle exec rails test test/system/kb_artifact_runtime_system_test.rb` passed 2 tests / 9 assertions. Root reran both after the final `frame-src about:` policy change. Focused diff checks passed. `graphify update .` completed. Logs are `/tmp/idea-artifact-app-controller-final.log`, `/tmp/idea-artifact-app-system.log`, and `/tmp/idea-artifact-graph-update.log`.
 
 Publication: implementation `d544233`, PR https://github.com/Isaac12x/ideafoundry/pull/107 against master, created 2026-11-09 23:18:59 UTC. Connector creation returned 403; the authenticated GitHub CLI created it. Review check at 23:24:40 UTC (over five minutes later) found no comments, reviews or CI checks. PR remains open and unmerged; one scheduled review cycle was performed, not persistent monitoring.
+
+## 2026-11-20 — Draft capture, listing speed, and transcription recovery
+
+GPT-6-Luna implemented three paths from the capture promise in VISION.md. A second capture form leaves the first form's draft available for autosave. Daily cleanup considers only untouched drafts older than 24 hours and rechecks the record and its content in a transaction. This also preserves older drafts containing attachments, drawings, notes, or other linked work. Cleanup cannot recover drafts deleted by an earlier release.
+
+Draft previews scan in descending update time and ID order, preload Action Text, and check related content without loading drawing or attachment bodies. On a local SQLite test database with query caching disabled, the original and revised implementations returned the same titled draft among 50 empty ones. SELECTs fell from 152 to 2. Empty and single-titled workspaces stayed at 1 and 2 SELECTs respectively. The inbox still needs a full scan for an exact count. The new regression test caps reads for a mixed batch.
+
+Both manual and background transcription use the same claim and enqueue path. An enqueue exception or rejection releases the lease and restores the previous status. Existing captions remain available, and the next request or scheduled sweep can retry. This change covers failures reported at enqueue time. Recovery from a worker process crash still uses the existing stale-claim sweep.
+
+The Rails suite passed with 1,331 tests and 6,444 assertions on Ruby 4.0.7. The change requires no migration. Work was isolated on branch perf/resilient-kb.
+Browser system suite: 108 runs, 878 assertions, 0 failures, 0 errors, 0 skips

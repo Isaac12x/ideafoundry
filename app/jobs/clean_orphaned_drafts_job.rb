@@ -1,14 +1,16 @@
 class CleanOrphanedDraftsJob < ApplicationJob
   queue_as :default
 
-  # Drafts older than this without being promoted are considered abandoned.
+  # The stale age applies only to empty drafts. Meaningful drafts are user data
+  # and remain available until the user promotes or discards them.
   STALE_AFTER = 24.hours
 
-  # Empty drafts (opened the form, typed nothing) are never worth queueing.
-  BLANK_AFTER = 1.hour
-
   def perform(stale_after: STALE_AFTER)
-    Idea.blank_drafts.select { |idea| idea.updated_at < BLANK_AFTER.ago }.each(&:destroy)
-    Idea.stale_drafts(stale_after.ago).find_each(&:destroy)
+    Idea.drafts.where("ideas.created_at = ideas.updated_at").where("ideas.created_at < ?", stale_after.ago).find_each do |candidate|
+      Idea.transaction do
+        idea = Idea.lock.find_by(id: candidate.id)
+        idea&.destroy if idea&.draft? && idea.blank_draft? && idea.created_at < stale_after.ago && idea.updated_at == idea.created_at
+      end
+    end
   end
 end

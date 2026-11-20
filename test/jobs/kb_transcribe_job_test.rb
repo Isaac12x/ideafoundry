@@ -62,6 +62,26 @@ class KbTranscribeJobTest < ActiveJob::TestCase
     assert_no_enqueued_jobs { KbTranscriptJob.transcribe_waiting }
   end
 
+  test "sweep releases the claim when the transcription queue rejects the job" do
+    @download.update!(transcript_status: "awaiting_audio")
+    Kb::Transcript.stub(:available?, true) do
+      KbTranscribeJob.stub(:perform_later, false) { KbTranscriptJob.transcribe_waiting }
+    end
+
+    assert_equal "awaiting_audio", @download.reload.transcript_status
+    assert_not Kb::Transcript.running?(@media)
+  end
+
+  test "sweep releases the claim when enqueue raises" do
+    @download.update!(transcript_status: "awaiting_audio")
+    Kb::Transcript.stub(:available?, true) do
+      KbTranscribeJob.stub(:perform_later, ->(*) { raise IOError, "queue unavailable" }) { KbTranscriptJob.transcribe_waiting }
+    end
+
+    assert_equal "awaiting_audio", @download.reload.transcript_status
+    assert_not Kb::Transcript.running?(@media)
+  end
+
   test "whisper timeout marks failed, gives up on auto-revival" do
     slow = ->(_abs) { raise Kb::Transcript::Error, "Transcription timed out (whisper timed out after 90s)." }
     Kb::Transcript.stub(:transcribe!, slow) { KbTranscribeJob.perform_now(@media, @download.id) }
