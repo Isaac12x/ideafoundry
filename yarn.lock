@@ -2,10 +2,10 @@
 # yarn lockfile v1
 
 
-"3d-force-graph@^1.80.1":
-  version "1.80.1"
-  resolved "https://registry.npmjs.org/3d-force-graph/-/3d-force-graph-1.80.1.tgz"
-  integrity sha512-8+JcH/K1MkVncxthCVg1vdNY49PSUY7gPMlFzBHJD91AmofqqxZNnVo5RfY61BShwZk6koqyYK7f5hp+NT6utQ==
+"3d-force-graph@^1.80.2":
+  version "1.80.2"
+  resolved "https://registry.yarnpkg.com/3d-force-graph/-/3d-force-graph-1.80.2.tgz#c73914cb3260474f701892aa12f255015f5e86bf"
+  integrity sha512-hStm8c4s2yLt0kj9JBLWLgLsJlS+G08AXTNeEw6YBD1kzCu4s1szwAZL9Z1tcPhVOlDkWliUzTuraBF86TmNCQ==
   dependencies:
     accessor-fn "1"
     kapsule "^1.16"
