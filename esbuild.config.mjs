@@ -259,7 +259,32 @@ const builds = [
     splitting: false,
     external: ["path", "fs", "module", "canvas", "@napi-rs/canvas"], // node-only code paths (occt-import-js, pdf.js)
   },
+  {
+    // Lazy-loaded by privacy_gaze controllers (mediapipe FaceLandmarker); wasm + model are copied below.
+    ...common,
+    entryPoints: ["app/javascript/privacy_gaze/index.js"],
+    outdir: "app/assets/builds/privacy_gaze",
+    minify: !dev,
+    splitting: false,
+  },
 ];
+
+// mediapipe loads its wasm and model by URL (strictly local, no CDN), so they ship as plain assets next to the bundle.
+fs.mkdirSync("app/assets/builds/privacy_gaze", { recursive: true });
+for (const f of ["vision_wasm_internal.js", "vision_wasm_internal.wasm"]) {
+  fs.copyFileSync(path.join("node_modules", "@mediapipe", "tasks-vision", "wasm", f), path.join("app/assets/builds/privacy_gaze", f));
+}
+fs.copyFileSync("vendor/mediapipe/face_landmarker.task", "app/assets/builds/privacy_gaze/face_landmarker.task");
+
+// @vladmandic/human identity models (json + bin). Only these are shipped; the bundle never fetches a CDN (webgl/cpu
+// backends need no wasm). Served per file through asset_path (fingerprinted) and mapped in _privacy_gaze_assets.html.erb.
+const humanModels = ["blazeface", "facemesh", "faceres", "antispoof", "liveness", "movenet-lightning"];
+fs.mkdirSync("app/assets/builds/privacy_gaze/human", { recursive: true });
+for (const m of humanModels) {
+  for (const ext of ["json", "bin"]) {
+    fs.copyFileSync(path.join("node_modules", "@vladmandic", "human", "models", `${m}.${ext}`), `app/assets/builds/privacy_gaze/human/${m}.${ext}`);
+  }
+}
 
 // occt-import-js fetches its wasm by URL (locateFile), so it ships as a plain asset next to the bundle.
 fs.mkdirSync("app/assets/builds/kb_viewers", { recursive: true });

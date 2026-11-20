@@ -10,6 +10,7 @@ test("failed build keeps the published manifest", () => {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "excalidraw-build-"))
   try {
     fs.symlinkSync(path.join(root, "node_modules"), path.join(tmp, "node_modules"))
+    fs.symlinkSync(path.join(root, "vendor"), path.join(tmp, "vendor"))
     fs.copyFileSync(path.join(root, "esbuild.config.mjs"), path.join(tmp, "esbuild.config.mjs"))
     fs.mkdirSync(path.join(tmp, "tmp"))
     fs.mkdirSync(path.join(tmp, "app/javascript"), { recursive: true })

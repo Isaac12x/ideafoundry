@@ -254,6 +254,44 @@ class SettingsController < ApplicationController
     redirect_to local_agent_recommendation_return_path, notice: "Recommendation dismissed."
   end
 
+  def update_privacy
+    if @user.update_privacy_gaze_settings(privacy_gaze_params)
+      ActivityLog.record_settings!(user: @user, setting: "Privacy")
+      respond_to do |format|
+        format.html { redirect_to settings_security_path, notice: "Privacy settings updated." }
+        format.json { render json: { saved: true, enabled: @user.privacy_gaze_enabled? } }
+      end
+    else
+      respond_to do |format|
+        format.html { redirect_to settings_security_path, alert: "Failed to update privacy settings." }
+        format.json { render json: { saved: false }, status: :unprocessable_entity }
+      end
+    end
+  end
+
+  def privacy_face
+    response.headers["Cache-Control"] = "no-store"
+    template = @user.privacy_face_template || {}
+    render json: { enrolled: @user.privacy_face_enrolled?, sample_count: template["sample_count"].to_i, descriptors: template["descriptors"] || [] }
+  end
+
+  def update_privacy_face
+    descriptors = params[:descriptors]
+    descriptors = descriptors.as_json if descriptors.respond_to?(:as_json)
+    if @user.store_privacy_face_template!(descriptors)
+      ActivityLog.record_settings!(user: @user, setting: "Privacy face ID")
+      render json: { saved: true, sample_count: @user.privacy_face_template["sample_count"] }
+    else
+      render json: { saved: false, error: "Face samples invalid: need #{User::PRIVACY_FACE_MIN_SAMPLES}-#{User::PRIVACY_FACE_MAX_SAMPLES} numeric descriptors of equal length." }, status: :unprocessable_entity
+    end
+  end
+
+  def destroy_privacy_face
+    @user.clear_privacy_face_template!
+    ActivityLog.record_settings!(user: @user, setting: "Privacy face ID")
+    render json: { saved: true }
+  end
+
   def update_security
     was_voice_id_configured = @user.voice_id_configured?
     typing_lock_updated = @user.update_typing_lock_settings(typing_lock_params)
@@ -841,6 +879,10 @@ class SettingsController < ApplicationController
 
   def voice_id_params
     params.fetch(:voice_id, {}).permit(:enabled)
+  end
+
+  def privacy_gaze_params
+    params.fetch(:privacy_gaze, {}).permit(:enabled)
   end
 
   def mobile_uplink_params

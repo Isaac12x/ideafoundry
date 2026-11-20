@@ -301,6 +301,68 @@ class SettingsControllerTest < ActionDispatch::IntegrationTest
     assert_match(/Mobile Uplink/, response.body)
   end
 
+  test "PATCH settings/security/privacy toggles privacy gaze and the layout loads the controller" do
+    patch settings_security_privacy_path, params: { privacy_gaze: { enabled: "1" } }
+    assert_redirected_to settings_security_path
+    assert @user.reload.privacy_gaze_enabled?
+
+    get settings_path
+    assert_select "body[data-controller~=?]", "privacy-gaze"
+    assert_select "body[data-privacy-gaze-settings-url-value=?]", settings_security_path
+
+    patch settings_security_privacy_path, params: { privacy_gaze: { enabled: "0" } }, as: :json
+    assert_response :success
+    assert_equal({ "saved" => true, "enabled" => false }, response.parsed_body)
+    refute @user.reload.privacy_gaze_enabled?
+
+    get settings_path
+    assert_select "body[data-controller~=?]", "privacy-gaze", count: 0
+  end
+
+  test "privacy face endpoints store, serve no-store, reject and clear" do
+    get settings_security_privacy_face_path
+    assert_response :success
+    assert_match(/no-store/, response.headers["Cache-Control"])
+    assert_equal({ "enrolled" => false, "sample_count" => 0, "descriptors" => [] }, response.parsed_body)
+
+    d = Array.new(3) { Array.new(128) { 0.25 } }
+    put settings_security_privacy_face_path, params: { descriptors: d }, as: :json
+    assert_response :success
+    assert_equal({ "saved" => true, "sample_count" => 3 }, response.parsed_body)
+
+    get settings_security_privacy_face_path
+    assert_equal true, response.parsed_body["enrolled"]
+    assert_equal d, response.parsed_body["descriptors"]
+
+    put settings_security_privacy_face_path, params: { descriptors: d.first(2) }, as: :json
+    assert_response :unprocessable_entity
+    assert_equal false, response.parsed_body["saved"]
+    assert response.parsed_body["error"].present?
+    assert @user.reload.privacy_face_enrolled?
+
+    patch settings_security_privacy_path, params: { privacy_gaze: { enabled: "0" } }, as: :json
+    assert @user.reload.privacy_face_enrolled?
+
+    delete settings_security_privacy_face_path, as: :json
+    assert_response :success
+    assert_equal({ "saved" => true }, response.parsed_body)
+    refute @user.reload.privacy_face_enrolled?
+  end
+
+  test "layout exposes the face url when privacy gaze is enabled" do
+    @user.update_privacy_gaze_settings("enabled" => "1")
+    get settings_path
+    assert_select "body[data-privacy-gaze-face-url-value=?]", settings_security_privacy_face_path
+  end
+
+  test "PATCH settings/security does not clobber privacy gaze" do
+    @user.update_privacy_gaze_settings("enabled" => "1")
+
+    patch settings_security_path, params: { typing_lock: { enabled: "0", lock_after_minutes: "5" } }
+
+    assert @user.reload.privacy_gaze_enabled?
+  end
+
   test "PATCH settings/security enabling mobile uplink renders install and pairing QR setup" do
     patch settings_security_path, params: {
       typing_lock: {
