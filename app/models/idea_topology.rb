@@ -1,4 +1,6 @@
 class IdeaTopology < ApplicationRecord
+  include SemanticIndexable
+  semantic_index owner: ->(r) { r.idea&.user_id }, parents: ->(r) { [ r.idea ] }
   include RecordsIdeaHistory
 
   belongs_to :idea

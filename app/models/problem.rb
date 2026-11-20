@@ -2,6 +2,8 @@
 # (Wikipedia/Grokipedia articles + .source.json sidecars) lands next to it via ProblemLookupJob. Ideas link to the
 # folder through IdeaKbLink. Facts (IPF/BPF) are observations that spark ideas; a Problem is the need an idea answers.
 class Problem < ApplicationRecord
+  include SemanticIndexable
+  semantic_index type: "problem", owner: ->(r) { r.user_id }, sections: ->(r) { [ r.title, r.need, *SemanticIndex.split(r.result) ] }
   STATUSES = %w[pending running done failed].freeze
 
   belongs_to :user

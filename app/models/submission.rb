@@ -1,4 +1,7 @@
 class Submission < ApplicationRecord
+  include SemanticIndexable
+  semantic_index type: "submission", owner: ->(r) { r.user_id },
+                 sections: ->(r) { [ r.title, *SemanticIndex.split(r.body), *SemanticIndex.split(r.processed_body.to_plain_text), r.review_notes ] }
   include TracksActivity
   tracks_activity name_method: :title, ignore_fields: [ :raw_data, :reviewed_at ]
 

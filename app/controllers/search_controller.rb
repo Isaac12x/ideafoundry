@@ -59,24 +59,47 @@ class SearchController < ApplicationController
   end
 
   # nil = sidecar off/down/seed not indexed yet -> caller falls back to TF-IDF.
+  # Hits of every indexed type (or ?types=idea,note) are re-loaded through the user's own scopes (gone/foreign ids drop out) and grouped by registry label.
   def semantic_similar_groups(q)
     return unless SemanticSearch.enabled?
 
     seed = if params[:idea].present? then { id: SemanticSearch.idea_id(@user.id, params[:idea].to_i) }
     elsif params[:path].present? then { id: SemanticSearch.kb_id(@user.id, params[:src].to_i, params[:path].to_s) }
+    elsif params[:seed].present? then { id: params[:seed].to_s }
     elsif q.present? then { query: q }
     end
     return unless seed
 
-    hits = SemanticSearch.search(prefix: SemanticSearch.prefix(@user.id), k: 12, exclude: [ seed[:id] ].compact, **seed)
+    types = params[:types].to_s.split(",").presence
+    hits = SemanticSearch.search(prefix: SemanticSearch.prefix(@user.id), k: 24, exclude: [ seed[:id] ].compact, types: types, **seed)
     return if hits.blank?
 
-    ideas = @user.ideas.non_draft.where(discarded_at: nil).where(id: hits.filter_map { |h| h["id"][/\Au\d+:idea:(\d+)\z/, 1] }).index_by { |i| i.id.to_s }
-    entries = kb_entry_index.index_by { |e| SemanticSearch.kb_id(@user.id, e[:src], e[:path]) }
+    rows = hits.filter_map { |h| (t, key = SemanticIndex.parse(@user, h["id"])) && [ t, key, h ] }
+    loaded = rows.group_by(&:first).to_h { |t, rs| [ t, SemanticIndex.records(@user, t, rs.map { |r| r[1] }) ] }
+    entries = kb_entry_index.index_by { |e| SemanticSearch.kb_id(@user.id, e[:src], e[:path]) } if hits.any? { |h| h["id"].include?(":kb:") }
     pct = ->(h) { "#{(h['score'].to_f * 100).round}% match" }
-    idea_hits = hits.filter_map { |h| (i = ideas[h["id"][/:idea:(\d+)\z/, 1]]) && idea_item(i, hint: pct.(h)) }
-    kb_hits = hits.filter_map { |h| (e = entries[h["id"]]) && kb_item(e.slice(:src, :path, :name, :type, :source), hint: pct.(h)) }
-    [ [ "Ideas", idea_hits.first(PER_GROUP) ], [ "Knowledge Base", kb_hits.first(PER_GROUP) ] ]
+
+    groups = Hash.new { |hash, k| hash[k] = [] }
+    hits.each do |h|
+      if (t, key = SemanticIndex.parse(@user, h["id"]))
+        rec = loaded.dig(t, key) or next
+        groups[SemanticIndex.label(t)] << semantic_item(t, rec, pct.(h))
+      elsif (e = entries&.dig(h["id"]))
+        groups["Knowledge Base"] << kb_item(e.slice(:src, :path, :name, :type, :source), hint: pct.(h))
+      end
+    end
+    return if groups.empty?
+
+    # Items can pick their own group (drafts), so regroup after building.
+    regrouped = groups.flat_map { |label, items| items.map { |i| [ i.delete(:group) || label, i ] } }.group_by(&:first)
+    regrouped.map { |label, pairs| [ label, pairs.map(&:last).first(PER_GROUP) ] }
+  end
+
+  def semantic_item(type, rec, hint)
+    return idea_item(rec, hint: hint) if type == "idea" && !rec.draft?
+
+    item = SemanticIndex.item(type, rec)
+    item.merge(hint: [ hint, item[:hint] ].compact_blank.join(" · "), actions: basic_actions(item[:url]))
   end
 
   def tfidf_similar_groups(q)
