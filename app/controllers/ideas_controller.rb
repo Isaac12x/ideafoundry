@@ -15,10 +15,12 @@ class IdeasController < ApplicationController
 
   def index
     restore_or_save_idea_filters
-    @ideas = @user.ideas.non_draft.primary_or_standalone.includes(:lists, :idea_lists, :topologies, :idea_entries, :themes)
+    idea_list_associations = [ :lists, :idea_lists, :topologies, :themes ]
+    idea_list_associations << :idea_entries if (@user.enabled_idea_tabs & User::IDEA_ENTRY_TABS).any?
+    @ideas = @user.ideas.non_draft.primary_or_standalone.includes(*idea_list_associations)
     @kanban_boards = @user.kanban_boards.ordered.includes(:lists)
     @named_lists = @user.lists.named.ordered
-    @drafts = @user.ideas.resumable_drafts.first(20)
+    @drafts = @user.ideas.resumable_drafts(limit: 20)
 
     @ideas = apply_filters(@ideas)
     @ideas = apply_sorting(@ideas)
@@ -49,9 +51,8 @@ class IdeasController < ApplicationController
 
   def new
     # Auto-draft: create a hidden draft idea immediately so drawings can attach
-    # to it during composition. Drafts are filtered from listings and cleaned up
-    # daily by CleanOrphanedDraftsJob if abandoned.
-    @user.ideas.blank_drafts.each(&:destroy) # drafts with no content are never kept
+    # to it during composition. Keep other open blank drafts: another tab may
+    # still be composing one. The cleanup job removes abandoned empty drafts.
     @idea = @user.ideas.create!(draft: true, state: :idea_new, attempt_count: 0, title: params[:title].to_s.squish.truncate(200, omission: ""))
     redirect_to edit_idea_path(@idea, draft: 1)
   end

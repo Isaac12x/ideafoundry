@@ -49,6 +49,34 @@ class IdeaTest < ActiveSupport::TestCase
     assert_equal 0, idea.timing
   end
 
+  test "resumable draft scan excludes blank drafts and preserves drafts with related content" do
+    @user.ideas.drafts.destroy_all
+    blanks = 5.times.map { @user.ideas.create!(draft: true, title: "", state: :idea_new) }
+    related = @user.ideas.create!(draft: true, title: "", state: :idea_new)
+    related.idea_entries.create!(kind: :tool, name: "Notebook")
+
+    uncached_selects = 0
+    subscriber = ActiveSupport::Notifications.subscribe("sql.active_record") do |_name, _start, _finish, _id, payload|
+      uncached_selects += 1 if payload[:sql].match?(/\ASELECT\b/i) && !payload[:cached]
+    end
+    resumable = @user.ideas.resumable_drafts
+
+    assert_includes resumable, related
+    assert_empty resumable & blanks
+    assert_operator uncached_selects, :<=, 2, "draft content checks should stay within one batch without per-draft SELECTs"
+  ensure
+    ActiveSupport::Notifications.unsubscribe(subscriber) if subscriber
+  end
+
+  test "resumable draft preview stops at its limit in updated order" do
+    @user.ideas.drafts.destroy_all
+    older = @user.ideas.create!(draft: true, title: "Older", state: :idea_new, updated_at: 1.day.ago)
+    newer = @user.ideas.create!(draft: true, title: "Newer", state: :idea_new, updated_at: 1.hour.ago)
+
+    assert_equal [ newer ], @user.ideas.resumable_drafts(limit: 1)
+    assert_not_equal older, newer
+  end
+
   test "should validate scoring attributes range" do
     @idea.trl = 11
     assert_not @idea.valid?
