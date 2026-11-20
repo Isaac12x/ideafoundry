@@ -8,7 +8,7 @@ export const DEFAULT_BINDINGS = {
   "submit": { "key": "Ctrl/Cmd+Enter", "label": "Submit the current form" },
   "ask_agent": { "key": "Ctrl/Cmd+J", "label": "Open Ask Agent" },
   "lock": { "key": "Ctrl/Cmd+L", "label": "Lock workspace" },
-  "privacy_haze": { "key": "Ctrl/Cmd+Shift+.", "label": "Toggle privacy haze" },
+  "privacy_haze": { "key": "Ctrl/Cmd+Shift+G", "label": "Toggle privacy haze", "native": true },
   "dictate": { "key": "Ctrl+Shift+Space", "label": "Dictate into the focused field" },
   "edit": { "key": "e", "label": "Edit the current item" },
   "prev_tab": { "key": "[", "label": "Previous tab" },
@@ -57,6 +57,8 @@ export function platformBinding(bind) {
 
 // Effective binding: the user's if set, else the default.
 export function binding(id) {
+  // ponytail: "native" defaults keep Cmd on Mac; privacy_haze deliberately overrides the browser's Cmd+Shift+G find-previous (user asked). Off Mac it still moves to Alt.
+  if (!overrides()[id] && DEFAULT_BINDINGS[id]?.native && isMac()) return DEFAULT_BINDINGS[id].key
   return platformBinding(overrides()[id] || DEFAULT_BINDINGS[id]?.key)
 }
 
