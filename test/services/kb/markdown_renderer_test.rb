@@ -82,4 +82,30 @@ class Kb::MarkdownRendererTest < ActiveSupport::TestCase
     assert_includes html, "<table>"
     assert_includes html, "<th>a</th>"
   end
+
+  test "fenced code with and without language, inline code" do
+    out = html("```ruby\nx = 1\n\ny <b>\n```\n\n```\nplain\n```\n\nuse `foo`")
+    assert_includes out, %(<pre><code class="ruby">x = 1\n\ny &lt;b&gt;\n</code></pre>)
+    assert_includes out, "<pre><code>plain\n</code></pre>"
+    assert_includes out, "<code>foo</code>"
+  end
+
+  test "single newlines are hard breaks, blank lines paragraph breaks" do
+    out = html("a\nb\n\n\n\nc")
+    assert_includes out, "<p>a<br>\nb</p>"
+    assert_includes out, "<p>c</p>"
+  end
+
+  test "bold-italic, lists, blockquote, heading" do
+    out = html("***Human Interactive Language (HIL)***\n\n- a\n- b\n\n> q\n\n# H")
+    assert_includes out, "<strong><em>Human Interactive Language (HIL)</em></strong>"
+    assert_includes out, "<li>a</li>"
+    assert_includes out, "<blockquote>"
+    assert_includes out, "<h1>H</h1>"
+  end
+
+  test "xss is stripped" do
+    out = html("<script>alert(1)</script><img src=x onerror=alert(1)> [x](javascript:alert(1)) <b onclick=\"x\">b</b>")
+    assert_no_match(/<script|onerror|onclick|javascript:/i, out)
+  end
 end

@@ -38,6 +38,17 @@ class RecoverySecretsControllerTest < ActionDispatch::IntegrationTest
     assert_select ".app-dialog", count: 0
   end
 
+  test "recovery probe runs once per window so it cannot starve the lock request" do
+    calls = 0
+    probe = ->(**) { calls += 1; [] }
+
+    SqlcipherDatabaseMigrator.stub(:locked_database_paths_without_recovery_secret, probe) do
+      3.times { get "/up" ; get root_path }
+    end
+
+    assert_equal 1, calls
+  end
+
   test "locked SQLCipher database asks for recovery before reading typing lock settings" do
     locked_path = Rails.root.join("tmp/encrypted_sqlcipher_before_typing.sqlite3").to_s
 

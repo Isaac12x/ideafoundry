@@ -8,7 +8,7 @@ module KbProjects
   UNNAMED_PLAN = "Untitled build plan".freeze
 
   included do
-    helper_method :render_markdown, :measurement_table, :project_image?
+    helper_method :render_markdown, :render_project_markdown, :measurement_table, :project_image?
   end
 
   def project_show
@@ -122,6 +122,58 @@ module KbProjects
     project_finding_action { |owner| owner.remove_finding!(params[:id]) }
   end
 
+  # "Requires" of a test: @-picked references and pasted links (the page text is imported, not linked).
+  def project_requirement_create
+    project_action do |base, project|
+      test = project_test(base, project, params[:test].to_s) or next head(:not_found)
+      test.add_requirements!(params[:text])
+      respond_project(base, project)
+    end
+  end
+
+  def project_requirement_destroy
+    project_action do |base, project|
+      test = project_test(base, project, params[:test].to_s) or next head(:not_found)
+      test.remove_requirement!(params[:id])
+      respond_project(base, project)
+    end
+  end
+
+  # Drawings inserted into project text. Speaks the idea drawings' JSON protocol (the shared Excalidraw app posts here).
+  def project_drawing_create
+    project_drawing_action do |project|
+      drawing = Kb::ProjectDrawing.create!(project, **drawing_attrs)
+      render json: drawing_json(project, drawing), status: :created
+    end
+  end
+
+  def project_drawing_show
+    project_drawing_action do |project|
+      drawing = Kb::ProjectDrawing.new(project, params[:id])
+      next head(:not_found) unless drawing.exist?
+
+      respond_to do |format|
+        format.json { render json: drawing_json(project, drawing).merge(content: drawing.content) }
+        format.png do
+          next head(:not_found) unless drawing.png?
+
+          response.headers["Cache-Control"] = "private, no-cache" # revalidate: projects can be locked, and drawings re-saved
+          send_file drawing.png_path, type: "image/png", disposition: "inline"
+        end
+      end
+    end
+  end
+
+  def project_drawing_update
+    project_drawing_action do |project|
+      drawing = Kb::ProjectDrawing.new(project, params[:id])
+      next head(:not_found) unless drawing.exist?
+
+      drawing.write!(**drawing_attrs)
+      render json: drawing_json(project, drawing)
+    end
+  end
+
   # Ideas live on the project only.
   def project_idea_create
     project_action(exact: true) { |base, project| project.add_idea!(params[:text]); respond_project(base, project) }
@@ -172,6 +224,11 @@ module KbProjects
     { runs: logged, rows: rows }
   end
 
+  # render_markdown plus @-mention chips (ideas incl. version, KB entries, maxims...). Every project text goes through this.
+  def render_project_markdown(raw)
+    render_markdown(Kb::References.linkify(raw, user: @user))
+  end
+
   def project_image?(name)
     Kb::MediaTypes::IMAGE_EXTENSIONS.include?(File.extname(name).downcase)
   end
@@ -193,6 +250,29 @@ module KbProjects
   rescue ArgumentError => error
     flash[:alert] = error.message
     redirect_to(project ? kb_project_path(src: params[:src], path: project.rel) : kb_path)
+  end
+
+  def project_drawing_action
+    base = writable_base(params[:src].to_i)
+    project = base && Kb::Project.containing(base, params[:path].to_s.sub(%r{/+\z}, ""))
+    return head(:not_found) if project.nil? || project.locked? || Kb::ProjectLock.busy?(project.abs)
+
+    yield project
+  rescue ArgumentError => error
+    render json: { error: error.message }, status: :unprocessable_content
+  end
+
+  def drawing_attrs
+    raw = params.require(:drawing)
+    content = raw[:content]
+    content = content.respond_to?(:to_unsafe_h) ? content.to_unsafe_h : (JSON.parse(content) if content.is_a?(String))
+    { title: raw[:title], content: content || {}, png_data_url: raw[:png_data_url] }
+  rescue JSON::ParserError
+    raise ArgumentError, "Invalid drawing."
+  end
+
+  def drawing_json(project, drawing)
+    { id: drawing.id, title: drawing.title, png_url: kb_project_drawing_path(drawing.id, format: :png, src: params[:src], path: project.rel) }
   end
 
   def project_finding_action

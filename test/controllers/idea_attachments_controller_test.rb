@@ -45,6 +45,31 @@ class IdeaAttachmentsControllerTest < ActionDispatch::IntegrationTest
     assert_equal initial_attachment_count + 2, @idea.attachments.count
   end
 
+  test "adds more images after the first, even when the idea itself fails validation" do
+    @idea.update_columns(trl: 99) # e.g. a stale template-required field: attach must not depend on a full save
+    2.times do |i|
+      post idea_attachments_url(@idea, variant: :card), params: {
+        files: [ fixture_file_upload("ocr_sample.png", "image/png") ]
+      }
+      assert_response :success, "upload #{i + 1}"
+    end
+
+    assert_equal 4, @idea.attachments.count
+  end
+
+  test "replacing a file works even when the idea itself fails validation" do
+    @idea.update_columns(trl: 99)
+    patch idea_attachment_url(@idea, @first), params: { file: fixture_file_upload("ocr_sample.png", "image/png") }
+    assert_response :success
+    assert_equal "ocr_sample.png", @idea.reload.attachments.last.filename.to_s
+  end
+
+  test "reports an error message when nothing can be attached" do
+    post idea_attachments_url(@idea), params: { files: [ "" ] }
+    assert_response :bad_request
+    assert_match(/No files/, JSON.parse(response.body)["error"])
+  end
+
   private
 
   def attach_file(filename, body)

@@ -6,7 +6,7 @@
       <li class="kbp-finding" id="finding-<%= item['id'] %>">
         <time class="kbp-finding-date" datetime="<%= item['at'] %>"><%= (Date.iso8601(item["at"]).strftime("%d %b") rescue item["at"]) %></time>
         <div class="kbp-finding-main">
-          <p class="kbp-finding-text"><%= item["text"] %></p>
+          <div class="kbp-finding-text kb-markdown rich-text-content kbp-prose"><%= render_project_markdown(item["text"]) %></div>
           <%= form_with url: kb_project_findings_path, method: :patch, class: "kbp-finding-edit", data: { cancelable: "1" } do %>
             <%= hidden_field_tag :src, @src, id: nil %>
             <%= hidden_field_tag :path, owner.rel, id: nil %>
@@ -16,6 +16,7 @@
             <div class="kbp-actions">
               <button class="kbp-btn kbp-btn--primary">Save</button>
               <button type="button" class="kbp-btn" data-action="kb-project#closeFinding">Cancel</button>
+              <button type="button" class="kbp-link kbp-draw" data-action="kb-project#draw">Draw</button>
             </div>
           <% end %>
         </div>
@@ -38,4 +39,5 @@
   <textarea name="text" rows="1" maxlength="2000" class="kbp-add-field" aria-label="Add a finding" autocomplete="off"
             data-enter-submit placeholder="<%= placeholder %>"></textarea>
   <button class="kbp-btn">Add</button>
+  <button type="button" class="kbp-link kbp-draw" data-action="kb-project#draw">Draw</button>
 <% end %>

@@ -8,6 +8,9 @@
    ============================================ */
 
 :root {
+    /* Page shell: one reading width for content pages (idea, intake, templates, settings, versions) */
+    --page-width: 1200px;
+
     /* Surfaces */
     --bg-base: #0c0c0f;
     --bg-surface: #14141a;
@@ -508,8 +511,8 @@ a:hover {
     right: 0;
     bottom: 0;
     z-index: 300;
-    display: grid;
-    grid-template-rows: auto minmax(0, 1fr) auto;
+    display: flex;
+    flex-direction: column;
     width: var(--ask-agent-width, 50vw);
     min-width: min(360px, calc(100vw - 16px));
     max-width: calc(100vw - 16px);
@@ -523,6 +526,12 @@ a:hover {
 .ask-agent-backdrop[hidden],
 .ask-agent-sidebar[hidden] {
     display: none;
+}
+
+.ask-agent-sidebar { animation: ask-agent-in 0.2s cubic-bezier(0.2, 0.7, 0.2, 1); }
+
+@keyframes ask-agent-in {
+    from { opacity: 0; transform: translateX(24px); }
 }
 
 .ask-agent-sidebar__resize {
@@ -561,11 +570,11 @@ body.ask-agent-resizing {
 }
 
 .ask-agent-sidebar__header {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 1rem;
-    padding: 1.25rem 1.35rem 1rem;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 0.7rem 1rem;
+    padding: 1rem 1.35rem 0.85rem;
     border-bottom: 1px solid var(--border-subtle);
     background: color-mix(in srgb, var(--bg-surface) 90%, var(--bg-elevated));
 }
@@ -578,14 +587,60 @@ body.ask-agent-resizing {
     font-weight: 400;
 }
 
+.ask-agent-sidebar__heading {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.4rem 0.8rem;
+    min-width: 0;
+}
+
+/* Compact status pill; when the agent is off it carries its own way out (link to settings). */
 .ask-agent-sidebar__status {
     display: inline-flex;
     align-items: center;
     gap: 0.4rem;
-    margin-top: 0.25rem;
+    padding: 0.18rem 0.6rem;
+    border: 1px solid var(--border-default);
+    border-radius: 999px;
     color: var(--text-muted);
-    font-size: 0.78rem;
+    font-size: 0.74rem;
+    line-height: 1.3;
 }
+
+.ask-agent-sidebar__status-action {
+    margin-left: 0.15rem;
+    padding-left: 0.5rem;
+    border-left: 1px solid var(--border-default);
+    color: var(--accent);
+    text-decoration: none;
+}
+
+.ask-agent-sidebar__status-action:hover { text-decoration: underline; }
+
+.ask-agent-context {
+    grid-column: 1 / -1;
+    justify-self: start;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    min-width: 0;
+    max-width: max-content;
+    padding: 0.25rem 0.65rem;
+    border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--border-default));
+    border-radius: 999px;
+    background: var(--accent-muted);
+    color: var(--text-primary);
+    font: inherit;
+    font-size: 0.78rem;
+    cursor: pointer;
+}
+
+.ask-agent-context__label { color: var(--accent); }
+.ask-agent-context__title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ask-agent-context[aria-pressed="false"] { background: none; border-style: dashed; color: var(--text-muted); }
+.ask-agent-context[aria-pressed="false"] .ask-agent-context__title { text-decoration: line-through; }
+.ask-agent-context:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 .ask-agent-sidebar__status::before {
     content: "";
@@ -621,10 +676,23 @@ body.ask-agent-resizing {
     border-color: var(--border-emphasis);
 }
 
+/* Not-running notice: honest about what happens to a question, sits under the header. */
+.ask-agent-sidebar__notice {
+    margin: 0;
+    padding: 0.5rem 1.35rem;
+    border-bottom: 1px solid var(--border-subtle);
+    background: color-mix(in srgb, var(--warning) 7%, var(--bg-surface));
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    line-height: 1.45;
+}
+
 .ask-agent-sidebar__messages {
     display: flex;
+    flex: 1 1 auto;
     flex-direction: column;
-    gap: 1rem;
+    gap: 1.25rem;
+    min-height: 0;
     overflow-y: auto;
     padding: 1.25rem;
 }
@@ -644,9 +712,13 @@ body.ask-agent-resizing {
 
 .ask-agent-message--user {
     justify-self: end;
-    border-color: rgba(212, 149, 58, 0.24);
+    padding: 0.55rem 0.8rem;
+    border: 0;
+    border-radius: var(--radius-md) var(--radius-md) 2px var(--radius-md);
     background: var(--accent-muted);
 }
+
+.ask-agent-message--user .ask-agent-message__meta { justify-content: flex-end; }
 
 /* Agent turns read as a ruled column of prose (a margin note), the user's as a tinted slip: not chat bubbles. */
 .ask-agent-message--agent,
@@ -689,45 +761,110 @@ body.ask-agent-resizing {
     align-items: center;
     justify-content: space-between;
     gap: 0.75rem;
-    margin-bottom: 0.35rem;
+    margin-bottom: 0.3rem;
     color: var(--text-muted);
     font-size: 0.74rem;
     letter-spacing: 0.02em;
 }
 
-.ask-agent-message p {
+.ask-agent-message__meta time { opacity: 0.6; font-size: 0.7rem; }
+
+.ask-agent-message--user p {
     white-space: pre-wrap;
 }
 
+/* Agent answers are markdown (shared renderer): read like prose, not a box. */
+.ask-agent-message .md-prose {
+    color: var(--text-primary);
+    font-size: 0.93rem;
+    line-height: 1.6;
+    overflow-wrap: anywhere;
+}
+
+.ask-agent-message .md-prose pre { max-width: 100%; overflow-x: auto; }
+
 .ask-agent-message p,
-.ask-agent-sidebar__empty,
-.ask-agent-sidebar__notice {
+.ask-agent-sidebar__empty {
     margin: 0;
     color: var(--text-secondary);
     line-height: 1.5;
     overflow-wrap: anywhere;
 }
 
-.ask-agent-sidebar__notice {
-    padding: 0.75rem 1.25rem 0;
-    font-size: 0.82rem;
-}
-
 .ask-agent-sidebar__error {
+    margin: 0;
     padding: 0;
     color: var(--danger);
+    font-size: 0.82rem;
 }
 
 .ask-agent-sidebar__empty {
     align-self: center;
+    display: grid;
+    gap: 1rem;
+    justify-items: center;
     margin: auto 0;
+    max-width: 30rem;
     color: var(--text-muted);
+    text-align: center;
 }
+
+.ask-agent-sidebar__empty-title {
+    margin: 0;
+    font-family: var(--font-display);
+    font-style: italic;
+    font-size: 1.3rem;
+    color: var(--text-secondary);
+}
+
+/* Starter prompts as a ruled list (index-card feel), not a cloud of pills. */
+.ask-agent-suggestions {
+    display: grid;
+    width: min(100%, 24rem);
+    border-top: 1px solid var(--border-subtle);
+    text-align: left;
+}
+
+.ask-agent-suggestion {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.65rem 0.15rem;
+    border: 0;
+    border-bottom: 1px solid var(--border-subtle);
+    background: none;
+    color: var(--text-secondary);
+    font: inherit;
+    font-size: 0.88rem;
+    text-align: left;
+    cursor: pointer;
+    transition: color 0.15s ease, padding-left 0.15s ease;
+}
+
+.ask-agent-suggestion::after {
+    content: "\2192";
+    color: var(--accent);
+    opacity: 0;
+    transition: opacity 0.15s ease;
+}
+
+.ask-agent-suggestion:hover,
+.ask-agent-suggestion:focus-visible {
+    padding-left: 0.5rem;
+    color: var(--text-primary);
+}
+
+.ask-agent-suggestion:hover::after,
+.ask-agent-suggestion:focus-visible::after { opacity: 1; }
+
+.ask-agent-pending-note { font-size: 0.82rem; }
 
 .ask-agent-sidebar__form {
     display: grid;
-    gap: 0.85rem;
-    padding: 1rem 1.25rem 1.15rem;
+    flex: none;
+    gap: 0.5rem;
+    padding: 0.85rem 1.25rem 1rem;
     border-top: 1px solid var(--border-subtle);
     background: color-mix(in srgb, var(--bg-surface) 82%, var(--bg-base));
 }
@@ -736,18 +873,47 @@ body.ask-agent-resizing {
     margin-bottom: 0;
 }
 
-.ask-agent-sidebar__form textarea {
-    min-height: 110px;
-    max-height: 240px;
-    resize: vertical;
+/* Docked composer: one rounded field that grows with the text, controls tucked under it. */
+.ask-agent-composer {
+    display: grid;
+    gap: 0.4rem;
+    padding: 0.6rem 0.7rem 0.5rem;
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    background: var(--bg-input);
 }
 
-.ask-agent-sidebar__notice {
-    padding: 0.65rem 0.75rem;
-    border: 1px solid rgba(251, 191, 36, 0.24);
-    border-radius: var(--radius-sm);
-    background: var(--warning-bg);
-    font-size: 0.84rem;
+.ask-agent-composer:focus-within {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-muted);
+}
+
+.ask-agent-composer__input {
+    width: 100%;
+    min-height: 1.6rem;
+    max-height: 200px;
+    padding: 0;
+    border: 0;
+    outline: none;
+    resize: none;
+    background: none;
+    color: var(--text-primary);
+    font: inherit;
+    line-height: 1.5;
+}
+
+.ask-agent-composer__bar {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.ask-agent-composer__bar .ask-agent-sidebar__hint { margin-left: auto; }
+.ask-agent-sidebar__hint kbd { font: inherit; padding: 0 0.25rem; border: 1px solid var(--border-default); border-radius: 3px; }
+
+@media (max-width: 640px) {
+    .ask-agent-sidebar__hint { display: none; }
+    .ask-agent-composer__bar .btn { margin-left: auto; }
 }
 
 .ask-agent-sidebar__actions {
@@ -1359,7 +1525,7 @@ body.typing-lock-page .app-quote-banner {
 
 /* ---- Forms ---- */
 .form-container {
-    max-width: 1200px;
+    max-width: var(--page-width);
     margin: 0 auto;
 }
 
@@ -2354,8 +2520,9 @@ select.form-control {
 }
 
 /* ---- Idea Detail Container ---- */
+.page-shell,
 .idea-detail-container {
-    max-width: 1200px;
+    max-width: var(--page-width);
     margin: 0 auto;
 }
 
@@ -3472,6 +3639,10 @@ details.form-panel:not([open]) > summary.form-panel-title {
 .current-attachments__ocr-status {
     color: var(--text-muted);
     font-size: 0.85rem;
+    max-width: 16rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .current-attachments__actions {
@@ -4071,7 +4242,7 @@ body.shortcuts-hints-active {
     border-radius: var(--radius-sm);
     background: var(--bg-input);
     color: var(--text-primary);
-    font: 500 1rem/1.4 var(--font-body);
+    font: 500 1.05rem/1.4 var(--font-body);
     padding: 0.85rem 0.9rem;
 }
 
@@ -4230,9 +4401,13 @@ body.shortcuts-hints-active {
 }
 
 .idea-actions-menu__dropdown {
-  position: absolute;
+  /* Placed by dropdown_menu_controller (top layer + fixed), so card overflow never clips it. */
+  position: fixed;
   top: calc(100% + 6px);
   right: 0;
+  margin: 0;
+  overflow: visible;
+  color: inherit;
   z-index: 300;
   min-width: 220px;
   padding: 6px;
@@ -4538,7 +4713,7 @@ body.shortcuts-hints-active {
 }
 
 /* Fields inside a frame that rings on :focus-within: the frame is the ring, no second one inside. */
-:is(.kbp-finding-add, .backlog-form, .tiptap-editor) :is(input, textarea, [contenteditable]):focus-visible {
+:is(.kbp-finding-add, .backlog-form, .tiptap-editor, .ask-agent-composer) :is(input, textarea, [contenteditable]):focus-visible {
     outline: none;
 }
 
@@ -4604,3 +4779,50 @@ textarea:not(.kb-editor-textarea, .kb-media-editor__source, .typing-lock-input) 
 body.has-notes-bar .ask-agent-launcher { bottom: calc(36px + 0.85rem); }
 body.has-notes-bar .upgrade-toast { bottom: calc(36px + 1rem); }
 body.has-notes-bar .idea-draft-resume--toast { bottom: calc(36px + 1rem); }
+
+/* ---- Markdown prose: code blocks + inline code (render_prose, Kb::MarkdownRenderer, rich text) ---- */
+.md-prose p { margin: 0 0 0.6em; }
+.md-prose > :last-child { margin-bottom: 0; }
+.md-prose ul, .md-prose ol { margin: 0 0 0.6em; padding-left: 1.4rem; }
+.md-prose blockquote { margin: 0 0 0.6em; padding-left: 0.9rem; border-left: 2px solid var(--border-emphasis); color: var(--text-muted); }
+.md-prose a { color: var(--accent); text-decoration: underline; }
+.md-prose :is(h1, h2, h3, h4) { color: var(--text-primary); font-size: 1.05em; margin: 0.9em 0 0.4em; }
+.md-prose :is(pre, code), .kb-markdown :is(pre, code), .rich-text-content :is(pre, code) { font-family: var(--font-mono); }
+.md-prose pre, .kb-markdown pre, .rich-text-content pre {
+    margin: 0 0 0.8em; padding: 0.75rem 1rem; overflow-x: auto; white-space: pre;
+    background: var(--bg-surface); border: 1px solid var(--border-default); border-radius: var(--radius-sm);
+    font-size: 0.85em; line-height: 1.55; color: var(--text-primary); tab-size: 2;
+}
+.md-prose :not(pre) > code, .kb-markdown :not(pre) > code, .rich-text-content :not(pre) > code {
+    padding: 0.1em 0.35em; background: var(--bg-elevated); border: 1px solid var(--border-subtle);
+    border-radius: 4px; font-size: 0.88em; color: var(--text-primary);
+}
+.md-prose pre code, .kb-markdown pre code, .rich-text-content pre code { padding: 0; background: none; border: 0; font-size: inherit; }
+
+/* ---- In-app find bar (find_bar_controller.js) ---- */
+.find-bar {
+    position: fixed; top: 68px; right: 1rem; z-index: 2400;
+    display: flex; align-items: center; gap: 0.35rem; padding: 0.35rem 0.5rem;
+    background: var(--bg-elevated); border: 1px solid var(--border-emphasis);
+    border-radius: var(--radius-md); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+.find-bar[hidden] { display: none; }
+.find-bar__input {
+    width: 14rem; padding: 0.3rem 0.5rem; background: var(--bg-input); color: var(--text-primary);
+    border: 1px solid var(--border-default); border-radius: var(--radius-sm); font: inherit; font-size: 0.875rem;
+}
+.find-bar__input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.find-bar__count { min-width: 4.5rem; text-align: center; font-size: 0.78rem; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.find-bar__btn, .find-bar__case span {
+    display: inline-flex; align-items: center; justify-content: center; min-width: 1.75rem; height: 1.75rem; padding: 0 0.3rem;
+    background: none; border: 0; border-radius: var(--radius-sm); color: var(--text-secondary); font: inherit; font-size: 0.9rem; cursor: pointer;
+}
+.find-bar__btn:hover, .find-bar__case span:hover { background: var(--bg-overlay); color: var(--text-primary); }
+.find-bar__btn:focus-visible, .find-bar__case input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 1px; }
+.find-bar__case input { position: absolute; opacity: 0; width: 0; height: 0; }
+.find-bar__case input:checked + span { background: var(--accent-muted); color: var(--accent); }
+::highlight(find) { background-color: color-mix(in oklch, var(--accent) 35%, transparent); color: inherit; }
+::highlight(find-current) { background-color: var(--accent); color: var(--bg-base); }
+.find-mark { background: color-mix(in oklch, var(--accent) 35%, transparent); color: inherit; border-radius: 2px; }
+.find-mark--current { background: var(--accent); color: var(--bg-base); }
+@media (max-width: 640px) { .find-bar { left: 0.5rem; right: 0.5rem; } .find-bar__input { flex: 1; width: auto; min-width: 0; } }

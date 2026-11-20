@@ -3,23 +3,17 @@
 // "Looking" = the features sit inside this device's screen envelope (per-feature min/max over a 5-point calibration:
 // centre + four viewport corners) widened by a margin that shrinks as sensitivity (1..10) grows.
 // ponytail: MARGIN_AT_5 is the tuning knob; sensitivity scales it (about 2x at 1, 0.4x at 10).
-export const FEATURES = ["yaw", "pitch", "h", "v"]
+import { FEATURES, DEFAULT_ENVELOPE } from "../lib/gaze_profiles.mjs"
+export * from "../lib/gaze_profiles.mjs" // per-screen calibration storage: loadEnvelope / saveEnvelope / profiles
 export const MARGIN_AT_5 = { yaw: 12, pitch: 10, h: 0.15, v: 0.2 } // deg / deg / blendshape units
 export const DEFAULT_SENSITIVITY = 5
 export const DEFAULT_AWAY_MS = 2500
 export const DEFAULT_CLEAR_MS = 150
 export const MIN_POINT_SAMPLES = 5
-// Without calibration: generous (camera above the screen, wide monitors). Plus the margin this is yaw +-27 at default.
-export const DEFAULT_ENVELOPE = {
-  center: { yaw: 0, pitch: 0, h: 0, v: 0 },
-  min: { yaw: -15, pitch: -12, h: -0.25, v: -0.3 },
-  max: { yaw: 15, pitch: 12, h: 0.25, v: 0.3 },
-}
 // Calibration stage targets, in viewport fractions: centre first, then the corners.
 export const CALIBRATION_POINTS = [
   { x: 0.5, y: 0.5 }, { x: 0.08, y: 0.1 }, { x: 0.92, y: 0.1 }, { x: 0.92, y: 0.9 }, { x: 0.08, y: 0.9 },
 ]
-const STORE_KEY = "privacy-gaze:envelope"
 
 const clamp = (n, lo, hi) => Math.min(hi, Math.max(lo, n))
 const deg = (rad) => (rad * 180) / Math.PI
@@ -110,15 +104,4 @@ export function createHysteresis({ awayMs = DEFAULT_AWAY_MS, clearMs = DEFAULT_C
       return state
     },
   }
-}
-
-const validEnvelope = (e) => !!e && ["center", "min", "max"].every((p) => FEATURES.every((k) => Number.isFinite(e[p]?.[k])))
-export function loadEnvelope(storage = globalThis.localStorage) {
-  try { const e = JSON.parse(storage.getItem(STORE_KEY)); return validEnvelope(e) ? e : DEFAULT_ENVELOPE } catch { return DEFAULT_ENVELOPE }
-}
-export function hasEnvelope(storage = globalThis.localStorage) {
-  try { return validEnvelope(JSON.parse(storage.getItem(STORE_KEY))) } catch { return false }
-}
-export function saveEnvelope(e, storage = globalThis.localStorage) {
-  try { storage.setItem(STORE_KEY, JSON.stringify(e)); return true } catch { return false }
 }

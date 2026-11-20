@@ -14,6 +14,9 @@ module ActiveSupport
     # Setup all fixtures in test/fixtures/*.yml for all tests in alphabetical order.
     fixtures :all
 
+    # The recovery probe memo (ApplicationController) must not leak a "nothing locked" result between tests.
+    setup { ApplicationController.recovery_probe_memo = nil }
+
     # Add more helper methods to be used by all tests here...
   end
 end

@@ -49,6 +49,17 @@ module ApplicationHelper
     { topology_graph_bundle_url_value: asset_path("graph/index.js") }
   end
 
+  # THE helper for user prose (notes, comments, to-dos, KB project text, ...): CommonMark-ish markdown
+  # (fenced code, emphasis, lists, links, hard line breaks), sanitized. Never use simple_format for it.
+  def render_prose(text)
+    tag.div(Kb::MarkdownRenderer.render(text), class: "md-prose")
+  end
+
+  # Same for ActionText HTML (idea description): upgrades plain paragraphs holding markdown.
+  def render_rich_prose(html)
+    Kb::RichProse.call(html)
+  end
+
   def format_description(text, length: 140)
     return "" if text.blank?
 
@@ -77,6 +88,7 @@ module ApplicationHelper
 
   def format_backlog_description(build_item)
     return "" if build_item.description.blank?
+    return render_prose(build_item.description) if build_item.description.include?("```") # fences need real markdown; checklist lines stay on the path below
 
     content = []
     list_items = []

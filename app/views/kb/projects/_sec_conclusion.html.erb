@@ -2,7 +2,7 @@
 <% summary = text.present? ? truncate(text.gsub(/[#*_>`\[\]-]/, "").squish, length: 90) : "Not written yet" %>
 <%= render layout: "kb/projects/section", locals: { id: "conclusion", title: "Conclusion", summary: summary, open: open, lead: lead, mode: mode, project: project } do %>
   <% if text.present? %>
-    <article class="kb-markdown rich-text-content kbp-prose kbp-conclusion"><%= render_markdown(text) %></article>
+    <article class="kb-markdown rich-text-content kbp-prose kbp-conclusion"><%= render_project_markdown(text) %></article>
   <% elsif mode != "conclude" %>
     <p class="kbp-empty">The final written answer to the goal. Leave it until the Conclude stage.</p>
   <% end %>
@@ -14,6 +14,7 @@
                 placeholder="Answer the goal in your own words: what you set out to find out, what you found, how sure you are. Cite findings as [F1]."><%= text %></textarea>
       <div class="kbp-actions">
         <button class="kbp-btn kbp-btn--primary">Save conclusion</button>
+        <button type="button" class="kbp-link kbp-draw" data-action="kb-project#draw">Draw</button>
         <% if mode == "conclude" %>
           <button type="button" class="kbp-btn" data-action="kb-project#draft" data-draft="<%= kb_conclusion_draft(project) %>"
                   title="Fill the editor with a draft: the question, each test by verdict with its findings, then general findings">Draft from findings</button>
@@ -29,6 +30,7 @@
                   placeholder="Answer the goal in your own words: what you set out to find out, what you found, how sure you are. Cite findings as [F1]."><%= text %></textarea>
         <div class="kbp-actions">
           <button class="kbp-btn kbp-btn--primary">Save conclusion</button>
+        <button type="button" class="kbp-link kbp-draw" data-action="kb-project#draw">Draw</button>
           <% if mode == "conclude" %>
             <button type="button" class="kbp-btn" data-action="kb-project#draft" data-draft="<%= kb_conclusion_draft(project) %>"
                     title="Fill the editor with a draft: the question, each test by verdict with its findings, then general findings">Draft from findings</button>

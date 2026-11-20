@@ -18,6 +18,10 @@
                 options_for_select(Licensor::STAGE_ORDER.map { |s| [Licensor.stage_label(s), s] }, licensor.stage),
                 id: "crm_licensor_stage", class: "crm-input" %>
         </div>
+        <div class="crm-field">
+          <label for="crm_licensor_channel">Where / channel</label>
+          <%= text_field_tag "licensor[channel]", licensor.channel, id: "crm_licensor_channel", class: "crm-input", placeholder: "Trade show, agent, cold email…", autocomplete: "off" %>
+        </div>
         <div class="crm-field-row">
           <div class="crm-field">
             <label for="crm_licensor_contact_name">Contact name</label>
@@ -63,7 +67,7 @@
                     <span class="crm-log__channel"><%= c.channel_label %></span>
                     <span class="crm-log__date"><%= c.occurred_at.strftime("%b %-d, %Y") %></span>
                   </div>
-                  <% if c.summary.present? %><p class="crm-log__summary"><%= c.summary %></p><% end %>
+                  <% if c.summary.present? %><div class="crm-log__summary"><%= render_prose(c.summary) %></div><% end %>
                 </div>
                 <%= button_to "&times;".html_safe, licensor_contact_path(licensor, c), method: :delete,
                       params: { context: "panel" }, class: "crm-log__del",

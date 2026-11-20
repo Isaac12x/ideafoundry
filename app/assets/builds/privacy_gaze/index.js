@@ -50575,18 +50575,81 @@ _checkSanity = /* @__PURE__ */ new WeakMap();
 _sanity = /* @__PURE__ */ new WeakMap();
 _loops = /* @__PURE__ */ new WeakMap();
 
-// app/javascript/privacy_gaze/gaze_state.js
+// app/javascript/lib/gaze_profiles.mjs
 var FEATURES = ["yaw", "pitch", "h", "v"];
-var MARGIN_AT_5 = { yaw: 12, pitch: 10, h: 0.15, v: 0.2 };
-var DEFAULT_SENSITIVITY = 5;
-var DEFAULT_AWAY_MS = 2500;
-var DEFAULT_CLEAR_MS = 150;
-var MIN_POINT_SAMPLES = 5;
+var STORE_KEY = "privacy-gaze:envelope";
+var PROFILES_KEY = "privacy-gaze:profiles";
 var DEFAULT_ENVELOPE = {
   center: { yaw: 0, pitch: 0, h: 0, v: 0 },
   min: { yaw: -15, pitch: -12, h: -0.25, v: -0.3 },
   max: { yaw: 15, pitch: 12, h: 0.25, v: 0.3 }
 };
+function screenKey(scr = globalThis.screen) {
+  if (!scr?.width || !scr?.height) return "unknown";
+  return `${scr.width}x${scr.height}@${scr.availLeft ?? scr.left ?? 0},${scr.availTop ?? scr.top ?? 0}`;
+}
+function defaultScreenName(scr = globalThis.screen, label) {
+  if (label) return label;
+  return scr?.width ? `${scr.width}\xD7${scr.height} screen${scr.isInternal ? " (built-in)" : ""}` : "This screen";
+}
+var validEnvelope = (e10) => !!e10 && ["center", "min", "max"].every((p8) => FEATURES.every((k8) => Number.isFinite(e10[p8]?.[k8])));
+var read = (storage, key) => {
+  try {
+    return JSON.parse(storage.getItem(key));
+  } catch {
+    return null;
+  }
+};
+function loadProfiles(storage = globalThis.localStorage, scr = globalThis.screen) {
+  const stored = read(storage, PROFILES_KEY);
+  if (Array.isArray(stored?.profiles)) return stored.profiles.filter((p8) => p8?.key && validEnvelope(p8.envelope));
+  const legacy = read(storage, STORE_KEY);
+  if (!validEnvelope(legacy)) return [];
+  const profiles = [{ key: screenKey(scr), name: defaultScreenName(scr), envelope: legacy, updatedAt: Date.now() }];
+  saveProfiles(profiles, storage);
+  try {
+    storage.removeItem(STORE_KEY);
+  } catch {
+  }
+  return profiles;
+}
+function saveProfiles(profiles, storage = globalThis.localStorage) {
+  try {
+    storage.setItem(PROFILES_KEY, JSON.stringify({ v: 1, profiles }));
+    return true;
+  } catch {
+    return false;
+  }
+}
+var profileFor = (profiles, key) => profiles.find((p8) => p8.key === key);
+function loadEnvelope(storage = globalThis.localStorage, scr = globalThis.screen) {
+  return profileFor(loadProfiles(storage, scr), screenKey(scr))?.envelope || DEFAULT_ENVELOPE;
+}
+function hasEnvelope(storage = globalThis.localStorage, scr = globalThis.screen) {
+  return !!profileFor(loadProfiles(storage, scr), screenKey(scr));
+}
+function saveEnvelope(envelope, storage = globalThis.localStorage, scr = globalThis.screen, name) {
+  const key = screenKey(scr);
+  const profiles = loadProfiles(storage, scr);
+  const old = profileFor(profiles, key);
+  const next = { key, name: name || old?.name || defaultScreenName(scr), envelope, updatedAt: Date.now() };
+  return saveProfiles(old ? profiles.map((p8) => p8.key === key ? next : p8) : [...profiles, next], storage);
+}
+function renameProfile(key, name, storage = globalThis.localStorage) {
+  const n9 = String(name || "").trim().slice(0, 60);
+  if (!n9) return false;
+  return saveProfiles(loadProfiles(storage).map((p8) => p8.key === key ? { ...p8, name: n9 } : p8), storage);
+}
+function deleteProfile(key, storage = globalThis.localStorage) {
+  return saveProfiles(loadProfiles(storage).filter((p8) => p8.key !== key), storage);
+}
+
+// app/javascript/privacy_gaze/gaze_state.js
+var MARGIN_AT_5 = { yaw: 12, pitch: 10, h: 0.15, v: 0.2 };
+var DEFAULT_SENSITIVITY = 5;
+var DEFAULT_AWAY_MS = 2500;
+var DEFAULT_CLEAR_MS = 150;
+var MIN_POINT_SAMPLES = 5;
 var CALIBRATION_POINTS = [
   { x: 0.5, y: 0.5 },
   { x: 0.08, y: 0.1 },
@@ -50594,7 +50657,6 @@ var CALIBRATION_POINTS = [
   { x: 0.92, y: 0.9 },
   { x: 0.08, y: 0.9 }
 ];
-var STORE_KEY = "privacy-gaze:envelope";
 var clamp2 = (n9, lo3, hi3) => Math.min(hi3, Math.max(lo3, n9));
 var deg = (rad) => rad * 180 / Math.PI;
 var score = (shapes, name) => shapes?.find((c8) => c8.categoryName === name)?.score ?? 0;
@@ -50680,30 +50742,6 @@ function createHysteresis({ awayMs = DEFAULT_AWAY_MS, clearMs = DEFAULT_CLEAR_MS
       return state;
     }
   };
-}
-var validEnvelope = (e10) => !!e10 && ["center", "min", "max"].every((p8) => FEATURES.every((k8) => Number.isFinite(e10[p8]?.[k8])));
-function loadEnvelope(storage = globalThis.localStorage) {
-  try {
-    const e10 = JSON.parse(storage.getItem(STORE_KEY));
-    return validEnvelope(e10) ? e10 : DEFAULT_ENVELOPE;
-  } catch {
-    return DEFAULT_ENVELOPE;
-  }
-}
-function hasEnvelope(storage = globalThis.localStorage) {
-  try {
-    return validEnvelope(JSON.parse(storage.getItem(STORE_KEY)));
-  } catch {
-    return false;
-  }
-}
-function saveEnvelope(e10, storage = globalThis.localStorage) {
-  try {
-    storage.setItem(STORE_KEY, JSON.stringify(e10));
-    return true;
-  } catch {
-    return false;
-  }
 }
 
 // app/javascript/privacy_gaze/identity_state.js
@@ -51067,6 +51105,8 @@ export {
   MESSAGES,
   MIN_POINT_SAMPLES,
   OWNER_TRACK_DIST,
+  PROFILES_KEY,
+  STORE_KEY,
   VERIFY_TTL_MS,
   allChecks,
   buildEnvelope,
@@ -51075,6 +51115,8 @@ export {
   createGuard,
   createHysteresis,
   createIdentity,
+  defaultScreenName,
+  deleteProfile,
   earsOnFace,
   enrollChecks,
   extractFaces,
@@ -51082,12 +51124,18 @@ export {
   hasEnvelope,
   isLooking,
   loadEnvelope,
+  loadProfiles,
   lumaStats,
   marginScale,
   margins,
   pointMedian,
+  profileFor,
+  renameProfile,
   saveEnvelope,
+  saveProfiles,
+  screenKey,
   startGazeSession,
+  validEnvelope,
   verifyOwner
 };
 //# sourceMappingURL=index.js.map

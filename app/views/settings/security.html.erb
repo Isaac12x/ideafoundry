@@ -23,7 +23,7 @@
               <span class="tab-toggle__description">When enabled, the app locks after the inactivity window below.</span>
             </div>
             <span class="tab-toggle__switch">
-              <%= check_box_tag "typing_lock[enabled]", "1", @user.typing_lock_enabled?, id: "typing_lock_enabled", class: "tab-toggle__input" %>
+              <%= check_box_tag "typing_lock[enabled]", "1", @user.typing_lock_enabled?, id: "typing_lock_enabled", class: "tab-toggle__input", data: { privacy_haze_preview_target: "enabled" } %>
               <span class="tab-toggle__track" aria-hidden="true">
                 <span class="tab-toggle__thumb"></span>
               </span>
@@ -112,7 +112,8 @@
         <% gaze = @privacy_gaze_settings %>
         <div class="privacy-section" data-controller="privacy-haze-preview">
           <%= form_with url: settings_security_privacy_path, method: :patch, local: true, class: "privacy-form", data: { controller: "settings-autosave", action: "change->settings-autosave#toggleChanged input->settings-autosave#echo" } do %>
-            <%= hidden_field_tag "privacy_gaze[enabled]", "0" %>
+            <%= hidden_field_tag "privacy_gaze[enabled]", "0", id: nil, data: { privacy_haze_preview_target: "offField" } %>
+            <%= hidden_field_tag "privacy_gaze[clear]", "0", id: nil, data: { privacy_haze_preview_target: "clear" } %>
             <label class="tab-toggle" for="privacy_gaze_enabled">
               <div class="tab-toggle__text">
                 <span class="tab-toggle__name">Gaze privacy haze</span>
@@ -125,6 +126,7 @@
                 </span>
               </span>
             </label>
+            <p class="privacy-hint privacy-hint--lock" data-privacy-haze-preview-target="lockHint" id="privacy_gaze_lock_hint" hidden>Turning this off needs the camera to see you looking at the screen with the haze clear. Face the camera, then try again. If the camera is missing or broken, this unlocks by itself.</p>
 
             <div class="privacy-group privacy-group--applies privacy-group--dim">
               <span class="privacy-label" id="privacy_sections_label">Applies to</span>
@@ -194,7 +196,6 @@
             </div>
             <div class="privacy-preview__tile" data-privacy-haze-preview-target="tile" aria-hidden="true">
               <div class="privacy-preview__nav"><span class="privacy-preview__brand"></span><i></i><i></i><i></i>
-                <svg class="privacy-eye" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
               </div>
               <div class="privacy-preview__page" data-privacy-haze-preview-target="page">
                 <h4>Launch notes</h4>
@@ -206,12 +207,12 @@
           </div>
 
         <div class="privacy-panels" data-controller="privacy-gaze-calibrate" data-privacy-gaze-calibrate-face-url-value="<%= settings_security_privacy_face_path %>">
-          <div class="privacy-panel privacy-calibrate">
+          <div class="privacy-panel privacy-calibrate" id="privacy-calibration">
             <div class="privacy-calibrate__row">
               <div>
                 <span class="privacy-calibrate__eyebrow">Calibration</span>
                 <strong data-privacy-gaze-calibrate-target="status">Not calibrated</strong>
-                <p data-privacy-gaze-calibrate-target="message" aria-live="polite">Follow a dot to the centre and the four corners of the screen so wide monitors and corners count as looking. This device only.</p>
+                <p data-privacy-gaze-calibrate-target="message" aria-live="polite">Follow a dot to the centre and the four corners of the screen so wide monitors and corners count as looking. Each screen (laptop, external monitor) keeps its own calibration; the matching one is used automatically. This device only.</p>
               </div>
               <button type="button" class="btn btn-secondary btn-sm" data-privacy-gaze-calibrate-target="button" data-action="privacy-gaze-calibrate#toggle">Calibrate</button>
             </div>
@@ -221,6 +222,7 @@
                 <span class="privacy-calibrate__live" data-privacy-gaze-calibrate-target="live" aria-live="off"></span>
               </div>
             </div>
+            <ul class="privacy-profiles" data-privacy-gaze-calibrate-target="profiles" aria-label="Calibrated screens" hidden></ul>
             <p class="privacy-status" data-privacy-gaze-calibrate-target="haze" aria-live="polite" hidden></p>
           </div>
 
@@ -256,8 +258,7 @@
         </div>
 
           <p class="privacy-footnote">
-            <kbd data-shortcut-id="privacy_haze"><%= @user.shortcut_binding("privacy_haze") %></kbd> toggles the haze from any screen; turning it off is refused while the content is hazed.
-            The eye in the top bar shows the state: <svg class="privacy-eye" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/><line x1="3" y1="3" x2="21" y2="21"/></svg> off, <svg class="privacy-eye" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg> watching, hazed when it is dimmed and pulsing. Click it to toggle.
+            <kbd data-shortcut-id="privacy_haze"><%= @user.shortcut_binding("privacy_haze") %></kbd> toggles the haze from any screen. Turning it off needs the camera to see you looking at the screen, with the haze clear.
           </p>
         </div>
       </section>

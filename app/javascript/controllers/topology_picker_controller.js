@@ -4,7 +4,7 @@ import { Controller } from "@hotwired/stimulus"
 // Search reveals matching nodes plus their ancestors and descendants;
 // clearing the box restores the fully-expanded tree.
 export default class extends Controller {
-  static targets = ["search", "tree", "empty", "newToggle", "newPanel", "newName", "newParent", "newError"]
+  static targets = ["search", "tree", "empty", "newToggle", "newPanel", "newName", "newParent", "newError", "swatch"]
   static values = { createUrl: String }
 
   toggleNode(event) {
@@ -70,6 +70,12 @@ export default class extends Controller {
     if (event.key === "Enter") { event.preventDefault(); this.createTopology() }
   }
 
+  // Swatch row: "" (Auto) lets the server inherit the parent's colour or pick the next unused one.
+  pickColor(event) {
+    this.color = event.currentTarget.dataset.color
+    this.swatchTargets.forEach((s) => s.setAttribute("aria-checked", String(s === event.currentTarget)))
+  }
+
   // Escape anywhere in the open panel collapses it and returns focus to the toggle.
   collapseNew(event) {
     if (event.key !== "Escape" || this.newPanelTarget.hidden) return
@@ -89,7 +95,7 @@ export default class extends Controller {
       response = await fetch(this.createUrlValue, {
         method: "POST",
         headers: { Accept: "application/json", "Content-Type": "application/json", "X-CSRF-Token": document.querySelector("meta[name=csrf-token]")?.content },
-        body: JSON.stringify({ topology: { name, parent_id: parentId || null } })
+        body: JSON.stringify({ topology: { name, parent_id: parentId || null, color: this.color || null } })
       })
       data = await response.json()
     } catch (_e) {
@@ -105,6 +111,9 @@ export default class extends Controller {
     this.newParentTarget.add(option)
     this.newNameTarget.value = ""
     this.newParentTarget.value = ""
+    this.newParentTarget.dispatchEvent(new Event("change")) // refresh the select-menu label
+    this.color = ""
+    this.swatchTargets.forEach((s, i) => s.setAttribute("aria-checked", String(i === 0)))
     this.emptyTarget.hidden = true
     this.searchTarget.value = ""
     this.filter()

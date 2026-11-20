@@ -15,6 +15,7 @@ const FIELDS = "textarea[name]:not([data-draft-skip])"
 export default class extends Controller {
   connect() {
     this.timers = new Map()
+    this.cleared = new WeakMap() // field -> clear count, so a save still encrypting when the form succeeds cannot resurrect the text
     this.on = (target, type, fn, opts) => { target.addEventListener(type, fn, opts); (this.off ||= []).push(() => target.removeEventListener(type, fn, opts)) }
     this.on(document, "input", (event) => this.queue(event.target))
     this.on(document, "submit", (event) => this.markPending(event))
@@ -48,7 +49,8 @@ export default class extends Controller {
 
   save(field) {
     this.timers.delete(field)
-    return saveFieldDraft(field)
+    const seen = this.cleared.get(field) || 0
+    return saveFieldDraft(field).then(() => { if ((this.cleared.get(field) || 0) !== seen) clearFieldDraft(field) })
   }
 
   // Resolves once every pending draft is written (the lock waits on it before leaving the page).
@@ -59,6 +61,7 @@ export default class extends Controller {
   clear(field) {
     clearTimeout(this.timers.get(field))
     this.timers.delete(field)
+    this.cleared.set(field, (this.cleared.get(field) || 0) + 1)
     clearFieldDraft(field)
   }
 

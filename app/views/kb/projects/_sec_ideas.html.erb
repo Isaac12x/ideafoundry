@@ -5,7 +5,7 @@
       <% items.each do |item| %>
         <li class="kbp-finding" id="idea-<%= item['id'] %>">
           <time class="kbp-finding-date" datetime="<%= item['at'] %>"><%= (Date.iso8601(item["at"]).strftime("%d %b") rescue item["at"]) %></time>
-          <div class="kbp-finding-main"><p class="kbp-finding-text"><%= item["text"] %></p></div>
+          <div class="kbp-finding-main"><div class="kbp-finding-text kb-markdown rich-text-content kbp-prose"><%= render_project_markdown(item["text"]) %></div></div>
           <div class="kbp-finding-tools">
             <%= form_with url: kb_project_ideas_path, method: :delete, class: "kbp-inline" do %>
               <%= ids %>

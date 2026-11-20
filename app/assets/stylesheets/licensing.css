@@ -60,11 +60,25 @@
 /* ============================================
    Potential Licensors tab (idea detail)
    ============================================ */
-.licensors-tab__intro {
-  font-size: 0.85rem;
-  color: var(--text-muted);
-  margin-bottom: 1rem;
+.licensors-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  flex-wrap: wrap;
+  margin: 1.4rem 0 0.75rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border-subtle);
 }
+.licensors-head h3 { margin: 0; }
+.licensors-head__count {
+  margin-left: 0.35rem;
+  font-family: var(--font-body);
+  font-style: normal;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+.licensors-head__links { display: flex; gap: 1rem; font-size: 0.82rem; }
 .licensors-crm-link {
   color: var(--accent);
   text-decoration: none;
@@ -99,8 +113,10 @@
   background: var(--bg-surface);
   border: 1px solid var(--border-default);
   border-radius: var(--radius-md);
-  padding: 12px 14px;
+  padding: 12px 14px 10px 16px;
+  transition: border-color 0.15s ease;
 }
+.licensor-row:hover { border-color: var(--border-emphasis); }
 .licensor-row__top {
   display: flex;
   justify-content: space-between;
@@ -141,7 +157,10 @@
   width: max-content;
 }
 .licensor-row__manage summary::-webkit-details-marker { display: none; }
+.licensor-row__manage summary::after { content: " \25BE"; }
+.licensor-row__manage[open] summary::after { content: " \25B4"; }
 .licensor-row__manage summary:hover { color: var(--text-secondary); }
+.licensor-row__manage summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 2px; }
 .licensor-row__manage[open] summary { color: var(--accent); }
 .licensor-row__controls {
   margin-top: 10px;
@@ -177,7 +196,9 @@
 
 .licensors-empty {
   text-align: center;
-  padding: 2.5rem 1rem;
+  padding: 2rem 1rem;
+  border: 1px dashed var(--border-default);
+  border-radius: var(--radius-md);
   color: var(--text-muted);
 }
 .licensors-empty p { margin: 0 0 0.25rem; font-weight: 500; color: var(--text-secondary); }
@@ -249,7 +270,6 @@
   padding: 10px 14px;
   background: var(--bg-surface);
   border: 1px solid var(--border-default);
-  border-left: 3px solid hsl(var(--stage-hue) 60% 55%);
   border-radius: var(--radius-sm);
 }
 .crm-stat__count {
@@ -905,3 +925,26 @@
   .crm-card, .crm-panel__scrim, .crm-panel__drawer { animation: none; transition: none; }
   .crm-card:hover { transform: none; }
 }
+
+/* Prospect capture on the Potential Licensors tab */
+.licensor-add { margin-bottom: 0.9rem; }
+.licensor-add[open] > .idea-entries-add__toggle { margin-bottom: 0.5rem; }
+.licensor-add .licensor-form { margin-bottom: 0; }
+.licensor-form__notes { margin-top: 8px; width: 100%; }
+.licensor-row__why {
+  margin: 0.25rem 0 0;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+.licensing-notes { margin-bottom: 1rem; }
+.licensing-notes__label {
+  display: block;
+  margin-bottom: 0.35rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.licensing-notes textarea { width: 100%; }

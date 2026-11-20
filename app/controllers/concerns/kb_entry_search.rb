@@ -9,6 +9,16 @@ module KbEntrySearch
 
   INDEX_TTL = 1.hour # safety net only; KB writes bump the generation below
 
+  # Where an entry opens: a file is a document, a project its page, a plain folder the KB with the tree revealed there.
+  # (kb_path(file:) only resolves files, so folders/projects built that way 404 as "missing".)
+  def kb_entry_url(e)
+    case e[:type]
+    when "project" then kb_path(src: e[:src], project: e[:path])
+    when "dir" then kb_path(src: e[:src], folder: e[:path])
+    else kb_path(src: e[:src], file: e[:path])
+    end
+  end
+
   # Filters the cached walk in memory: typing never re-walks the disk.
   def search_entries(query)
     found = kb_entry_index.filter_map do |e|

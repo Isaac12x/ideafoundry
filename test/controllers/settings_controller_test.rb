@@ -144,7 +144,7 @@ class SettingsControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_select ".ask-agent-shell[data-ask-agent-questions-url-value=?]", settings_local_agent_questions_path
     assert_select ".ask-agent-sidebar__status", text: /Not running/
-    assert_select ".ask-agent-sidebar__notice a[href=?]", settings_local_agent_path
+    assert_select ".ask-agent-sidebar__status a[href=?]", settings_local_agent_path
     assert_select ".ask-agent-sidebar__status", text: /Ready/, count: 0
     assert_select ".ask-agent-shell [aria-live=polite][data-ask-agent-target=status]", count: 1
   end
@@ -335,8 +335,43 @@ class SettingsControllerTest < ActionDispatch::IntegrationTest
     assert_equal({ "enabled" => true }, response.parsed_body)
     assert @user.reload.privacy_gaze_enabled?
 
-    patch settings_security_privacy_toggle_path, as: :json
+    patch settings_security_privacy_toggle_path, params: { clear: true }, as: :json
     assert_equal({ "enabled" => false }, response.parsed_body)
+    refute @user.reload.privacy_gaze_enabled?
+  end
+
+  test "turning privacy gaze off (and swapping/removing the face) is refused without the clear attestation" do
+    enroll_privacy_face!
+    @user.update_privacy_gaze_settings("enabled" => "1")
+
+    patch settings_security_privacy_path, params: { privacy_gaze: { enabled: "0" } }, as: :json
+    assert_response :forbidden
+    assert @user.reload.privacy_gaze_enabled?
+
+    patch settings_security_privacy_path, params: { privacy_gaze: { enabled: "0", clear: "0" } }
+    assert_redirected_to settings_security_path
+    assert @user.reload.privacy_gaze_enabled?
+
+    patch settings_security_privacy_path, params: { privacy_gaze: { sensitivity: "7" } }, as: :json # no enabled key: tuning still saves
+    assert_response :success
+
+    patch settings_security_privacy_toggle_path, as: :json
+    assert_response :forbidden
+    assert @user.reload.privacy_gaze_enabled?
+
+    delete settings_security_privacy_face_path, as: :json
+    assert_response :forbidden
+    put settings_security_privacy_face_path, params: { descriptors: Array.new(3) { Array.new(128, 0.5) } }, as: :json
+    assert_response :forbidden
+    assert @user.reload.privacy_face_enrolled?
+
+    patch settings_security_privacy_toggle_path, params: { clear: true }, as: :json
+    assert_response :success
+    refute @user.reload.privacy_gaze_enabled?
+
+    @user.update_privacy_gaze_settings("enabled" => "1")
+    patch settings_security_privacy_path, params: { privacy_gaze: { enabled: "0", clear: "1" } }, as: :json
+    assert_response :success
     refute @user.reload.privacy_gaze_enabled?
   end
 
@@ -356,13 +391,13 @@ class SettingsControllerTest < ActionDispatch::IntegrationTest
   test "layout privacy attrs: toggle only when configured, active follows sections" do
     get settings_path
     assert_select "body[data-privacy-toggle-url]", count: 0
-    assert_select "[data-privacy-indicator]", count: 0
+    assert_select "[data-privacy-indicator]", count: 0 # the nav eye is gone
 
     enroll_privacy_face!
     get settings_path
     assert_select "body[data-privacy-toggle-url=?][data-privacy-enabled=?]", settings_security_privacy_toggle_path, "false"
     assert_select "body[data-privacy-gaze-away-ms-value]", count: 0
-    assert_select "button[data-privacy-indicator][data-state=?]", "off"
+    assert_select "[data-privacy-indicator]", count: 0
 
     @user.update_privacy_gaze_settings("enabled" => "1", "sections" => [ "ideas" ], "away_ms" => "4000", "clear_ms" => "200", "sensitivity" => "8", "haze_strength" => "9")
     get ideas_path
@@ -372,12 +407,14 @@ class SettingsControllerTest < ActionDispatch::IntegrationTest
     assert_select "body[data-privacy-gaze-clear-ms-value=?]", "200"
     assert_select "body[data-privacy-gaze-sensitivity-value=?]", "8"
     assert_select "body[data-privacy-gaze-strength-value=?]", "9"
-    assert_select "button[data-privacy-indicator][data-state=?]", "watching"
     assert_select "body[data-privacy-gaze-lock-url-value=?]", ""
 
     @user.update_privacy_gaze_settings("sections" => [ "" ])
     get ideas_path
     assert_select "body[data-privacy-gaze-active-value=?]", "false"
+
+    get settings_security_path # settings is never a protected section, but verifies the owner so the haze can be turned off
+    assert_select "body[data-privacy-gaze-active-value=?]", "true"
   end
 
   test "privacy face endpoints store, serve no-store, reject and clear" do
@@ -673,7 +710,7 @@ class SettingsControllerTest < ActionDispatch::IntegrationTest
     assert_equal "no-store", response.headers["Cache-Control"]
     assert_no_match(/<html|<body|ask-agent-shell/, response.body)
     assert_select ".ask-agent-thread", count: 2
-    assert_includes response.body, "One.\nTwo &lt;b&gt;&amp;&lt;/b&gt;" # escaped, newline kept for pre-wrap
+    assert_select ".ask-agent-message--agent .md-prose", text: /One\.\s*Two/ # answers go through the shared markdown renderer
     assert_select ".ask-agent-message--pending", count: 1
     assert_no_match(/Not yours/, response.body)
   ensure
@@ -715,6 +752,17 @@ class SettingsControllerTest < ActionDispatch::IntegrationTest
     get settings_local_agent_questions_path
     assert_select ".ask-agent-message--user p", text: "Expand this"
     assert_select ".ask-agent-message--pending", count: 1
+  end
+
+  test "idea context goes to the agent prompt, not the visible question" do
+    @user.update_local_agent_settings("enabled" => "1")
+    post settings_local_agent_questions_path, params: { agent_question: { body: "Why?", context: "Regarding the idea \"X\"" } }, as: :json
+    event = @user.agent_events.where(event_type: "question").last
+    assert_equal "Why?", event.summary
+    assert_equal "Regarding the idea \"X\"\n\nWhy?", event.question_prompt
+    get settings_local_agent_questions_path
+    assert_select ".ask-agent-message--user p", text: "Why?"
+    assert_no_match(/Regarding/, response.body)
   end
 
   test "questions continue a thread, can switch agent per turn, and render per thread" do

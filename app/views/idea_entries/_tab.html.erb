@@ -5,9 +5,13 @@
 <% form_entry = local_assigns[:idea_entry] || IdeaEntry.new(kind: kind) %>
 
 <div class="idea-entries-tab" id="idea_entries_tab_<%= idea.id %>_<%= kind %>">
-  <div class="idea-entries-add-section" id="idea_entry_form_<%= idea.id %>_<%= kind %>">
-    <%= render "idea_entries/form", idea: idea, kind: kind, idea_entry: form_entry %>
-  </div>
+  <%# View page stays read-only: the create form is progressive disclosure, closed until asked for. %>
+  <details class="idea-entries-add" id="idea_entry_form_<%= idea.id %>_<%= kind %>" <%= "open" if form_entry.errors.any? %>>
+    <summary class="idea-entries-add__toggle">+ Add <%= singular.downcase %></summary>
+    <div class="idea-entries-add-section">
+      <%= render "idea_entries/form", idea: idea, kind: kind, idea_entry: form_entry %>
+    </div>
+  </details>
 
   <div class="idea-entries-list" id="idea_entries_list_<%= idea.id %>_<%= kind %>">
     <% if entries.any? %>
@@ -17,7 +21,7 @@
     <% else %>
       <div class="idea-entries-empty" id="idea_entries_empty_<%= idea.id %>_<%= kind %>">
         <p>No <%= label.downcase %> yet</p>
-        <span class="notes-empty-hint">Add your first <%= singular.downcase %> above</span>
+        <span class="notes-empty-hint">Use “+ Add <%= singular.downcase %>” above to record the first one</span>
       </div>
     <% end %>
   </div>
