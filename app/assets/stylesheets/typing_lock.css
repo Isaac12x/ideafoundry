@@ -605,6 +605,11 @@ body.typing-lock-page .alert {
   padding: 0 1.5rem;
 }
 
+/* last field in a form gets the section's bottom inset (otherwise it sits on the border) */
+.typing-settings-field:last-child {
+  padding-bottom: 1.5rem;
+}
+
 .typing-settings-field label {
   display: block;
   margin-bottom: 6px;
