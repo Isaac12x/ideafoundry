@@ -106,7 +106,7 @@ end
 group :test do
   # Use system testing [https://guides.rubyonrails.org/testing.html#system-testing]
   gem "capybara"
-  gem "minitest", "~> 6.0"
+  gem "minitest", "~> 6.1"
   gem "minitest-mock" # extracted from minitest 6
   gem "selenium-webdriver"
   # Generate .xlsx fixtures for KB rendering tests (roo reads, caxlsx writes)
@@ -116,7 +116,7 @@ end
 gem "redcarpet", "~> 3.6"
 
 # Read .xlsx spreadsheets for KB rendering (converted to HTML tables)
-gem "roo", "~> 3.0"
+gem "roo", "~> 4.0"
 
 gem "rack-attack"
 

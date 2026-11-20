@@ -12,10 +12,8 @@ class ScheduledBackupJob < ApplicationJob
     # Skip if there's already an active export
     return if user.export_jobs.where(status: [ :pending, :processing ]).exists?
 
-    export_job = user.export_jobs.create!
+    export_job = user.export_jobs.create!(kind: :backup)
     export_job.start_export!
-
-    enforce_retention(user, settings) if settings["auto_cleanup"].to_s == "true"
 
     if settings["email_notification"].to_s == "true"
       # Wait for export to complete before sending notification
@@ -36,21 +34,38 @@ class ScheduledBackupJob < ApplicationJob
     end
   end
 
-  def enforce_retention(user, settings)
+  def self.enforce_retention(user, settings, keep_job_id:)
     retention_days = (settings["retention_days"] || 30).to_i
-    max_backups = (settings["max_backups"] || 5).to_i
+    max_backups = [ (settings["max_backups"] || 5).to_i, 1 ].max
+    retired_paths = ExportJob.transaction do
+      completed_backups = user.export_jobs.backups.completed
+      next [] unless completed_backups.exists?(keep_job_id)
 
-    # Delete exports older than retention period
-    user.export_jobs.where("created_at < ?", retention_days.days.ago).find_each do |job|
-      job.cleanup_file! if job.file_exists?
-      job.destroy!
+      paths = []
+      # Delete backups older than retention period
+      completed_backups.where("created_at < ?", retention_days.days.ago).where.not(id: keep_job_id).find_each do |job|
+        paths << retire_backup(job)
+      end
+
+      # Keep only max_backups most recent, with the just-completed backup protected.
+      excess = completed_backups.where.not(id: keep_job_id).recent.offset(max_backups - 1)
+      excess.each do |job|
+        paths << retire_backup(job)
+      end
+      paths.compact.uniq
     end
 
-    # Keep only max_backups most recent
-    excess = user.export_jobs.completed.recent.offset(max_backups)
-    excess.each do |job|
-      job.cleanup_file! if job.file_exists?
-      job.destroy!
+    # Do filesystem cleanup only after database changes commit. Recheck references
+    # so a path shared with another export is never removed.
+    retired_paths.each do |file_path|
+      FileUtils.rm_f(file_path) unless ExportJob.where(file_path: file_path).exists?
     end
   end
+
+  def self.retire_backup(job)
+    file_path = job.file_path
+    job.destroy!
+    file_path
+  end
+  private_class_method :retire_backup
 end

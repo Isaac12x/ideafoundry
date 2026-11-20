@@ -43,6 +43,16 @@ class IdeasControllerTest < ActionDispatch::IntegrationTest
     assert_redirected_to edit_idea_url(draft, draft: 1)
   end
 
+  test "opening another capture tab does not delete the first blank draft" do
+    first = @user.ideas.create!(draft: true, state: :idea_new, title: "")
+
+    assert_difference -> { @user.ideas.drafts.count }, 1 do
+      get new_idea_url
+    end
+
+    assert Idea.exists?(first.id)
+  end
+
   test "autosave keeps draft and stores fields without versioning" do
     draft = @user.ideas.create!(draft: true, state: :idea_new, title: "")
     assert_no_difference -> { draft.versions.count } do
@@ -156,6 +166,35 @@ class IdeasControllerTest < ActionDispatch::IntegrationTest
   test "should get index" do
     get ideas_url
     assert_response :success
+  end
+
+  test "index skips idea entry preload when entry tabs are disabled" do
+    @user.update!(settings: { "idea_tabs" => {} })
+    entry_selects = count_idea_entry_selects { get ideas_url }
+
+    assert_response :success
+    assert_equal 0, entry_selects
+  end
+
+  test "index preloads idea entries once when an entry tab is enabled" do
+    @user.update!(settings: { "idea_tabs" => { "tool" => true } })
+    @idea.idea_entries.create!(kind: :tool, name: "Notebook")
+    entry_selects = count_idea_entry_selects { get ideas_url }
+
+    assert_response :success
+    assert_equal 1, entry_selects
+    assert_select ".idea-entry-summary--inline", text: /Notebook/
+  end
+
+  def count_idea_entry_selects
+    count = 0
+    subscriber = ActiveSupport::Notifications.subscribe("sql.active_record") do |_name, _start, _finish, _id, payload|
+      count += 1 if payload[:name] == "IdeaEntry Load" && !payload[:cached]
+    end
+    yield
+    count
+  ensure
+    ActiveSupport::Notifications.unsubscribe(subscriber) if subscriber
   end
 
   test "index does not create planning records for an empty workspace" do
