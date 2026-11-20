@@ -23,10 +23,11 @@
     "three-spritetext": "^1.10.0"
   },
   "resolutions": {
-    "dompurify": "3.4.12",
+    "dompurify": "3.4.17",
     "immutable": "4.3.9",
     "lodash-es": "4.18.1",
-    "nanoid": "5.0.9"
+    "nanoid": "5.1.16",
+    "@xmldom/xmldom": "0.8.15"
   },
   "devDependencies": {
     "@types/react": "^19.3.0",
