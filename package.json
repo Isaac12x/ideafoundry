@@ -9,7 +9,7 @@
   "dependencies": {
     "3d-force-graph": "^1.80.1",
     "@excalidraw/excalidraw": "0.18.0-3c916c5",
-    "@mediapipe/tasks-vision": "0.10.21",
+    "@mediapipe/tasks-vision": "1.2.3",
     "@rails/actioncable": "^8.1.400",
     "@vladmandic/human": "3.3.6",
     "epubjs": "0.3.93",
