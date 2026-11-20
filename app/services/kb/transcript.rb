@@ -19,7 +19,7 @@ module Kb
 
     def available? = bin.present?
 
-    def model = ENV["WHISPER_MODEL"].presence || "base"
+    def model = ServiceSettings.fetch("WHISPER_MODEL", "base")
 
     def state_dir = Rails.env.test? ? Rails.root.join("tmp", "kb_transcripts_test_#{Process.pid}") : Rails.root.join("storage", "kb_transcripts")
 

@@ -4,6 +4,9 @@
 # side, so it can be re-found if the offsets drift. The quote is what the app
 # reads back as "what the user found important" in this file.
 class KbAnnotation < ApplicationRecord
+  include SemanticIndexable
+  semantic_index type: "kb_annotation", owner: ->(r) { r.user_id },
+                 sections: ->(r) { Kb::Privacy.private?(r.source_path, r.relative_path) ? [] : [ r.quote ] } # private projects never leave the KB
   STYLES = %w[highlight underline].freeze
   COLORS = %w[yellow green pink blue].freeze
   MAX_QUOTE = 10_000

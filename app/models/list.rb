@@ -1,4 +1,6 @@
 class List < ApplicationRecord
+  include SemanticIndexable
+  semantic_index type: "list", owner: ->(r) { r.user_id }, sections: ->(r) { [ r.name ] }
   include TracksActivity
   tracks_activity
 

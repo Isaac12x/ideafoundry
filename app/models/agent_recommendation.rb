@@ -1,4 +1,6 @@
 class AgentRecommendation < ApplicationRecord
+  include SemanticIndexable
+  semantic_index type: "agent_recommendation", owner: ->(r) { r.user_id }, sections: ->(r) { [ r.action, r.reasoning ] }
   belongs_to :user
   belongs_to :agent_event, optional: true
   belongs_to :target, polymorphic: true, optional: true

@@ -1,6 +1,9 @@
 # A user's named place in a paged KB document: a page (pdf, comic) or an epub CFI
 # (`progress` 0..1 only orders those and labels them). Exactly one of page/cfi.
 class KbBookmark < ApplicationRecord
+  include SemanticIndexable
+  semantic_index type: "kb_bookmark", owner: ->(r) { r.user_id },
+                 sections: ->(r) { Kb::Privacy.private?(r.source_path, r.relative_path) ? [] : [ r.label ] }
   MAX_PER_FILE = 500
   MAX_LABEL = 120
   CFI_FORMAT = /\Aepubcfi\(.{1,2000}\)\z/m

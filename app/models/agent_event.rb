@@ -1,4 +1,8 @@
 class AgentEvent < ApplicationRecord
+  include SemanticIndexable
+  # not indexed itself; a new question re-indexes its thread (whose sections are the questions)
+  semantic_index owner: ->(r) { r.user_id }, parents: ->(r) { r.event_type == "question" ? [ r.agent_thread ] : [] }
+
   belongs_to :user
   belongs_to :agent_run, optional: true
   belongs_to :agent_thread, optional: true, touch: true

@@ -1,6 +1,9 @@
 require "test_helper"
 
 class RecoverySecretTest < ActiveSupport::TestCase
+  # A stale generation would make the next job drop the test transaction's DB connection (ApplicationJob around_perform).
+  teardown { RecoverySecret.instance_variable_set(:@connection_generation, nil) }
+
   test "generation change by another process is reported once and holds no secret" do
     path = Rails.root.join("tmp/recovery_generation_test_#{SecureRandom.hex(4)}")
     RecoverySecret.stub(:generation_path, path) do

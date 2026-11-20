@@ -77,6 +77,12 @@ Each `*_BIN` variable points to an executable. If unset, the tool is found on `P
 | `VOICE_ID_DEVICE` | `cpu` | `cuda` only with GPU-enabled Compose |
 | `VOICE_ID_COMPUTE_TYPE` | `int8` | faster-whisper compute type |
 
+## Semantic search service
+
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `SEMANTIC_SERVICE_URL` | unset (feature off) | Service URL for Rails (host runs: `http://127.0.0.1:8004`) |
+
 ## Credentials (optional email intake)
 
 Resend API key and inbound address, an integrity HMAC key and a webhook token are stored in Rails encrypted credentials (`bin/rails credentials:edit`). See [SETUP.md](https://github.com/Isaac12x/ideafoundry/blob/master/SETUP.md).

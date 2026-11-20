@@ -5,7 +5,7 @@ module Kb
 
     def path(name, env: nil)
       dirs = [ "/opt/homebrew/bin", File.expand_path("~/.local/bin"), *ENV["PATH"].to_s.split(File::PATH_SEPARATOR) ]
-      [ (ENV[env] if env), *dirs.map { |dir| File.join(dir, name) } ].compact.find { |cand| File.file?(cand) && File.executable?(cand) }
+      [ (ServiceSettings.fetch(env) if env), *dirs.map { |dir| File.join(dir, name) } ].compact.find { |cand| File.file?(cand) && File.executable?(cand) }
     end
   end
 end

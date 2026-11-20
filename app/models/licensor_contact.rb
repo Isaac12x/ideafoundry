@@ -1,4 +1,6 @@
 class LicensorContact < ApplicationRecord
+  include SemanticIndexable
+  semantic_index type: "licensor_contact", owner: ->(r) { r.licensor&.idea&.user_id }, sections: ->(r) { [ r.summary ] }
   belongs_to :licensor
 
   enum :channel, {

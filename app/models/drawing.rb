@@ -1,4 +1,7 @@
 class Drawing < ApplicationRecord
+  include SemanticIndexable
+  semantic_index type: "drawing", owner: ->(r) { r.idea&.user_id }, parents: ->(r) { [ r.idea ] },
+                 sections: ->(r) { [ r.title, *Array(r.content.is_a?(Hash) ? r.content["elements"] : r.content).filter_map { |e| e["text"] if e.is_a?(Hash) } ] }
   include RecordsIdeaHistory
 
   belongs_to :idea

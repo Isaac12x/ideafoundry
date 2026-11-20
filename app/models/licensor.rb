@@ -1,4 +1,7 @@
 class Licensor < ApplicationRecord
+  include SemanticIndexable
+  semantic_index type: "licensor", owner: ->(r) { r.idea&.user_id },
+                 sections: ->(r) { [ [ r.company, r.contact_name ].compact_blank.join(" - "), r.notes, r.next_action ] }
   belongs_to :idea
   has_many :contacts, -> { order(occurred_at: :desc) },
            class_name: "LicensorContact", dependent: :destroy

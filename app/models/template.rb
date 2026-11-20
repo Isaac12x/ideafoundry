@@ -1,4 +1,6 @@
 class Template < ApplicationRecord
+  include SemanticIndexable
+  semantic_index type: "template", owner: ->(r) { r.user_id }, sections: ->(r) { [ r.name ] }
   include TracksActivity
   tracks_activity name_method: :name
 

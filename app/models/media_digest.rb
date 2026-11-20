@@ -12,6 +12,9 @@
 # .vtt beside the media. Video files placed in the KB directly (not via a KbDownload)
 # have no row yet: digests for them still need one (media_digests.kb_download_id is NOT NULL).
 class MediaDigest < ApplicationRecord
+  include SemanticIndexable
+  semantic_index type: "media_digest", owner: ->(r) { r.user_id },
+                 sections: ->(r) { r.superseded_at || r.kb_download&.private_project? ? [] : SemanticIndex.split(r.body) }
   belongs_to :user
   belongs_to :kb_download
   belongs_to :superseded_by, class_name: "MediaDigest", optional: true

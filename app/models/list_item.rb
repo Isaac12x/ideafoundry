@@ -1,6 +1,8 @@
 # A non-idea entry of a named list: free text, an http(s) link, or an in-app path (e.g. a KB file).
 # ponytail: KB entries are stored as a URL, so moving the file breaks the link; store src+path if that bites.
 class ListItem < ApplicationRecord
+  include SemanticIndexable
+  semantic_index type: "list_item", owner: ->(r) { r.list&.user_id }, sections: ->(r) { [ r.title, r.url ] }
   belongs_to :list
 
   validates :title, presence: true, length: { maximum: 500 }

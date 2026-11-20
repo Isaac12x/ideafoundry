@@ -1,4 +1,6 @@
 class IdeaEntry < ApplicationRecord
+  include SemanticIndexable
+  semantic_index type: "idea_entry", owner: ->(r) { r.idea&.user_id }, sections: ->(r) { [ r.name, r.description ] }
   include RecordsIdeaHistory
 
   belongs_to :idea

@@ -7,6 +7,9 @@
 # (references_state "offered" -> "pulled" | "dismissed"). Picking any moves the
 # page into a "{title}/" folder, with the references in "{title}/{title}-references/".
 class KbDownload < ApplicationRecord
+  include SemanticIndexable
+  semantic_index type: "kb_download", owner: ->(r) { r.user_id },
+                 sections: ->(r) { r.private_project? ? [] : [ r.title, r.note, r.url, *SemanticIndex.split(r.transcript) ] }
   belongs_to :user
   has_many :media_digests, dependent: :destroy
 

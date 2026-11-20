@@ -15,7 +15,7 @@ class LocalVoiceIdClient
     end
   end
 
-  def initialize(base_url: ENV.fetch("VOICE_ID_SERVICE_URL", DEFAULT_URL))
+  def initialize(base_url: ServiceSettings.fetch("VOICE_ID_SERVICE_URL", DEFAULT_URL))
     @base_url = base_url.to_s.delete_suffix("/")
   end
 

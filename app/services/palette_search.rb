@@ -1,6 +1,6 @@
-# Text ranking for the command palette's Similar and Deep modes. No embeddings in the app, so
-# Similar is TF-IDF cosine over a small corpus and Deep is an all-terms scan with snippets.
-# ponytail: a true semantic search needs a local embedding endpoint + vector store (sqlite-vec); swap `similar` for a cosine over stored vectors.
+# Text ranking for the command palette's Similar and Deep modes. Similar is semantic via SemanticSearch (local
+# embedding sidecar) when it is up; this TF-IDF cosine over a small corpus is the fallback when it is unset/down/not indexed yet.
+# Deep is an all-terms scan with snippets.
 module PaletteSearch
   STOP = %w[the and for are but not you all any can had her was one our out has have this that with from they will what when your their there about which would into than then them these some]
   SNIPPET = 70

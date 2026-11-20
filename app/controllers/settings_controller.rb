@@ -728,6 +728,26 @@ class SettingsController < ApplicationController
     redirect_to settings_api_keys_path, notice: "API key deleted."
   end
 
+  def services
+    @services = ServiceRegistry.view_model
+  end
+
+  def update_services
+    values = params.fetch(:services, {}).permit(*ServiceRegistry.env_keys).to_h
+    values.each do |key, value|
+      value.to_s.strip.blank? ? ServiceSetting.where(key: key).delete_all : ServiceSetting.find_or_initialize_by(key: key).update!(value: value.to_s.strip)
+    end
+    redirect_to settings_services_path, notice: "Service settings saved."
+  end
+
+  def test_service
+    service = ServiceRegistry.find(params[:key])
+    return render json: { ok: false, status: "error", detail: "Unknown service", ms: 0 }, status: :not_found unless service
+
+    overrides = params.fetch(:overrides, {}).permit(*service[:fields].map { |f| f[:env] }).to_h
+    render json: ServiceRegistry.test(service[:key], overrides)
+  end
+
   private
 
   # Mounted volumes other than the boot drive (which is symlinked at /).
