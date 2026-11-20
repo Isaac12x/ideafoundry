@@ -19,7 +19,7 @@
           </h3>
           <ul class="kbp-flist">
             <% group[:items].each do |item| %>
-              <li><span class="kbp-fnum" aria-hidden="true"></span><p><%= item["text"] %></p>
+              <li><span class="kbp-fnum" aria-hidden="true"></span><div class="kbp-prose"><%= render_project_markdown(item["text"]) %></div>
                 <time class="kbp-finding-date" datetime="<%= item['at'] %>"><%= (Date.iso8601(item["at"]).strftime("%d %b %Y") rescue item["at"]) %></time></li>
             <% end %>
           </ul>

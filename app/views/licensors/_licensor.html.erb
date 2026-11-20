@@ -4,11 +4,18 @@
       <span class="licensor-row__company"><%= licensor.company %></span>
       <% contact = [licensor.contact_name, licensor.contact_email].reject(&:blank?).join(" · ") %>
       <% if contact.present? %><span class="licensor-row__contact"><%= contact %></span><% end %>
+      <% if licensor.channel.present? || licensor.contact_url.present? %>
+        <span class="licensor-row__contact">
+          <%= licensor.channel %>
+          <% if licensor.contact_url.present? %><%= link_to "link ↗", licensor.contact_url, target: "_blank", rel: "noopener", class: "licensor-row__crmlink" %><% end %>
+        </span>
+      <% end %>
+      <% if licensor.notes.present? %><p class="licensor-row__why"><%= licensor.notes %></p><% end %>
     </div>
     <div class="licensor-row__meta">
       <%= render "licensors/stage_pill", stage: licensor.stage %>
       <span class="licensor-row__contacted">
-        <%= licensor.last_contacted_at ? "#{time_ago_in_words(licensor.last_contacted_at)} ago" : "not contacted" %>
+        <%= licensor.last_contacted_at ? "last contact #{time_ago_in_words(licensor.last_contacted_at)} ago" : "no contact logged" %>
       </span>
     </div>
   </div>

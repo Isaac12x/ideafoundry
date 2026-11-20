@@ -1,14 +1,21 @@
-<%= form_with(model: licensor, url: idea_licensors_path(idea), class: "licensor-form") do |f| %>
-  <% if licensor.errors.any? %>
-    <div class="idea-entry-errors"><%= licensor.errors.full_messages.to_sentence %></div>
+<%# Prospect = a Licensor row: a company/person you think might license this idea, captured before any outreach. %>
+<details class="licensor-add" <%= "open" if licensor.errors.any? %>>
+  <summary class="idea-entries-add__toggle">+ Add prospect</summary>
+  <%= form_with(model: licensor, url: idea_licensors_path(idea), class: "licensor-form") do |f| %>
+    <% if licensor.errors.any? %>
+      <div class="idea-entry-errors"><%= licensor.errors.full_messages.to_sentence %></div>
+    <% end %>
+    <div class="licensor-form__grid">
+      <%= f.text_field :company, placeholder: "Company or person", class: "idea-entry-input", required: true, autocomplete: "off", "aria-label": "Company or person" %>
+      <%= f.text_field :channel, placeholder: "Where / channel (trade show, agent, cold email…)", class: "idea-entry-input", autocomplete: "off", "aria-label": "Where or channel" %>
+      <%= f.url_field :contact_url, placeholder: "Link (optional)", class: "idea-entry-input", autocomplete: "off", "aria-label": "Link" %>
+      <%= f.select :stage, Licensor::STAGE_ORDER.map { |s| [Licensor.stage_label(s), s] }, {}, class: "idea-entry-input", "aria-label": "Status" %>
+      <%= f.text_field :contact_name, placeholder: "Contact name (optional)", class: "idea-entry-input", autocomplete: "off" %>
+      <%= f.email_field :contact_email, placeholder: "Email (optional)", class: "idea-entry-input", autocomplete: "off" %>
+    </div>
+    <%= f.text_area :notes, placeholder: "Why they fit (optional)", rows: 2, class: "idea-entry-input idea-entry-textarea licensor-form__notes", "aria-label": "Why they fit" %>
+    <div class="licensor-form__actions">
+      <%= f.submit "Add prospect", class: "btn btn-sm btn-primary" %>
+    </div>
   <% end %>
-  <div class="licensor-form__grid">
-    <%= f.text_field :company, placeholder: "Company / licensor", class: "idea-entry-input", required: true, autocomplete: "off" %>
-    <%= f.text_field :contact_name, placeholder: "Contact name (optional)", class: "idea-entry-input", autocomplete: "off" %>
-    <%= f.email_field :contact_email, placeholder: "Email (optional)", class: "idea-entry-input", autocomplete: "off" %>
-    <%= f.select :stage, Licensor::STAGE_ORDER.map { |s| [Licensor.stage_label(s), s] }, {}, class: "idea-entry-input" %>
-  </div>
-  <div class="licensor-form__actions">
-    <%= f.submit "Add licensor", class: "btn btn-sm btn-primary" %>
-  </div>
-<% end %>
+</details>

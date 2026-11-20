@@ -562,8 +562,8 @@ body.kb-resizing iframe {
 
 .kb-tree-head { display: flex; align-items: center; justify-content: flex-end; gap: 0.1rem; padding: 0.2rem 0.5rem 0; position: relative; }
 .kb-tree-filter-input {
-  flex: 1; min-width: 0; height: 1.6rem; padding: 0 0.5rem; border: 1px solid var(--border-default); border-radius: 4px;
-  background: var(--bg-elevated); color: var(--text-primary); font: inherit; font-size: 0.76rem;
+  flex: 1; min-width: 0; height: 1.8rem; padding: 0 0.5rem; border: 1px solid var(--border-default); border-radius: 4px;
+  background: var(--bg-elevated); color: var(--text-primary); font: inherit; font-size: 0.86rem; font-weight: 450;
 }
 .kb-sidebar-collapse { border: 0; background: none; margin-right: auto; }
 @media (min-width: 701px) {
@@ -942,6 +942,10 @@ details[open] > .kb-meta-toggle { color: var(--accent); }
   flex-direction: column;
   gap: 0.5rem;
 }
+
+/* Deep-linked from an @-chip (tabs_controller#spotlight) */
+.kb-fact-card.is-ref-target,
+.kb-maxim-card.is-ref-target { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-muted); transition: box-shadow .6s ease, border-color .6s ease; }
 
 .kb-fact-body,
 .kb-maxim-body {
@@ -2499,6 +2503,9 @@ html.kb-linking, html.kb-linking * { cursor: grabbing !important; user-select: n
 .kb-emoji-groups { max-height: min(50vh, 22rem); overflow-y: auto; }
 .kb-emoji-search { width: 100%; padding: 0.35rem 0.5rem; border: 1px solid var(--border-default); border-radius: 5px; background: var(--bg-elevated); color: var(--text-primary); font: inherit; font-size: 0.8rem; }
 .kb-emoji-choice[hidden], .kb-emoji-group[hidden] { display: none; }
+.kb-emoji-results { max-height: min(50vh, 22rem); overflow-y: auto; align-content: start; }
+.kb-emoji-results[hidden] { display: none; }
+.kb-emoji-empty { grid-column: 1 / -1; margin: 0.5rem 0; color: var(--text-muted); font-size: 0.8rem; }
 .kb-emoji-group { content-visibility: auto; contain-intrinsic-size: auto 12rem; }
 .kb-emoji-group__name { margin: 0.5rem 0 0.25rem; color: var(--text-muted); font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
 
@@ -3155,6 +3162,7 @@ html.kb-linking, html.kb-linking * { cursor: grabbing !important; user-select: n
 .kb-node[role="treeitem"]:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: -2px;
+  background: var(--bg-overlay);
 }
 
 /* Clip start/end beside the download format chips */

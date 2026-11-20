@@ -1,7 +1,7 @@
 import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
-  static targets = ["backdrop", "body", "error", "invention", "launcher", "messages", "panel", "status", "thread"]
+  static targets = ["backdrop", "body", "context", "error", "invention", "launcher", "messages", "panel", "status", "thread"]
   static values = { questionsUrl: String }
   static inventionVariants = ["bulb", "engine", "magnet", "gyro"]
   static errors = { disabled: "The local agent is turned off.", blank: "Enter a question." }
@@ -73,6 +73,7 @@ export default class extends Controller {
   prefill({ text }) {
     if (!this.hasBodyTarget) return
     this.bodyTarget.value = text
+    this.grow()
     this.open()
     this.bodyTarget.setSelectionRange(text.length, text.length)
   }
@@ -97,7 +98,7 @@ export default class extends Controller {
     this.showError("")
     try {
       const response = await fetch(form.action, {
-        method: "POST", body: new FormData(form), credentials: "same-origin",
+        method: "POST", body: this.formData(form), credentials: "same-origin",
         headers: { Accept: "application/json", "X-CSRF-Token": document.querySelector('meta[name="csrf-token"]')?.content || "" }
       })
       const result = response.redirected ? {} : await response.json().catch(() => ({}))
@@ -105,6 +106,7 @@ export default class extends Controller {
       this.halted = false
       if (result.thread_id) this.setThread(String(result.thread_id))
       this.bodyTarget.value = ""
+      this.grow()
       this.bodyTarget.focus()
       await this.refresh({ scroll: true })
     } catch (error) {
@@ -114,11 +116,43 @@ export default class extends Controller {
     }
   }
 
-  // Cmd/Ctrl+Enter sends from the question box.
+  // Enter sends from the question box (Cmd/Ctrl+Enter too); Shift+Enter keeps its newline.
   submitOnShortcut(event) {
-    if (event.key !== "Enter" || !(event.metaKey || event.ctrlKey) || event.isComposing) return
+    if (event.key !== "Enter" || event.shiftKey || event.isComposing) return
     event.preventDefault()
     event.currentTarget.form?.requestSubmit()
+  }
+
+  // Auto-growing composer: one line up to ~8, then it scrolls.
+  grow() {
+    const box = this.hasBodyTarget ? this.bodyTarget : null
+    if (!box?.style) return
+    box.style.height = "auto"
+    box.style.height = `${Math.min(box.scrollHeight, 200)}px`
+  }
+
+  // Empty-state chips drop their text into the composer.
+  suggest(event) {
+    if (!this.hasBodyTarget) return
+    this.bodyTarget.value = event.currentTarget.dataset.text
+    this.grow()
+    this.bodyTarget.focus()
+  }
+
+  // "About <idea>" chip: on by default; off sends the question without the idea as context.
+  toggleContext(event) {
+    const chip = event.currentTarget
+    const on = chip.getAttribute("aria-pressed") !== "true"
+    chip.setAttribute("aria-pressed", String(on))
+  }
+
+  formData(form) {
+    const data = new FormData(form)
+    const chip = this.hasContextTarget ? this.contextTarget : null
+    if (chip?.getAttribute("aria-pressed") === "true") {
+      data.set("agent_question[context]", chip.dataset.contextText) // the server prepends it for the agent only
+    }
+    return data
   }
 
   // Thread bar (inside the polled markup): resume a listed thread, or start an empty one.

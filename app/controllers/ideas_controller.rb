@@ -1,6 +1,6 @@
 class IdeasController < ApplicationController
   before_action :set_user
-  before_action :set_idea, only: [ :show, :edit, :update, :destroy, :send_email, :approve_pending_email, :discard_pending_email, :enrich, :enrichment_status, :archive, :restore, :add_to_list, :create_version, :make_primary, :toggle_licensing, :set_themes ]
+  before_action :set_idea, only: [ :show, :edit, :update, :destroy, :send_email, :approve_pending_email, :discard_pending_email, :enrich, :enrichment_status, :archive, :restore, :add_to_list, :create_version, :make_primary, :toggle_licensing, :licensing_notes, :set_themes ]
   before_action :check_cool_off_period, only: [ :edit, :update ]
 
   IDEA_SORTS = {
@@ -272,6 +272,16 @@ class IdeasController < ApplicationController
     respond_to do |format|
       format.html { redirect_back fallback_location: idea_path(@idea), notice: notice }
       format.json { render json: { success: true, for_licensing: @idea.for_licensing? } }
+    end
+  end
+
+  # Free-form "where / whom might license this" scratchpad on the Potential Licensors tab.
+  def licensing_notes
+    @idea.update_column(:licensing_notes, params.dig(:idea, :licensing_notes).to_s.strip.presence)
+    respond_to do |format|
+      format.turbo_stream { head :no_content } # autosaved on blur; nothing to re-render
+      format.json { head :no_content }
+      format.html { redirect_to idea_path(@idea, anchor: "licensors"), notice: "Licensing notes saved." }
     end
   end
 

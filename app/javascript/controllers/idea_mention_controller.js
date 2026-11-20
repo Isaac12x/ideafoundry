@@ -1,10 +1,12 @@
 import { Controller } from "@hotwired/stimulus"
 
 // "@" autocomplete for ideas: wrap a textarea / rich editor; typing "@query" opens a list under it;
-// picking inserts @[Title](idea:123).
+// picking inserts @[Title](idea:123), or the result's own `token` (KB project text: ideas incl. a version, KB entries,
+// maxims... see Kb::References). `multiword` lets the query hold spaces ("Idea name v3"); `floating` pins the list
+// under the field instead of relying on a positioned wrapper.
 export default class extends Controller {
   static targets = ["list"]
-  static values = { searchUrl: String, excludeId: Number }
+  static values = { searchUrl: String, excludeId: Number, multiword: Boolean, floating: Boolean }
 
   disconnect() { clearTimeout(this.timer) }
 
@@ -19,14 +21,15 @@ export default class extends Controller {
   // Text before the caret, if it ends in "@word" (the @ at start or after whitespace).
   mentionContext(el) {
     let before
-    if (el instanceof HTMLTextAreaElement) {
+    if (el instanceof HTMLTextAreaElement || el instanceof HTMLInputElement) {
+      if (this.multiwordValue && !el.matches("textarea, [data-mention]")) return null // project text: only fields that render markdown
       before = el.value.slice(0, el.selectionStart)
     } else {
       const sel = window.getSelection()
       if (!sel.rangeCount || !sel.isCollapsed || sel.anchorNode?.nodeType !== Node.TEXT_NODE) return null
       before = sel.anchorNode.textContent.slice(0, sel.anchorOffset)
     }
-    const m = before.match(/(?:^|\s)@([^\s@\[\]()]{0,40})$/)
+    const m = before.match(this.multiwordValue ? /(?:^|\s)@([^@\[\]()\n]{0,40})$/ : /(?:^|\s)@([^\s@\[\]()]{0,40})$/)
     return m ? { el, query: m[1], length: m[1].length + 1 } : null
   }
 
@@ -50,6 +53,12 @@ export default class extends Controller {
       li.setAttribute("role", "option")
       li.className = "idea-kb-links__option"
       li.textContent = r.title
+      if (r.kind) {
+        const kind = document.createElement("small")
+        kind.className = "kb-mention-kind"
+        kind.textContent = r.kind
+        li.append(" ", kind)
+      }
       li.addEventListener("mousedown", (e) => { e.preventDefault(); this.pick(i) })
       return li
     })
@@ -61,6 +70,14 @@ export default class extends Controller {
     }
     this.listTarget.replaceChildren(...items)
     this.listTarget.hidden = false
+    this.element.dataset.mentionOpen = "1" // lets Enter-to-submit fields stand aside while the list is open
+    if (this.floatingValue && this.ctx) {
+      const box = this.ctx.el.getBoundingClientRect()
+      Object.assign(this.listTarget.style, { position: "fixed", top: `${box.bottom + 2}px`, left: `${box.left}px`, right: "auto", width: `${Math.min(box.width, 420)}px` })
+      // Flip above the field when the list would run off the viewport bottom.
+      const h = this.listTarget.offsetHeight
+      if (box.bottom + 2 + h > window.innerHeight && box.top > h + 2) this.listTarget.style.top = `${box.top - h - 2}px`
+    }
     this.highlight()
   }
 
@@ -94,8 +111,8 @@ export default class extends Controller {
 
   insertToken(r) {
     const { el, length } = this.ctx
-    const token = `@[${r.title.replace(/[\[\]\n]/g, " ").trim()}](idea:${r.id}) `
-    if (el instanceof HTMLTextAreaElement) {
+    const token = `${r.token || `@[${r.title.replace(/[\[\]\n]/g, " ").trim()}](idea:${r.id})`} `
+    if (el instanceof HTMLTextAreaElement || el instanceof HTMLInputElement) {
       el.setRangeText(token, el.selectionStart - length, el.selectionStart, "end")
       el.dispatchEvent(new Event("input", { bubbles: true }))
     } else {
@@ -109,6 +126,7 @@ export default class extends Controller {
 
   close() {
     if (this.hasListTarget) this.listTarget.hidden = true
+    delete this.element.dataset.mentionOpen
     this.results = []
   }
 }

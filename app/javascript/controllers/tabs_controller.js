@@ -10,7 +10,17 @@ export default class extends Controller {
   connect() {
     const hash = window.location.hash?.slice(1)
     const validTab = hash && this.panelTargets.some(p => p.dataset.tabPanel === hash)
-    this.showTab(validTab ? hash : this.defaultTabValue, true)
+    // A hash naming an item inside a panel (#maxim_5, from a chip) opens that panel, scrolls to it and flashes it.
+    const item = hash && !validTab ? document.getElementById(decodeURIComponent(hash)) : null
+    const itemPanel = item && this.panelTargets.find(p => p.contains(item))
+    this.showTab(validTab ? hash : itemPanel?.dataset.tabPanel || this.defaultTabValue, true)
+    if (itemPanel) this.spotlight(item)
+  }
+
+  spotlight(el) {
+    el.scrollIntoView({ block: "center" })
+    el.classList.add("is-ref-target")
+    setTimeout(() => el.classList.remove("is-ref-target"), 2600)
   }
 
   switch(event) {

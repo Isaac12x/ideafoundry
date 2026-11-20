@@ -43,7 +43,7 @@ module LocalAgent
           .select { |question| Agents.runner?(question.payload&.dig("agent")) }
           .map do |question|
         candidate(question, 95, "Answer user question to the local agent", {
-          question: question.payload&.dig("question").presence || question.summary,
+          question: question.question_prompt,
           asked_at: question.created_at,
           thread_history: question.agent_thread&.history(before: question).presence,
           context_record: {

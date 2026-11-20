@@ -363,7 +363,7 @@ function installLocalStorage() {
   };
 }
 
-test("ask agent sends on Cmd/Ctrl+Enter only", async () => {
+test("ask agent sends on Enter (and Cmd/Ctrl+Enter); Shift+Enter keeps the newline", async () => {
   const AskAgentController = await loadAskAgentController();
   const controller = new AskAgentController();
   let submitted = 0;
@@ -375,9 +375,11 @@ test("ask agent sends on Cmd/Ctrl+Enter only", async () => {
 
   assert.equal(press({ metaKey: true }), true);
   assert.equal(press({ ctrlKey: true }), true);
-  assert.equal(press({}), false);
-  assert.equal(press({ metaKey: true, key: "a" }), false);
-  assert.equal(submitted, 2);
+  assert.equal(press({}), true);
+  assert.equal(press({ shiftKey: true }), false);
+  assert.equal(press({ isComposing: true }), false);
+  assert.equal(press({ key: "a" }), false);
+  assert.equal(submitted, 3);
 });
 
 test("ask agent follows the thread: polls it by id and keeps the form field in step", async () => {

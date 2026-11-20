@@ -31,6 +31,7 @@ Status: active development. The workbench, notes, knowledge base, planning, loca
 | Page | Contents |
 |------|----------|
 | [Install](install.md) | Requirements, macOS installer, Docker/Linux notes, first run, updating |
+| [Using the app](using.md) | Palette, find, knowledge base projects, licensing, privacy haze |
 | [Configuration](configuration.md) | Environment variables by feature |
 | [Local services](services.md) | OCR, long-document OCR, Voice ID, transcription |
 | [Development](development.md) | Running from source, tests, repo layout |
