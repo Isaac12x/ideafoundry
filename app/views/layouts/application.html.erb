@@ -34,6 +34,8 @@
     backlog_only = backlog_lock_bypass_active?
     typing_activity_enabled = @user&.security_lock_enabled? && !security_lock_screen && !backlog_only
     privacy_gaze_enabled = @user&.privacy_gaze_enabled? && !security_lock_screen && !backlog_only
+    privacy_gaze_configured = @user&.privacy_gaze_configured? && !security_lock_screen && !backlog_only
+    privacy_settings = privacy_gaze_enabled ? @user.privacy_gaze_settings : {}
     typing_lock_shortcut = @user&.shortcut_binding("lock") || User::DEFAULT_SHORTCUTS.dig("lock", "key")
     quote_page_key = User.nav_page_key(controller_path)
     display_quote = @user&.quote_for_page(quote_page_key).to_s.strip
@@ -69,7 +71,16 @@
           data-shortcuts-new-topology-url-value="<%= new_topology_path %>"
           data-shortcuts-import-url-value="<%= new_submission_import_path %>"
         <% end %>
+        <% if privacy_gaze_configured %>
+          data-privacy-toggle-url="<%= settings_security_privacy_toggle_path %>"
+          data-privacy-enabled="<%= privacy_gaze_enabled ? 'true' : 'false' %>"
+        <% end %>
         <% if privacy_gaze_enabled %>
+          data-privacy-gaze-active-value="<%= privacy_settings["sections"].include?(User.privacy_section_for(controller_path)) %>"
+          data-privacy-gaze-away-ms-value="<%= privacy_settings["away_ms"] %>"
+          data-privacy-gaze-clear-ms-value="<%= privacy_settings["clear_ms"] %>"
+          data-privacy-gaze-sensitivity-value="<%= privacy_settings["sensitivity"] %>"
+          data-privacy-gaze-lock-url-value="<%= typing_activity_enabled ? lock_typing_lock_path(return_to: request.fullpath) : '' %>"
           data-privacy-gaze-settings-url-value="<%= settings_security_path %>"
           data-privacy-gaze-face-url-value="<%= settings_security_privacy_face_path %>"
         <% end %>

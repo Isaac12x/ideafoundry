@@ -205,8 +205,8 @@ async function loadShortcutsController() {
     .replace(/^import .*\n/gm, "")
     .replace("export default class extends Controller", "return class ShortcutsController extends Controller")
 
-  return new Function("Controller", "DEFAULT_BINDINGS", "binding", "matches", "sequenceKeys", runnableSource)(
-    class {}, bindings.DEFAULT_BINDINGS, bindings.binding, bindings.matches, bindings.sequenceKeys
+  return new Function("Controller", "DEFAULT_BINDINGS", "binding", "matches", "privacyToggleAllowed", "sequenceKeys", runnableSource)(
+    class {}, bindings.DEFAULT_BINDINGS, bindings.binding, bindings.matches, bindings.privacyToggleAllowed, bindings.sequenceKeys
   )
 }
 
