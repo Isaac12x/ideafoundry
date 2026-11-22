@@ -602,3 +602,4 @@ graphify-out/
 # GitHub Pages build output (bin/build-site)
 _site/
 !docs/guide/_template.html
+docs/patent-documents/

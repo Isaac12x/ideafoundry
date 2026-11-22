@@ -425,3 +425,14 @@ test("haze-off allowed when clear, or when the camera/face ID cannot work", () =
   for (const r of ["error", "frozen", "dark", "not_enrolled"]) assert.equal(hazeOffAllowed(true, r), true)
   for (const r of ["away", "stale", "not_owner", "other_looking"]) assert.equal(hazeOffAllowed(true, r), false)
 })
+
+test("haze CSS hides every floating body child and top-layer element, keeps header/main/lock UI", async () => {
+  const { readFileSync } = await import("node:fs")
+  const css = readFileSync(new URL("../../app/assets/stylesheets/privacy_gaze.css", import.meta.url), "utf8")
+  const rule = css.match(/body\[data-privacy-gaze-state="hazy"\] > :not\(([^)]*)\)[^{]*\{([^}]*)\}/)
+  assert.ok(rule, "hazy body > :not(...) rule exists")
+  for (const keep of ["header.app-header", "main.app-main", ".privacy-stage"]) assert.ok(rule[1].includes(keep), keep)
+  for (const hide of ["app-notes-bar", "ask-agent-shell", "shortcuts-shell"]) assert.ok(!rule[1].includes(hide), `${hide} must not be allow-listed`)
+  assert.match(css, /dialog\[open\], \[popover\]:popover-open/)
+  assert.match(rule[2], /visibility:\s*hidden/)
+})
