@@ -73,7 +73,7 @@
           <% if failed %>
           <p><%= answer.payload&.dig("answer").presence || answer.summary %></p>
         <% else %>
-          <%= render_prose(answer.payload&.dig("answer").presence || answer.summary) %>
+          <%= render_prose(link_patent_notes(answer.payload&.dig("answer").presence || answer.summary)) %>
         <% end %>
         </div>
       <% else %>

@@ -187,6 +187,8 @@ Rails.application.routes.draw do
   post "webhooks/external", to: "webhooks#external"
 
   # Settings management
+  get "reference", to: "reference#index", as: :reference_index
+  get "reference/:slug", to: "reference#show", as: :reference
   get "settings", to: "settings#index"
   patch "settings", to: "settings#update_display"
   get "settings/features", to: "settings#features", as: :settings_features

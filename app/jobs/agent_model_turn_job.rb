@@ -9,6 +9,9 @@ class AgentModelTurnJob < ApplicationJob
 
     text = question.question_prompt
     history = question.agent_thread&.history(before: question).presence
+    if (notes = PatentReference.context_for(text))
+      history = [ history, "Patent Reference notes (educational, not legal advice; cite as [[note:slug]]):\n\n#{notes}" ].compact.join("\n\n")
+    end
     answer, error =
       begin
         [ LocalAgent::PromptClient.new.call(instruction: text, context: history || "(none)"), false ]
