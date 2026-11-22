@@ -201,6 +201,7 @@ input[type="date"].kbp-input { width: auto; color-scheme: dark; font-variant-num
 .kbp-sec-title { flex: 1; min-width: 0; }
 .kbp-sec-toggle { width: 100%; min-width: 0; }
 .kbp-sec-name { flex: none; }
+.kbp-sec-toggle:focus-visible { outline-width: 1px; outline-offset: -1px; border-radius: var(--radius-sm); }
 .kbp-sec-sum {
   flex: 1;
   min-width: 0;
@@ -721,7 +722,7 @@ a.kbp-mat-name:hover { color: var(--accent); }
 .kbp-prompt-answer { grid-column: 2; font-size: 15px; }
 .kbp-prompt-hint { grid-column: 2; color: var(--text-secondary); font-size: 13px; }
 .kbp--frame .kbp-prompt-answer { font-size: 16.5px; line-height: 1.65; color: var(--text-primary); }
-.kbp--frame .kbp-sec--brief .kbp-sec-title { font-size: 34px; }
+.kbp-sec--lead .kbp-sec-name { color: var(--accent); }
 
 /* ── Print: the conclude view prints as a clean report ───────────── */
 @media print {
