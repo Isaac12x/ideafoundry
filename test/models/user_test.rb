@@ -448,7 +448,7 @@ test "privacy gaze tuning defaults, clamps, filters and ignores junk" do
       "quote_library" => [ "First", "", "Second" ],
       "quote_pages" => { "ideas" => "1", "kb" => "default" },
       "nav_visible" => { "ideas" => "1", "plan" => "1", "licensing" => "1",
-                         "intake" => "1", "topologies" => "1", "kb" => "1" }
+                         "intake" => "1", "topologies" => "1", "kb" => "1", "reference" => "1" }
       # backlog omitted -> hidden
     )
     @user.reload

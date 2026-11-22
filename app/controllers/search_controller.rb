@@ -48,8 +48,14 @@ class SearchController < ApplicationController
       [ "Notes", notes.map { |n| { title: n.body.to_s.squish.truncate(80), hint: n.idea.title, url: idea_path(n.idea_id), kind: "note", actions: basic_actions(idea_path(n.idea_id)) } } ],
       [ "Lists", lists.map { |l| { title: l.name, url: list_path(l), kind: "list", actions: basic_actions(list_path(l)) } } ],
       [ "Topologies", topologies.map { |t| { title: t.name, url: topology_path(t), kind: "topology", actions: basic_actions(topology_path(t)) } } ],
-      [ "Knowledge Base", kb.map { |e| kb_item(e) } ]
+      [ "Knowledge Base", kb.map { |e| kb_item(e) } ],
+      [ "Reference", PatentReference.search(q, limit: PER_GROUP).map { |n| reference_item(n) } ]
     ]
+  end
+
+  def reference_item(note)
+    url = reference_path(note.slug)
+    { title: note.title, hint: note.cluster_label, url: url, kind: "reference", actions: basic_actions(url) }
   end
 
   # --- Similar ---

@@ -14,6 +14,17 @@ Shared vocabulary for agents and contributors. User-facing setup lives in [docs/
 | **Sidecar (file)** | Companion file next to KB media, e.g. `<file>.vtt`, `<file>.note.md`, `<file>.source.json` — filesystem is source of truth. |
 | **Topology** | Category / relationship graph over ideas (3D view and filters). |
 
+## Patent learning
+
+| Term | Meaning |
+|------|---------|
+| **Reference** | The built-in, curated collection of Patent Notes for learning how patents work. Not KB content; distinct from **Provenance** and from a saved web page's cited *references* (sources offered for download). |
+| **Patent Note** | One concept in the Reference (e.g. "dependent claim", "grace period"), tagged with jurisdiction, belonging to one **Cluster**. Educational, not legal advice. |
+| **Cluster** | A topic grouping of Patent Notes: Claims & eligibility, Specification & format, Drawings, Provisional & priority, Prior art (102/103), Prosecution, Portfolio & strategy, plus **Workflows**. |
+| **Workflow (Reference)** | A step-by-step Patent Note for a procedure, e.g. drafting, pre-filing quality control, provisional-to-non-provisional conversion. |
+| **Example note** | A Patent Note walking through one worked application end to end; any invented figures are labelled illustrative. |
+| **Help chip** | The "?" next to a patent concept in the UI (or an agent citation) that opens its Patent Note. |
+
 ## Semantic search
 
 | Term | Meaning |
