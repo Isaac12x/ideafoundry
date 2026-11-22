@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+PYTHON="${ROOT}/.venv/bin/python"
+if [[ ! -x "${PYTHON}" ]]; then
+  PYTHON="${ROOT}/.venv/bin/python3"
+fi
+if [[ ! -x "${PYTHON}" ]]; then
+  PYTHON="$(command -v python3)"
+fi
+
+export PYTHONPATH="${ROOT}${PYTHONPATH:+:${PYTHONPATH}}"
+exec "${PYTHON}" -m idea_foundry_agent.daemon "$@"
