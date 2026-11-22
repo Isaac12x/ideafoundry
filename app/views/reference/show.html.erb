@@ -1,0 +1,69 @@
+<% prev_note, next_note = reference_neighbors(@note) %>
+<article class="ref ref-note">
+  <nav class="ref-crumbs" aria-label="Breadcrumb">
+    <%= link_to "Patent Reference", reference_index_path %><span aria-hidden="true"> / </span><%= link_to @note.cluster_label, reference_index_path(anchor: @note.cluster) %><span aria-hidden="true"> / </span><span aria-current="page"><%= @note.title %></span>
+  </nav>
+
+  <div class="ref-note__grid">
+    <div class="ref-note__main">
+      <p class="ref-eyebrow"><%= @note.cluster_label %></p>
+      <h2 class="ref-title"><%= @note.title %></h2>
+      <div class="ref-prose"><%= render_prose(@note.body) %></div>
+
+      <% if @related.any? %>
+        <section class="ref-related" aria-labelledby="ref-related-h">
+          <h3 id="ref-related-h" class="ref-rail__h">Related notes</h3>
+          <ul class="ref-chips">
+            <% @related.each do |n| %><li><%= link_to n.title, reference_path(n.slug), class: "ref-pill" %></li><% end %>
+          </ul>
+        </section>
+      <% end %>
+
+      <nav class="ref-pn" aria-label="More in <%= @note.cluster_label %>">
+        <% if prev_note %>
+          <%= link_to reference_path(prev_note.slug), class: "ref-pn__a ref-pn__a--prev", rel: "prev" do %><span class="ref-pn__dir">← Previous</span><span class="ref-pn__t"><%= prev_note.title %></span><% end %>
+        <% else %><span></span><% end %>
+        <% if next_note %>
+          <%= link_to reference_path(next_note.slug), class: "ref-pn__a ref-pn__a--next", rel: "next" do %><span class="ref-pn__dir">Next →</span><span class="ref-pn__t"><%= next_note.title %></span><% end %>
+        <% end %>
+      </nav>
+    </div>
+
+    <aside class="ref-rail" aria-label="About this note">
+      <dl class="ref-rail__facts">
+        <div><dt>Jurisdiction</dt><dd><%= @note.jurisdiction %></dd></div>
+        <% unless @note.from_sources? %>
+          <div><dt>Provenance</dt><dd><span class="ref-badge" title="Added to fill a gap in the source conversations">not from sources</span></dd></div>
+        <% end %>
+        <% if @note.aliases.any? %>
+          <div><dt>Also called</dt><dd><%= @note.aliases.join(" · ") %></dd></div>
+        <% end %>
+      </dl>
+
+      <% if @note.links.any? %>
+        <h3 class="ref-rail__h">Official sources</h3>
+        <ul class="ref-src">
+          <% @note.links.each do |url| %>
+            <% label, host = reference_source_label(url) %>
+            <li><%= link_to url, target: "_blank", rel: "noopener", class: "ref-src__a" do %>
+              <span class="ref-src__label"><%= label %></span>
+              <span class="ref-src__host"><%= host %> <span aria-hidden="true">↗</span><span class="visually-hidden"> (opens in new tab)</span></span>
+            <% end %></li>
+          <% end %>
+        </ul>
+      <% end %>
+
+      <% if @note.from_sources? %>
+        <h3 class="ref-rail__h">Derived from</h3>
+        <ul class="ref-plain"><% @note.sources.each do |s| %><li><%= s %></li><% end %></ul>
+      <% end %>
+
+      <% if @note.corrections.any? %>
+        <details class="ref-corr"><summary>Corrected from source (<%= @note.corrections.size %>)</summary>
+          <ul><% @note.corrections.each do |c| %><li><%= c %></li><% end %></ul>
+        </details>
+      <% end %>
+      <p class="ref-disclaimer">Educational, not legal advice.</p>
+    </aside>
+  </div>
+</article>

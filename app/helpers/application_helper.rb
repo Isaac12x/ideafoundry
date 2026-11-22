@@ -55,6 +55,13 @@ module ApplicationHelper
     tag.div(Kb::MarkdownRenderer.render(text), class: "md-prose")
   end
 
+  # Agent citations [[note:slug]] -> markdown links to the Patent Note (unknown slugs stay as text).
+  def link_patent_notes(text)
+    text.to_s.gsub(/\[\[note:([a-z0-9-]+)\]\]/) do
+      (note = PatentReference.find($1)) ? "[? #{note.title}](#{reference_path(note.slug)})" : $&
+    end
+  end
+
   # Same for ActionText HTML (idea description): upgrades plain paragraphs holding markdown.
   def render_rich_prose(html)
     Kb::RichProse.call(html)

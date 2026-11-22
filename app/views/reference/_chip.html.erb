@@ -1,0 +1,12 @@
+<%# Help chip: "?" that opens a Patent Note's summary in place, linking to the full note. locals: slug %>
+<% if (note = PatentReference.find(slug)) %>
+  <details class="reference-chip" data-controller="popover">
+    <summary class="reference-chip__toggle" title="<%= note.title %>" aria-label="About <%= note.title %>"><span aria-hidden="true">?</span></summary>
+    <div class="reference-chip__body" role="group" aria-label="<%= note.title %>">
+      <p class="reference-chip__kicker"><%= note.cluster_label %></p>
+      <strong class="reference-chip__title"><%= note.title %></strong>
+      <p class="reference-chip__summary"><%= note.summary %></p>
+      <%= link_to reference_path(note.slug), class: "reference-chip__more" do %>Read note <span aria-hidden="true">→</span><% end %>
+    </div>
+  </details>
+<% end %>
