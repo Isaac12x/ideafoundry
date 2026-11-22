@@ -6,6 +6,24 @@
         "hooks": [
           {
             "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/guard_db.sh || exit 2"
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/guard_db.sh --file || exit 2"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
             "command": "CMD=$(python3 -c \"import json,sys; d=json.load(sys.stdin); print(d.get('tool_input',d).get('command',''))\" 2>/dev/null || true); case \"$CMD\" in *grep*|*rg\\ *|*ripgrep*|*find\\ *|*fd\\ *|*ack\\ *|*ag\\ *)   [ -f graphify-out/graph.json ] &&   echo '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"additionalContext\":\"graphify: knowledge graph at graphify-out/. For focused questions, run `graphify query \\\"<question>\\\"` (scoped subgraph, usually much smaller than GRAPH_REPORT.md) instead of grepping raw files. Read GRAPH_REPORT.md only for broad architecture context.\"}}'   || true ;; esac"
           }
         ]
@@ -34,6 +52,48 @@
           }
         ]
       }
+    ]
+  },
+  "sandbox": {
+    "enabled": true,
+    "failIfUnavailable": true,
+    "allowUnsandboxedCommands": false,
+    "filesystem": {
+      "denyWrite": [
+        "./storage",
+        "./storage/recovery_passphrase.key",
+        "./.claude/hooks",
+        "./.claude/hooks/guard_db.sh",
+        "./config/initializers/db_wipe_guard.rb",
+        "./lib/tasks/db_guard.rake",
+        "./config/database.yml",
+        "./.claude",
+        "./.claude/settings.json",
+        "./.claude/settings.local.json",
+        "./.git/hooks",
+        "./.git/config"
+      ]
+    },
+    "network": {
+      "allowedDomains": [
+        "github.com",
+        "api.github.com",
+        "codeload.github.com",
+        "*.githubusercontent.com",
+        "rubygems.org",
+        "*.rubygems.org",
+        "registry.npmjs.org",
+        "registry.yarnpkg.com"
+      ]
+    }
+  },
+  "permissions": {
+    "deny": [
+      "Edit(/storage/**)",
+      "Edit(/.claude/hooks/**)",
+      "Edit(/config/initializers/db_wipe_guard.rb)",
+      "Edit(/lib/tasks/db_guard.rake)",
+      "Edit(/config/database.yml)"
     ]
   }
 }

@@ -6,7 +6,6 @@ class SqlcipherDatabaseMigratorTest < ActiveSupport::TestCase
     FileUtils.rm_rf(@root)
     FileUtils.mkdir_p(@root)
     @database_path = @root.join("production.sqlite3")
-    @backup_dir = @root.join("backups")
 
     db = SQLite3::Database.new(@database_path.to_s)
     db.execute("CREATE TABLE ideas (id integer primary key, title text)")
@@ -18,17 +17,135 @@ class SqlcipherDatabaseMigratorTest < ActiveSupport::TestCase
     FileUtils.rm_rf(@root) if @root&.exist?
   end
 
-  test "migrates a plaintext SQLite database to SQLCipher with backup" do
-    result = SqlcipherDatabaseMigrator.new(
-      key_hex: RecoverySecret.sqlcipher_key_hex,
-      backup_dir: @backup_dir,
-      timestamp: "20260518123045"
-    ).migrate!(@database_path)
+  def key_hex = RecoverySecret.sqlcipher_key_hex
+  def new_key_hex = "ab" * 32
+
+  # A second process that keeps the database open until it is killed.
+  def with_other_process_holding(path)
+    reader, writer = IO.pipe
+    pid = Process.spawn(RbConfig.ruby, "-e", "f = File.open(ARGV[0]); puts :ready; $stdout.flush; sleep", path.to_s, out: writer)
+    writer.close
+    reader.gets
+    yield
+  ensure
+    Process.kill("TERM", pid) if pid
+    Process.wait(pid) if pid
+    reader&.close
+  end
+
+  def migrator = SqlcipherDatabaseMigrator.new(key_hex: RecoverySecret.sqlcipher_key_hex, timestamp: "20260518123045")
+  def files_under_root = Dir.glob(@root.join("**/*").to_s, File::FNM_DOTMATCH).select { |f| File.file?(f) }.map { |f| File.basename(f) }.sort
+
+  def second_plaintext_database
+    path = @root.join("queue.sqlite3")
+    db = SQLite3::Database.new(path.to_s)
+    db.execute("CREATE TABLE jobs (id integer primary key)")
+    db.close
+    path
+  end
+
+  def opens_with?(path, key)
+    db = SQLite3::Database.new(path.to_s)
+    db.execute(%(PRAGMA key = "x'#{key}'"))
+    db.get_first_value("SELECT count(*) FROM sqlite_master")
+    true
+  rescue SQLite3::Exception
+    false
+  ensure
+    db&.close
+  end
+
+  test "a partial migration (one database encrypted, one still plaintext) is detected per database and converges" do
+    other = second_plaintext_database
+    migrator.migrate!(@database_path) # the first database was converted before the run died
+    converted = File.binread(@database_path)
+
+    SqlcipherDatabaseMigrator.stub(:configured_database_paths, [ @database_path.to_s, other.to_s ]) do
+      statuses = migrator.configured_statuses(env: "production").map(&:status)
+      assert_equal [ :encrypted, :plaintext ], statuses
+
+      results = migrator.migrate_configured!(env: "production")
+      assert_equal [ :already_encrypted, :encrypted ], results.map(&:status)
+    end
+
+    assert_equal converted, File.binread(@database_path), "the converted database is not rewritten"
+    assert opens_with?(other, key_hex)
+  end
+
+  test "migrate_configured! is all or nothing: one blocked database leaves every database untouched" do
+    other = second_plaintext_database
+    File.write(@root.join(".queue.sqlite3.20260518123045.sqlcipher"), "stale")
+    before = File.binread(@database_path)
+
+    SqlcipherDatabaseMigrator.stub(:configured_database_paths, [ @database_path.to_s, other.to_s ]) do
+      assert_raises(SqlcipherDatabaseMigrator::Error) { migrator.migrate_configured!(env: "production") }
+    end
+
+    assert_equal before, File.binread(@database_path)
+    assert_equal "SQLite format 3\0", File.binread(other, 16)
+  end
+
+  test "rekey_configured! is all or nothing: a database that opens with neither key blocks every rekey" do
+    other = second_plaintext_database
+    migrator.migrate!(@database_path)
+    SqlcipherDatabaseMigrator.new(key_hex: "cd" * 32).migrate!(other) # unknown key
+    before = File.binread(@database_path)
+
+    SqlcipherDatabaseMigrator.stub(:configured_database_paths, [ @database_path.to_s, other.to_s ]) do
+      assert_raises(SqlcipherDatabaseMigrator::Error) do
+        SqlcipherDatabaseMigrator.rekey_configured!(env: "production", old_key_hex: key_hex, new_key_hex: new_key_hex)
+      end
+    end
+
+    assert_equal before, File.binread(@database_path)
+    assert opens_with?(@database_path, key_hex)
+  end
+
+  test "rekey converges after a partial run: already converted databases are skipped" do
+    other = second_plaintext_database
+    migrator.migrate!(@database_path)
+    migrator.migrate!(other)
+    migrator.rekey!(@database_path, new_key_hex: new_key_hex) # simulate a run that died after the first database
+    converted = File.binread(@database_path)
+
+    SqlcipherDatabaseMigrator.stub(:configured_database_paths, [ @database_path.to_s, other.to_s ]) do
+      SqlcipherDatabaseMigrator.rekey_configured!(env: "production", old_key_hex: key_hex, new_key_hex: new_key_hex)
+    end
+
+    assert_equal converted, File.binread(@database_path), "an already converted database is not rewritten"
+    assert opens_with?(@database_path, new_key_hex)
+    assert opens_with?(other, new_key_hex)
+    assert_not opens_with?(other, key_hex)
+  end
+
+  test "ensure_no_other_openers! runs again after the lock and before the rename" do
+    calls = []
+    SqlcipherDatabaseMigrator.stub(:ensure_no_other_openers!, ->(*) { calls << :check }) do
+      migrator.migrate!(@database_path)
+    end
+
+    assert_equal 3, calls.size, "once up front, once under the lock, once right before the rename"
+  end
+
+  test "the migrator never deletes -wal/-shm by path (they would be the new database's)" do
+    FileUtils.touch("#{@database_path}-shm")
+    File.stub(:rename, ->(*) { raise Errno::EACCES }) do
+      assert_raises(Errno::EACCES) { migrator.migrate!(@database_path) }
+    end
+    assert File.exist?("#{@database_path}-shm"), "sidecars stay when the rename fails"
+
+    migrator.migrate!(@database_path)
+    assert File.exist?("#{@database_path}-shm"), "and are not deleted after the rename either"
+    assert opens_with?(@database_path, key_hex)
+  end
+
+  test "migrates a plaintext SQLite database to SQLCipher without ever writing a plaintext copy" do
+    result = migrator.migrate!(@database_path)
 
     assert_equal :encrypted, result.status
     assert_equal @database_path.to_s, result.path
-    assert_nil result.backup_path, "Plaintext backup must be deleted after encryption"
-    refute File.exist?(@backup_dir.join("production.sqlite3.20260518123045.plaintext")), "Plaintext backup file must not remain on disk"
+    assert_equal [ "production.sqlite3" ], files_under_root, "no plaintext backup or temp file may exist"
+    assert_not_respond_to result, :backup_path
     refute_equal "SQLite format 3\0", File.binread(@database_path, 16)
 
     encrypted = SQLite3::Database.new(@database_path.to_s)
@@ -38,12 +155,194 @@ class SqlcipherDatabaseMigratorTest < ActiveSupport::TestCase
     encrypted&.close
   end
 
+  test "the original stays untouched when verification of the encrypted copy fails" do
+    before = File.binread(@database_path)
+    m = migrator
+    m.stub(:verify_encrypted_database!, ->(*) { raise SqlcipherDatabaseMigrator::Error, "boom" }) do
+      assert_raises(SqlcipherDatabaseMigrator::Error) { m.migrate!(@database_path) }
+    end
+
+    assert_equal before, File.binread(@database_path)
+    assert_equal [ "production.sqlite3" ], files_under_root
+  end
+
+  test "the original stays untouched when the final rename fails" do
+    before = File.binread(@database_path)
+    File.stub(:rename, ->(*) { raise Errno::EACCES }) do
+      assert_raises(Errno::EACCES) { migrator.migrate!(@database_path) }
+    end
+
+    assert_equal before, File.binread(@database_path)
+    assert_equal [ "production.sqlite3" ], files_under_root
+  end
+
+  test "a row that only lives in the WAL survives" do
+    wal_path = @root.join("wal.sqlite3")
+    pid = fork do # a crashed writer: exit! skips the clean close, so its row stays in the WAL
+      db = SQLite3::Database.new(wal_path.to_s)
+      db.execute("PRAGMA journal_mode = wal")
+      db.execute("PRAGMA wal_autocheckpoint = 0")
+      db.execute("CREATE TABLE ideas (id integer primary key, title text)")
+      db.execute("INSERT INTO ideas (title) VALUES ('only in the wal')")
+      exit!(0)
+    end
+    Process.wait(pid)
+    assert File.size?("#{wal_path}-wal"), "row must still be in the WAL"
+
+    migrator.migrate!(wal_path)
+
+    db = SQLite3::Database.new(wal_path.to_s)
+    db.execute(%(PRAGMA key = "x'#{key_hex}'"))
+    assert_equal [ [ "only in the wal" ] ], db.execute("SELECT title FROM ideas")
+  ensure
+    db&.close
+  end
+
+  test "no other connection can write between export and rename" do
+    other = SQLite3::Database.new(@database_path.to_s)
+    other.busy_timeout = 0
+    blocked = nil
+    m = migrator
+    real = m.method(:verify_encrypted_database!)
+    m.stub(:verify_encrypted_database!, lambda { |*args|
+      # the temp copy is verified inside the lock window; the first call (is it plaintext?) happens before it
+      if args.first.to_s.end_with?(".sqlcipher")
+        blocked = assert_raises(SQLite3::BusyException) { other.execute("INSERT INTO ideas (title) VALUES ('sneaky')") }
+        other.close # a handle of this process still open on the old file would make the swap refuse
+      end
+      real.call(*args)
+    }) do
+      m.migrate!(@database_path)
+    end
+
+    assert blocked, "a writer must be refused while the export is being verified"
+    db = SQLite3::Database.new(@database_path.to_s)
+    db.execute(%(PRAGMA key = "x'#{key_hex}'"))
+    assert_equal [ [ "Encrypted from app" ] ], db.execute("SELECT title FROM ideas")
+  ensure
+    other&.close
+    db&.close
+  end
+
+  test "a handle of this process still open on the old file refuses the swap" do
+    other = SQLite3::Database.new(@database_path.to_s)
+    other.execute("SELECT count(*) FROM ideas")
+    before = File.binread(@database_path)
+
+    error = assert_raises(SqlcipherDatabaseMigrator::Error) { migrator.migrate!(@database_path) }
+
+    assert_match(/in use by process/, error.message)
+    assert_equal before, File.binread(@database_path)
+    assert_equal [ "production.sqlite3" ], files_under_root
+  ensure
+    other&.close
+  end
+
+  # SQLite deletes "<db>-wal" BY PATH when the last connection to a file closes. A connection left open on the OLD
+  # inode would, on close or GC, delete the NEW database's WAL and lose its uncheckpointed frames.
+  def assert_new_database_wal_survives_migrator_cleanup(path, key)
+    writer = SQLite3::Database.new(path.to_s)
+    writer.execute(%(PRAGMA key = "x'#{key}'"))
+    writer.execute("PRAGMA journal_mode = wal")
+    writer.execute("PRAGMA wal_autocheckpoint = 0")
+    writer.execute("INSERT INTO ideas (title) VALUES ('only in the new wal')")
+    assert File.size?("#{path}-wal"), "the row must be uncheckpointed"
+
+    3.times { GC.start } # everything the migrator created is collected and closed, as at process exit
+
+    assert File.size?("#{path}-wal"), "the new database's WAL must still exist"
+    reader = SQLite3::Database.new(path.to_s)
+    reader.execute(%(PRAGMA key = "x'#{key}'"))
+    assert_includes reader.execute("SELECT title FROM ideas").flatten, "only in the new wal"
+  ensure
+    reader&.close
+    writer&.close
+  end
+
+  test "after migrate, closing everything the migrator created keeps the new database's uncheckpointed WAL data" do
+    migrator.migrate!(@database_path)
+    assert_new_database_wal_survives_migrator_cleanup(@database_path, key_hex)
+  end
+
+  test "after rekey, closing everything the migrator created keeps the new database's uncheckpointed WAL data" do
+    migrator.migrate!(@database_path)
+    migrator.rekey!(@database_path, new_key_hex: new_key_hex)
+    assert_new_database_wal_survives_migrator_cleanup(@database_path, new_key_hex)
+  end
+
+  test "refuses, touching nothing, while another process has the database open" do
+    before = File.binread(@database_path)
+
+    with_other_process_holding(@database_path) do
+      error = assert_raises(SqlcipherDatabaseMigrator::Error) { migrator.migrate!(@database_path) }
+      assert_match(/in use by process/, error.message)
+    end
+
+    assert_equal before, File.binread(@database_path)
+    assert_equal [ "production.sqlite3" ], files_under_root
+  end
+
+  test "refuses to run when lsof is unavailable" do
+    Open3.stub(:capture3, ->(*) { raise Errno::ENOENT }) do
+      assert_raises(SqlcipherDatabaseMigrator::Error) { migrator.migrate!(@database_path) }
+    end
+    assert_equal [ "production.sqlite3" ], files_under_root
+  end
+
+  test "a stale temporary file is never overwritten or removed" do
+    stale = @root.join(".production.sqlite3.20260518123045.sqlcipher")
+    File.write(stale, "stale")
+
+    assert_raises(SqlcipherDatabaseMigrator::Error) { migrator.migrate!(@database_path) }
+
+    assert_equal "stale", File.read(stale)
+    assert_equal "SQLite format 3\0", File.binread(@database_path, 16)
+  end
+
+  test "refuses to replace the database when per-table row counts differ" do
+    copy = @root.join("copy.sqlite3")
+    db = SQLite3::Database.new(copy.to_s)
+    db.execute(%(PRAGMA key = "x'#{key_hex}'"))
+    db.execute("CREATE TABLE ideas (id integer primary key, title text)")
+    source = SQLite3::Database.new(@database_path.to_s)
+
+    assert_raises(SqlcipherDatabaseMigrator::Error) { migrator.send(:verify_same_row_counts!, source, copy, key_hex) }
+  ensure
+    db&.close
+    source&.close
+  end
+
+  test "rekey! re-encrypts through the same safe path" do
+    migrator.migrate!(@database_path)
+
+    migrator.rekey!(@database_path, new_key_hex: new_key_hex)
+
+    assert_equal [ "production.sqlite3" ], files_under_root
+    db = SQLite3::Database.new(@database_path.to_s)
+    db.execute(%(PRAGMA key = "x'#{new_key_hex}'"))
+    assert_equal [ [ "Encrypted from app" ] ], db.execute("SELECT title FROM ideas")
+    db.close
+    old = SQLite3::Database.new(@database_path.to_s)
+    old.execute(%(PRAGMA key = "x'#{key_hex}'"))
+    assert_raises(SQLite3::NotADatabaseException) { old.execute("SELECT count(*) FROM sqlite_master") }
+  ensure
+    db&.close
+    old&.close
+  end
+
+  test "rekey! refuses while another process has the database open" do
+    migrator.migrate!(@database_path)
+    before = File.binread(@database_path)
+
+    with_other_process_holding(@database_path) do
+      assert_raises(SqlcipherDatabaseMigrator::Error) { migrator.rekey!(@database_path, new_key_hex: new_key_hex) }
+    end
+
+    assert_equal before, File.binread(@database_path)
+  end
+
   test "reports database encryption status before migrating from the UI" do
-    migrator = SqlcipherDatabaseMigrator.new(
-      key_hex: RecoverySecret.sqlcipher_key_hex,
-      backup_dir: @backup_dir,
-      timestamp: "20260518123045"
-    )
+    migrator = self.migrator
 
     assert_equal :plaintext, migrator.status_for(@database_path).status
     assert_equal :missing, migrator.status_for(@root.join("missing.sqlite3")).status

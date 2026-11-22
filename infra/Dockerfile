@@ -53,7 +53,7 @@ FROM base
 # chromium (reader PDFs). The app shows those features as "tool not installed"; set
 # EBOOK_CONVERT_BIN / WHISPER_BIN / YT_DLP_BIN / CHROME_BIN if you add them in a derived image.
 RUN apt-get update -qq && \
-    apt-get install --no-install-recommends -y curl libsqlcipher1 sqlcipher libvips pandoc \
+    apt-get install --no-install-recommends -y curl libsqlcipher1 sqlcipher lsof libvips pandoc \
       ffmpeg ghostscript imagemagick poppler-utils pdftk-java \
       tesseract-ocr tesseract-ocr-eng djvulibre-bin 7zip && \
     rm -rf /var/lib/apt/lists /var/cache/apt/archives
