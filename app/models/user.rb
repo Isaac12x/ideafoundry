@@ -244,13 +244,15 @@ has_many :media_digests, dependent: :destroy
     "licensing"  => "licensing/crm",
     "topologies" => "topologies",
     "kb"         => "kb",
-    "backlog"    => "build_items"
+    "backlog"    => "build_items",
+    "reference"  => "reference"
   }.freeze
   NAV_PAGE_KEYS = NAV_PAGES.keys.freeze
 
   NAV_PAGE_LABELS = {
     "plan" => "Plan", "ideas" => "Ideas", "licensing" => "Licensing",
-    "topologies" => "Topologies", "kb" => "KB", "backlog" => "Backlog"
+    "topologies" => "Topologies", "kb" => "KB", "backlog" => "Backlog",
+    "reference" => "Reference"
   }.freeze
 
   PRIVACY_SECTIONS = (NAV_PAGE_KEYS + [ "other" ]).freeze

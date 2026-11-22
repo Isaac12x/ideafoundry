@@ -7,7 +7,7 @@ module LocalAgent
       create_recommendation record_event write_kb write_media_digest
     ].freeze
 
-    READ_TOOLS = %w[get_settings list_work read_record list_kb read_kb list_kb_highlights search_media_digests].freeze
+    READ_TOOLS = %w[get_settings list_work read_record list_kb read_kb list_kb_highlights search_media_digests search_reference lookup_patent_note].freeze
     TERMINAL_IDEA_STATES = %w[rejected shipped].freeze
     TOOL_DESCRIPTIONS = {
       "get_settings" => "Read current Rails local-agent settings and status.",
@@ -33,7 +33,9 @@ module LocalAgent
       "list_kb_highlights" => "List passages the user highlighted or underlined in KB documents (optionally one file by src + file), newest first.",
       "write_kb" => "Create or update a knowledge-base markdown file so it appears in the user's KB tree.",
       "write_media_digest" => "Store a distilled facts digest of a KB video's transcript (kb_download_id, body, optional pipeline). Hidden system knowledge, never shown to the user.",
-      "search_media_digests" => "Keyword-search hidden system knowledge distilled from KB videos (query, optional limit). Issue several queries with different terms."
+      "search_media_digests" => "Keyword-search hidden system knowledge distilled from KB videos (query, optional limit). Issue several queries with different terms.",
+      "search_reference" => "Search the built-in patent Reference (curated Patent Notes on how patents work) by query; returns slugs, titles, summaries. Cite a note as [[note:slug]].",
+      "lookup_patent_note" => "Read one Patent Note in full by slug (from search_reference). Educational, not legal advice; cite as [[note:slug]]."
     }.freeze
 
     def self.supported_tool_names
@@ -407,6 +409,17 @@ module LocalAgent
       limit = (args["limit"].presence || MediaDigest::SEARCH_LIMIT).to_i.clamp(1, 50)
       digests = user.media_digests.search(args["query"], limit: limit).includes(:kb_download).reject { |d| d.kb_download.private_project? }
       ok(media_digests: digests.map { |d| serialize_digest(d) })
+    end
+
+    # Built-in patent Reference: shipped content, same for every user.
+    def tool_search_reference(args)
+      limit = (args["limit"].presence || 5).to_i.clamp(1, 20)
+      ok(patent_notes: PatentReference.search(args.fetch("query"), limit: limit).map { |n| { slug: n.slug, title: n.title, cluster: n.cluster, summary: n.summary } })
+    end
+
+    def tool_lookup_patent_note(args)
+      note = PatentReference.find(args.fetch("slug")) or raise ActiveRecord::RecordNotFound, "Patent Note not found"
+      ok(patent_note: note.to_h.except(:body).merge(body: note.body))
     end
 
     def serialize_digest(digest)

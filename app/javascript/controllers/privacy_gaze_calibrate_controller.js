@@ -36,8 +36,13 @@ export default class extends Controller {
   }
   disconnect() { this.gone = true; clearInterval(this.screenPoll); window.removeEventListener("privacy-gaze:status", this.onStatus); this.stop(); this.stopEnroll() }
 
+  // body[data-privacy-gaze-setup] hides the floating notes / shortcuts / agent widgets (privacy_gaze.css) while a camera setup runs
+  syncSetup() { document.body.toggleAttribute("data-privacy-gaze-setup", !!(this.stageEl || this.enrollSession)) }
+
   paintHaze({ hazy, text }) {
-    if (!this.hasHazeTarget) return
+    // the live haze guard watches the same camera: while enrolling/calibrating the user is deliberately off-centre or
+    // looking elsewhere, so its verdict ("someone else", "away") is not shown over the setup
+    if (!this.hasHazeTarget || this.stageEl || this.enrollSession) return
     this.hazeTarget.hidden = false
     this.hazeTarget.dataset.hazy = hazy
     this.hazeTarget.textContent = hazy ? `Hazed: ${text}` : "Haze: clear"
@@ -87,6 +92,7 @@ export default class extends Controller {
     } catch {
       this.sayEnroll("Camera unavailable")
     }
+    this.syncSetup()
     this.enrollButtonTarget.disabled = false
     if (this.enrollSession) {
       this.enrollStageTarget.hidden = false
@@ -131,6 +137,7 @@ export default class extends Controller {
   stopEnroll() {
     this.enrollSession?.stop()
     this.enrollSession = null
+    this.syncSetup()
     if (!this.hasEnrollStageTarget) return
     this.enrollStageTarget.hidden = true
     this.enrollStageTarget.dataset.ready = false
@@ -169,6 +176,7 @@ export default class extends Controller {
     } catch {
       this.say("Camera unavailable")
     }
+    this.syncSetup()
     this.buttonTarget.disabled = false
     if (!this.session) return
     this.buttonTarget.textContent = "Stop"
@@ -223,9 +231,10 @@ export default class extends Controller {
     document.body.appendChild(el)
     el.querySelector("button").focus()
     this.stageEl = el
+    this.syncSetup()
     return {
       go: (p, n, total) => { dot.style.left = `${p.x * 100}%`; dot.style.top = `${p.y * 100}%`; count.textContent = `${n} / ${total}` },
-      remove: () => { el.remove(); if (this.stageEl === el) this.stageEl = null },
+      remove: () => { el.remove(); if (this.stageEl === el) this.stageEl = null; this.syncSetup() },
     }
   }
 
@@ -246,8 +255,10 @@ export default class extends Controller {
     this.collecting = null
     this.stageEl?.remove()
     this.stageEl = null
+    this.syncSetup()
     this.session?.stop()
     this.session = null
+    this.syncSetup()
     if (this.hasPreviewTarget) this.previewTarget.hidden = true
     if (this.hasStageTarget) this.stageTarget.hidden = true
     if (this.hasButtonTarget) { this.buttonTarget.disabled = false; this.showStatus() }

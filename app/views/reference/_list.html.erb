@@ -1,0 +1,14 @@
+<%# locals: notes, ranked (optional: ordinal numbers instead of bullets) %>
+<% ranked = local_assigns[:ranked] %>
+<ol class="ref-list<%= " ref-list--ranked" if ranked %>">
+  <% notes.each_with_index do |note, i| %>
+    <li class="ref-list__item">
+      <% if ranked %><span class="ref-list__n" aria-hidden="true"><%= i + 1 %></span><% end %>
+      <%= link_to reference_path(note.slug), class: "ref-list__link" do %>
+        <span class="ref-list__title"><%= note.title %></span>
+        <% if ranked %><span class="ref-list__cluster"><%= note.cluster_label %></span><% end %>
+        <span class="ref-list__summary"><%= note.summary %></span>
+      <% end %>
+    </li>
+  <% end %>
+</ol>
