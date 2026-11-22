@@ -26,9 +26,7 @@ Set variables in the environment of the Rails process (for the macOS installer, 
 
 | Variable | Default | Purpose |
 |----------|---------|---------|
-| `IDEA_FOUNDRY_RECOVERY_PASSPHRASE_FILE` | `storage/recovery_passphrase.key` | Where the app reads and writes the recovery passphrase |
-| `IDEA_FOUNDRY_SQLCIPHER_BACKUP_DIR` | `../idea-app-sqlcipher-backups` | Where plaintext backups go during encryption |
-| `BACKUP_DIR` | unset | Fallback for the plaintext backup location |
+| `IDEA_FOUNDRY_RECOVERY_PASSPHRASE_FILE` | unset | Optional file path for the recovery passphrase; by default the app uses the OS keychain and falls back to an app-specific file outside the checkout |
 
 Do not put the passphrase in `.env` or Compose secrets; set it from **Settings > Security**.
 

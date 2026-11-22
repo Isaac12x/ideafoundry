@@ -13,7 +13,7 @@ export default class extends Controller {
     // A hash naming an item inside a panel (#maxim_5, from a chip) opens that panel, scrolls to it and flashes it.
     const item = hash && !validTab ? document.getElementById(decodeURIComponent(hash)) : null
     const itemPanel = item && this.panelTargets.find(p => p.contains(item))
-    this.showTab(validTab ? hash : itemPanel?.dataset.tabPanel || this.defaultTabValue, true)
+    this.showTab(validTab ? hash : itemPanel?.dataset.tabPanel || this.defaultTabValue)
     if (itemPanel) this.spotlight(item)
   }
 
@@ -29,7 +29,7 @@ export default class extends Controller {
     this.showTab(tabName);
   }
 
-  showTab(tabName, replace = false) {
+  showTab(tabName) {
     // Hide all panels
     this.panelTargets.forEach((panel) => {
       panel.classList.add("hidden");
@@ -57,10 +57,8 @@ export default class extends Controller {
       selectedTab.classList.add("active");
     }
 
-    // Update URL hash without scrolling
-    if (history.pushState) {
-      // replace on initial connect so Back doesn't stack duplicate entries
-      history[replace ? "replaceState" : "pushState"](null, null, `#${tabName}`);
-    }
+    // Keep Turbo's history state; null makes Turbo ignore Back to this entry.
+    // Replacing also avoids history entries that change the hash without switching tabs.
+    history.replaceState(history.state, "", `#${tabName}`);
   }
 }

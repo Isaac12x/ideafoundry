@@ -50,13 +50,13 @@ More detail: [SETUP.md](https://github.com/Isaac12x/ideafoundry/blob/master/SETU
 1. Open the URL the installer printed.
 2. Go to **Settings > Security** (`/settings/security`).
 3. Enter and confirm a strong database recovery passphrase. Save it in two separate places.
-4. If you have plaintext production databases, start the Database Encryption action there. The app encrypts the databases, verifies the copies, replaces the plaintext files, and keeps plaintext backups in `../idea-app-sqlcipher-backups` by default.
+4. If you have plaintext production databases, stop the app and its job worker, then start the Database Encryption action. The app writes and verifies an encrypted temporary copy before atomically replacing each original. It never writes a plaintext backup; any failure before replacement leaves the original database untouched. You can also run `bin/rails db:encrypt_sqlite` while the app is stopped.
 5. Optionally set up a typing lock, authenticator app, or Voice ID.
 
 Important:
 
 - The recovery passphrase is the encryption root. Without it, the encrypted database cannot be opened. Use the same passphrase when moving the database to another computer.
-- By default the passphrase is written to `storage/recovery_passphrase.key` (and the OS keychain is used when available). To store it elsewhere, set `IDEA_FOUNDRY_RECOVERY_PASSPHRASE_FILE` before using the security page ([Configuration](configuration.md)).
+- By default the passphrase is stored in the OS keychain, with a file fallback outside the checkout. To choose a specific file path, set `IDEA_FOUNDRY_RECOVERY_PASSPHRASE_FILE` before using the security page ([Configuration](configuration.md)).
 - The optional Backlog feature mirrors items to `storage/backlog.md` in plaintext.
 
 Command-line fallback if the UI is unavailable:

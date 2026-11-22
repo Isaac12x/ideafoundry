@@ -12,13 +12,32 @@ const BLOCK_PARENTS = new Set([
   "TABLE", "THEAD", "TBODY", "TFOOT", "TR", "COLGROUP", "UL", "OL", "DL", "SELECT",
   "BODY", "DIV", "SECTION", "ARTICLE", "HEADER", "FOOTER", "MAIN", "NAV", "ASIDE", "FIGURE"
 ])
+// Chrome kb-diagram injects after load: not document text, and a <mark> inside SVG <text> breaks it.
+// Skipping it keeps offsets the same whether or not the diagram has rendered yet. The diagram's
+// source <pre> stays in the DOM (hidden), so it still counts and marks there survive.
+const SKIP_CHROME = ".kb-diagram-out, .kb-diagram-bar, .kb-diagram-error"
 
 export function textNodes(root) {
   const doc = root.ownerDocument
   const walker = doc.createTreeWalker(root, 4 /* NodeFilter.SHOW_TEXT */)
   const nodes = []
-  while (walker.nextNode()) nodes.push(walker.currentNode)
+  while (walker.nextNode()) {
+    if (!walker.currentNode.parentNode?.closest?.(SKIP_CHROME)) nodes.push(walker.currentNode)
+  }
   return nodes
+}
+
+// Offset of a range boundary in rootText(root) (Range#toString would count skipped chrome).
+function offsetOf(root, container, offset) {
+  const point = root.ownerDocument.createRange()
+  point.setStart(container, offset)
+  let pos = 0
+  for (const node of textNodes(root)) {
+    if (node === container) return pos + offset
+    if (point.comparePoint(node, 0) >= 0) break
+    pos += node.data.length
+  }
+  return pos
 }
 
 export function rootText(root) {
@@ -29,15 +48,12 @@ export function rootText(root) {
 export function describe(root, range) {
   if (!root.contains(range.startContainer) || !root.contains(range.endContainer)) return null
 
-  const pre = root.ownerDocument.createRange()
-  pre.setStart(root, 0)
-  pre.setEnd(range.startContainer, range.startOffset)
-  const start = pre.toString().length
-  const quote = range.toString()
+  const text = rootText(root)
+  const start = offsetOf(root, range.startContainer, range.startOffset)
+  const end = offsetOf(root, range.endContainer, range.endOffset)
+  const quote = text.slice(start, end)
   if (!quote.trim()) return null
 
-  const text = rootText(root)
-  const end = start + quote.length
   return {
     start_offset: start,
     end_offset: end,

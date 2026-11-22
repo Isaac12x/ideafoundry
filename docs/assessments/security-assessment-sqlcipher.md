@@ -97,9 +97,9 @@ OWASP 2023 recommends N≥2^17 (131,072) for interactive logins and N≥2^20 for
 
 **File:** `app/services/sqlcipher_database_migrator.rb:167-179`
 
-`migrate!` copies the plaintext database to `Rails.root/../idea-app-sqlcipher-backups/*.plaintext` before encrypting. These files are never automatically deleted and contain all user data unencrypted.
+`migrate!` copied the plaintext database to `Rails.root/../idea-app-sqlcipher-backups/*.plaintext` before encrypting. Those files contained all user data unencrypted.
 
-**Fix:** Either encrypt the backup immediately after creation using the same key, or delete it after verifying the encrypted copy passes `integrity_check`. Document an explicit retention policy if backups are kept.
+**Resolved:** `migrate!` no longer writes any plaintext copy. The original is untouched until the verified encrypted copy atomically replaces it. Plaintext backups created by older versions may still exist on disk and must be removed by the owner.
 
 ---
 

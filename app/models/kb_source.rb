@@ -3,7 +3,7 @@
 # and KbDownloadJob so source_index -> path resolution never drifts.
 class KbSource
   # Tests get their own dir so fixtures never leak into the real App KB.
-  NATIVE_PATH  = Rails.root.join("storage", Rails.env.test? ? "kb-test" : "kb").to_s.freeze
+  NATIVE_PATH  = (Rails.env.test? ? Rails.root.join("tmp", "kb-test") : Rails.root.join("storage", "kb")).to_s.freeze
   NATIVE_LABEL = "App KB".freeze
 
   def self.list(user)

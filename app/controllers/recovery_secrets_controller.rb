@@ -20,7 +20,7 @@ class RecoverySecretsController < ApplicationController
     reset_recovery_secret_database_connections! if database_recovery_unlock_required?
     RecoverySecret.with(passphrase, override_configured: true) { verify_recovery_secret! }
     RecoverySecret.persist_user_passphrase!(passphrase)
-    RecoverySecret.rekey!(passphrase, env: Rails.env) if RecoverySecret.rekey_needed?
+    rekey_if_needed!(passphrase)
     encrypt_auto_databases!
     session.delete(RECOVERY_SECRET_SESSION_KEY)
     redirect_to @return_to
@@ -33,6 +33,7 @@ class RecoverySecretsController < ApplicationController
 
   def destroy
     session.delete(RECOVERY_SECRET_SESSION_KEY)
+    RecoverySecret.clear_key_cache! # locking: derived keys must not outlive the passphrase
     reset_recovery_secret_database_connections!
     RecoverySecret.bump_generation! # every worker drops its connections too
     redirect_to recovery_secret_path, notice: "Recovery passphrase cleared."
@@ -48,6 +49,23 @@ class RecoverySecretsController < ApplicationController
     RecoverySecret.bump_generation! # other workers reconnect with the key
   rescue StandardError => e
     Rails.logger.error "Auto-encrypting cable database failed: #{e.class}: #{e.message}"
+  end
+
+  # The rekey replaces the database files, so no pool may hold a connection to the old inode: disconnect all
+  # before and after. It refuses while another process (bin/jobs) has them open; the unlock still succeeds and
+  # the user is told the rekey was deferred (it is retried on a later unlock).
+  def rekey_if_needed!(passphrase)
+    return unless RecoverySecret.rekey_needed?
+
+    begin
+      reset_recovery_secret_database_connections!
+      RecoverySecret.rekey!(passphrase, env: Rails.env)
+    rescue StandardError => e # whatever fails (a database, the credential write), the unlock must still succeed
+      Rails.logger.warn "Database rekey deferred: #{e.class}: #{e.message}"
+      flash[:alert] = "Unlocked, but upgrading the database key was deferred: #{e.message}"
+    ensure
+      reset_recovery_secret_database_connections!
+    end
   end
 
   def verify_recovery_secret!

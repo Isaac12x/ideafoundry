@@ -1,6 +1,26 @@
 require "test_helper"
 
 class SettingsControllerTest < ActionDispatch::IntegrationTest
+  # Records the order of connection resets around an encryption, when a test sets db_events.
+  module DbEvents
+    private
+
+    def disconnect_database_connections!
+      SettingsControllerTest.db_events&.push(:disconnect)
+      super
+    end
+
+    def reconnect_primary_database!
+      SettingsControllerTest.db_events&.push(:reconnect)
+      super
+    end
+  end
+  SettingsController.prepend(DbEvents)
+
+  class << self
+    attr_accessor :db_events
+  end
+
   def setup
     @user = User.first || User.create!(email: "test@example.com", name: "Test")
   end
@@ -551,22 +571,19 @@ class SettingsControllerTest < ActionDispatch::IntegrationTest
   test "POST settings/security/encrypt-database encrypts configured plaintext SQLite with the UI passphrase" do
     root = Rails.root.join("tmp/settings_sqlcipher_controller_test_#{SecureRandom.hex(6)}")
     database_path = root.join("production.sqlite3")
-    backup_dir = root.join("backups")
     FileUtils.mkdir_p(root)
     create_plaintext_sqlite_database(database_path)
 
     with_recovery_passphrase_file(root.join("recovery_passphrase.key")) do
-      with_sqlcipher_backup_dir(backup_dir) do
-        SqlcipherDatabaseMigrator.stub(:configured_database_paths, [ database_path.to_s ]) do
-          post settings_security_encrypt_database_path, params: {
-            database_encryption: {
-              passphrase: "correct horse battery staple",
-              passphrase_confirmation: "correct horse battery staple",
-              saved_primary: "1",
-              saved_secondary: "1"
-            }
+      SqlcipherDatabaseMigrator.stub(:configured_database_paths, [ database_path.to_s ]) do
+        post settings_security_encrypt_database_path, params: {
+          database_encryption: {
+            passphrase: "correct horse battery staple",
+            passphrase_confirmation: "correct horse battery staple",
+            saved_primary: "1",
+            saved_secondary: "1"
           }
-        end
+        }
       end
     end
 
@@ -574,8 +591,71 @@ class SettingsControllerTest < ActionDispatch::IntegrationTest
     assert_match(/Encrypted 1 SQLite database/, flash[:notice])
     assert_equal "correct horse battery staple", JSON.parse(File.read(root.join("recovery_passphrase.key")))["passphrase"]
     refute_equal "SQLite format 3\0", File.binread(database_path, 16)
-    assert_nil Dir[backup_dir.join("production.sqlite3.*.plaintext").to_s].first, "plaintext backup must be deleted after successful migration"
+    assert_empty Dir[root.join("**/*.plaintext").to_s], "no plaintext backup may ever be written"
+    assert_no_match(/backup/i, flash[:notice])
   ensure
+    FileUtils.rm_rf(root) if root&.exist?
+  end
+
+  test "POST settings/security/encrypt-database finishes a partial migration: the encrypted database is kept, the plaintext one converted" do
+    root = Rails.root.join("tmp/settings_sqlcipher_partial_test_#{SecureRandom.hex(6)}")
+    FileUtils.mkdir_p(root)
+    done = root.join("production.sqlite3")
+    pending = root.join("queue.sqlite3")
+    create_plaintext_sqlite_database(pending)
+    create_plaintext_sqlite_database(done)
+    key = RecoverySecret.sqlcipher_key_hex_for("correct horse battery staple", n: RecoverySecret::SCRYPT_N_DEFAULT)
+    SqlcipherDatabaseMigrator.new(key_hex: key).migrate!(done) # converted by an earlier, interrupted run
+
+    with_recovery_passphrase_file(root.join("recovery_passphrase.key")) do
+      # the interrupted run had already stored the credential (it does so before converting anything)
+      RecoverySecret.send(:store_credential!, "correct horse battery staple", kdf_n: RecoverySecret::SCRYPT_N_DEFAULT)
+      SqlcipherDatabaseMigrator.stub(:configured_database_paths, [ done.to_s, pending.to_s ]) do
+        post settings_security_encrypt_database_path, params: {
+          database_encryption: { passphrase: "correct horse battery staple", passphrase_confirmation: "correct horse battery staple",
+                                 saved_primary: "1", saved_secondary: "1" }
+        }
+      end
+    end
+
+    assert_redirected_to settings_security_path
+    assert_match(/Encrypted 1 SQLite database/, flash[:notice])
+    [ done, pending ].each do |path|
+      assert_not_equal "SQLite format 3\0", File.binread(path, 16), path.to_s
+      db = SQLite3::Database.new(path.to_s)
+      db.execute(%(PRAGMA key = "x'#{key}'"))
+      assert_equal "Encrypted from settings", db.get_first_value("SELECT title FROM ideas")
+      db.close
+    end
+  ensure
+    FileUtils.rm_rf(root) if root&.exist?
+  end
+
+  test "POST settings/security/encrypt-database disconnects every pool again before reconnecting, even when it refuses" do
+    SettingsControllerTest.db_events = []
+    refuse = ->(*) { raise SqlcipherDatabaseMigrator::Error, "Database is in use by process 42. Stop the app (puma + bin/jobs) first, or run `bin/rails db:encrypt_sqlite` offline." }
+    root = Rails.root.join("tmp/settings_sqlcipher_refusal_test_#{SecureRandom.hex(6)}")
+    database_path = root.join("production.sqlite3")
+    FileUtils.mkdir_p(root)
+    create_plaintext_sqlite_database(database_path)
+
+    with_recovery_passphrase_file(root.join("recovery_passphrase.key")) do
+      SqlcipherDatabaseMigrator.stub(:configured_database_paths, [ database_path.to_s ]) do
+        SqlcipherDatabaseMigrator.stub(:ensure_no_other_openers!, refuse) do
+          post settings_security_encrypt_database_path, params: {
+            database_encryption: { passphrase: "correct horse battery staple", passphrase_confirmation: "correct horse battery staple",
+                                   saved_primary: "1", saved_secondary: "1" }
+          }
+        end
+      end
+    end
+
+    assert_redirected_to settings_security_path
+    assert_match(/Stop the app \(puma \+ bin\/jobs\) first, or run `bin\/rails db:encrypt_sqlite` offline/, flash[:alert])
+    assert_equal "SQLite format 3\0", File.binread(database_path, 16)
+    assert_equal [ :disconnect, :disconnect, :reconnect ], SettingsControllerTest.db_events
+  ensure
+    SettingsControllerTest.db_events = nil
     FileUtils.rm_rf(root) if root&.exist?
   end
 
@@ -1237,18 +1317,6 @@ class SettingsControllerTest < ActionDispatch::IntegrationTest
     db.execute("INSERT INTO ideas (title) VALUES (?)", [ "Encrypted from settings" ])
   ensure
     db&.close
-  end
-
-  def with_sqlcipher_backup_dir(path)
-    original = ENV["IDEA_FOUNDRY_SQLCIPHER_BACKUP_DIR"]
-    ENV["IDEA_FOUNDRY_SQLCIPHER_BACKUP_DIR"] = path.to_s
-    yield
-  ensure
-    if original.nil?
-      ENV.delete("IDEA_FOUNDRY_SQLCIPHER_BACKUP_DIR")
-    else
-      ENV["IDEA_FOUNDRY_SQLCIPHER_BACKUP_DIR"] = original
-    end
   end
 
   def with_recovery_passphrase_file(path)
