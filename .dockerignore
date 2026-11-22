@@ -39,3 +39,23 @@
 
 # Sidecar service sources/compose/Caddy are not needed in the Rails image.
 /infra/
+
+# Embedded Python local-agent environment and generated state
+agent_runtime/.venv
+agent_runtime/venv
+agent_runtime/.env
+agent_runtime/.env.*
+!agent_runtime/.env.example
+agent_runtime/**/__pycache__
+agent_runtime/.pytest_cache
+agent_runtime/**/.pytest_cache
+agent_runtime/*.egg-info
+agent_runtime/dist
+agent_runtime/build
+agent_runtime/graphify-out
+agent_runtime/codedb.snapshot
+agent_runtime/data
+agent_runtime/logs
+agent_runtime/testlogs
+agent_runtime/tmp
+agent_runtime/skills/index-cache

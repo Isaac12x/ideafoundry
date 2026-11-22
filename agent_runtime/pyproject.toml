@@ -1,0 +1,122 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "idea-app-agent"
+version = "0.1.0"
+description = "A webapp-facing agentic loop with local inference, skills, connectors, and self-improvement."
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+dependencies = [
+  "openai>=2.16.0,<3",
+  "python-dotenv>=1.2.2,<2",
+  "httpx[socks]>=0.28.1,<0.30",
+  "rich>=14.3.1,<15",
+  "tenacity>=9.1.4,<10",
+  "pyyaml>=6.0.3,<7",
+  "ruamel.yaml>=0.18.17,<0.20",
+  "requests>=2.33.0,<3",
+  "jinja2>=3.1.6,<4",
+  "pydantic>=2.12.5,<3",
+  "psutil>=7.2.2,<8",
+  "fastapi>=0.133.1,<0.135",
+  "uvicorn[standard]>=0.41.0,<0.43",
+  "croniter>=6.0.0,<7",
+  "tzdata>=2025.3,<2026; sys_platform == 'win32'",
+  "browser-use>=0.12.0,<1",
+]
+
+[project.scripts]
+idea-foundry-agent = "idea_foundry_agent.daemon:main"
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=9.0.2,<10",
+  "pytest-asyncio>=1.3.0,<2",
+  "pytest-timeout>=2.4.0,<3",
+  "ruff>=0.15.10,<0.17",
+]
+mcp = ["mcp>=1.26.0,<2"]
+messaging = [
+  "python-telegram-bot[webhooks]>=22.6,<23",
+  "discord.py[voice]>=2.7.1,<3",
+  "aiohttp>=3.13.3,<4",
+  "slack-bolt>=1.27.0,<2",
+  "slack-sdk>=3.40.1,<4",
+]
+google = [
+  "google-api-python-client>=2.188.0,<3",
+  "google-auth-oauthlib>=1.2.4,<2",
+  "google-auth-httplib2>=0.3.1,<0.5",
+]
+homeassistant = ["aiohttp>=3.13.3,<4"]
+sms = ["aiohttp>=3.13.3,<4"]
+image = ["fal-client>=0.13.1,<0.15"]
+voice = [
+  "faster-whisper>=1.2.1,<2",
+  "sounddevice>=0.5.5,<0.7",
+  "numpy>=2.4.3,<3",
+]
+memory = ["honcho-ai>=2.0.1,<3"]
+connectors = [
+  "idea-app-agent[mcp]",
+  "idea-app-agent[messaging]",
+  "idea-app-agent[google]",
+  "idea-app-agent[homeassistant]",
+  "idea-app-agent[sms]",
+]
+
+[tool.setuptools]
+py-modules = [
+  "run_agent",
+  "model_tools",
+  "toolsets",
+  "toolset_distributions",
+  "hermes_bootstrap",
+  "hermes_constants",
+  "hermes_logging",
+  "hermes_state",
+  "hermes_time",
+  "mcp_serve",
+  "utils",
+]
+
+[tool.setuptools.package-data]
+plugins = ["**/*.yaml", "**/*.json", "**/*.md", "**/dashboard/dist/*", "**/dashboard/dist/**/*"]
+gateway = ["assets/**/*"]
+
+[tool.setuptools.packages.find]
+include = [
+  "agent",
+  "agent.*",
+  "cron",
+  "gateway",
+  "gateway.*",
+  "hermes_cli",
+  "hermes_cli.*",
+  "plugins",
+  "plugins.*",
+  "providers",
+  "providers.*",
+  "tools",
+  "tools.*",
+  "webapp_agent",
+  "webapp_agent.*",
+  "idea_foundry_agent",
+  "idea_foundry_agent.*",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-m 'not integration' --timeout=30 --timeout-method=signal"
+markers = [
+  "integration: marks tests requiring external services.",
+]
+
+[tool.ruff]
+preview = true
+
+[tool.ruff.lint]
+select = ["PLW1514"]
