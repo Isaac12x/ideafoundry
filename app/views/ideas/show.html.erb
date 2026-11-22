@@ -192,7 +192,7 @@
           <%= link_to theme.name, ideas_path(theme_id: theme.id), class: "theme-badge", style: ("--theme-color: #{theme.color}" if theme.color.present?) %>
         <% end %>
         <details class="idea-themes__edit">
-          <summary>Themes</summary>
+          <summary><%= @idea.themes.any? ? "Themes" : "+ Theme" %></summary>
           <%= form_with url: set_themes_idea_path(@idea), method: :patch, local: true do %>
             <%= render "ideas/theme_picker", idea: @idea, themes: @user.themes.ordered, auto_submit: true %>
           <% end %>

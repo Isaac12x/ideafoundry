@@ -18,6 +18,15 @@ class ThemesManagementTest < ActionDispatch::IntegrationTest
     assert_select "#theme_#{@a.id} .theme-manage__count", text: "1 idea"
   end
 
+  test "idea show: themeless idea offers only a small + Theme toggle" do
+    idea = @user.ideas.create!(title: "Bare")
+    get idea_path(idea)
+    assert_select ".idea-themes__edit summary", text: "+ Theme"
+    idea.themes << @a
+    get idea_path(idea)
+    assert_select ".idea-themes__edit summary", text: "Themes"
+  end
+
   test "rename and recolor" do
     patch theme_path(@a), params: { theme: { name: "Shipping", color: Theme::PALETTE.last } }
     assert_redirected_to ideas_path
