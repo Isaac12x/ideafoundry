@@ -1,0 +1,58 @@
+<div class="ref">
+  <header class="ref-head">
+    <p class="ref-eyebrow">Annotated reference</p>
+    <h2 class="ref-title">Patent Reference</h2>
+    <p class="ref-lede">How patents work, one concept at a time. <%= PatentReference.all.size %> notes in <%= @clusters.size %> sections.</p>
+    <%= form_with url: reference_index_path, method: :get, class: "ref-search", role: "search" do %>
+      <label for="ref-q" class="ref-search__label">Search notes</label>
+      <div class="ref-search__row">
+        <%= search_field_tag :q, @q, id: "ref-q", placeholder: "e.g. dependent claim, 101, provisional", autocomplete: "off" %>
+        <button type="submit" class="ref-search__go">Search</button>
+      </div>
+    <% end %>
+    <p class="ref-disclaimer">US-focused. Educational, not legal advice.</p>
+  </header>
+
+  <div class="ref-layout">
+    <nav class="ref-toc" aria-label="Sections">
+      <ol>
+        <% @clusters.each_with_index do |(cluster, notes), i| %>
+          <li><a href="#<%= cluster %>"><span class="ref-toc__mark">§<%= i + 1 %></span><span class="ref-toc__name"><%= PatentReference::CLUSTERS.fetch(cluster, cluster) %></span><span class="ref-toc__count"><%= notes.size %></span></a></li>
+        <% end %>
+      </ol>
+    </nav>
+
+    <div class="ref-body">
+      <% if @results %>
+        <section class="ref-results" aria-live="polite">
+          <h3 class="ref-results__h"><%= @results.size %> result<%= "s" unless @results.size == 1 %> for “<%= @q %>” <%= link_to "Clear", reference_index_path, class: "ref-results__clear" %></h3>
+          <% if @results.any? %>
+            <%= render "list", notes: @results, ranked: true %>
+          <% else %>
+            <div class="ref-empty">
+              <p class="ref-empty__lead">Nothing matches that wording.</p>
+              <p>Try a shorter or plainer term (“claim”, “prior art”, “provisional”), a statute number, or browse the sections below.</p>
+            </div>
+          <% end %>
+        </section>
+      <% end %>
+
+      <% @clusters.each_with_index do |(cluster, notes), i| %>
+        <% flow = cluster == "workflows" %>
+        <section class="ref-sec<%= " ref-sec--flow" if flow %>" id="<%= cluster %>" style="--i: <%= i %>">
+          <h3 class="ref-sec__h">
+            <span class="ref-sec__mark">§<%= i + 1 %></span>
+            <span class="ref-sec__name"><%= PatentReference::CLUSTERS.fetch(cluster, cluster) %></span>
+            <span class="ref-sec__count"><%= notes.size %></span>
+          </h3>
+          <% if flow %>
+            <p class="ref-sec__intro">Step-by-step procedures. Each one links the concept notes it relies on.</p>
+            <%= render "list", notes: notes.sort_by(&:title), ranked: true %>
+          <% else %>
+            <%= render "list", notes: notes.sort_by(&:title) %>
+          <% end %>
+        </section>
+      <% end %>
+    </div>
+  </div>
+</div>

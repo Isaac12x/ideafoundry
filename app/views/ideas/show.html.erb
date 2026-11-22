@@ -519,7 +519,7 @@
                 <% if attachment_drawings.any? %>
                   <section class="media-manager__section">
                     <div class="media-section__group-header">
-                      <h4>Drawings</h4>
+                      <h4>Drawings <%= render "reference/chip", slug: "drawing-rules-1-84" %></h4>
                       <span><%= attachment_drawings.size %></span>
                     </div>
                     <div class="attachments-grid">
@@ -648,7 +648,7 @@
 
             <% if comp_enabled || pot_enabled %>
             <div class="media-section__group">
-              <h3>Competitors</h3>
+              <h3>Competitors <%= render "reference/chip", slug: "prior-art-search" %></h3>
               <div data-controller="competitor-toggle" class="competitor-toggle-wrapper">
                 <% default_kind = comp_enabled ? 'competitor' : 'potential_competitor' %>
                 <% comp_count = comp_enabled ? @idea.idea_entries.where(kind: 'competitor').count : 0 %>

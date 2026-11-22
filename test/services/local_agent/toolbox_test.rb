@@ -237,4 +237,14 @@ class LocalAgent::ToolboxTest < ActiveSupport::TestCase
   def toolbox
     LocalAgent::Toolbox.new(user: @user)
   end
+  test "patent reference tools search and look up notes" do
+    note = PatentReference.all.first
+    found = toolbox.call("search_reference", { "query" => note.title })
+    assert found.fetch(:ok)
+    assert_equal note.slug, found.fetch(:patent_notes).first[:slug]
+
+    read = toolbox.call("lookup_patent_note", { "slug" => note.slug })
+    assert_equal note.body, read.fetch(:patent_note)[:body]
+    assert_equal "not_found", toolbox.call("lookup_patent_note", { "slug" => "nope" }).fetch(:error)
+  end
 end
