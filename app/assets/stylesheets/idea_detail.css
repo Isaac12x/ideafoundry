@@ -1570,7 +1570,10 @@
   background: color-mix(in srgb, var(--theme-color) 14%, transparent); color: var(--text-primary); border: 1px solid color-mix(in srgb, var(--theme-color) 40%, transparent);
 }
 .theme-badge::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--theme-color); }
-.idea-themes__edit summary { cursor: pointer; font-size: 0.8rem; color: var(--text-muted); }
+.idea-themes__edit summary { cursor: pointer; font-size: 0.8rem; color: var(--text-muted); width: fit-content; list-style: none; }
+.idea-themes__edit summary::-webkit-details-marker { display: none; }
+.idea-themes__edit summary:hover { color: var(--accent); }
+.idea-themes__edit summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: var(--radius-sm); }
 .idea-themes__edit[open] { flex-basis: 100%; }
 .idea-themes__edit form { margin-top: 8px; }
 .idea-card-themes { display: flex; flex-wrap: wrap; gap: 4px; }
