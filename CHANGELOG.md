@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Removed the Graphify pre-command hooks from the Claude and Codex project settings.
+
 - The project is now MIT licensed: `LICENSE` added and the README license section corrected.
 - Local session handoff notes are ignored in every directory and filename casing.
 - Retrying a note import from the same preview skips notes already imported by that user and adds any newly selected notes.
