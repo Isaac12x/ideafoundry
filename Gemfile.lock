@@ -129,7 +129,7 @@ GEM
     globalid (1.4.0)
       activesupport (>= 6.1)
     htmlentities (4.4.2)
-    httparty (0.24.4)
+    httparty (0.25.1)
       csv
       mini_mime (>= 1.0.0)
       multi_xml (>= 0.5.2)
@@ -274,7 +274,7 @@ GEM
     regexp_parser (2.13.1)
     reline (0.7.0)
       io-console (~> 0.5)
-    resend (1.19.0)
+    resend (1.20.0)
       base64
       httparty (>= 0.22.0)
     roo (4.0.0)
