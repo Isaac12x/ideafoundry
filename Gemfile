@@ -80,7 +80,7 @@ gem "tzinfo-data", platforms: %i[ mswin mswin64 mingw x64_mingw jruby ]
 gem "bootsnap", require: false
 
 # Formula evaluation for napkin calculations
-gem "dentaku", "~> 4.0"
+gem "dentaku", "~> 4.2"
 
 
 
