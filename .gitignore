@@ -603,3 +603,6 @@ graphify-out/
 _site/
 !docs/guide/_template.html
 docs/patent-documents/
+.claude/settings.json
+.codex/
+CLAUDE.md
