@@ -254,6 +254,16 @@ class TypingLocksControllerTest < ActionDispatch::IntegrationTest
     assert_equal '"cache"', response.headers["Clear-Site-Data"]
   end
 
+  test "clear-cache never writes the session cookie, so a response Chrome delays cannot undo a later unlock" do
+    @user.store_typing_fingerprint!(fingerprint_for(TypingTextLibrary.unlock_text("spark-gap"), hold: 91, flight: 41))
+    get typing_lock_path # a locked session cookie exists, like the lock screen that fires clear-cache on load
+
+    post clear_cache_typing_lock_path
+
+    assert_response :no_content
+    assert_nil response.headers["Set-Cookie"]
+  end
+
   test "unlocked pages expose a manual lock button and keyboard shortcut" do
     unlock_text = TypingTextLibrary.unlock_text("spark-gap")
     @user.store_typing_fingerprint!(fingerprint_for(unlock_text, hold: 91, flight: 41))

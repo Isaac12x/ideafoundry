@@ -175,3 +175,16 @@ test("a lock chord buffered while the page loaded locks as soon as the controlle
   await tick()
   teardown()
 })
+
+test("reload chords (Cmd+R, Ctrl+R, Cmd+Shift+R) never lock or cover, even when buffered while the page loaded", () => {
+  const { c, log } = setup({ fetchImpl: async () => ({ ok: true }) })
+  const chords = [{ metaKey: true, ctrlKey: false, shiftKey: false }, { metaKey: false, ctrlKey: true, shiftKey: false }, { metaKey: true, ctrlKey: false, shiftKey: true }]
+  for (const mods of chords) {
+    const event = { key: "r", code: "KeyR", altKey: false, ...mods }
+    assert.equal(c.isLockShortcut(event), false)
+    window.__earlyKeys = [event]
+    c.replayEarlyKeys()
+  }
+  assert.ok(!log.includes("cover") && !log.includes("fetch"))
+  teardown()
+})

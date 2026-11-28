@@ -7,6 +7,12 @@ let ACCOUNT = "idea-foundry"
 
 // Build a SecAccess that grants access ONLY to this binary, so no other process
 // (including the `security` CLI) can read the item without a user dialog.
+// ponytail: SecAccess/SecTrustedApplication are deprecated (10.10) but are the only way to get a
+// per-binary ACL on an unsigned CLI; the data-protection keychain needs a signed app + entitlement
+// and would orphan existing items. Marking this func deprecated silences just these two calls.
+// Revisit when macOS removes the file-based SecKeychain.
+// -parse-as-library (bin/setup) is required by @main below, which hosts the deprecated callers.
+@available(macOS, deprecated: 10.10, message: "legacy keychain ACL is intentional")
 func makeAccess() -> SecAccess? {
     // nil path → trusted application reference for the current running binary.
     // macOS records the binary's code signature (or hash if unsigned); future
@@ -37,6 +43,7 @@ func legacyCLIDelete() {
     task.waitUntilExit()
 }
 
+@available(macOS, deprecated: 10.10)
 func store(payload: Data) -> Bool {
     let delQuery: [CFString: Any] = [
         kSecClass:       kSecClassGenericPassword,
@@ -96,34 +103,39 @@ func deleteItem() {
 
 // ── Entry point ──────────────────────────────────────────────────────────────
 
-let args = CommandLine.arguments
-guard args.count >= 2 else {
-    fputs("Usage: keychain-helper <store|retrieve|delete>\n", stderr)
-    exit(1)
-}
+@available(macOS, deprecated: 10.10)
+@main struct KeychainHelper {
+    static func main() {
+        let args = CommandLine.arguments
+        guard args.count >= 2 else {
+            fputs("Usage: keychain-helper <store|retrieve|delete>\n", stderr)
+            exit(1)
+        }
 
-switch args[1] {
-case "store":
-    let payload = FileHandle.standardInput.readDataToEndOfFile()
-    guard !payload.isEmpty else {
-        fputs("keychain-helper: no data on stdin\n", stderr)
-        exit(1)
+        switch args[1] {
+        case "store":
+            let payload = FileHandle.standardInput.readDataToEndOfFile()
+            guard !payload.isEmpty else {
+                fputs("keychain-helper: no data on stdin\n", stderr)
+                exit(1)
+            }
+            exit(store(payload: payload) ? 0 : 1)
+
+        case "retrieve":
+            if let data = retrieve() {
+                FileHandle.standardOutput.write(data)
+                exit(0)
+            } else {
+                exit(1) // not found — not an error, caller handles nil
+            }
+
+        case "delete":
+            deleteItem()
+            exit(0)
+
+        default:
+            fputs("keychain-helper: unknown command '\(args[1])'\n", stderr)
+            exit(1)
+        }
     }
-    exit(store(payload: payload) ? 0 : 1)
-
-case "retrieve":
-    if let data = retrieve() {
-        FileHandle.standardOutput.write(data)
-        exit(0)
-    } else {
-        exit(1) // not found — not an error, caller handles nil
-    }
-
-case "delete":
-    deleteItem()
-    exit(0)
-
-default:
-    fputs("keychain-helper: unknown command '\(args[1])'\n", stderr)
-    exit(1)
 }
