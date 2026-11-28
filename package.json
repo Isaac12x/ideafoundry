@@ -17,7 +17,7 @@
     "hyperformula": "^3.5.0",
     "mermaid": "12.3.0",
     "occt-import-js": "0.0.23",
-    "pdfjs-dist": "4.10.38",
+    "pdfjs-dist": "6.5.438",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "three": "^0.187.0",
