@@ -75,7 +75,10 @@ class TypingLocksController < ApplicationController
   # Called by the painted lock screen: Chrome blocks the response that carries Clear-Site-Data until the cache is wiped
   # (seconds with big KB media), so it must never ride on the lock POST or the lock page itself.
   # Cached media must not outlive the lock; "cache" only, so encrypted localStorage drafts survive.
+  # No Set-Cookie either: Chrome holds this response back while it wipes the cache, and a session cookie written from the
+  # request's (locked) state would land after the unlock and silently lock the app again on the next navigation or reload.
   def clear_cache
+    request.session_options[:skip] = true
     response.set_header("Clear-Site-Data", '"cache"')
     head :no_content
   end

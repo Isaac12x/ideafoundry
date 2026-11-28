@@ -34,7 +34,7 @@ FileUtils.chdir APP_ROOT do
 
   if RUBY_PLATFORM.include?("darwin")
     puts "\n== Compiling macOS keychain helper =="
-    system! "swiftc libexec/keychain-helper.swift -o libexec/keychain-helper"
+    system! "swiftc -parse-as-library libexec/keychain-helper.swift -o libexec/keychain-helper"
   end
 
   # puts "\n== Copying sample files =="
