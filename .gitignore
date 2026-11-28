@@ -606,3 +606,5 @@ docs/patent-documents/
 .claude/settings.json
 .codex/
 CLAUDE.md
+.claude/
+.hermes-bak/
