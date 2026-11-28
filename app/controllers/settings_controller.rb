@@ -373,7 +373,11 @@ class SettingsController < ApplicationController
     Rails.logger.error "Failed to encrypt SQLite databases from settings: #{e.message}"
     redirect_to settings_security_path, alert: "Failed to encrypt SQLite databases: #{e.message}"
   ensure
-    reconnect_primary_database!
+    begin
+      disconnect_database_connections! # no pool may keep a connection to the replaced inode
+    ensure
+      reconnect_primary_database!
+    end
   end
 
   def update_notifications
@@ -808,21 +812,11 @@ class SettingsController < ApplicationController
   end
 
   def sqlcipher_database_migrator
-    SqlcipherDatabaseMigrator.new(
-      key_hex: RecoverySecret.present? ? RecoverySecret.sqlcipher_key_hex : ("0" * 64),
-      backup_dir: sqlcipher_backup_dir
-    )
+    SqlcipherDatabaseMigrator.new(key_hex: RecoverySecret.present? ? RecoverySecret.sqlcipher_key_hex : ("0" * 64))
   end
 
   def sqlcipher_database_migrator_for_passphrase(passphrase)
-    SqlcipherDatabaseMigrator.new(
-      key_hex: RecoverySecret.sqlcipher_key_hex_for(passphrase),
-      backup_dir: sqlcipher_backup_dir
-    )
-  end
-
-  def sqlcipher_backup_dir
-    ENV["IDEA_FOUNDRY_SQLCIPHER_BACKUP_DIR"].presence || ENV["BACKUP_DIR"].presence
+    SqlcipherDatabaseMigrator.new(key_hex: RecoverySecret.sqlcipher_key_hex_for(passphrase))
   end
 
   def disconnect_database_connections!
@@ -844,10 +838,7 @@ class SettingsController < ApplicationController
 
     encrypted_count = results.count { |result| result.status == :encrypted }
     if encrypted_count.positive?
-      backup_dirs = results.filter_map(&:backup_path).map { |path| File.dirname(path) }.uniq
-      message = "Encrypted #{encrypted_count} SQLite #{'database'.pluralize(encrypted_count)}."
-      message += " Plaintext backups: #{backup_dirs.to_sentence}." if backup_dirs.any?
-      redirect_to settings_security_path, notice: message
+      redirect_to settings_security_path, notice: "Encrypted #{encrypted_count} SQLite #{'database'.pluralize(encrypted_count)}."
     elsif results.all? { |result| result.status == :already_encrypted }
       redirect_to settings_security_path, notice: "SQLite databases are already encrypted."
     elsif results.all? { |result| result.status == :missing }

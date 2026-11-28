@@ -1,6 +1,6 @@
 module LocalAgent
   class Supervisor
-    DEFAULT_RUNNER_PATH = Rails.root.join("..", "idea-app-agent", "bin", "idea-foundry-agent")
+    DEFAULT_RUNNER_PATH = Rails.root.join("agent_runtime", "bin", "idea-foundry-agent")
 
     def initialize(user:, run:)
       @user = user

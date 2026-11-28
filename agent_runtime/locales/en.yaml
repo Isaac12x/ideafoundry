@@ -1,0 +1,4 @@
+approval.choose: "Choose an action."
+approval.choose_long: "Choose how to handle this action."
+approval.expired: "Approval expired."
+gateway.draining: "Waiting for {count} running task(s) to finish."

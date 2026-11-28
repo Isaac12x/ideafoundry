@@ -1,12 +1,12 @@
 require "fileutils"
+require "open3"
 require "pathname"
 require "sqlite3"
 
 class SqlcipherDatabaseMigrator
   SQLITE_HEADER = "SQLite format 3\0".b.freeze
-  SIDECAR_SUFFIXES = [ "-wal", "-shm" ].freeze
 
-  Result = Struct.new(:path, :status, :backup_path, :error, keyword_init: true)
+  Result = Struct.new(:path, :status, :error, keyword_init: true)
 
   class Error < StandardError; end
 
@@ -93,8 +93,12 @@ class SqlcipherDatabaseMigrator
   end
 
   def self.encrypted_database_openable_with_current_key?(path)
-    new(key_hex: RecoverySecret.sqlcipher_key_hex).send(:verify_encrypted_database!, Pathname.new(path.to_s))
-    true
+    migrator = new(key_hex: RecoverySecret.sqlcipher_key_hex)
+    pathname = Pathname.new(path.to_s)
+    # the stored scrypt cost first, then the other known cost (a partially rekeyed set of databases)
+    return true if migrator.send(:opens_with?, pathname, RecoverySecret.sqlcipher_key_hex)
+
+    RecoverySecret.alternate_sqlcipher_key_hexes.any? { |key_hex| migrator.send(:opens_with?, pathname, key_hex) }
   rescue RecoverySecret::Missing, Error, SQLite3::SQLException, SQLite3::NotADatabaseException, SQLite3::IOException
     false
   end
@@ -107,25 +111,68 @@ class SqlcipherDatabaseMigrator
   end
 
   def self.rekey_configured!(env:, old_key_hex:, new_key_hex:)
-    configured_database_paths(env: env).each do |path|
-      new(key_hex: old_key_hex).rekey!(path, new_key_hex: new_key_hex)
+    migrator = new(key_hex: old_key_hex)
+    migrator.preflight_rekey!(configured_database_paths(env: env), new_key_hex).each do |path|
+      migrator.rekey!(path, new_key_hex: new_key_hex)
     end
+  end
+
+  # Concurrency design. A re-encrypt replaces the file (new inode); a process still holding the old inode would keep
+  # writing into the unlinked file and those writes would be lost. So:
+  #  1. Refuse unless no OTHER process has the database (or its -wal/-shm) open. lsof proves it, and a missing lsof
+  #     refuses too. Run it offline: stop puma + bin/jobs, then `bin/rails db:encrypt_sqlite`.
+  #  2. Take the write lock (BEGIN IMMEDIATE, busy timeout) before exporting and hold it while exporting and verifying.
+  #  3. Close every connection of ours on the old file BEFORE the rename (never keep one open on the old inode: when
+  #     SQLite closes the last connection it deletes "<db>-wal" by PATH, which after the rename is the NEW database's
+  #     WAL), then re-run lsof counting this process too, so a stale in-process handle refuses the swap.
+  def self.ensure_no_other_openers!(paths, include_self: false)
+    files = Array(paths).flat_map { |p| [ p.to_s, "#{p}-wal", "#{p}-shm" ] }
+    out, _err, status = Open3.capture3("lsof", "-t", "--", *files)
+    raise Error, "lsof failed (exit #{status.exitstatus}); cannot prove the database is not in use" if status.exitstatus > 1
+
+    pids = out.split.map(&:to_i).uniq
+    pids -= [ Process.pid ] unless include_self
+    return if pids.empty?
+
+    raise Error, "Database is in use by process #{pids.to_sentence}. Stop the app (puma + bin/jobs) first, or run `bin/rails db:encrypt_sqlite` offline."
+  rescue Errno::ENOENT
+    raise Error, "lsof is required to prove no other process has the database open; install it and retry"
   end
 
   def self.plaintext_sqlite_database?(path)
     File.file?(path) && File.binread(path, SQLITE_HEADER.bytesize) == SQLITE_HEADER
   end
 
-  def initialize(key_hex:, backup_dir: nil, timestamp: Time.now.utc.strftime("%Y%m%d%H%M%S"))
+  def initialize(key_hex:, timestamp: Time.now.utc.strftime("%Y%m%d%H%M%S"))
     @key_hex = key_hex.to_s
-    @backup_dir = Pathname.new((backup_dir.presence || default_backup_dir).to_s)
     @timestamp = timestamp
 
     validate_key!
   end
 
   def migrate_configured!(env:)
-    self.class.configured_database_paths(env: env).map { |path| migrate!(path) }
+    paths = self.class.configured_database_paths(env: env)
+    preflight_migrate!(paths)
+    paths.map { |path| migrate!(path) }
+  end
+
+  # All or nothing: prove every file can be handled before touching any, so a failure never leaves some
+  # databases converted and others not (which could lock the user out of the converted ones).
+  def preflight_migrate!(paths)
+    ensure_sqlcipher_available!
+    todo = absolute_paths(paths).select(&:exist?).reject { |p| encrypted_database?(p) }
+    todo.each do |p|
+      raise Error, "#{p} is neither plaintext SQLite nor an openable SQLCipher database" unless plaintext_sqlite_database?(p)
+    end
+    ensure_ready!(todo)
+  end
+
+  # Returns the paths still to rekey. Paths already on the new key are skipped, so a retry after a partial run converges.
+  def preflight_rekey!(paths, new_key_hex)
+    todo = absolute_paths(paths).select { |p| p.exist? && !plaintext_sqlite_database?(p) }.reject { |p| opens_with?(p, new_key_hex) }
+    todo.each { |p| raise Error, "#{p} opens with neither the old nor the new key" unless opens_with?(p, @key_hex) }
+    ensure_ready!(todo)
+    todo
   end
 
   def configured_statuses(env:)
@@ -159,46 +206,97 @@ class SqlcipherDatabaseMigrator
       raise Error, "#{path} is neither plaintext SQLite nor an openable SQLCipher database"
     end
 
-    temp_path = nil
-    backup_path = nil
-
-    temp_path = temporary_path(path)
-    export_plaintext_to_sqlcipher!(path, temp_path)
-    verify_encrypted_database!(temp_path)
-
-    backup_path = backup_plaintext_database!(path)
-    replace_database!(path, temp_path)
-
-    # Replacement succeeded — remove plaintext backup and clear pointer so ensure skips.
-    delete_plaintext_backup!(path, backup_path)
-    backup_path = nil
-
-    Result.new(path: path.to_s, status: :encrypted, backup_path: nil)
-  ensure
-    FileUtils.rm_f(temp_path) if temp_path&.exist?
-    # Guard: replacement succeeded but backup deletion was interrupted (e.g. SIGTERM).
-    delete_plaintext_backup!(path, backup_path) if backup_path
+    reencrypt!(path, from_key_hex: nil, to_key_hex: @key_hex)
+    Result.new(path: path.to_s, status: :encrypted)
   end
 
+  # Same safe path as migrate!: export under the write lock, verify, atomic rename.
   def rekey!(database, new_key_hex:)
     raise Error, "New key must be a 64-character hex string" unless new_key_hex.to_s.match?(/\A[0-9a-f]{64}\z/i)
 
     path = Pathname.new(database.to_s)
     path = Rails.root.join(path) unless path.absolute?
     return unless path.exist? && !plaintext_sqlite_database?(path)
+    return if opens_with?(path, new_key_hex) # already converted (a previous partial run)
 
-    new_literal = %("x'#{new_key_hex}'")
-    db = SQLite3::Database.new(path.to_s)
-    db.execute(%(PRAGMA key = #{key_literal}))
-    db.execute(%(PRAGMA rekey = #{new_literal}))
-  ensure
-    db&.close
+    reencrypt!(path, from_key_hex: @key_hex, to_key_hex: new_key_hex)
   end
 
   private
 
-  def default_backup_dir
-    Rails.root.dirname.join("#{Rails.root.basename}-sqlcipher-backups")
+  def absolute_paths(paths)
+    paths.map { |p| Pathname.new(p.to_s).then { |pa| pa.absolute? ? pa : Rails.root.join(pa) } }
+  end
+
+  def ensure_ready!(paths)
+    paths.each do |p|
+      next unless temporary_path(p).exist?
+
+      raise Error, "Stale temporary file #{temporary_path(p)} exists (a previous run was killed?); it is never deleted automatically. " \
+                   "After checking that no migration is running, the owner can remove that file and retry."
+    end
+    self.class.ensure_no_other_openers!(paths) if paths.any?
+  end
+
+  def opens_with?(path, key_hex)
+    verify_encrypted_database!(path, key_hex)
+    true
+  rescue Error, SQLite3::Exception
+    false
+  end
+
+  # No plaintext copy is ever made. The original is untouched until the encrypted copy is fully written and
+  # verified (integrity, per-table row counts), all under the write lock; only then does an atomic rename replace
+  # it. Any failure before that leaves the original as it was (our own half-written temp file is discarded).
+  def reencrypt!(path, from_key_hex:, to_key_hex:)
+    self.class.ensure_no_other_openers!([ path ])
+    temp_path = temporary_path(path)
+    create_temp_exclusively!(temp_path)
+    created = true
+
+    checkpoint_wal!(path, from_key_hex)
+    locker = open_database(path, from_key_hex)
+    locker.execute("BEGIN IMMEDIATE") # blocks every other writer while we export and verify
+    # A frame written between the checkpoint and the lock means someone is writing: stop, nothing was modified.
+    raise Error, "#{path} changed while the migration took its lock; nothing was modified, retry" if File.size?("#{path}-wal")
+
+    # Re-check after the lock and right before the rename: narrows the window for a process that opened the file
+    # since the first check, but cannot close it (lsof is a snapshot).
+    self.class.ensure_no_other_openers!([ path ])
+    export_encrypted_copy!(path, temp_path, from_key_hex, to_key_hex)
+    verify_encrypted_database!(temp_path, to_key_hex)
+    verify_same_row_counts!(locker, temp_path, to_key_hex)
+    locker.close # closing the last connection checkpoints and deletes the OLD wal by path: safe only before the rename
+    locker = nil
+    self.class.ensure_no_other_openers!([ path ], include_self: true)
+    replace_database!(path, temp_path)
+    created = false
+  ensure
+    locker&.close # rolls back the (empty) transaction; the original is untouched
+    FileUtils.rm_f(temp_path) if created
+  end
+
+  # Flush the WAL into the main file first: the old -wal must hold nothing when the file is replaced.
+  def checkpoint_wal!(path, key_hex)
+    db = open_database(path, key_hex)
+    busy, = db.get_first_row("PRAGMA wal_checkpoint(TRUNCATE)")
+    raise Error, "#{path} has readers or writers that block flushing its WAL; nothing was modified" if busy.to_i != 0
+  ensure
+    db&.close
+  end
+
+  def create_temp_exclusively!(temp_path)
+    File.open(temp_path, File::WRONLY | File::CREAT | File::EXCL, 0o600) { }
+  rescue Errno::EEXIST
+    raise Error, "Stale temporary file #{temp_path} exists (a previous run was killed?); it is never deleted automatically. " \
+                 "After checking that no migration is running, the owner can remove that file and retry."
+  end
+
+  def open_database(path, key_hex = nil)
+    db = SQLite3::Database.new(path.to_s)
+    db.busy_timeout = 10_000
+    db.execute(%(PRAGMA key = #{key_literal(key_hex)})) if key_hex
+    db
   end
 
   def validate_key!
@@ -224,9 +322,9 @@ class SqlcipherDatabaseMigrator
     false
   end
 
-  def verify_encrypted_database!(path)
+  def verify_encrypted_database!(path, key_hex = @key_hex)
     db = SQLite3::Database.new(path.to_s)
-    db.execute(%(PRAGMA key = #{key_literal}))
+    db.execute(%(PRAGMA key = #{key_literal(key_hex)}))
     db.get_first_value("SELECT count(*) FROM sqlite_master")
 
     integrity = db.get_first_value("PRAGMA integrity_check")
@@ -239,62 +337,47 @@ class SqlcipherDatabaseMigrator
     self.class.plaintext_sqlite_database?(path)
   end
 
-  def export_plaintext_to_sqlcipher!(source_path, encrypted_path)
-    FileUtils.rm_f(encrypted_path)
-
-    source = SQLite3::Database.new(source_path.to_s)
-    source.busy_timeout = 10_000
-    source.execute("PRAGMA wal_checkpoint(TRUNCATE)") rescue nil
-    source.execute("ATTACH DATABASE #{sql_string(encrypted_path.to_s)} AS encrypted KEY #{key_literal}")
+  # Reads through its own connection (WAL contents included); the caller's lock connection already blocks writers.
+  def export_encrypted_copy!(source_path, encrypted_path, from_key_hex, to_key_hex)
+    source = open_database(source_path, from_key_hex)
+    source.execute("ATTACH DATABASE #{sql_string(encrypted_path.to_s)} AS encrypted KEY #{key_literal(to_key_hex)}")
     source.execute("SELECT sqlcipher_export('encrypted')")
     source.execute("DETACH DATABASE encrypted")
   ensure
     source&.close
   end
 
-  def delete_plaintext_backup!(original_path, backup_path)
-    FileUtils.rm_f(backup_path)
-    sidecar_paths(original_path).each do |sidecar|
-      FileUtils.rm_f(@backup_dir.join("#{sidecar.basename}.#{@timestamp}.plaintext"))
+  def verify_same_row_counts!(source, encrypted_path, to_key_hex)
+    encrypted = open_database(encrypted_path, to_key_hex)
+    tables = source.execute("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'").flatten
+    tables.each do |table|
+      count_sql = %(SELECT count(*) FROM "#{table.gsub('"', '""')}")
+      next if source.get_first_value(count_sql) == encrypted.get_first_value(count_sql)
+
+      raise Error, "Row count mismatch in #{table}; refusing to replace the database"
     end
-  end
-
-  def backup_plaintext_database!(path)
-    FileUtils.mkdir_p(@backup_dir)
-
-    backup_path = @backup_dir.join("#{path.basename}.#{@timestamp}.plaintext")
-    raise Error, "Backup already exists: #{backup_path}" if backup_path.exist?
-
-    FileUtils.cp(path, backup_path, preserve: true)
-    sidecar_paths(path).each do |sidecar|
-      next unless sidecar.exist?
-
-      FileUtils.cp(sidecar, @backup_dir.join("#{sidecar.basename}.#{@timestamp}.plaintext"), preserve: true)
-    end
-
-    backup_path
+  ensure
+    encrypted&.close
   end
 
   def replace_database!(path, encrypted_path)
-    mode = File.stat(path).mode & 0o7777
-    sidecar_paths(path).each { |sidecar| FileUtils.rm_f(sidecar) }
+    File.chmod(File.stat(path).mode & 0o7777, encrypted_path)
+    # Never delete -wal/-shm here: they are named by path, so after the rename they would be the NEW database's.
+    # Closing our last connection already removed the old ones; a leftover WAL with frames means someone wrote.
+    raise Error, "#{path}-wal has frames; refusing to replace the database" if File.size?("#{path}-wal")
+
     File.rename(encrypted_path, path)
-    File.chmod(mode, path)
   end
 
   def temporary_path(path)
     path.dirname.join(".#{path.basename}.#{@timestamp}.sqlcipher")
   end
 
-  def sidecar_paths(path)
-    SIDECAR_SUFFIXES.map { |suffix| Pathname.new("#{path}#{suffix}") }
-  end
-
   def sql_string(value)
     "'#{value.to_s.gsub("'", "''")}'"
   end
 
-  def key_literal
-    %("x'#{@key_hex}'")
+  def key_literal(key_hex = @key_hex)
+    %("x'#{key_hex}'")
   end
 end

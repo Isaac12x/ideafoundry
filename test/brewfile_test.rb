@@ -13,7 +13,7 @@ class BrewfileTest < ActiveSupport::TestCase
   # Resolved indirectly (constants, name lists, ENV), so the literal scan below can't see them.
   INDIRECT = %w[7z yt-dlp chrome caddy node].freeze
   # OS built-ins / platform-specific, not Homebrew.
-  BUILTIN = %w[open osascript which secret-tool git tar].freeze
+  BUILTIN = %w[open osascript which secret-tool git tar lsof].freeze
 
   CALL = /(?:LocalTool\.path|Open3\.(?:capture[23e]*|popen[23e]*)|Subprocess\.capture|IO\.popen|Process\.spawn|(?<![\w.])(?:system|run!?))\(\s*\[?\s*"([a-z0-9][a-z0-9-]*)"/m
 

@@ -1,6 +1,21 @@
 require "test_helper"
 
 class RecoverySecretsControllerTest < ActionDispatch::IntegrationTest
+  # Records connection resets when a test sets events.
+  module ResetEvents
+    private
+
+    def reset_recovery_secret_database_connections!
+      RecoverySecretsControllerTest.events&.push(:disconnect)
+      super
+    end
+  end
+  RecoverySecretsController.prepend(ResetEvents)
+
+  class << self
+    attr_accessor :events
+  end
+
   setup do
     @original_recovery_passphrase_file = ENV[RecoverySecret::PASSPHRASE_FILE_ENV]
     @original_recovery_passphrase = ENV[RecoverySecret::PASSPHRASE_ENV]
@@ -112,6 +127,125 @@ class RecoverySecretsControllerTest < ActionDispatch::IntegrationTest
     end
   ensure
     FileUtils.rm_rf(root) if root
+  end
+
+  test "an unlock-time rekey disconnects every pool before and after it, and writes still work afterwards" do
+    events = RecoverySecretsControllerTest.events = []
+    RecoverySecret.stub(:rekey_needed?, true) do
+      RecoverySecret.stub(:rekey!, ->(*, **) { events << :rekey }) do
+        post recovery_secret_path, params: { recovery_passphrase: "typed in the UI", return_to: root_path }
+      end
+    end
+
+    assert_redirected_to root_path
+    assert_equal [ :disconnect, :rekey, :disconnect, :disconnect ], events
+    assert_nil flash[:alert]
+    user = User.first
+    user.update!(settings: user.settings.merge("written_after_rekey" => true))
+    assert User.first.settings["written_after_rekey"]
+  ensure
+    RecoverySecretsControllerTest.events = nil
+  end
+
+  test "a deferred rekey does not block the unlock and tells the user" do
+    [ SqlcipherDatabaseMigrator::Error.new("Database is in use by process 42. Stop the app (puma + bin/jobs) first"),
+      SQLite3::BusyException.new("database is locked"), IOError.new("disk full") ].each do |error|
+      RecoverySecret.stub(:rekey_needed?, true) do
+        RecoverySecret.stub(:rekey!, ->(*, **) { raise error }) do
+          post recovery_secret_path, params: { recovery_passphrase: "typed in the UI", return_to: root_path }
+        end
+      end
+
+      assert_redirected_to root_path
+      assert_match(/Unlocked, but upgrading the database key was deferred/, flash[:alert])
+    end
+  end
+
+  PASSPHRASE = "typed in the UI".freeze
+
+  def encrypted_database(name, n)
+    FileUtils.mkdir_p(@recovery_secret_root)
+    path = @recovery_secret_root.join(name)
+    db = SQLite3::Database.new(path.to_s)
+    db.execute(%(PRAGMA key = "x'#{RecoverySecret.sqlcipher_key_hex_for(PASSPHRASE, n: n)}'"))
+    db.execute("CREATE TABLE ideas (id integer primary key, title text)")
+    db.execute("INSERT INTO ideas (title) VALUES ('kept')")
+    db.close
+    path
+  end
+
+  def opens_at_cost?(path, n)
+    db = SQLite3::Database.new(path.to_s)
+    db.execute(%(PRAGMA key = "x'#{RecoverySecret.sqlcipher_key_hex_for(PASSPHRASE, n: n)}'"))
+    db.get_first_value("SELECT title FROM ideas") == "kept"
+  rescue SQLite3::Exception
+    false
+  ensure
+    db&.close
+  end
+
+  def stored_cost = RecoverySecret.send(:read_configured_kdf_n)
+
+  test "with no stored credential and databases on the legacy cost, the unlock converges them and stores a matching credential" do
+    legacy = encrypted_database("legacy.sqlite3", RecoverySecret::SCRYPT_N)
+    assert_nil stored_cost, "nothing is stored yet"
+
+    SqlcipherDatabaseMigrator.stub(:configured_database_paths, [ legacy.to_s ]) do
+      post recovery_secret_path, params: { recovery_passphrase: PASSPHRASE, return_to: root_path }
+    end
+
+    assert_redirected_to root_path
+    assert_nil flash[:alert]
+    assert opens_at_cost?(legacy, RecoverySecret::SCRYPT_N_DEFAULT)
+    assert_equal RecoverySecret::SCRYPT_N_DEFAULT, stored_cost
+    assert_equal PASSPHRASE, JSON.parse(File.read(ENV[RecoverySecret::PASSPHRASE_FILE_ENV]))["passphrase"]
+    assert_not RecoverySecret.rekey_needed?
+  end
+
+  test "a fresh install with no encrypted databases stores the default cost straight away" do
+    SqlcipherDatabaseMigrator.stub(:configured_database_paths, [ @recovery_secret_root.join("missing.sqlite3").to_s ]) do
+      post recovery_secret_path, params: { recovery_passphrase: PASSPHRASE, return_to: root_path }
+    end
+
+    assert_equal RecoverySecret::SCRYPT_N_DEFAULT, stored_cost
+  end
+
+  test "unlock after a partial rekey (one database converted, one not) still works and converges everything" do
+    converted = encrypted_database("converted.sqlite3", RecoverySecret::SCRYPT_N_DEFAULT)
+    straggler = encrypted_database("straggler.sqlite3", RecoverySecret::SCRYPT_N)
+    RecoverySecret.send(:store_credential!, PASSPHRASE, kdf_n: RecoverySecret::SCRYPT_N) # the credential still says "legacy"
+
+    SqlcipherDatabaseMigrator.stub(:configured_database_paths, [ converted.to_s, straggler.to_s ]) do
+      post recovery_secret_path, params: { recovery_passphrase: PASSPHRASE, return_to: root_path }
+    end
+
+    assert_redirected_to root_path
+    assert_nil flash[:alert]
+    [ converted, straggler ].each { |path| assert opens_at_cost?(path, RecoverySecret::SCRYPT_N_DEFAULT), path.to_s }
+    assert_not opens_at_cost?(straggler, RecoverySecret::SCRYPT_N)
+    assert_equal RecoverySecret::SCRYPT_N_DEFAULT, stored_cost
+  ensure
+  end
+
+  test "if storing the credential raised after every database was converted, the next unlock still works" do
+    paths = [ encrypted_database("one.sqlite3", RecoverySecret::SCRYPT_N), encrypted_database("two.sqlite3", RecoverySecret::SCRYPT_N) ]
+    RecoverySecret.send(:store_credential!, PASSPHRASE, kdf_n: RecoverySecret::SCRYPT_N)
+
+    SqlcipherDatabaseMigrator.stub(:configured_database_paths, paths.map(&:to_s)) do
+      RecoverySecret.stub(:store_credential!, ->(*, **) { raise IOError, "disk full" }) do
+        assert_raises(IOError) { RecoverySecret.rekey!(PASSPHRASE, env: "production") }
+      end
+      paths.each { |path| assert opens_at_cost?(path, RecoverySecret::SCRYPT_N_DEFAULT) }
+      assert_equal RecoverySecret::SCRYPT_N, stored_cost, "the credential still has the old cost"
+
+      post recovery_secret_path, params: { recovery_passphrase: PASSPHRASE, return_to: root_path }
+    end
+
+    assert_redirected_to root_path
+    assert_nil flash[:alert]
+    assert_equal RecoverySecret::SCRYPT_N_DEFAULT, stored_cost
+    assert_not RecoverySecret.rekey_needed?
+  ensure
   end
 
   test "POST recovery secret rejects blank passphrase" do

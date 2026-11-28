@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The Rails app now launches its local worker from `agent_runtime/`. See [local agent setup](docs/local-agent-runtime.md) for the Python environment and inference settings.
+- SQLCipher migration verifies an encrypted replacement before swapping the database file and no longer creates a plaintext backup. Migration and rekeying check for open database handles. Test databases now live under `tmp/`.
+- Markdown diagrams keep their source available to copy, and tab switches preserve Turbo history.
 - The project is now MIT licensed: `LICENSE` added and the README license section corrected.
 - Local session handoff notes are ignored in every directory and filename casing.
 - Retrying a note import from the same preview skips notes already imported by that user and adds any newly selected notes.

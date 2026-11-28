@@ -55,6 +55,42 @@ class SqlcipherInitializerTest < ActiveSupport::TestCase
     end
   end
 
+  test "a database on the other known scrypt cost than the stored one still unlocks (partial rekey)" do
+    Dir.mktmpdir do |dir|
+      path = File.join(dir, "other_cost.sqlite3")
+      db = SQLite3::Database.new(path)
+      db.execute(%(PRAGMA key = "x'#{RecoverySecret.sqlcipher_key_hex_for('pw', n: RecoverySecret::SCRYPT_N_DEFAULT)}'"))
+      db.execute("CREATE TABLE ideas (title text)")
+      db.execute("INSERT INTO ideas VALUES ('kept')")
+      db.close
+
+      raw = SQLite3::Database.new(path)
+      RecoverySecret.with("pw", override_configured: true) do # nothing stored, so the legacy cost is tried first
+        Probe.new(raw, database: path).apply_key!
+      end
+      assert_equal "kept", raw.get_first_value("SELECT title FROM ideas")
+    ensure
+      raw&.close
+    end
+  end
+
+  test "a database that opens with neither known cost is still locked" do
+    Dir.mktmpdir do |dir|
+      path = File.join(dir, "locked.sqlite3")
+      db = SQLite3::Database.new(path)
+      db.execute(%(PRAGMA key = "x'#{RecoverySecret.sqlcipher_key_hex_for('other passphrase')}'"))
+      db.execute("CREATE TABLE ideas (title text)")
+      db.close
+
+      raw = SQLite3::Database.new(path)
+      RecoverySecret.with("pw", override_configured: true) do
+        assert_raises(RecoverySecret::Missing) { Probe.new(raw, database: path).apply_key! }
+      end
+    ensure
+      raw&.close
+    end
+  end
+
   test "plaintext SQLite databases are detected before applying SQLCipher key" do
     path = Rails.root.join("tmp/plaintext_sqlite_initializer_test.sqlite3")
     File.binwrite(path, "SQLite format 3\0")
